@@ -151,7 +151,7 @@ export const useAccountStore = create<AccountState>((set) => ({
        */
       for (const acc of list) {
         const profile = getPlayerProfile(acc.tag);
-        if (profile?.playerTag){
+        if (profile?.playerTag) {
           profilesByTag[acc.tag] = profile;
         }
       }
@@ -174,9 +174,9 @@ export const useAccountStore = create<AccountState>((set) => ({
           widgetPrefs: updatedPrefs,
         };
       });
-
     } catch (e) {
       console.error("loadAccounts error:", e);
+      throw e;
     } finally {
       set({ isLoadingAccounts: false });
     }
@@ -212,6 +212,7 @@ export const useAccountStore = create<AccountState>((set) => ({
 
     } catch (e) {
       console.error("loadActiveAccount error:", e);
+      throw e;
     } finally {
       set({ isLoadingProfile: false });
     }
@@ -282,7 +283,7 @@ export const useAccountStore = create<AccountState>((set) => ({
           updatedPrefs = { selectedAccountTag: null };
           saveWidgetPrefs(updatedPrefs);
         }
-        
+
         const updatedProfiles = {
           ...state.profilesByTag,
         };
@@ -330,24 +331,24 @@ export const useAccountStore = create<AccountState>((set) => ({
         },
       }));
       console.log(
-  "📦 ENTITIES CREATED",
-  tag,
-  entities.map((e) => ({
-    type: e.type,
-    dataId: e.dataId,
-    level: e.level,
-  })),
-);
+        "📦 ENTITIES CREATED",
+        tag,
+        entities.map((e) => ({
+          type: e.type,
+          dataId: e.dataId,
+          level: e.level,
+        })),
+      );
       console.log(
-  "📦 Upgrades CREATED",
-  tag,
-  upgrades.map((e) => ({
-    type: e.type,
-    dataId: e.dataId,
-    hasHelper: e.hasHelper,
-    helperAppliedSeconds: e.helperAppliedSeconds,
-  })),
-);
+        "📦 Upgrades CREATED",
+        tag,
+        upgrades.map((e) => ({
+          type: e.type,
+          dataId: e.dataId,
+          hasHelper: e.hasHelper,
+          helperAppliedSeconds: e.helperAppliedSeconds,
+        })),
+      );
     } catch (e) {
       console.error("importJsonData error:", e);
     } finally {

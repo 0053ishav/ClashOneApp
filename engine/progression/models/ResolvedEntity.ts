@@ -1,9 +1,8 @@
-export interface ProgressionEntity {
+export interface ResolvedEntity {
   id: number;
   slug: string;
   category: string;
   village: string;
   subType?: string;
-  requiredHallLevel?: number;
   maxLevel: number;
 }

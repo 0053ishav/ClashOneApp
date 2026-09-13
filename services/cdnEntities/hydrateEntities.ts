@@ -1,48 +1,48 @@
-import { storage } from "@/storage/mmkv";
-
 import { useEntityStore } from "@/stores/entityStore";
 
-const CATEGORIES = [
-  "buildings",
-  "troops",
-  "heroes",
-  "pets",
-  "spells",
-  "sieges",
-  "traps",
-  "helpers",
-  "guardians",
-  "townhall",
-  "halls",
-];
+import {
+  loadEntityCategory,
+  loadEntityManifest,
+} from "@/storage/entityStorage";
+
+import type {
+  EntityData,
+} from "@/types/entities";
+
+import { log } from "@/utils/logger";
 
 export function hydrateEntities() {
+  const manifest =
+    loadEntityManifest();
+
+  log(
+    "Entity Manifest:",
+    manifest,
+  );
+
+  if (!manifest) {
+    return;
+  }
+
   const store =
     useEntityStore.getState();
 
-  for (const category of CATEGORIES) {
-    const raw =
-      storage.getString(
-        `entities_${category}`,
+  const merged: EntityData[] = [];
+
+  for (const category of Object.keys(
+    manifest.categories,
+  )) {
+    const entities =
+      loadEntityCategory(
+        category,
       );
 
-    if (!raw) continue;
+    if (!entities) continue;
 
-    try {
-      const parsed =
-        JSON.parse(raw);
-
-      store.setEntities(
-        parsed,
-      );
-
-      // console.log(
-      //   `Hydrated ${category}`,
-      // );
-    } catch (err) {
-      console.log(
-        `Failed hydrating ${category}`,
-      );
-    }
+    merged.push(...entities);
   }
+
+  store.setEntities(merged);
+
+  store.setManifest(manifest);
 }

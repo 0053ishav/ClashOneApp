@@ -14,10 +14,16 @@ export const STORAGE_KEYS = {
   FEATURE_VOTES: "feature_votes",
   ENTITY_MANIFEST: "entity_manifest",
   PROGRESSION_MANIFEST: "progression_manifest",
-  
+
   PROGRESSION: (category: string) =>
     `progression_${category}`,
 
   PROGRESSION_VERSION: (category: string) =>
     `progression_version_${category}`,
+
+  ENTITY_CATEGORY: (category: string) =>
+    `entities_${category}`,
+
+  ENTITY_VERSION: (category: string) =>
+    `entities_version_${category}`,
 };

@@ -1,6 +1,6 @@
+import { STORAGE_KEYS } from "@/storage/keys";
+import { storage } from "@/storage/mmkv";
 import { ProgressionData, ProgressionManifest } from "@/types/progression";
-import { STORAGE_KEYS } from "./keys";
-import { storage } from "./mmkv";
 
 export function saveProgressionCategory(
   category: string,

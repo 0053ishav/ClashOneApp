@@ -2,47 +2,33 @@ import {
   fetchCategory,
   fetchManifest,
 } from "@/services/cdnEntities/entities";
-import { storage } from "@/storage/mmkv";
-import { useEntityStore } from "@/stores/entityStore";
-import { STORAGE_KEYS } from "./keys";
+
+import {
+  loadEntityVersion,
+  saveEntityCategory,
+  saveEntityManifest,
+  saveEntityVersion,
+} from "@/storage/entityStorage";
 
 export async function syncEntities() {
   const manifest =
     await fetchManifest();
 
-  const categories =
-    Object.entries(
-      manifest.categories,
-    );
+  const categories = Object.entries(
+    manifest.categories,
+  ) as [string, number][];
 
   for (const [
     category,
     remoteVersion,
   ] of categories) {
-    const versionKey =
-      `entities_version_${category}`;
-
-    const dataKey =
-      `entities_${category}`;
-
-
-      console.log("📦 CATEGORY", category);
-
     const localVersion =
-      storage.getNumber(
-        versionKey,
-      );
+      loadEntityVersion(category);
 
-
-    // already latest
     if (
       localVersion ===
       remoteVersion
     ) {
-      // console.log(
-      //   `${category} already latest`,
-      // );
-
       continue;
     }
 
@@ -52,53 +38,26 @@ export async function syncEntities() {
           category,
         );
 
-      //    console.log(
-      //   `${category} fetched`,
-      // );
-
-      // save to zustand
-      useEntityStore
-        .getState()
-        .setEntities(
-          entities,
-        );
-
-      // save raw json
-      storage.set(
-        dataKey,
-        JSON.stringify(
-          entities,
-        ),
+      saveEntityCategory(
+        category,
+        entities,
       );
 
-      // save category version
-      storage.set(
-        versionKey,
+      saveEntityVersion(
+        category,
         remoteVersion,
       );
 
       console.log(
-        `Synced ${category}`,
+        `Synced entities ${category}`,
       );
     } catch (err) {
       console.log(
-        `Failed syncing ${category}`,
+        `Failed syncing entities ${category}`,
         err,
       );
     }
   }
 
-  // save manifest
-  useEntityStore
-    .getState()
-    .setManifest(
-      manifest,
-    );
-
-  storage.set(
-    STORAGE_KEYS.ENTITY_MANIFEST,
-    JSON.stringify(
-      manifest,
-    ),
-  );
+  saveEntityManifest(manifest);
 }

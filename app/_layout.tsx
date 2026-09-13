@@ -58,11 +58,34 @@ Notifications.setNotificationHandler({
   }),
 });
 
+enum BootStage {
+  Initializing = "initializing",
+  Database = "database",
+  LoadingAccounts = "loading_accounts",
+  LoadingActiveAccount = "loading_active_account",
+  Ready = "ready",
+  Fatal = "fatal",
+}
+
+enum BootErrorCode {
+  DATABASE_INIT = "BOOT_DATABASE_INIT",
+  LOAD_ACCOUNTS = "BOOT_LOAD_ACCOUNTS",
+  LOAD_ACTIVE_ACCOUNT = "BOOT_LOAD_ACTIVE_ACCOUNT",
+  UNKNOWN = "BOOT_UNKNOWN",
+}
+
+type BootError = {
+  code: BootErrorCode;
+  stage: BootStage;
+  message: string;
+  error: unknown;
+};
+
 export default Sentry.wrap(function RootLayout() {
   const loadActiveAccount = useAccountStore((s) => s.loadActiveAccount);
-  const [bootState, setBootState] = useState<"loading" | "ready" | "error">(
-    "loading",
-  );
+
+  const [bootStage, setBootStage] = useState(BootStage.Initializing);
+  const [bootError, setBootError] = useState<BootError | null>(null);
 
   const pathname = usePathname();
   const complete = isOnboardingComplete();
@@ -77,56 +100,166 @@ export default Sentry.wrap(function RootLayout() {
   const [showSupport, setShowSupport] = useState(false);
   const [debugInfo, setDebugInfo] = useState("");
 
+  const bootStageLabel = {
+    [BootStage.Initializing]: "Initializing...",
+    [BootStage.Database]: "Preparing Village Storage",
+    [BootStage.LoadingAccounts]: "Loading Accounts",
+    [BootStage.LoadingActiveAccount]: "Opening Village",
+    [BootStage.Ready]: "Ready",
+    [BootStage.Fatal]: "Failed",
+  };
+
+  const bootProgress = {
+    [BootStage.Initializing]: 0,
+    [BootStage.Database]: 1,
+    [BootStage.LoadingAccounts]: 2,
+    [BootStage.LoadingActiveAccount]: 3,
+    [BootStage.Ready]: 3,
+    [BootStage.Fatal]: 0,
+  };
+
   const openSupport = async () => {
     const info = await buildSupportInfo();
     setDebugInfo(info);
     setShowSupport(true);
   };
 
-  const runBootstrap = useCallback(async () => {
+  async function safeTask(name: string, task: () => Promise<void>) {
     try {
+      await task();
+    } catch (e) {
+      console.error(`${name} failed`, e);
+
+      Sentry.captureException(e, {
+        tags: {
+          bootstrapTask: name,
+        },
+      });
+    }
+  }
+
+  function createBootError(
+    code: BootErrorCode,
+    stage: BootStage,
+    error: unknown,
+  ): BootError {
+    return {
+      code,
+      stage,
+      message: error instanceof Error ? error.message : "Unknown error",
+      error,
+    };
+  }
+
+  const runCriticalBoot = useCallback(async () => {
+    try {
+      setBootStage(BootStage.Database);
+
       await initDatabase();
+    } catch (e) {
+      throw createBootError(BootErrorCode.DATABASE_INIT, BootStage.Database, e);
+    }
+
+    try {
+      setBootStage(BootStage.LoadingAccounts);
 
       await loadAccounts();
-      await loadActiveAccount();
-
-      await initRevenueCat();
-      await syncPremiumStatus();
-
-      await ensureCraftedLoaded();
-
-      await configureNotifications();
-
-      await syncEntities();
-      await syncProgression();
-
-      hydrateEntities();
-      hydrateProgression();
-
-      initWidgetManager();
-      startSmartWidgetScheduler();
-      emitWidgetUpdate();
-
-      loadLastSync();
-
-      setBootState("ready");
     } catch (e) {
-      console.error("Bootstrap Failed: ", e);
-      Sentry.captureException(e);
+      throw createBootError(
+        BootErrorCode.LOAD_ACCOUNTS,
+        BootStage.LoadingAccounts,
+        e,
+      );
+    }
+
+    try {
+      setBootStage(BootStage.LoadingActiveAccount);
+
+      await loadActiveAccount();
+    } catch (e) {
+      throw createBootError(
+        BootErrorCode.LOAD_ACTIVE_ACCOUNT,
+        BootStage.LoadingActiveAccount,
+        e,
+      );
+    }
+  }, [loadAccounts, loadActiveAccount]);
+
+  const runBackgroundBoot = useCallback(async () => {
+    await Promise.allSettled([
+      safeTask("RevenueCat", async () => {
+        await initRevenueCat();
+        await syncPremiumStatus();
+      }),
+
+      safeTask("Crafted", ensureCraftedLoaded),
+
+      safeTask("Notifications", configureNotifications),
+
+      safeTask("Entities", async () => {
+        await syncEntities();
+        hydrateEntities();
+      }),
+
+      safeTask("Progression", async () => {
+        await syncProgression();
+        hydrateProgression();
+      }),
+
+      safeTask("Widgets", async () => {
+        initWidgetManager();
+        startSmartWidgetScheduler();
+        emitWidgetUpdate();
+      }),
+
+      safeTask("LastSync", async () => {
+        loadLastSync();
+      }),
+    ]);
+  }, [loadLastSync]);
+
+  const runBootstrap = useCallback(async () => {
+    try {
+      setBootError(null);
+
+      await runCriticalBoot();
+
+      setBootStage(BootStage.Ready);
+
+      // Don't block UI
+      void runBackgroundBoot();
+    } catch (err) {
+      const boot =
+        err && typeof err === "object" && "code" in err && "stage" in err
+          ? (err as BootError)
+          : createBootError(BootErrorCode.UNKNOWN, BootStage.Fatal, err);
+      console.error("Bootstrap Failed", boot);
+
+      Sentry.captureException(boot.error, {
+        tags: {
+          bootStage: boot.stage,
+          bootCode: boot.code,
+        },
+      });
 
       track("bootstrap_failed", {
-        error: e instanceof Error ? e.message : "unknown",
+        code: boot.code,
+        stage: boot.stage,
+        message: boot.message,
       });
-      setBootState("error");
+
+      setBootError(boot);
+
+      setBootStage(BootStage.Fatal);
     }
-  }, [loadAccounts, loadActiveAccount, loadLastSync]);
+  }, [runCriticalBoot, runBackgroundBoot]);
 
   useEffect(() => {
-    if (complete) {
-      runBootstrap();
-    } else {
-      setBootState("ready");
+    if (!complete) {
+      setBootStage(BootStage.Ready);
+      return;
     }
+    void runBootstrap();
   }, [complete, runBootstrap]);
 
   const {
@@ -134,7 +267,7 @@ export default Sentry.wrap(function RootLayout() {
     setUpdateModalVisible,
     storeVersion,
     startUpdate,
-  } = useInAppUpdates(bootState === "ready");
+  } = useInAppUpdates(bootStage === BootStage.Ready);
 
   useEffect(() => {
     const received = Notifications.addNotificationReceivedListener(
@@ -209,7 +342,7 @@ export default Sentry.wrap(function RootLayout() {
     return <Redirect href="/onboarding" />;
   }
 
-  if (bootState === "loading") {
+  if (bootStage !== BootStage.Ready && bootStage !== BootStage.Fatal) {
     return (
       <View style={[styles.container, styles.loadingOverlay]}>
         <View style={styles.loadingContent}>
@@ -223,9 +356,42 @@ export default Sentry.wrap(function RootLayout() {
 
           <Text style={styles.loadingTitle}>Preparing Village</Text>
 
-          <Text style={styles.loadingMessage}>
-            Syncing builders and timers...
-          </Text>
+          <Text style={styles.loadingMessage}>{bootStageLabel[bootStage]}</Text>
+
+          <View style={styles.stageContainer}>
+            {[
+              BootStage.Database,
+              BootStage.LoadingAccounts,
+              BootStage.LoadingActiveAccount,
+            ].map((stage, index) => {
+              const current = bootProgress[bootStage];
+
+              const completed = current > index + 1;
+              const active = current === index + 1;
+
+              return (
+                <View key={stage} style={styles.stageRow}>
+                  <View
+                    style={[
+                      styles.stageIndicator,
+                      completed && styles.stageCompleted,
+                      active && styles.stageActive,
+                    ]}
+                  />
+
+                  <Text
+                    style={[
+                      styles.stageText,
+                      completed && styles.stageCompletedText,
+                      active && styles.stageActiveText,
+                    ]}
+                  >
+                    {bootStageLabel[stage]}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
 
           <View style={styles.dotsContainer}>
             {[0, 1, 2].map((i) => (
@@ -237,7 +403,7 @@ export default Sentry.wrap(function RootLayout() {
     );
   }
 
-  if (bootState === "error") {
+  if (bootStage === BootStage.Fatal) {
     return (
       <View style={[styles.container, styles.loadingOverlay]}>
         {retryCount >= 2 && (
@@ -271,35 +437,61 @@ export default Sentry.wrap(function RootLayout() {
             </View>
           </View>
 
-          <Text style={styles.loadingTitle}>Village Not Ready</Text>
+          <Text style={styles.loadingTitle}>Village Couldn&apos;t Open</Text>
 
           <Text style={styles.loadingMessage}>
-            Something broke while syncing your data
+            We couldn&apos;t finish preparing your village.
           </Text>
 
+          <View style={styles.errorCard}>
+            <Text style={styles.errorCardTitle}>Technical Details</Text>
+
+            <View style={styles.errorRow}>
+              <Text style={styles.errorLabel}>Stage</Text>
+
+              <Text style={styles.errorValue}>
+                {bootStageLabel[bootError?.stage ?? BootStage.Initializing]}
+              </Text>
+            </View>
+
+            <View style={styles.errorRow}>
+              <Text style={styles.errorLabel}>Code</Text>
+
+              <Text style={styles.errorValue}>{bootError?.code}</Text>
+            </View>
+
+            <View style={styles.errorRow}>
+              <Text style={styles.errorLabel}>Message</Text>
+
+              <Text style={styles.errorValue}>{bootError?.message}</Text>
+            </View>
+          </View>
+
           <Pressable
+            style={styles.retryButton}
             onPress={() => {
               setRetryCount((v) => v + 1);
-              setBootState("loading");
+
+              setBootError(null);
+              setBootStage(BootStage.Initializing);
+
               runBootstrap();
             }}
-            style={{
-              marginTop: 20,
-              backgroundColor: "#fbbf24",
-              paddingVertical: 12,
-              paddingHorizontal: 24,
-              borderRadius: 12,
-            }}
           >
-            <Text
-              style={{
-                color: "#0f172a",
-                fontWeight: "700",
-              }}
-            >
-              Retry
-            </Text>
+            <Text style={styles.retryText}>Try Again</Text>
           </Pressable>
+
+          {retryCount >= 2 && (
+            <Pressable onPress={openSupport} style={styles.supportAction}>
+              <Ionicons
+                name="chatbubble-ellipses-outline"
+                size={18}
+                color="#94a3b8"
+              />
+
+              <Text style={styles.supportActionText}>Contact Support</Text>
+            </Pressable>
+          )}
         </View>
       </View>
     );
@@ -438,6 +630,106 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#94a3b8",
     fontWeight: "500",
+  },
+
+  stageContainer: {
+    marginTop: 28,
+    width: "100%",
+    maxWidth: 260,
+  },
+
+  stageRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+
+  stageIndicator: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#334155",
+    marginRight: 12,
+  },
+
+  stageCompleted: {
+    backgroundColor: "#22c55e",
+  },
+
+  stageActive: {
+    backgroundColor: "#fbbf24",
+  },
+
+  stageText: {
+    color: "#64748b",
+    fontSize: 14,
+  },
+
+  stageCompletedText: {
+    color: "#cbd5e1",
+  },
+
+  stageActiveText: {
+    color: "#fbbf24",
+    fontWeight: "700",
+  },
+
+  errorCard: {
+    marginTop: 24,
+    width: "100%",
+    backgroundColor: "#1e293b",
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+
+  errorCardTitle: {
+    color: "#f8fafc",
+    fontWeight: "700",
+    marginBottom: 14,
+    fontSize: 14,
+  },
+
+  errorRow: {
+    marginBottom: 10,
+  },
+
+  errorLabel: {
+    color: "#94a3b8",
+    fontSize: 12,
+  },
+
+  errorValue: {
+    color: "#f8fafc",
+    marginTop: 2,
+    fontSize: 13,
+  },
+
+  retryButton: {
+    marginTop: 22,
+    backgroundColor: "#fbbf24",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+  },
+
+  retryText: {
+    color: "#0f172a",
+    fontWeight: "800",
+    fontSize: 15,
+  },
+
+  supportAction: {
+    marginTop: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  supportActionText: {
+    color: "#94a3b8",
+    fontWeight: "600",
   },
 
   dotsContainer: {

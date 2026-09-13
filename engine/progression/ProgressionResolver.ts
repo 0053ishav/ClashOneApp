@@ -1,44 +1,41 @@
 import type {
-  ProgressionLevel as BackendProgressionLevel,
-  ProgressionData,
+  ProgressionLevel as BackendProgressionLevel
 } from "@/types/progression";
 
 import type {
-  ProgressionEntity,
+  ProgressionInput,
   ProgressionLevel,
-  ResolvedProgression,
+  ResolvedProgression
 } from "./models";
 
 export class ProgressionResolver {
   static resolve(
-    entity: ProgressionEntity,
-    progression: ProgressionData,
-    currentLevel: number,
+    input: ProgressionInput
   ): ResolvedProgression {
     const current =
-      progression.levels[
-      currentLevel
+      input.progression.levels[
+      input.currentLevel
       ];
 
     const next =
-      progression.levels[
-      currentLevel + 1
+      input.progression.levels[
+      input.currentLevel + 1
       ];
 
     return {
-      entity,
-      progression,
-      currentLevel,
+      entity: input.entity,
+      progression: input.progression,
+      currentLevel: input.currentLevel,
       current: this.mapLevel(
-        currentLevel,
+        input.currentLevel,
         current,
       ),
       next: this.mapLevel(
-        currentLevel + 1,
+        input.currentLevel + 1,
         next,
       ),
       maxLevel:
-        progression.maxLevel,
+        input.progression.maxLevel,
     };
   }
 

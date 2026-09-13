@@ -21,9 +21,7 @@ export class ProgressionService {
   ): ProgressionResult {
     const resolved =
       ProgressionResolver.resolve(
-        input.entity,
-        input.progression,
-        input.currentLevel,
+        input,
       );
 
     return ProgressionEngine.resolve(

@@ -1,24 +1,15 @@
 /**
  * Purpose:
-    fetch backend entity payloads
-*/
-
-/**
- * Functions:
-
-    fetchManifest()
-    fetchBuildings()
-    fetchTroops()
-    fetchTownHall()
-*/
+ * Fetch backend metadata payloads.
+ */
 
 import type {
-    EntityData,
-    EntityManifest,
+  EntityData,
+  EntityManifest,
 } from "@/types/entities";
 
 const API =
-  `${process.env.EXPO_PUBLIC_BACKEND_URL}/v1/entities`
+  `${process.env.EXPO_PUBLIC_BACKEND_URL}/v2/metadata`;
 
 export async function fetchManifest() {
   const res = await fetch(
@@ -27,7 +18,7 @@ export async function fetchManifest() {
 
   if (!res.ok) {
     throw new Error(
-      "Failed to fetch manifest",
+      "Failed to fetch metadata manifest",
     );
   }
 
@@ -43,7 +34,7 @@ export async function fetchCategory(
 
   if (!res.ok) {
     throw new Error(
-      `Failed to fetch ${category}`,
+      `Failed to fetch metadata category: ${category}`,
     );
   }
 

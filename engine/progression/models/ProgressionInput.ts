@@ -3,11 +3,11 @@ import type {
 } from "@/types/progression";
 
 import type {
-    ProgressionEntity,
-} from "./ProgressionEntity";
+    ResolvedEntity
+} from "./ResolvedEntity";
 
 export interface ProgressionInput {
-  entity: ProgressionEntity;
+  entity: ResolvedEntity;
   progression: ProgressionData;
   currentLevel: number;
 }

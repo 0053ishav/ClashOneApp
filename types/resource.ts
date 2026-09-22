@@ -1,0 +1,11 @@
+export enum ResourceType {
+  GOLD = 0,
+  ELIXIR = 1,
+  DARK_ELIXIR = 2,
+  BUILDER_GOLD = 3,
+  BUILDER_ELIXIR = 4,
+  GEMS = 5,
+  SEASON_POINTS = 6,
+  GOLD_OR_ELIXIR = 7,
+  BUILDER_GOLD_OR_ELIXIR = 8,
+}

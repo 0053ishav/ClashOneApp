@@ -1,12 +1,12 @@
 import { cacheEntityIcon } from "./cacheEntityIcon";
-
 import { resolveEntityIcon } from "./resolveEntityIcon";
 
 export async function resolveWidgetEntityIcon(
   entityId: number,
   options?: {
+    village?: "home" | "builderBase";
+    level?: number;
     isCrafted?: boolean;
-    townHallLevel?: number;
   },
 ) {
   const remoteIcon =
@@ -15,14 +15,11 @@ export async function resolveWidgetEntityIcon(
       options,
     );
 
-     console.log("Entity:", entityId);
-  console.log("Resolved icon:", remoteIcon);
-  
   if (!remoteIcon) {
     return undefined;
   }
 
-  return await cacheEntityIcon(
+  return cacheEntityIcon(
     remoteIcon,
   );
 }

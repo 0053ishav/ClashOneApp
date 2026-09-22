@@ -1,5 +1,6 @@
 export const ENV = {
   APP_LINK: process.env.EXPO_PUBLIC_APP_LINK || "",
+  BACKEND: process.env.EXPO_PUBLIC_BACKEND_URL || "",
   CDN_BASE: process.env.EXPO_PUBLIC_CDN_BASE || "",
   BACKEND_EMAIL: process.env.EXPO_PUBLIC_BACKEND_EMAIL || "",
 

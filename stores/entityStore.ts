@@ -24,6 +24,7 @@ import type {
   EntityManifest,
 } from "@/types/entities";
 import { Village } from "@/types/entity";
+import { log } from "@/utils/logger";
 
 interface EntityStore {
   manifest: EntityManifest | null;
@@ -73,8 +74,18 @@ export const useEntityStore =
           number
         > = {};
 
-      
         for (const entity of entities) {
+          log("entity unknown: ", entity.name)
+           if (!entity.name) {
+    console.log(
+      "[EntityStore] ❌ Invalid entity",
+      entity,
+    );
+
+    continue;
+  }
+
+  
           mapped[entity.id] =
             entity;
 

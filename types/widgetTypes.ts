@@ -5,6 +5,7 @@ export type WidgetCacheData = {
   icon?: string;
   isCrafted?: boolean;
   progress: number;
+  currentLevel?: number;
   showProgress: boolean;
   levelText?: string;
   builderCountText?: string;

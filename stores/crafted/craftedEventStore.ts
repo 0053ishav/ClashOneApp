@@ -1,18 +1,9 @@
-import { Resource } from "@/types/entity";
 import { create } from "zustand";
 
-type CraftedDefenseMap = Record<
-  number,
-  {
-    name: string;
-    icon: string;
-    modules: Record<number, { name: string; stat: string, resource: Resource; }>;
-  }
->;
-
 interface CraftedState {
-  defenses: CraftedDefenseMap;
+  defenses: number[];
   duration: { start: number; end: number } | null;
+  availableFromTH?: number;
   availableForTH?: number;
   setCraftedData: (data: any) => void;
   isActive: () => boolean;
@@ -23,7 +14,7 @@ interface CraftedState {
 }
 
 export const useCraftedStore = create<CraftedState>((set, get) => ({
-  defenses: {},
+  defenses: [],
   duration: null,
   hasNewEvent: false,
   lastUpdated: 0,
@@ -35,6 +26,7 @@ export const useCraftedStore = create<CraftedState>((set, get) => ({
     set({
       defenses: data.defenses || {},
       duration: data.duration || null,
+      availableFromTH: data.availableFromTH,
       availableForTH: data.availableForTH,
       hasNewEvent: newEnd && newEnd !== prevEnd,
       lastUpdated: Date.now(),

@@ -9,16 +9,11 @@ import type {
   EntityData,
 } from "@/types/entities";
 
-import { log } from "@/utils/logger";
+import { CRAFTED_CATEGORY } from "@/services/progression/hydrateProgression";
 
 export function hydrateEntities() {
   const manifest =
     loadEntityManifest();
-
-  log(
-    "Entity Manifest:",
-    manifest,
-  );
 
   if (!manifest) {
     return;
@@ -32,10 +27,11 @@ export function hydrateEntities() {
   for (const category of Object.keys(
     manifest.categories,
   )) {
-    const entities =
-      loadEntityCategory(
-        category,
-      );
+    if (category === CRAFTED_CATEGORY) {
+      continue;
+    }
+
+    const entities = loadEntityCategory(category);
 
     if (!entities) continue;
 

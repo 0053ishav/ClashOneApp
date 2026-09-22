@@ -1,6 +1,7 @@
 import { addAccount, getAccountByTag, updateAccount } from "@/services/accountService";
 import { fetchPlayerFromApi } from "@/services/clashApi";
 import { ensureCraftedLoaded } from "@/services/craftedService";
+import { ProgressionApplicationService } from "@/services/progression";
 import { setLastJsonSync } from "@/storage/jsonSyncStorage";
 import { syncProfileFromApi } from "@/storage/playerProfile";
 import { useAccountStore } from "@/stores/accountStore";
@@ -559,6 +560,7 @@ export async function importVillageJson(
     village: Village;
     data: number;
     remainingNow: number;
+    remainingMsAtExport: number;
     lvl: number;
     isGoblin: boolean;
     hasHelper?: boolean;
@@ -612,6 +614,7 @@ export async function importVillageJson(
       village: item.village,
       data: item.data,
       remainingNow,
+      remainingMsAtExport,
       lvl: item.lvl,
       isGoblin: item.extra === true,
 
@@ -623,7 +626,22 @@ export async function importVillageJson(
     });
   }
 
-  const validLabTasks: ActiveTask[] = [];
+  type ValidLabTask = {
+    data: number;
+    lvl: number;
+    village: Village;
+
+    extra?: boolean;
+
+    remainingNow: number;
+    remainingMsAtExport: number;
+
+    hasHelper?: boolean;
+    recurrentHelper?: boolean;
+    helperAppliedSeconds?: number;
+  };
+
+  const validLabTasks: ValidLabTask[] = [];
 
   for (const lab of activeLabTasks) {
     // const remainingMsAtExport = lab.timer * 1000;
@@ -662,11 +680,19 @@ export async function importVillageJson(
     if (remainingNow <= 0) continue;
 
     validLabTasks.push({
-      ...lab,
+      data: lab.data,
+      lvl: lab.lvl,
       village: lab.village,
-      timer: remainingNow / 1000,
-      recurrentHelper: lab.helper_recurrent === true,
+      extra: lab.extra,
+
+      remainingNow,
+      remainingMsAtExport,
+
+      recurrentHelper:
+        lab.helper_recurrent === true,
+
       helperAppliedSeconds,
+
       hasHelper: lab.hasHelper,
     });
   }
@@ -773,14 +799,9 @@ export async function importVillageJson(
   let builderBaseBuilderUsed = 0;
 
   for (const item of validUpgrades) {
-    const startTime = now;
-    const durationMinutes = Math.ceil(item.remainingNow / 60000);
-    const endTime = now + item.remainingNow;
-
-
     let entity = getEntity(item.data);
 
-    // 🔥 force override for crafted
+    // 🔥 Crafted defenses don't exist as normal entities.
     if (item.isCrafted) {
       entity = {
         id: 1000097,
@@ -788,18 +809,115 @@ export async function importVillageJson(
         village: HOME_VILLAGE,
         type: "building" as EntityType,
         name: {
-          en: "Crafted Defense"
+          en: "Crafted Defense",
         },
       };
     }
 
     if (!entity) {
-      console.warn("Unknown entity: ", item.data);
+      console.warn(
+        "[JSON Import] Unknown entity:",
+        item.data,
+      );
       continue;
     }
 
-    const upgradeType = resolveUpgradeType(entity.type);
-    const normalizedType = normalizeEntityType(entity.type);
+    const progressionResult =
+      ProgressionApplicationService.resolveUpgrade({
+        id: randomUUID(),
+        accountTag: parsed.tag,
+        village: item.village,
+        dataId: item.data,
+        entity: entity.name.en,
+
+        type: normalizeEntityType(entity.type),
+        upgradeType:
+          resolveUpgradeType(entity.type),
+
+        currentLevel: item.lvl,
+
+        moduleId: item.moduleId,
+        isCrafted: item.isCrafted,
+
+        startTime: 0,
+        durationMinutes: 0,
+        endTime: 0,
+
+        isCompleted: false,
+        source: "JSON",
+      });
+
+    if (!progressionResult) {
+      console.warn(
+        "[JSON Import] Progression unavailable:",
+        {
+          dataId: item.data,
+          level: item.lvl,
+          isCrafted: item.isCrafted,
+          moduleId: item.moduleId,
+        },
+      );
+
+      continue;
+    }
+
+    const nextUpgradeTime =
+      progressionResult.nextUpgradeTime;
+
+    if (nextUpgradeTime == null) {
+      console.warn(
+        "[JSON Import] Missing progression upgrade time:",
+        {
+          dataId: item.data,
+          level: item.lvl,
+          isCrafted: item.isCrafted,
+          moduleId: item.moduleId,
+        },
+      );
+
+      continue;
+    }
+
+    const totalDurationMs =
+      nextUpgradeTime * 1000;
+
+    const endTime =
+      exportTimestampMs +
+      item.remainingMsAtExport;
+
+    const startTime =
+      endTime -
+      totalDurationMs;
+
+    const durationMinutes =
+      Math.ceil(totalDurationMs / 60000);
+
+      console.log(
+  "[JSON Import] Progression timing:",
+  {
+    dataId: item.data,
+    isCrafted: item.isCrafted,
+    moduleId: item.moduleId,
+    currentLevel:
+      progressionResult.currentLevel,
+    nextLevel:
+      progressionResult.nextLevel,
+    totalDurationSeconds:
+      progressionResult.nextUpgradeTime,
+    remainingAtExportSeconds:
+      item.remainingMsAtExport / 1000,
+    startTime: new Date(startTime).toISOString(),
+    endTime: new Date(endTime).toISOString(),
+    reconstructedDurationSeconds:
+      (endTime - startTime) / 1000,
+  },
+);
+
+    const upgradeType =
+      resolveUpgradeType(entity.type);
+
+    const normalizedType =
+      normalizeEntityType(entity.type);
 
 
     let builderSlot: number | "G" | undefined;
@@ -866,8 +984,8 @@ export async function importVillageJson(
           ? builderSlot
           : undefined,
 
-      currentLevel: item.lvl,
-      nextLevel: item.lvl + 1,
+      currentLevel: progressionResult.currentLevel,
+      nextLevel: progressionResult.nextLevel,
 
       isCompleted: false,
       source: "JSON",
@@ -878,26 +996,123 @@ export async function importVillageJson(
   }
 
   for (const lab of validLabTasks) {
-    const startTime = now;
-    const durationMinutes = Math.ceil((lab.timer * 1000) / 60000);
-    const endTime = now + lab.timer * 1000;
-
     const entity = getEntity(lab.data);
-    if (!entity) continue;
 
+    if (!entity) {
+      console.warn(
+        "[JSON Import] Unknown lab entity:",
+        lab.data,
+      );
+      continue;
+    }
+
+    const progressionResult =
+      ProgressionApplicationService.resolveUpgrade({
+        id: randomUUID(),
+        accountTag: parsed.tag,
+
+        village: lab.village,
+
+        dataId: lab.data,
+
+        entity: entity.name.en,
+
+        type: normalizeEntityType(entity.type),
+        upgradeType: "LAB",
+
+        currentLevel: lab.lvl,
+
+        startTime: 0,
+        durationMinutes: 0,
+        endTime: 0,
+
+        isCompleted: false,
+        source: "JSON",
+      });
+
+    if (!progressionResult) {
+      console.warn(
+        "[JSON Import] Progression unavailable for lab:",
+        {
+          dataId: lab.data,
+          level: lab.lvl,
+          village: lab.village,
+        },
+      );
+
+      continue;
+    }
+
+    const nextUpgradeTime =
+      progressionResult.nextUpgradeTime;
+
+    if (nextUpgradeTime == null) {
+      console.warn(
+        "[JSON Import] Missing progression upgrade time for lab:",
+        {
+          dataId: lab.data,
+          level: lab.lvl,
+          village: lab.village,
+        },
+      );
+
+      continue;
+    }
+
+    const totalDurationMs =
+      nextUpgradeTime * 1000;
+
+    const endTime =
+      exportTimestampMs +
+      lab.remainingMsAtExport;
+
+    const startTime =
+      endTime -
+      totalDurationMs;
+
+    const durationMinutes =
+      Math.ceil(totalDurationMs / 60000);
+
+      console.log(
+  "[JSON Import] Lab progression timing:",
+  {
+    dataId: lab.data,
+    currentLevel:
+      progressionResult.currentLevel,
+    nextLevel:
+      progressionResult.nextLevel,
+    totalDurationSeconds:
+      progressionResult.nextUpgradeTime,
+    remainingAtExportSeconds:
+      lab.remainingMsAtExport / 1000,
+    startTime: new Date(startTime).toISOString(),
+    endTime: new Date(endTime).toISOString(),
+    reconstructedDurationSeconds:
+      (endTime - startTime) / 1000,
+  },
+);
     newUpgrades.push({
       id: randomUUID(),
+
       accountTag: parsed.tag,
 
       village: lab.village,
+
       dataId: lab.data,
+
       entity: entity.name.en,
 
-      type: normalizeEntityType(entity.type),
+      type: normalizeEntityType(
+        entity.type,
+      ),
+
       upgradeType: "LAB",
 
       hasHelper: lab.hasHelper,
-      recurrentHelper: lab.recurrentHelper,
+
+      recurrentHelper:
+        lab.recurrentHelper,
+
       helperAppliedSeconds:
         lab.helperAppliedSeconds,
 
@@ -915,13 +1130,18 @@ export async function importVillageJson(
             : "NORMAL"
           : "NORMAL",
 
-      currentLevel: lab.lvl,
-      nextLevel: lab.lvl + 1,
+      currentLevel:
+        progressionResult.currentLevel,
+
+      nextLevel:
+        progressionResult.nextLevel,
 
       isCompleted: false,
+
       source: "JSON",
     });
   }
+
   console.log("Writing upgrades:", newUpgrades.length);
 
   try {

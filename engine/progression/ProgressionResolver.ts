@@ -26,6 +26,7 @@ export class ProgressionResolver {
       entity: input.entity,
       progression: input.progression,
       currentLevel: input.currentLevel,
+      currentHallLevel: input.currentHallLevel,
       current: this.mapLevel(
         input.currentLevel,
         current,

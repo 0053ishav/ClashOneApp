@@ -1,11 +1,27 @@
 import { storage } from "@/storage/mmkv";
 
 import type {
-    EntityData,
-    EntityManifest,
+  EntityData,
+  EntityManifest,
 } from "@/types/entities";
 
 import { STORAGE_KEYS } from "@/storage/keys";
+
+export function saveEntityGlobalManifestVersion(
+  version: number,
+) {
+  storage.set(
+    STORAGE_KEYS.ENTITY_GLOBAL_MANIFEST_VERSION,
+    version,
+  );
+}
+
+export function loadEntityGlobalManifestVersion():
+  number | undefined {
+  return storage.getNumber(
+    STORAGE_KEYS.ENTITY_GLOBAL_MANIFEST_VERSION,
+  );
+}
 
 export function saveEntityManifest(
   manifest: EntityManifest,

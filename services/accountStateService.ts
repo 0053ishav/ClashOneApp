@@ -74,7 +74,6 @@ export async function getAccountState(tag: string) {
       "⚠️ Stale goblin lab upgrade detected (event inactive)"
     );
   }
-
   return {
     upgrades,
     activeUpgrades,

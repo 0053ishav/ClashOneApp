@@ -6,12 +6,12 @@ import { loadProgressionCategory, loadProgressionManifest } from "@/storage/prog
 import type {
   ProgressionData
 } from "@/types/progression";
-import { log } from "@/utils/logger";
+
+export const CRAFTED_CATEGORY = "craftedDefenses";
 
 export function hydrateProgression() {
   const manifest = loadProgressionManifest();
 
-  log("Progression Manifest: ", manifest);
 
   if (!manifest) {
     return;
@@ -23,8 +23,12 @@ export function hydrateProgression() {
   const merged: ProgressionData[] = [];
 
   for (const category of Object.keys(manifest.categories,)) {
+    if (category === CRAFTED_CATEGORY) {
+      continue;
+    }
+
     const progression = loadProgressionCategory(category);
-    
+
     if (!progression) continue;
 
     merged.push(...progression);

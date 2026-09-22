@@ -1,7 +1,7 @@
 import { getAccountByTag } from "@/services/accountService";
 import { getAccountState } from "@/services/accountStateService";
 import { ENABLE_GROUPING, getNotificationsEnabled, GROUP_WINDOW_MS, MAX_GROUP_BODY_LINES } from "@/storage/notificationConfig";
-import { useCraftedStore } from "@/stores/craftedEventStore";
+import { useCraftedStore } from "@/stores/crafted";
 import { usePremiumStore } from "@/stores/premiumStore";
 import { Village } from "@/types/entity";
 import * as Notifications from "expo-notifications";

@@ -87,6 +87,8 @@ export async function renderBuilderWidget() {
 
     const icon = data.dataId
       ? ((await resolveWidgetEntityIcon(data.dataId, {
+          village: "home",
+          level: data.currentLevel,
           isCrafted: data.isCrafted,
         })) ?? undefined)
       : undefined;

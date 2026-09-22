@@ -12,7 +12,11 @@ export const STORAGE_KEYS = {
   WIDGET_PREFS: "widget_prefs",
   WIDGET_CACHE: "widget_cache",
   FEATURE_VOTES: "feature_votes",
+  ENTITY_GLOBAL_MANIFEST_VERSION:
+  "entities_global_manifest_version",
   ENTITY_MANIFEST: "entity_manifest",
+  PROGRESSION_GLOBAL_MANIFEST_VERSION:
+  "progression_global_manifest_version",
   PROGRESSION_MANIFEST: "progression_manifest",
 
   PROGRESSION: (category: string) =>

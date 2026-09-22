@@ -4,10 +4,9 @@ import type {
 } from "./models";
 
 import {
-  calculateRemainingCost,
-  calculateRemainingTime,
+  calculateRemainingProgression,
   calculateUpgradeCost,
-  calculateUpgradeTime,
+  calculateUpgradeTime
 } from "./operations";
 
 import {
@@ -20,50 +19,90 @@ export class ProgressionEngine {
   ): ProgressionResult {
     const {
       currentLevel,
+      currentHallLevel,
       maxLevel,
       next,
     } = progression;
 
-    return {
-      currentLevel,
+    const remaining =
+      calculateRemainingProgression(progression);
 
-      nextLevel: next?.level,
+    const isMaxLevel =
+      currentLevel >= maxLevel;
 
-      maxLevel,
+    const progressPercent =
+      maxLevel > 0
+        ? Math.min(
+          Math.max(
+            (currentLevel / maxLevel) * 100,
+            0,
+          ),
+          100,
+        )
+        : 0;
 
-      remainingLevels:
-        Math.max(
-          maxLevel - currentLevel,
+    const achievableLevel =
+      Object.entries(progression.progression.levels)
+        .filter(
+          ([, level]) =>
+            level.hallLevel <= currentHallLevel,
+        )
+        .reduce(
+          (highest, [level]) =>
+            Math.max(highest, Number(level)),
           0,
-        ),
+        );
 
-      isMaxLevel:
-        currentLevel >= maxLevel,
 
+    console.log("PROGRESSION ENGINE:", {
+      dataId: progression.entity.id,
+      currentLevel,
+      currentHallLevel,
+      achievableLevel,
+    });
+
+    return {
+      dataId: progression.entity.id,
+      currentLevel,
+      nextLevel: isMaxLevel
+        ? undefined
+        : next?.level,
+      maxLevel,
+      remainingLevels: remaining.remainingLevels,
+      isMaxLevel,
       nextCost:
-        calculateUpgradeCost(
-          progression,
-        ),
-
+        isMaxLevel
+          ? undefined
+          : calculateUpgradeCost(progression),
+      resource: progression.progression.resource,
       nextUpgradeTime:
-        calculateUpgradeTime(
-          progression,
-        ),
-
+        isMaxLevel
+          ? undefined
+          : calculateUpgradeTime(progression),
       remainingCost:
-        calculateRemainingCost(
-          progression,
-        ),
+        remaining.remainingCost,
 
       remainingUpgradeTime:
-        calculateRemainingTime(
-          progression,
-        ),
+        remaining.remainingUpgradeTime,
 
+      currentHallLevel: progression?.currentHallLevel,
       requiredHallLevel:
-        getHallRequirement(
-          progression,
-        ),
+        getHallRequirement(progression),
+
+      currentXp:
+        progression.current?.xp,
+
+      nextXp:
+        progression.next?.xp,
+
+      currentStats:
+        progression.current?.stats ?? {},
+
+      nextStats:
+        progression.next?.stats ?? {},
+
+      progressPercent,
+      achievableLevel,
     };
   }
 }

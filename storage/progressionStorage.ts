@@ -2,6 +2,22 @@ import { STORAGE_KEYS } from "@/storage/keys";
 import { storage } from "@/storage/mmkv";
 import { ProgressionData, ProgressionManifest } from "@/types/progression";
 
+export function saveProgressionGlobalManifestVersion(
+  version: number,
+): void {
+  storage.set(
+    STORAGE_KEYS.PROGRESSION_GLOBAL_MANIFEST_VERSION,
+    version,
+  );
+}
+
+export function loadProgressionGlobalManifestVersion():
+  number | undefined {
+  return storage.getNumber(
+    STORAGE_KEYS.PROGRESSION_GLOBAL_MANIFEST_VERSION,
+  );
+}
+
 export function saveProgressionCategory(
   category: string,
   data: ProgressionData[],

@@ -1,26 +1,24 @@
 import { getAccounts } from "@/services/accountService";
 import { getAccountState } from "@/services/accountStateService";
-import { formatBuildingName } from "@/utils/formatBuildingName";
+import { formatUpgradeName } from "@/utils/formatUpgradeName";
 
 export type UpcomingUpgradeRow = {
   accountTag: string;
   accountName: string;
   accountColor: string;
-
   entity: string;
   upgradeType: "BUILDER" | "LAB" | "PET";
-
   endTime: number;
   remainingMs: number;
-
   dataId?: number;
+  moduleId?: number;
+  currentLevel?: number;
   isCrafted?: boolean;
   icon?: string | number;
 };
 
 export async function getUpcomingUpgradesWidgetData() {
   const accounts = await getAccounts();
-
   const rows: UpcomingUpgradeRow[] = [];
 
   for (const account of accounts) {
@@ -48,14 +46,16 @@ export async function getUpcomingUpgradesWidgetData() {
         accountName: account.name,
         accountColor: account.color,
 
-        entity: formatBuildingName(upgrade.entity),
-        upgradeType: upgrade.upgradeType,
+        entity: formatUpgradeName(upgrade),
 
+        upgradeType: upgrade.upgradeType,
         endTime: upgrade.endTime,
         remainingMs,
 
         dataId: upgrade.dataId,
+        moduleId: upgrade.moduleId,
         isCrafted: upgrade.isCrafted,
+        currentLevel: upgrade.currentLevel,
       });
     }
   }

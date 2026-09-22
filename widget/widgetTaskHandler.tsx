@@ -1,5 +1,5 @@
 import { getAccounts } from "@/services/accountService";
-import { hydrateEntities } from "@/services/cdnEntities/hydrateEntities";
+import { hydrateEntities } from "@/services/cdnEntities";
 import { getActiveAccount } from "@/storage/activeAccount";
 import { getWidgetPrefs } from "@/storage/widgetPrefs";
 import { renderBuilderWidget } from "@/utils/widget/renderBuilderWidget";

@@ -1,3 +1,5 @@
+import { ResourceType } from "./resource";
+
 /**
  * Progression manifest
  */
@@ -55,7 +57,7 @@ export interface ProgressionLevel {
 export interface ProgressionData {
   id: number;
 
-  resource: number;
+  resource: ResourceType;
 
   maxLevel: number;
   maxHallLevel: number;

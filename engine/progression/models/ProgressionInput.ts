@@ -10,4 +10,5 @@ export interface ProgressionInput {
   entity: ResolvedEntity;
   progression: ProgressionData;
   currentLevel: number;
+  currentHallLevel: number;
 }

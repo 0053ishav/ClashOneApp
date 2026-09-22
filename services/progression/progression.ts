@@ -3,31 +3,20 @@
  * Fetch backend progression payloads.
  */
 
-import { Manifest, ProgressionData } from "@/types/progression";
+import { getCategorySlug } from "@/config/categorySlugs";
+import { ProgressionData } from "@/types/progression";
 
 
 const API =
   `${process.env.EXPO_PUBLIC_BACKEND_URL}/v2`;
 
-export async function fetchManifest() {
-  const res = await fetch(
-    `${API}/manifest`,
-  );
-
-  if (!res.ok) {
-    throw new Error(
-      "Failed to fetch manifest",
-    );
-  }
-
-  return (await res.json()) as Manifest;
-}
-
 export async function fetchProgressionCategory(
   category: string,
 ) {
+  const slug = getCategorySlug(category);
+
   const res = await fetch(
-    `${API}/progression/${category}`,
+    `${API}/progression/${slug}`,
   );
 
   if (!res.ok) {

@@ -1,27 +1,21 @@
-import { getCraftedResolver } from "@/engine/crafted/craftedResolver";
 import { getAccounts } from "@/services/accountService";
 import { getAccountState } from "@/services/accountStateService";
 import { getActiveAccount } from "@/storage/activeAccount";
 import { getLastJsonSync } from "@/storage/jsonSyncStorage";
 import { getWidgetPrefs } from "@/storage/widgetPrefs";
 import { calculateProgress } from "@/utils/calculateProgress";
-import { formatBuildingName } from "@/utils/formatBuildingName";
 import { formatCountdown } from "@/utils/formatCountdown";
+import { formatUpgradeName } from "@/utils/formatUpgradeName";
 import { isWorkForHireActive } from "@/utils/goblin";
 import { getBuilderStatus } from "@/utils/status/home/builderStatus";
 import { DEFAULT_BUILDER_WIDGET } from "@/utils/widget/defaultWidgetData";
 
 export async function getBuilderWidgetData(inputTag?: string) {
-  // const { activeTag, widgetPrefs, accounts, lastJsonSyncMap } =
-  //   useAccountStore.getState();
-
   const accounts = await getAccounts();
 
   const activeTag = getActiveAccount();
 
   const widgetPrefs = getWidgetPrefs();
-
-  const { getCraftedName, getModuleName } = getCraftedResolver();
 
   const tag = inputTag ?? widgetPrefs.selectedAccountTag ?? activeTag;
 
@@ -90,23 +84,9 @@ export async function getBuilderWidgetData(inputTag?: string) {
   const currentUpgrade = sorted[0];
   const nextUpgrade = sorted[1];
 
-  const title = currentUpgrade.isCrafted
-    ? `${getCraftedName(currentUpgrade.dataId) ?? "Crafted"}${
-        getModuleName(currentUpgrade.dataId, currentUpgrade.moduleId)
-          ? ` (${getModuleName(currentUpgrade.dataId, currentUpgrade.moduleId)})`
-          : ""
-      }`
-    : formatBuildingName(currentUpgrade.entity);
+  const title = formatUpgradeName(currentUpgrade);
 
-  const nextTitle = nextUpgrade
-    ? nextUpgrade?.isCrafted
-      ? `${getCraftedName(nextUpgrade.dataId) ?? "Crafted"}${
-          getModuleName(nextUpgrade.dataId, nextUpgrade.moduleId)
-            ? ` (${getModuleName(nextUpgrade.dataId, nextUpgrade.moduleId)})`
-            : ""
-        }`
-      : formatBuildingName(nextUpgrade.entity)
-    : null;
+  const nextTitle = nextUpgrade ? formatUpgradeName(nextUpgrade) : null;
 
   const remainingMs = Math.max(currentUpgrade.endTime - Date.now(), 0);
   const totalMs = currentUpgrade.endTime - currentUpgrade.startTime;
@@ -129,6 +109,7 @@ export async function getBuilderWidgetData(inputTag?: string) {
     isCrafted: currentUpgrade.isCrafted,
     progress,
     showProgress: !status.allFree,
+    currentLevel: currentUpgrade.currentLevel,
     levelText:
       currentUpgrade.currentLevel !== undefined &&
       currentUpgrade.nextLevel !== undefined

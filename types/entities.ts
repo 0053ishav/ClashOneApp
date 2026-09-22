@@ -35,12 +35,6 @@ export interface EntityData {
 }
 
 export interface EntityManifest {
-  version: string;
-
-  updatedAt: number;
-
-  categories: Record<
-    string,
-    number
-  >;
+  version: number;
+  categories: Record<string, number>;
 }

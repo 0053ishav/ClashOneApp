@@ -11,6 +11,7 @@ export type EntityType =
     | "helper"
     | "guardian"
     | "townhall"
+    | "builderhall"
     | "lab"
     | "crafted"
     | "custom"

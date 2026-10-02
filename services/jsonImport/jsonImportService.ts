@@ -381,7 +381,8 @@ export async function importVillageJson(
         helper_timer: b.helper_timer,
         helper_recurrent: b.helper_recurrent,
         hasHelper:
-          b.helper_timer != null ||
+          (typeof b.helper_timer === "number" &&
+            b.helper_timer > 0) ||
           b.helper_recurrent === true
       })) ?? []),
 
@@ -397,7 +398,8 @@ export async function importVillageJson(
         helper_timer: t.helper_timer,
         helper_recurrent: t.helper_recurrent,
         hasHelper:
-          t.helper_timer != null ||
+          (typeof t.helper_timer === "number" &&
+            t.helper_timer > 0) ||
           t.helper_recurrent === true
       })) ?? []),
 
@@ -413,7 +415,8 @@ export async function importVillageJson(
         helper_timer: h.helper_timer,
         helper_recurrent: h.helper_recurrent,
         hasHelper:
-          h.helper_timer != null ||
+          (typeof h.helper_timer === "number" &&
+            h.helper_timer > 0) ||
           h.helper_recurrent === true
       })) ?? []),
 
@@ -437,7 +440,8 @@ export async function importVillageJson(
         helper_timer: g.helper_timer,
         helper_recurrent: g.helper_recurrent,
         hasHelper:
-          g.helper_timer != null ||
+          (typeof g.helper_timer === "number" &&
+            g.helper_timer > 0) ||
           g.helper_recurrent === true
       })) ?? []),
 
@@ -488,7 +492,8 @@ export async function importVillageJson(
             helper_timer: module.helper_timer,
             helper_recurrent: module.helper_recurrent,
             hasHelper:
-              module.helper_timer != null ||
+              (typeof module.helper_timer === "number" &&
+                module.helper_timer > 0) ||
               module.helper_recurrent === true
           });
         }
@@ -573,25 +578,31 @@ export async function importVillageJson(
   let skippedExpired = 0;
 
   for (const item of activeBuilderTasks) {
-    // const remainingMsAtExport = item.timer * 1000;
 
     let projectedTimer = item.timer;
     let helperAppliedSeconds = 0;
 
     const apprentice = helperMap.get(93000000);
 
+    const hasHelperTimer =
+      typeof item.helper_timer === "number";
+
+    const hasPositiveHelperTimer =
+      hasHelperTimer && item.helper_timer! > 0;
+
+    const hasRecurrentHelper =
+      item.helper_recurrent === true;
+
     if (
       apprentice &&
-      item.helper_timer != null &&
-      item.helper_timer > 0
+      hasPositiveHelperTimer
     ) {
       projectedTimer = projectHelperTimer({
         timer: item.timer,
-
         helperTimer: item.helper_timer,
         helperCooldown: apprentice.cooldown,
         helperLevel: apprentice.level,
-        helperRecurrent: item.helper_recurrent === true,
+        helperRecurrent: hasRecurrentHelper,
 
       })
     }
@@ -618,7 +629,10 @@ export async function importVillageJson(
       lvl: item.lvl,
       isGoblin: item.extra === true,
 
-      hasHelper: item.hasHelper,
+      hasHelper:
+        (typeof item.helper_timer === "number" &&
+          item.helper_timer > 0)
+        || item.helper_recurrent === true,
       recurrentHelper: item.helper_recurrent === true,
       helperAppliedSeconds,
       isCrafted: item.isCrafted,
@@ -892,26 +906,26 @@ export async function importVillageJson(
     const durationMinutes =
       Math.ceil(totalDurationMs / 60000);
 
-      console.log(
-  "[JSON Import] Progression timing:",
-  {
-    dataId: item.data,
-    isCrafted: item.isCrafted,
-    moduleId: item.moduleId,
-    currentLevel:
-      progressionResult.currentLevel,
-    nextLevel:
-      progressionResult.nextLevel,
-    totalDurationSeconds:
-      progressionResult.nextUpgradeTime,
-    remainingAtExportSeconds:
-      item.remainingMsAtExport / 1000,
-    startTime: new Date(startTime).toISOString(),
-    endTime: new Date(endTime).toISOString(),
-    reconstructedDurationSeconds:
-      (endTime - startTime) / 1000,
-  },
-);
+    console.log(
+      "[JSON Import] Progression timing:",
+      {
+        dataId: item.data,
+        isCrafted: item.isCrafted,
+        moduleId: item.moduleId,
+        currentLevel:
+          progressionResult.currentLevel,
+        nextLevel:
+          progressionResult.nextLevel,
+        totalDurationSeconds:
+          progressionResult.nextUpgradeTime,
+        remainingAtExportSeconds:
+          item.remainingMsAtExport / 1000,
+        startTime: new Date(startTime).toISOString(),
+        endTime: new Date(endTime).toISOString(),
+        reconstructedDurationSeconds:
+          (endTime - startTime) / 1000,
+      },
+    );
 
     const upgradeType =
       resolveUpgradeType(entity.type);
@@ -1073,24 +1087,24 @@ export async function importVillageJson(
     const durationMinutes =
       Math.ceil(totalDurationMs / 60000);
 
-      console.log(
-  "[JSON Import] Lab progression timing:",
-  {
-    dataId: lab.data,
-    currentLevel:
-      progressionResult.currentLevel,
-    nextLevel:
-      progressionResult.nextLevel,
-    totalDurationSeconds:
-      progressionResult.nextUpgradeTime,
-    remainingAtExportSeconds:
-      lab.remainingMsAtExport / 1000,
-    startTime: new Date(startTime).toISOString(),
-    endTime: new Date(endTime).toISOString(),
-    reconstructedDurationSeconds:
-      (endTime - startTime) / 1000,
-  },
-);
+    console.log(
+      "[JSON Import] Lab progression timing:",
+      {
+        dataId: lab.data,
+        currentLevel:
+          progressionResult.currentLevel,
+        nextLevel:
+          progressionResult.nextLevel,
+        totalDurationSeconds:
+          progressionResult.nextUpgradeTime,
+        remainingAtExportSeconds:
+          lab.remainingMsAtExport / 1000,
+        startTime: new Date(startTime).toISOString(),
+        endTime: new Date(endTime).toISOString(),
+        reconstructedDurationSeconds:
+          (endTime - startTime) / 1000,
+      },
+    );
     newUpgrades.push({
       id: randomUUID(),
 

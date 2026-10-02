@@ -1,7 +1,10 @@
 import GoblinEventBanner from "@/components/GoblinEventBanner";
 import { LabSection } from "@/components/home/LabSection";
 import { PetSection } from "@/components/home/PetSection";
-import ProfileDropdownSheet from "@/components/ProfileSheet/ProfileDropdownSheet";
+import { UpgradeActionModal } from "@/components/home/UpgradeActionModal";
+import ProfileDropdownSheet, {
+  ProfileDropdownSheetRef,
+} from "@/components/ProfileSheet/ProfileDropdownSheet";
 import { SupportModal } from "@/components/SupportModal";
 import { XPBadge } from "@/components/XPBadge";
 import { ENV } from "@/config/env";
@@ -9,12 +12,16 @@ import { useCraftedResolver } from "@/engine/crafted/craftedResolver";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { useRemoteConfig } from "@/provider/remoteConfigProvider";
 import { getAccountState } from "@/services/accountStateService";
+import {
+  ProgressionApplicationResult,
+  ProgressionApplicationService,
+} from "@/services/progression";
 import { buildSupportInfo } from "@/services/supportDebugInfo";
 import { deleteUpgrade } from "@/services/upgradeService";
 import { setOnboardingIncomplete } from "@/storage/appConfig";
 import {
-    setGoblinBannerDismissedUntil,
-    shouldShowGoblinBanner,
+  setGoblinBannerDismissedUntil,
+  shouldShowGoblinBanner,
 } from "@/storage/goblinStorage";
 import { useAccountStore } from "@/stores/accountStore";
 import { usePremiumStore } from "@/stores/premiumStore";
@@ -26,13 +33,13 @@ import { formatBuildingName } from "@/utils/formatBuildingName";
 import { formatCountdown } from "@/utils/formatCountdown";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
 import {
-    canUseGoblinBuilder,
-    getCurrentWorkForHireEventEnd,
-    isWorkForHireActive,
+  canUseGoblinBuilder,
+  getCurrentWorkForHireEventEnd,
+  isWorkForHireActive,
 } from "@/utils/goblin";
 import {
-    FALLBACK_ICON,
-    resolveEntityIcon,
+  FALLBACK_ICON,
+  resolveEntityIcon,
 } from "@/utils/icons/resolveEntityIcon";
 import { resyncNotifications } from "@/utils/notificationSync";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
@@ -44,26 +51,28 @@ import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-    LayoutAnimation,
-    Modal,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
-    useWindowDimensions,
+  LayoutAnimation,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
 } from "react-native";
 
+import { ActiveUpgradesSkeleton } from "@/components/home/ActiveUpgradesSkeleton";
+import { LabSectionSkeleton } from "@/components/home/LabSectionSkeleton";
+import { PetSectionSkeleton } from "@/components/home/PetSectionSkeleton";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
-    FadeIn,
-    FadeOut,
-    useAnimatedStyle,
-    useSharedValue,
-    withTiming,
+  FadeIn,
+  FadeOut,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { scheduleOnRN } from "react-native-worklets";
@@ -73,11 +82,14 @@ export default function HomeScreen() {
   const isPremium = usePremiumStore((s) => s.isPremium);
   type AccountState = Awaited<ReturnType<typeof getAccountState>>;
   const [accountState, setAccountState] = useState<AccountState | null>(null);
+  const [isLoadingAccountState, setIsLoadingAccountState] = useState(true);
   const [selectedUpgrade, setSelectedUpgrade] = useState<Upgrade | null>(null);
   const [actionModalVisible, setActionModalVisible] = useState(false);
+  const [selectedProgression, setSelectedProgression] =
+    useState<ProgressionApplicationResult | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [completedId, setCompletedId] = useState<string | null>(null);
-  const [profileSheetVisible, setProfileSheetVisible] = useState(false);
+  const profileSheetRef = useRef<ProfileDropdownSheetRef>(null);
   const [selectedVillage, setSelectedVillage] = useState<Village>("home");
   const translateX = useSharedValue(0);
   const { getCraftedName, getModuleName } = useCraftedResolver();
@@ -102,9 +114,17 @@ export default function HomeScreen() {
 
   const refreshState = useCallback(async () => {
     if (!activeTag) return;
-    const state = await getAccountState(activeTag);
-    setAccountState(state);
-  }, [activeTag]);
+
+    try {
+      if (!accountState) {
+        setIsLoadingAccountState(true);
+      }
+      const state = await getAccountState(activeTag);
+      setAccountState(state);
+    } finally {
+      setIsLoadingAccountState(false);
+    }
+  }, [activeTag, accountState]);
 
   const { width } = useWindowDimensions();
 
@@ -158,6 +178,13 @@ export default function HomeScreen() {
     return () => clearInterval(interval);
   }, [builders]);
 
+  const performSync = useCallback(async () => {
+    await refreshState();
+    emitWidgetUpdate();
+    startSmartWidgetScheduler();
+    await resyncNotifications();
+  }, [refreshState]);
+
   useEffect(() => {
     if (!completedId) return;
     const timeout = setTimeout(async () => {
@@ -173,7 +200,7 @@ export default function HomeScreen() {
       setCompletedId(null);
     }, 800);
     return () => clearTimeout(timeout);
-  }, [completedId, refreshState]);
+  }, [completedId, refreshState, performSync]);
 
   useFocusEffect(
     useCallback(() => {
@@ -193,13 +220,6 @@ export default function HomeScreen() {
       duration: 0,
     });
   });
-
-  const performSync = useCallback(async () => {
-    await refreshState();
-    emitWidgetUpdate();
-    startSmartWidgetScheduler();
-    await resyncNotifications();
-  }, [refreshState]);
 
   const handleRefresh = useCallback(async () => {
     if (refreshing) return;
@@ -375,16 +395,20 @@ export default function HomeScreen() {
       builderBaseNextBuilderLabel = "Builder";
     }
   }
-  const handleRowLongPress = (upgrade: Upgrade) => {
+  const handleRowPress = (upgrade: Upgrade) => {
+    const progression = ProgressionApplicationService.resolveUpgrade(upgrade);
+
     setSelectedUpgrade(upgrade);
+    setSelectedProgression(progression);
     setActionModalVisible(true);
   };
 
   let statusIcon = require("@/assets/images/builder/builder-idle.png");
   if (!status.allFree && nextUpgrade?.dataId) {
     statusIcon = resolveEntityIcon(nextUpgrade.dataId, {
+      village: "home",
+      level: nextUpgrade.currentLevel,
       isCrafted: nextUpgrade.isCrafted,
-      context: { hallLevel: profile.townHallLevel },
     });
   }
 
@@ -392,10 +416,9 @@ export default function HomeScreen() {
 
   if (!builderBaseStatus.allFree && builderBaseNextUpgrade?.dataId) {
     builderBaseStatusIcon = resolveEntityIcon(builderBaseNextUpgrade.dataId, {
+      village: "builderBase",
+      level: builderBaseNextUpgrade.currentLevel,
       isCrafted: builderBaseNextUpgrade.isCrafted,
-      context: {
-        hallLevel: profile.builderHallLevel,
-      },
     });
   }
 
@@ -492,17 +515,24 @@ export default function HomeScreen() {
       {/* ── Header ── */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <Text style={styles.headerTitle}>Home</Text>
+          <Text style={styles.headerTitle}>Clash One</Text>
           <View style={styles.syncBlock}>
             <View style={styles.actionRow}>
-              <Pressable onPress={openSupport} hitSlop={8}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Help and feedback"
+                onPress={openSupport}
+                hitSlop={8}
+              >
                 <Ionicons
                   name="chatbubble-ellipses-outline"
-                  size={21}
+                  size={19}
                   color="#94a3b8"
                 />
               </Pressable>
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Sync village data"
                 hitSlop={8}
                 onPress={() => {
                   setSessionSource("app");
@@ -516,8 +546,8 @@ export default function HomeScreen() {
               >
                 <Ionicons
                   name="sync-sharp"
-                  size={21}
-                  color={isStale ? "#fbbf24" : "#fff"}
+                  size={19}
+                  color={isStale ? "#fbbf24" : "#f8fafc"}
                 />
               </Pressable>
             </View>
@@ -529,10 +559,28 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {showBanner && eventEndsAt && (
+          <GoblinEventBanner
+            eventEndsAt={eventEndsAt}
+            onDismiss={() => setGoblinBannerDismissedUntil(eventEndsAt)}
+          />
+        )}
+
         {/* Profile row */}
         <Pressable
-          style={styles.profileRow}
-          onPress={() => setProfileSheetVisible(true)}
+          accessibilityRole="button"
+          accessibilityLabel={`Open profile for ${
+            profile.playerTag ? profile.playerName : "Unsnced account"
+          }`}
+          accessibilityHint="Open profile and account actions"
+          onPress={() => {
+            console.log("🔥 [HOME] PROFILE ROW PRESSED");
+            profileSheetRef.current?.present();
+          }}
+          style={({ pressed }) => [
+            styles.profileRow,
+            pressed && styles.profileRowPressed,
+          ]}
         >
           {/* Avatar circle */}
           <View style={[styles.avatar, { borderColor: activeAccount?.color }]}>
@@ -568,7 +616,8 @@ export default function HomeScreen() {
                 <Image
                   source={{
                     uri: resolveEntityIcon(1000001, {
-                      context: { hallLevel: profile.townHallLevel },
+                      village: "home",
+                      level: profile.townHallLevel,
                     }),
                   }}
                   style={styles.hallIcon}
@@ -591,7 +640,8 @@ export default function HomeScreen() {
                 <Image
                   source={{
                     uri: resolveEntityIcon(1000034, {
-                      context: { hallLevel: profile.builderHallLevel },
+                      village: "builderBase",
+                      level: profile.builderHallLevel,
                     }),
                   }}
                   style={styles.hallIcon}
@@ -632,11 +682,11 @@ export default function HomeScreen() {
             onRefresh={handleRefresh}
             tintColor="#fbbf24"
             colors={["#fbbf24"]}
-            progressBackgroundColor="#1e293b"
+            progressBackgroundColor="#111c2e"
           />
         }
       >
-        {/* ── Status Card ── */}
+        {/* ── Status Card (dimensions preserved) ── */}
         <View style={styles.statusCard}>
           <View style={styles.statusCardTop}>
             <View style={styles.statusIconBox}>
@@ -726,13 +776,6 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {showBanner && eventEndsAt && (
-          <GoblinEventBanner
-            eventEndsAt={eventEndsAt}
-            onDismiss={() => setGoblinBannerDismissedUntil(eventEndsAt)}
-          />
-        )}
-
         {/* Village tabs */}
         <View style={styles.villageTabs}>
           <Animated.View
@@ -743,13 +786,17 @@ export default function HomeScreen() {
             ]}
           />
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Home village"
+            accessibilityState={{ selected: selectedVillage === "home" }}
             onPress={() => changeVillage("home")}
             style={styles.villageTab}
           >
             <Image
               source={{
                 uri: resolveEntityIcon(1000001, {
-                  context: { hallLevel: profile.townHallLevel },
+                  village: "home",
+                  level: profile.townHallLevel,
                 }),
               }}
               style={[
@@ -786,13 +833,19 @@ export default function HomeScreen() {
           </Pressable>
 
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Builder base village"
+            accessibilityState={{
+              selected: selectedVillage === "builderBase",
+            }}
             onPress={() => changeVillage("builderBase")}
             style={styles.villageTab}
           >
             <Image
               source={{
                 uri: resolveEntityIcon(1000034, {
-                  context: { hallLevel: profile.builderHallLevel },
+                  village: "builderBase",
+                  level: profile.townHallLevel,
                 }),
               }}
               style={[
@@ -837,11 +890,32 @@ export default function HomeScreen() {
             exiting={FadeOut.duration(120)}
             key={selectedVillage}
           >
+            {isLoadingAccountState && <ActiveUpgradesSkeleton />}
             {/* Active Upgrades */}
-            {sortedUpgrades.length > 0 && (
+            {!isLoadingAccountState && sortedUpgrades.length > 0 && (
               <View style={styles.upgradesSection}>
                 <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionLabel}>Active upgrades</Text>
+                  <View style={styles.headerLeft}>
+                    <View style={styles.titleRow}>
+                      <View style={styles.sectionIconWrap}>
+                        <Image
+                          source={
+                            selectedVillage === "home"
+                              ? {
+                                  uri: `${ENV.CDN_BASE}/v2/home/other/builder-head.png`,
+                                }
+                              : {
+                                  uri: `${ENV.CDN_BASE}/v2/builder/other/bb-head.png`,
+                                }
+                          }
+                          style={styles.sectionIconImage}
+                          contentFit="contain"
+                          cachePolicy="memory-disk"
+                        />
+                      </View>
+                      <Text style={styles.sectionTitle}>Active Upgrades</Text>
+                    </View>
+                  </View>
                   <View style={styles.countBadge}>
                     <Text style={styles.countBadgeText}>
                       {sortedUpgrades.length}
@@ -865,12 +939,13 @@ export default function HomeScreen() {
                   return (
                     <Pressable
                       key={u.id}
-                      style={[
+                      style={({ pressed }) => [
                         styles.upgradeCard,
                         isCompleted && styles.upgradeCardCompleted,
                         isGoblin && styles.goblinUpgradeCard,
+                        pressed && styles.pressed,
                       ]}
-                      onLongPress={() => handleRowLongPress(u)}
+                      onPress={() => handleRowPress(u)}
                     >
                       <View
                         style={[
@@ -905,11 +980,9 @@ export default function HomeScreen() {
                                 source={{
                                   uri: u.dataId
                                     ? resolveEntityIcon(u.dataId, {
-                                        subType: u.subType,
+                                        village: selectedVillage,
+                                        level: u.currentLevel,
                                         isCrafted: u.isCrafted,
-                                        context: {
-                                          hallLevel: profile.townHallLevel,
-                                        },
                                       })
                                     : FALLBACK_ICON,
                                 }}
@@ -933,7 +1006,7 @@ export default function HomeScreen() {
                                   : formatBuildingName(u.entity)}
                               </Text>
 
-                              <View style={{ flexDirection: "row", gap: 4 }}>
+                              <View style={styles.badgeRow}>
                                 {u.currentLevel !== undefined &&
                                   u.nextLevel !== undefined && (
                                     <View style={styles.levelsBadge}>
@@ -952,14 +1025,16 @@ export default function HomeScreen() {
                                       contentFit="contain"
                                       cachePolicy="memory-disk"
                                     />
-                                    {!!u.helperAppliedSeconds && (
+
+                                    {(u.helperAppliedSeconds ?? 0) > 0 && (
                                       <Text style={styles.helperSaved}>
                                         -
                                         {formatCountdown(
-                                          u.helperAppliedSeconds * 1000,
+                                          (u.helperAppliedSeconds ?? 0) * 1000,
                                         )}
                                       </Text>
                                     )}
+
                                     {u.recurrentHelper && (
                                       <View style={styles.recurrentBadge}>
                                         <Ionicons
@@ -976,7 +1051,13 @@ export default function HomeScreen() {
                           </View>
 
                           <View style={styles.upgradeRight}>
-                            <Text style={styles.remainingTime}>
+                            <Text
+                              style={[
+                                styles.remainingTime,
+                                styles.upgradeTime,
+                                isGoblin && styles.goblinTime,
+                              ]}
+                            >
                               {formatCountdown(uRemainingMs)}
                             </Text>
                             <Text style={styles.totalTimeText}>
@@ -1002,12 +1083,20 @@ export default function HomeScreen() {
               </View>
             )}
 
-            {/* Empty state */}
-            {sortedUpgrades.length === 0 && (
+            {/* Empty state (dimensions preserved) */}
+            {!isLoadingAccountState && sortedUpgrades.length === 0 && (
               <View style={styles.emptyStateContainer}>
                 <View style={styles.emptyIconWrapper}>
                   <Image
-                    source={require("@/assets/images/builder/builder-idle.png")}
+                    source={
+                      selectedVillage === "home"
+                        ? {
+                            uri: `${ENV.CDN_BASE}/v2/home/fallbacks/builder-idle.png`,
+                          }
+                        : {
+                            uri: `${ENV.CDN_BASE}/v2/builder/fallbacks/master-builder-sleeping.png`,
+                          }
+                    }
                     style={styles.emptyIcon}
                     contentFit="contain"
                     cachePolicy="memory-disk"
@@ -1015,39 +1104,38 @@ export default function HomeScreen() {
                 </View>
                 <Text style={styles.emptyTitle}>No Active Upgrades</Text>
                 <Text style={styles.emptySubtitle}>
-                  Start your first upgrade to begin tracking
+                  No upgrades are currently being tracked
                 </Text>
-                <Pressable
-                  style={styles.emptyButton}
-                  onPress={() => {
-                    setSessionSource("app");
-                    router.push("/upload-json");
-                  }}
-                >
-                  <Text style={styles.emptyButtonText}>Get Started</Text>
-                </Pressable>
               </View>
             )}
 
-            <LabSection
-              village={selectedVillage}
-              labNormal={lab?.normal}
-              labGoblin={lab?.goblin}
-              onLongPress={handleRowLongPress}
-            />
-
-            {selectedVillage === "home" && townHall >= 14 && (
-              <PetSection
-                pet={pet}
-                townHall={townHall}
-                onLongPress={handleRowLongPress}
+            {isLoadingAccountState ? (
+              <LabSectionSkeleton />
+            ) : (
+              <LabSection
+                village={selectedVillage}
+                labNormal={lab?.normal}
+                labGoblin={lab?.goblin}
+                onPress={handleRowPress}
               />
             )}
+
+            {selectedVillage === "home" &&
+              townHall >= 14 &&
+              (isLoadingAccountState ? (
+                <PetSectionSkeleton />
+              ) : (
+                <PetSection
+                  pet={pet}
+                  townHall={townHall}
+                  onPress={handleRowPress}
+                />
+              ))}
           </Animated.View>
         </GestureDetector>
 
         <View style={styles.refreshHint}>
-          <Ionicons name="arrow-down" size={14} color="#475569" />
+          <Ionicons name="arrow-down" size={13} color="#475569" />
           <Text style={styles.refreshHintText}>Pull down to refresh</Text>
         </View>
 
@@ -1077,77 +1165,76 @@ export default function HomeScreen() {
         )}
       </ScrollView>
       {/* Action Modal */}
-      <Modal
-        transparent
+      <UpgradeActionModal
         visible={actionModalVisible}
-        animationType="slide"
-        onRequestClose={() => setActionModalVisible(false)}
-      >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setActionModalVisible(false)}
-        >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>{selectedUpgrade?.entity}</Text>
-            <View style={styles.modalDivider} />
-            <Pressable
-              style={({ pressed }) => [
-                styles.modalButton,
-                pressed && styles.modalButtonPressed,
-              ]}
-              onPress={async () => {
-                if (!selectedUpgrade) return;
-                await deleteUpgrade(selectedUpgrade.id);
-                await performSync();
-                setActionModalVisible(false);
-              }}
-            >
-              <View
-                style={[
-                  styles.actionIcon,
-                  { backgroundColor: "rgba(248,113,113,0.15)" },
-                ]}
-              >
-                <Ionicons name="trash" size={18} color="#ef4444" />
-              </View>
-              <Text style={[styles.modalButtonText, styles.modalButtonDelete]}>
-                Delete Upgrade
-              </Text>
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [
-                styles.modalCancel,
-                pressed && styles.modalCancelPressed,
-              ]}
-              onPress={() => setActionModalVisible(false)}
-            >
-              <Text style={styles.modalCancelText}>Cancel</Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      </Modal>
+        upgrade={selectedUpgrade}
+        progression={selectedProgression}
+        onClose={() => {
+          setActionModalVisible(false);
+          setSelectedUpgrade(null);
+          setSelectedProgression(null);
+        }}
+        onDelete={async (upgradeId) => {
+          await deleteUpgrade(upgradeId);
+          await performSync();
+        }}
+      />
       <SupportModal
         visible={showSupport}
         onClose={() => setShowSupport(false)}
         debugInfo={debugInfo}
       />
-      <ProfileDropdownSheet
+      {/* <ProfileDropdownSheet
         visible={profileSheetVisible}
         onClose={() => setProfileSheetVisible(false)}
         onOpenProfile={() => {
-          setProfileSheetVisible(false);
+          // setProfileSheetVisible(false);
           track("navigation", { from: "dropdown", to: "profile" });
           router.push("/profile");
         }}
         onSync={() => {
-          setProfileSheetVisible(false);
+          // setProfileSheetVisible(false);
           track("navigation", { from: "dropdown", to: "upload-json" });
           router.push("/upload-json");
         }}
         onSetting={() => {
-          setProfileSheetVisible(false);
+          // setProfileSheetVisible(false);
           track("navigation", { from: "dropdown", to: "settings" });
+          router.push("/(tabs)/settings");
+        }}
+      /> */}
+
+      <ProfileDropdownSheet
+        ref={profileSheetRef}
+        onClose={() => {
+          // Sheet was dismissed by:
+          // - backdrop
+          // - swipe down
+          // - explicit dismiss
+          console.log("🔥 [HOME PROFILE SHEET CLOSED]");
+        }}
+        onOpenProfile={() => {
+          track("navigation", {
+            from: "dropdown",
+            to: "profile",
+          });
+
+          router.push("/profile");
+        }}
+        onSync={() => {
+          track("navigation", {
+            from: "dropdown",
+            to: "upload-json",
+          });
+
+          router.push("/upload-json");
+        }}
+        onSetting={() => {
+          track("navigation", {
+            from: "dropdown",
+            to: "settings",
+          });
+
           router.push("/(tabs)/settings");
         }}
       />
@@ -1230,15 +1317,15 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     paddingTop: 0,
-    paddingBottom: 140,
+    paddingBottom: 40,
   },
 
   // ── Header ──
   header: {
     backgroundColor: "#0f172a",
     borderBottomWidth: 1,
-    borderBottomColor: "#1e293b",
-    paddingHorizontal: 16,
+    borderBottomColor: "#263449",
+    paddingHorizontal: 14,
     paddingTop: 6,
     paddingBottom: 12,
   },
@@ -1251,9 +1338,10 @@ const styles = StyleSheet.create({
 
   headerTitle: {
     color: "#fbbf24",
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "900",
-    lineHeight: 32,
+    lineHeight: 30,
+    letterSpacing: -0.4,
   },
 
   syncBlock: {
@@ -1269,7 +1357,7 @@ const styles = StyleSheet.create({
 
   syncText: {
     fontSize: 10,
-    color: "#475569",
+    color: "#64748b",
     fontWeight: "500",
   },
 
@@ -1285,17 +1373,21 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: "#1e3a5f",
+    backgroundColor: "#111c2e",
     borderWidth: 2,
-    justifyContent: "center",
     alignItems: "center",
-    flexShrink: 0,
+    justifyContent: "center",
   },
 
   avatarText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "800",
-    letterSpacing: 0.5,
+  },
+
+  profileRowPressed: {
+    backgroundColor: "rgba(148, 163, 184, 0.06)",
+    borderRadius: 10,
+    transform: [{ scale: 0.995 }],
   },
 
   profileInfo: {
@@ -1318,15 +1410,17 @@ const styles = StyleSheet.create({
   chevronButton: {
     width: 22,
     height: 22,
-    borderRadius: 11,
-    backgroundColor: "#1e293b",
-    justifyContent: "center",
+    borderRadius: 8,
+    backgroundColor: "#111c2e",
+    borderWidth: 1,
+    borderColor: "#263449",
     alignItems: "center",
+    justifyContent: "center",
   },
 
   leagueIcon: {
-    width: 16,
-    height: 16,
+    width: 15,
+    height: 15,
   },
 
   chiefBadge: {
@@ -1350,8 +1444,8 @@ const styles = StyleSheet.create({
   },
 
   hallIcon: {
-    width: 16,
-    height: 16,
+    width: 18,
+    height: 18,
   },
 
   trophyRow: {
@@ -1367,7 +1461,8 @@ const styles = StyleSheet.create({
 
   profileSub: {
     fontSize: 10,
-    color: "#64748b",
+    color: "#94a3b8",
+    fontWeight: "500",
   },
 
   metaDot: {
@@ -1377,15 +1472,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#334155",
   },
 
-  // ── Status Card ──
+  // ── Status Card — dimensions kept identical for active & empty states ──
   statusCard: {
-    marginHorizontal: 16,
+    marginHorizontal: 14,
     marginTop: 12,
     marginBottom: 14,
-    backgroundColor: "#1e293b",
-    borderRadius: 18,
+    backgroundColor: "#111c2e",
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#263244",
+    borderColor: "#263449",
     overflow: "hidden",
   },
 
@@ -1419,7 +1514,7 @@ const styles = StyleSheet.create({
   statusEyebrow: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#475569",
+    color: "#64748b",
     textTransform: "uppercase",
     letterSpacing: 0.7,
   },
@@ -1433,12 +1528,12 @@ const styles = StyleSheet.create({
 
   statusSub: {
     fontSize: 11,
-    color: "#64748b",
+    color: "#94a3b8",
   },
 
   statusDivider: {
     height: 1,
-    backgroundColor: "#263244",
+    backgroundColor: "#263449",
     marginHorizontal: 14,
   },
 
@@ -1452,7 +1547,7 @@ const styles = StyleSheet.create({
 
   insightText: {
     fontSize: 11,
-    color: "#64748b",
+    color: "#94a3b8",
     flex: 1,
     marginRight: 8,
   },
@@ -1501,15 +1596,15 @@ const styles = StyleSheet.create({
   // ── Village tabs ──
   villageTabs: {
     flexDirection: "row",
-    backgroundColor: "#111827",
+    backgroundColor: "#111c2e",
     borderRadius: 999,
     padding: 4,
     height: 48,
     position: "relative",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.07)",
+    borderColor: "#263449",
     overflow: "hidden",
-    marginHorizontal: 16,
+    marginHorizontal: 14,
     marginBottom: 14,
   },
 
@@ -1574,22 +1669,48 @@ const styles = StyleSheet.create({
 
   // ── Upgrade list ──
   upgradesSection: {
-    paddingHorizontal: 16,
-    gap: 10,
+    paddingHorizontal: 14,
+    gap: 8,
   },
 
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    marginBottom: 2,
   },
 
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#64748b",
-    textTransform: "uppercase",
-    letterSpacing: 0.7,
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  sectionIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    backgroundColor: "rgba(251, 191, 36, 0.12)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  sectionIconImage: {
+    width: 20,
+    height: 20,
+  },
+
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#f1f5f9",
+    letterSpacing: -0.2,
   },
 
   countBadge: {
@@ -1606,7 +1727,7 @@ const styles = StyleSheet.create({
   },
 
   upgradeCard: {
-    borderRadius: 14,
+    borderRadius: 16,
     overflow: "visible",
     marginBottom: 8,
   },
@@ -1616,12 +1737,12 @@ const styles = StyleSheet.create({
   },
 
   upgradeContent: {
-    backgroundColor: "#1e293b",
+    backgroundColor: "#111c2e",
     paddingVertical: 10,
     paddingHorizontal: 10,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#263244",
+    borderColor: "#263449",
     gap: 10,
   },
 
@@ -1631,7 +1752,11 @@ const styles = StyleSheet.create({
   },
 
   goblinUpgradeCard: {
-    // border handled on content via goblinUpgradeContent — kept here as container hook
+    // kept for goblin-specific card treatment
+  },
+
+  pressed: {
+    opacity: 0.7,
   },
 
   goblinBadge: {
@@ -1677,18 +1802,18 @@ const styles = StyleSheet.create({
   },
 
   iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 11,
-    backgroundColor: "rgba(251,191,36,0.1)",
+    width: 52,
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: "rgba(251,191,36,0.08)",
     justifyContent: "center",
     alignItems: "center",
     flexShrink: 0,
   },
 
   upgradeIcon: {
-    width: 30,
-    height: 30,
+    width: 38,
+    height: 38,
   },
 
   upgradeNameSection: {
@@ -1702,20 +1827,25 @@ const styles = StyleSheet.create({
     color: "#f1f5f9",
   },
 
+  badgeRow: {
+    flexDirection: "row",
+    gap: 4,
+  },
+
   levelsBadge: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "rgba(14,165,233,0.12)",
     paddingHorizontal: 7,
     paddingVertical: 2,
-    borderRadius: 5,
+    borderRadius: 6,
     alignSelf: "flex-start",
   },
 
   levelsText: {
     fontSize: 10,
     fontWeight: "600",
-    color: "#0ea5e9",
+    color: "#38bdf8",
   },
 
   helperRow: {
@@ -1749,18 +1879,25 @@ const styles = StyleSheet.create({
   remainingTime: {
     fontSize: 15,
     fontWeight: "800",
+  },
+
+  upgradeTime: {
     color: "#fbbf24",
+  },
+
+  goblinTime: {
+    color: "#22c55e",
   },
 
   totalTimeText: {
     fontSize: 10,
-    color: "#475569",
+    color: "#64748b",
     fontWeight: "500",
   },
 
   progressTrack: {
     height: 3,
-    backgroundColor: "rgba(148,163,184,0.1)",
+    backgroundColor: "rgba(148,163,184,0.12)",
     borderRadius: 2,
     overflow: "hidden",
   },
@@ -1775,7 +1912,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#22c55e",
   },
 
-  // ── Empty state ──
+  // ── Empty state — dimensions kept identical to before ──
   emptyStateContainer: {
     alignItems: "center",
     justifyContent: "center",
@@ -1807,7 +1944,7 @@ const styles = StyleSheet.create({
 
   emptySubtitle: {
     fontSize: 13,
-    color: "#64748b",
+    color: "#94a3b8",
     textAlign: "center",
   },
 
@@ -1836,7 +1973,7 @@ const styles = StyleSheet.create({
 
   refreshHintText: {
     fontSize: 11,
-    color: "#475569",
+    color: "#64748b",
     fontWeight: "500",
   },
 
@@ -1863,97 +2000,8 @@ const styles = StyleSheet.create({
   },
 
   resetButtonText: {
-    color: "#475569",
+    color: "#64748b",
     fontSize: 12,
-  },
-
-  // ── Action Modal ──
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0)",
-    justifyContent: "flex-end",
-  },
-
-  modalContent: {
-    backgroundColor: "#1e293b",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 12,
-    paddingBottom: 32,
-    paddingHorizontal: 20,
-    gap: 14,
-  },
-
-  modalHandle: {
-    alignSelf: "center",
-    width: 36,
-    height: 4,
-    backgroundColor: "#334155",
-    borderRadius: 2,
-    marginBottom: 10,
-  },
-
-  modalTitle: {
-    fontSize: 17,
-    fontWeight: "800",
-    color: "#f1f5f9",
-    marginBottom: 4,
-  },
-
-  modalDivider: {
-    height: 1,
-    backgroundColor: "#263244",
-    marginVertical: 4,
-  },
-
-  modalButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 13,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    backgroundColor: "#0f172a",
-  },
-
-  modalButtonPressed: {
-    opacity: 0.8,
-  },
-
-  modalButtonText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#fbbf24",
-    flex: 1,
-  },
-
-  actionIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  modalButtonDelete: {
-    color: "#ef4444",
-  },
-
-  modalCancel: {
-    paddingVertical: 13,
-    alignItems: "center",
-    borderRadius: 12,
-    backgroundColor: "#263244",
-  },
-
-  modalCancelPressed: {
-    opacity: 0.8,
-  },
-
-  modalCancelText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#94a3b8",
   },
 
   // ── misc kept for other usage ──

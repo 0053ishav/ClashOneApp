@@ -18,46 +18,53 @@ export default function ProfileStatsGrid({
 }) {
   return (
     <StatsGrid
-      title="Battle Stats"
+      title="Battle stats"
       stats={[
         {
           icon: "star",
-          label: "War Stars",
+          label: "War stars",
           value: profile.warStars,
           highlight: true,
+          wide: true,
+        },
+        {
+          icon: "flame",
+          label: "Attacks won",
+          value: profile.attackWins,
+          color: "#f97316",
+        },
+        {
+          icon: "shield-checkmark",
+          label: "Defenses won",
+          value: profile.defenseWins,
+          color: "#06b6d4",
         },
         {
           icon: "arrow-up",
           label: "Donated",
           value: profile.donations,
+          color: "#22c55e",
         },
         {
           icon: "arrow-down",
           label: "Received",
           value: profile.donationsReceived,
-        },
-        {
-          icon: "flame",
-          label: "Attacks",
-          value: profile.attackWins,
-        },
-        {
-          icon: "shield-checkmark",
-          label: "Defense",
-          value: profile.defenseWins,
+          color: "#38bdf8",
         },
         {
           icon: "diamond",
-          label: "Capital",
+          label: "Capital gold",
           value:
             typeof profile.clanCapitalGold === "number"
               ? formatCapital(profile.clanCapitalGold)
               : undefined,
+          color: "#c084fc",
         },
         {
           icon: "construct",
           label: "Builders",
           value: builderCount,
+          color: "#94a3b8",
         },
       ]}
     />

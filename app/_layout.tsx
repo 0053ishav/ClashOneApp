@@ -4,9 +4,16 @@ import { initDatabase } from "@/db/initDatabase";
 import { configureNotifications } from "@/engine/notifications/notificationEngine";
 import { useInAppUpdates } from "@/hooks/useInAppUpdate";
 import { RemoteConfigProvider } from "@/provider/remoteConfigProvider";
-import { hydrateEntities } from "@/services/cdnEntities/hydrateEntities";
+import {
+  hydrateCraftedDefenses,
+  hydrateEntities,
+} from "@/services/cdnEntities";
 import { ensureCraftedLoaded } from "@/services/craftedService";
-import { hydrateProgression, syncProgression } from "@/services/progression";
+import {
+  hydrateProgression,
+  hyradteCraftedDefenseProgression,
+  syncProgression,
+} from "@/services/progression";
 import { syncPremiumStatus } from "@/services/revenueCat/premium";
 import { initRevenueCat } from "@/services/revenueCat/revenueCat";
 import { buildSupportInfo } from "@/services/supportDebugInfo";
@@ -19,6 +26,7 @@ import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { initWidgetManager } from "@/utils/widget/widgetManager";
 import { Ionicons } from "@expo/vector-icons";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import * as Sentry from "@sentry/react-native";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
@@ -26,7 +34,6 @@ import { Redirect, Stack, usePathname, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-
 Sentry.init({
   dsn: "https://d2e012e1209309eb649f09114ae454a6@o4511557895258112.ingest.us.sentry.io/4511557898272768",
 
@@ -174,7 +181,6 @@ export default Sentry.wrap(function RootLayout() {
 
     try {
       setBootStage(BootStage.LoadingActiveAccount);
-
       await loadActiveAccount();
     } catch (e) {
       throw createBootError(
@@ -199,11 +205,13 @@ export default Sentry.wrap(function RootLayout() {
       safeTask("Entities", async () => {
         await syncEntities();
         hydrateEntities();
+        hydrateCraftedDefenses();
       }),
 
       safeTask("Progression", async () => {
         await syncProgression();
         hydrateProgression();
+        hyradteCraftedDefenseProgression();
       }),
 
       safeTask("Widgets", async () => {
@@ -498,23 +506,30 @@ export default Sentry.wrap(function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView>
-      <RemoteConfigProvider>
-        <>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-            }}
-          >
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="upload-json" options={{ headerShown: false }} />
-            {/* <Stack.Screen name="add-upgrade" options={{ headerShown: false }} /> */}
-            <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-          </Stack>
-          <ConfirmModal
-            visible={updateModalVisible}
-            title="New Version Available"
-            message={`A newer version of Clash One is available.
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <BottomSheetModalProvider>
+        <RemoteConfigProvider>
+          <>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+              }}
+            >
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="upload-json"
+                options={{ headerShown: false }}
+              />
+              {/* <Stack.Screen name="add-upgrade" options={{ headerShown: false }} /> */}
+              <Stack.Screen
+                name="onboarding"
+                options={{ headerShown: false }}
+              />
+            </Stack>
+            <ConfirmModal
+              visible={updateModalVisible}
+              title="New Version Available"
+              message={`A newer version of Clash One is available.
 
 Version: ${storeVersion ?? "Latest"}
 
@@ -523,23 +538,24 @@ Version: ${storeVersion ?? "Latest"}
 • Performance improvements
 
 Update now for the best experience.`}
-            confirmText="Update"
-            cancelText="Later"
-            onConfirm={async () => {
-              track("update_accepted");
+              confirmText="Update"
+              cancelText="Later"
+              onConfirm={async () => {
+                track("update_accepted");
 
-              setUpdateModalVisible(false);
+                setUpdateModalVisible(false);
 
-              await startUpdate();
-            }}
-            onCancel={() => {
-              track("update_dismissed");
+                await startUpdate();
+              }}
+              onCancel={() => {
+                track("update_dismissed");
 
-              setUpdateModalVisible(false);
-            }}
-          />
-        </>
-      </RemoteConfigProvider>
+                setUpdateModalVisible(false);
+              }}
+            />
+          </>
+        </RemoteConfigProvider>
+      </BottomSheetModalProvider>
     </GestureHandlerRootView>
   );
 });

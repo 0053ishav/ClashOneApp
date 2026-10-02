@@ -3,11 +3,19 @@ import { StyleSheet, Text, View } from "react-native";
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
+const GOLD = "#fbbf24";
+const MUTED = "#64748b";
+
 export interface StatItem {
   icon: IconName;
   label: string;
   value?: string | number;
+  /** Gold tile. Overrides `color`. */
   highlight?: boolean;
+  /** Icon tint for non-highlighted tiles. */
+  color?: string;
+  /** Span the full row. */
+  wide?: boolean;
 }
 
 interface StatsGridProps {
@@ -16,38 +24,49 @@ interface StatsGridProps {
 }
 
 export default function StatsGrid({ title = "Stats", stats }: StatsGridProps) {
+  const visible = stats.filter((s) => s.value !== undefined);
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
 
       <View style={styles.grid}>
-        {stats.map(
-          (stat, index) =>
-            stat.value !== undefined && (
-              <View key={index} style={styles.statItem}>
-                <View style={styles.row}>
-                  <Ionicons
-                    name={stat.icon}
-                    size={14}
-                    color={stat.highlight ? "#fbbf24" : "#64748b"}
-                  />
+        {visible.map((stat) => {
+          const tint = stat.highlight ? GOLD : (stat.color ?? MUTED);
 
-                  <Text style={styles.label}>{stat.label}</Text>
-                </View>
+          return (
+            <View
+              key={stat.label}
+              style={[
+                styles.statItem,
+                stat.wide && styles.statItemWide,
+                stat.highlight && styles.statItemHighlight,
+              ]}
+            >
+              <View style={[styles.iconChip, { backgroundColor: tint + "26" }]}>
+                <Ionicons name={stat.icon} size={17} color={tint} />
+              </View>
 
+              <View style={styles.textCol}>
                 <Text
                   style={[
                     styles.value,
                     stat.highlight && styles.highlightValue,
                   ]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
                 >
                   {typeof stat.value === "number"
                     ? stat.value.toLocaleString()
                     : stat.value}
                 </Text>
+                <Text style={styles.label} numberOfLines={1}>
+                  {stat.label}
+                </Text>
               </View>
-            ),
-        )}
+            </View>
+          );
+        })}
       </View>
     </View>
   );
@@ -55,16 +74,15 @@ export default function StatsGrid({ title = "Stats", stats }: StatsGridProps) {
 
 const styles = StyleSheet.create({
   container: {
-    gap: 10,
-    marginBottom: 18,
+    gap: 12,
+    marginBottom: 20,
   },
 
   title: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: "700",
-    color: "#cbd5e1",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
+    color: "#e2e8f0",
+    letterSpacing: -0.2,
     paddingHorizontal: 2,
   },
 
@@ -74,40 +92,57 @@ const styles = StyleSheet.create({
     gap: 8,
   },
 
+  // flexGrow lets an odd last tile fill its row automatically
   statItem: {
-    width: "48%",
+    flexGrow: 1,
+    flexBasis: "47%",
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#111827",
-    borderRadius: 12,
+    gap: 12,
+    backgroundColor: "#1e293b",
+    borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.05)",
-    gap: 10,
+    borderColor: "#334155",
   },
 
-  row: {
-    flexDirection: "row",
+  statItemWide: {
+    flexBasis: "100%",
+  },
+
+  statItemHighlight: {
+    backgroundColor: "rgba(251, 191, 36, 0.08)",
+    borderColor: "rgba(251, 191, 36, 0.3)",
+  },
+
+  iconChip: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: "center",
     alignItems: "center",
-    gap: 6,
   },
 
-  label: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#94a3b8",
+  textCol: {
+    flex: 1,
+    gap: 1,
   },
 
   value: {
-    fontSize: 15,
-    fontWeight: "700",
+    fontSize: 18,
+    fontWeight: "800",
     color: "#f8fafc",
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
 
   highlightValue: {
-    color: "#fbbf24",
+    color: GOLD,
+  },
+
+  label: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#94a3b8",
   },
 });

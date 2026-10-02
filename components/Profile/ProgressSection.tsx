@@ -1,87 +1,89 @@
+import EntitySection from "@/components/Profile/EntitySection";
 import { PlayerFull } from "@/types/playerFull";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+
+const GOLD = "#fbbf24";
+const MAX_STARS = 3;
+const PREVIEW_LIMIT = 5;
+
+interface AchievementItemProps {
+  name: string;
+  stars?: number;
+  info?: string;
+}
 
 export default function ProgressSection({ data }: { data: PlayerFull }) {
-  const hasAchievements = data.achievements && data.achievements.length > 0;
   const router = useRouter();
-  if (!hasAchievements) return null;
+  const achievements = data.achievements ?? [];
+
+  if (achievements.length === 0) return null;
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Ionicons name="trophy" size={20} color="#fbbf24" />
+        <View style={styles.iconWrapper}>
+          <Ionicons name="trophy" size={15} color={GOLD} />
+        </View>
         <Text style={styles.title}>Progress</Text>
       </View>
 
-      {/* Achievements */}
-      {hasAchievements && (
-        <View style={styles.subSection}>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Text style={styles.subtitle}>
-              Achievements ({data.achievements?.length})
-            </Text>
-
-            <Pressable
-              onPress={() => router.push("/achievements")}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 4,
-                paddingVertical: 4,
-                paddingHorizontal: 8,
-                borderRadius: 6,
-              }}
-            >
-              <Text
-                style={{
-                  color: "#fbbf24",
-                  fontWeight: "700",
-                  fontSize: 12,
-                }}
-              >
-                View All
-              </Text>
-              <Ionicons name="chevron-forward" size={14} color="#fbbf24" />
-            </Pressable>
-          </View>
-
-          <View style={styles.achievementsList}>
-            {data.achievements?.slice(0, 5).map((achievement, i) => (
-              <AchievementItem
-                key={i}
-                name={achievement.name}
-                stars={achievement.stars}
-                info={achievement.info}
-              />
-            ))}
-          </View>
+      <EntitySection
+        title="Achievements"
+        icon="ribbon"
+        count={achievements.length}
+        onViewAll={() => router.push("/achievements")}
+      >
+        <View style={styles.list}>
+          {achievements.slice(0, PREVIEW_LIMIT).map((achievement, i) => (
+            <AchievementItem
+              key={`${achievement.name}-${i}`}
+              name={achievement.name}
+              stars={achievement.stars}
+              info={achievement.info}
+            />
+          ))}
         </View>
-      )}
+      </EntitySection>
     </View>
   );
 }
 
-function AchievementItem({ name, stars, info }: any) {
+function AchievementItem({ name, stars = 0, info }: AchievementItemProps) {
+  const filled = Math.min(stars, MAX_STARS);
+  const complete = filled === MAX_STARS;
+
   return (
-    <View style={styles.achievementItem}>
-      <Text style={styles.achievementStars}>
-        {"⭐".repeat(Math.min(stars || 0, 3))}
-      </Text>
-      <View style={styles.achievementText}>
-        <Text style={styles.achievementName} numberOfLines={1}>
+    <View style={[styles.item, complete && styles.itemComplete]}>
+      <View style={[styles.itemIcon, complete && styles.itemIconComplete]}>
+        <Ionicons
+          name={complete ? "trophy" : "trophy-outline"}
+          size={14}
+          color={complete ? GOLD : "#94a3b8"}
+        />
+      </View>
+
+      <View style={styles.itemText}>
+        <Text style={styles.itemName} numberOfLines={1}>
           {name}
         </Text>
-        <Text style={styles.achievementInfo} numberOfLines={1}>
-          {info}
-        </Text>
+        {!!info && (
+          <Text style={styles.itemInfo} numberOfLines={1}>
+            {info}
+          </Text>
+        )}
+      </View>
+
+      <View style={styles.starsRow}>
+        {Array.from({ length: MAX_STARS }).map((_, i) => (
+          <Ionicons
+            key={i}
+            name={i < filled ? "star" : "star-outline"}
+            size={11}
+            color={i < filled ? GOLD : "#475569"}
+          />
+        ))}
       </View>
     </View>
   );
@@ -89,80 +91,91 @@ function AchievementItem({ name, stars, info }: any) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#1e293b",
-    borderRadius: 16,
-    padding: 16,
-    gap: 12,
+    backgroundColor: "#111c2e",
+    borderRadius: 20,
+    padding: 14,
+    gap: 10,
     borderWidth: 1,
-    borderColor: "#334155",
-    marginBottom: 20,
+    borderColor: "#263449",
+    marginBottom: 12,
   },
 
   header: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(51, 65, 85, 0.6)",
+  },
+
+  iconWrapper: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    backgroundColor: "rgba(251, 191, 36, 0.12)",
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   title: {
-    fontSize: 16,
-    fontWeight: "700",
+    fontSize: 15,
+    fontWeight: "800",
     color: "#f1f5f9",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: -0.2,
   },
 
-  subSection: {
-    gap: 8,
+  list: {
+    gap: 6,
   },
 
-  subtitle: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#cbd5e1",
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-  },
-
-  achievementsList: {
-    gap: 8,
-  },
-
-  achievementItem: {
+  item: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: "#0f172a",
-    padding: 10,
+    backgroundColor: "rgba(148, 163, 184, 0.05)",
+    padding: 9,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: "rgba(148, 163, 184, 0.12)",
   },
 
-  achievementIcon: {
-    width: 32,
-    height: 32,
+  itemComplete: {
+    borderColor: "rgba(251, 191, 36, 0.25)",
   },
 
-  achievementText: {
+  itemIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
+    backgroundColor: "rgba(148, 163, 184, 0.12)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  itemIconComplete: {
+    backgroundColor: "rgba(251, 191, 36, 0.14)",
+  },
+
+  itemText: {
     flex: 1,
-    gap: 8,
+    gap: 1,
   },
 
-  achievementName: {
+  itemName: {
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#f1f5f9",
   },
 
-  achievementInfo: {
+  itemInfo: {
     fontSize: 10,
     fontWeight: "400",
-    color: "#f1f5f97e",
+    color: "#94a3b8",
   },
 
-  achievementStars: {
-    fontSize: 10,
-    marginTop: 2,
+  starsRow: {
+    flexDirection: "row",
+    gap: 2,
   },
 });

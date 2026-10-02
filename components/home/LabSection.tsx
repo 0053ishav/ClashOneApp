@@ -13,19 +13,18 @@ export function LabSection({
   labNormal,
   labGoblin,
   onAddPress,
-  onLongPress,
+  onPress,
 }: {
   village: Village;
   labNormal?: Upgrade | null;
   labGoblin?: Upgrade | null;
   onAddPress?: () => void;
-  onLongPress?: (lab: Upgrade) => void;
+  onPress?: (lab: Upgrade) => void;
 }) {
   const isNormalBusy = !!labNormal && !labNormal.isCompleted;
   const isGoblinBusy = !!labGoblin && !labGoblin.isCompleted;
 
   const isAnyBusy = isNormalBusy || isGoblinBusy;
-
   return (
     <View style={styles.container}>
       {/* HEADER */}
@@ -41,7 +40,7 @@ export function LabSection({
                         uri: `${ENV.CDN_BASE}/entities/builder/buildings/1000046.png`,
                       }
                 }
-                style={{ width: 40, height: 40 }}
+                style={{ width: 30, height: 30 }}
                 contentFit="contain"
                 cachePolicy="memory-disk"
               />
@@ -74,18 +73,11 @@ export function LabSection({
       </View>
 
       {/* NORMAL LAB */}
-      {labNormal && (
-        <LabCard label="Lab" lab={labNormal} onLongPress={onLongPress} />
-      )}
+      {labNormal && <LabCard label="Lab" lab={labNormal} onPress={onPress} />}
 
       {/* GOBLIN LAB */}
       {labGoblin && (
-        <LabCard
-          label="Goblin"
-          lab={labGoblin}
-          onLongPress={onLongPress}
-          isGoblin
-        />
+        <LabCard label="Goblin" lab={labGoblin} onPress={onPress} isGoblin />
       )}
 
       {/* EMPTY STATE */}
@@ -119,12 +111,12 @@ function LabCard({
   lab,
   label,
   isGoblin,
-  onLongPress,
+  onPress,
 }: {
   lab: Upgrade;
   label: string;
   isGoblin?: boolean;
-  onLongPress?: (lab: Upgrade) => void;
+  onPress?: (lab: Upgrade) => void;
 }) {
   const now = Date.now();
 
@@ -133,7 +125,6 @@ function LabCard({
   const totalMs = lab.endTime - lab.startTime;
 
   const iconUri = lab.dataId != null ? resolveEntityIcon(lab.dataId) : null;
-
   return (
     <Pressable
       style={({ pressed }) => [
@@ -142,7 +133,7 @@ function LabCard({
         isGoblin && styles.goblinCard,
         pressed && styles.cardPressed,
       ]}
-      onLongPress={() => onLongPress?.(lab)}
+      onPress={() => onPress?.(lab)}
       delayLongPress={300}
     >
       <View style={styles.cardContent}>
@@ -197,9 +188,12 @@ function LabCard({
                       cachePolicy="memory-disk"
                     />
 
-                    {!!lab.helperAppliedSeconds && (
+                    {(lab.helperAppliedSeconds ?? 0) && (
                       <Text style={styles.helperSaved}>
-                        - {formatCountdown(lab.helperAppliedSeconds * 1000)}
+                        -{" "}
+                        {formatCountdown(
+                          (lab.helperAppliedSeconds ?? 0) * 1000,
+                        )}
                       </Text>
                     )}
 
@@ -305,26 +299,21 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    borderRadius: 16,
+    borderRadius: 14,
     overflow: "visible",
     shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
     marginBottom: 8,
   },
 
   labCard: {
     backgroundColor: "#1e293b",
-    borderWidth: 1,
-    borderColor: "#06b6d4",
   },
 
   goblinCard: {
-    borderColor: "#f97316",
-    borderWidth: 1,
-    shadowColor: "#f97316",
     shadowOpacity: 0.25,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
@@ -336,9 +325,13 @@ const styles = StyleSheet.create({
   },
 
   cardContent: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    gap: 12,
+    backgroundColor: "#1e293b",
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#263244",
+    gap: 10,
   },
 
   builderBadge: {
@@ -357,7 +350,7 @@ const styles = StyleSheet.create({
   },
 
   goblinBadge: {
-    backgroundColor: "#f97316",
+    backgroundColor: "#22c55e",
   },
 
   builderBadgeText: {
@@ -488,7 +481,7 @@ const styles = StyleSheet.create({
   },
 
   remainingTime: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "800",
   },
 
@@ -497,7 +490,7 @@ const styles = StyleSheet.create({
   },
 
   goblinLabTime: {
-    color: "#fb923c",
+    color: "#22c55e",
   },
 
   totalTime: {
@@ -524,7 +517,7 @@ const styles = StyleSheet.create({
   },
 
   goblinProgress: {
-    backgroundColor: "#fb923c",
+    backgroundColor: "#22c55e",
   },
 
   emptyCard: {

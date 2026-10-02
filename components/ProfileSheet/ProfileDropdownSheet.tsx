@@ -1,6 +1,4 @@
-import ProfileActions from "@/components/ProfileSheet/ProfileActions";
 import ProfileHeader from "@/components/ProfileSheet/ProfileHeader";
-import ProfileStatsGrid from "@/components/ProfileSheet/ProfileStatsGrid";
 import { getEntities } from "@/services/entityService";
 import { useAccountStore } from "@/stores/accountStore";
 import { EntityRecord } from "@/types/upgrade";
@@ -10,27 +8,51 @@ import {
   BottomSheetModal,
   BottomSheetScrollView,
 } from "@gorhom/bottom-sheet";
-import { useEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import ProfileActions from "./ProfileActions";
+import ProfileStatsGrid from "./ProfileStatsGrid";
+
+export type ProfileDropdownSheetRef = {
+  present: () => void;
+  dismiss: () => void;
+};
 
 type ProfileSheetProps = {
-  visible: boolean;
-  onClose: () => void;
+  onClose?: () => void;
   onSync: () => void;
   onSetting: () => void;
   onOpenProfile: () => void;
 };
 
-export default function ProfileDropdownSheet({
-  visible,
-  onClose,
-  onSync,
-  onSetting,
-  onOpenProfile,
-}: ProfileSheetProps) {
+const ProfileDropdownSheet = forwardRef<
+  ProfileDropdownSheetRef,
+  ProfileSheetProps
+>(function ProfileDropdownSheet(
+  { onClose, onSync, onSetting, onOpenProfile },
+  ref,
+) {
   const bottomSheetRef = useRef<BottomSheetModal>(null);
-  const insets = useSafeAreaInsets();
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      present: () => {
+        bottomSheetRef.current?.present();
+      },
+
+      dismiss: () => {
+        bottomSheetRef.current?.dismiss();
+      },
+    }),
+    [],
+  );
 
   const activeTag = useAccountStore((s) => s.activeTag);
   const accounts = useAccountStore((s) => s.accounts);
@@ -40,34 +62,30 @@ export default function ProfileDropdownSheet({
     s.activeTag ? (s.profilesByTag[s.activeTag] ?? null) : null,
   );
 
-  const [entities, setEntities] = useState<EntityRecord[] | null>(null);
+  const [entities, setEntities] = useState<EntityRecord[]>([]);
+
+  // --------------------------------------------------
+  // LOAD ENTITIES
+  // --------------------------------------------------
 
   useEffect(() => {
-    if (visible && profile && entities !== null) {
-      requestAnimationFrame(() => {
-        bottomSheetRef.current?.present();
-      });
-    } else {
-      bottomSheetRef.current?.dismiss();
+    if (!activeTag) {
+      setEntities([]);
+      return;
     }
-  }, [visible, profile, entities]);
 
-  useEffect(() => {
     let mounted = true;
 
     async function load() {
-      if (!visible || !activeTag) return;
-
-      setEntities(null);
-
+      if (!activeTag) return;
       try {
         const data = await getEntities(activeTag);
 
         if (mounted) {
           setEntities(data);
         }
-      } catch (e) {
-        console.error("❌ DROPDOWN ENTITY ERROR", activeTag, e);
+      } catch (error) {
+        console.error("❌ DROPDOWN ENTITY ERROR", activeTag, error);
 
         if (mounted) {
           setEntities([]);
@@ -80,22 +98,43 @@ export default function ProfileDropdownSheet({
     return () => {
       mounted = false;
     };
-  }, [visible, activeTag]);
+  }, [activeTag]);
+
+  // --------------------------------------------------
+  // ACTIONS
+  // --------------------------------------------------
 
   async function handleAccountSwitch(tag: string) {
     if (tag === activeTag) return;
 
-    onClose();
+    bottomSheetRef.current?.dismiss();
+
     await switchAccount(tag);
   }
 
   const handleDismiss = () => {
-    onClose();
+    console.log("🔥 [PROFILE SHEET DISMISSED]");
+    onClose?.();
   };
 
-  if (!profile || entities === null) {
-    return null;
-  }
+  const handleSync = () => {
+    bottomSheetRef.current?.dismiss();
+    onSync();
+  };
+
+  const handleSetting = () => {
+    bottomSheetRef.current?.dismiss();
+    onSetting();
+  };
+
+  const handleOpenProfile = () => {
+    bottomSheetRef.current?.dismiss();
+    onOpenProfile();
+  };
+
+  // --------------------------------------------------
+  // DATA
+  // --------------------------------------------------
 
   const activeAccount = accounts.find((a) => a.tag === activeTag);
 
@@ -105,191 +144,245 @@ export default function ProfileDropdownSheet({
     (e) => e.type?.toLowerCase() === "guardian",
   );
 
+  // --------------------------------------------------
+  // BACKDROP
+  // --------------------------------------------------
+
+  const renderBackdrop = (
+    props: React.ComponentProps<typeof BottomSheetBackdrop>,
+  ) => (
+    <BottomSheetBackdrop
+      {...props}
+      appearsOnIndex={0}
+      disappearsOnIndex={-1}
+      opacity={0.55}
+      pressBehavior="close"
+    />
+  );
+
+  // --------------------------------------------------
+  // RENDER
+  // --------------------------------------------------
+
   return (
     <BottomSheetModal
       ref={bottomSheetRef}
       snapPoints={["60%", "92%"]}
       enablePanDownToClose
+      enableDynamicSizing={false}
+      onChange={(index) => {
+        console.log("🔥 [PROFILE SHEET CHANGE]", index);
+      }}
+      onAnimate={(fromIndex, toIndex) => {
+        console.log("🔥 [PROFILE SHEET ANIMATE]", fromIndex, "→", toIndex);
+      }}
       onDismiss={handleDismiss}
+      backdropComponent={renderBackdrop}
       backgroundStyle={styles.sheet}
-      handleIndicatorStyle={styles.handle}
-      backdropComponent={(props) => (
-        <BottomSheetBackdrop
-          {...props}
-          appearsOnIndex={0}
-          disappearsOnIndex={-1}
-          pressBehavior="close"
-          opacity={0.65}
-        />
-      )}
+      handleIndicatorStyle={styles.handleIndicator}
+      handleStyle={styles.handle}
     >
       <BottomSheetScrollView
+        contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
         bounces={false}
-        contentContainerStyle={[
-          styles.content,
-          {
-            paddingBottom: insets.bottom + 20,
-          },
-        ]}
       >
-        {/* Profile */}
-        <ProfileHeader
-          key={activeTag}
-          profile={profile}
-          helpers={helpers}
-          guardians={guardians}
-        />
+        {!profile ? (
+          <View style={styles.emptyProfile}>
+            <Ionicons name="person-outline" size={30} color="#64748b" />
 
-        {/* Accounts */}
-        {accounts.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleRow}>
-                <Ionicons name="people-outline" size={16} color="#94a3b8" />
+            <Text style={styles.emptyProfileText}>No profile connected</Text>
+          </View>
+        ) : (
+          <>
+            {/* Profile */}
+            <ProfileHeader
+              key={activeTag}
+              profile={profile}
+              helpers={helpers}
+              guardians={guardians}
+            />
 
-                <Text style={styles.sectionTitle}>Accounts</Text>
-              </View>
+            {/* Accounts */}
+            {accounts.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <View style={styles.sectionTitleRow}>
+                    <Ionicons name="people-outline" size={16} color="#94a3b8" />
 
-              <View style={styles.countBadge}>
-                <Text style={styles.countBadgeText}>{accounts.length}</Text>
-              </View>
-            </View>
+                    <Text style={styles.sectionTitle}>Accounts</Text>
+                  </View>
 
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.avatarRow}
-            >
-              {accounts.map((acc) => {
-                const isActive = acc.tag === activeTag;
-                const initials = acc.name.slice(0, 2).toUpperCase();
+                  <View style={styles.countBadge}>
+                    <Text style={styles.countBadgeText}>{accounts.length}</Text>
+                  </View>
+                </View>
 
-                return (
-                  <Pressable
-                    key={acc.tag}
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      isActive
-                        ? `${acc.name}, active account`
-                        : `Switch to ${acc.name}`
-                    }
-                    accessibilityState={{ selected: isActive }}
-                    onPress={() => handleAccountSwitch(acc.tag)}
-                    style={({ pressed }) => [
-                      styles.avatarItem,
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <View
-                      style={[
-                        styles.avatarCircle,
-                        {
-                          borderColor: isActive ? acc.color : `${acc.color}66`,
-                          backgroundColor: isActive
-                            ? `${acc.color}20`
-                            : "#172235",
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[styles.avatarInitials, { color: acc.color }]}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.avatarRow}
+                >
+                  {accounts.map((acc) => {
+                    const isActive = acc.tag === activeTag;
+                    const initials = acc.name.slice(0, 2).toUpperCase();
+
+                    return (
+                      <Pressable
+                        key={acc.tag}
+                        accessibilityRole="button"
+                        accessibilityLabel={
+                          isActive
+                            ? `${acc.name}, active account`
+                            : `Switch to ${acc.name}`
+                        }
+                        accessibilityState={{
+                          selected: isActive,
+                        }}
+                        onPress={() => handleAccountSwitch(acc.tag)}
+                        style={({ pressed }) => [
+                          styles.avatarItem,
+                          pressed && styles.pressed,
+                        ]}
                       >
-                        {initials}
-                      </Text>
-
-                      {isActive && (
                         <View
                           style={[
-                            styles.activeBadge,
-                            { backgroundColor: acc.color },
+                            styles.avatarCircle,
+                            {
+                              borderColor: isActive
+                                ? acc.color
+                                : `${acc.color}66`,
+                              backgroundColor: isActive
+                                ? `${acc.color}20`
+                                : "#172235",
+                            },
                           ]}
                         >
-                          <Ionicons
-                            name="checkmark"
-                            size={10}
-                            color="#0f172a"
-                          />
+                          <Text
+                            style={[
+                              styles.avatarInitials,
+                              { color: acc.color },
+                            ]}
+                          >
+                            {initials}
+                          </Text>
+
+                          {isActive && (
+                            <View
+                              style={[
+                                styles.activeBadge,
+                                {
+                                  backgroundColor: acc.color,
+                                },
+                              ]}
+                            >
+                              <Ionicons
+                                name="checkmark"
+                                size={10}
+                                color="#0f172a"
+                              />
+                            </View>
+                          )}
                         </View>
-                      )}
-                    </View>
 
-                    <Text
-                      style={[
-                        styles.avatarLabel,
-                        isActive && styles.avatarLabelActive,
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {acc.name}
-                    </Text>
+                        <Text
+                          style={[
+                            styles.avatarLabel,
+                            isActive && styles.avatarLabelActive,
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {acc.name}
+                        </Text>
 
-                    <Text style={styles.avatarSub}>TH{acc.townhall}</Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </View>
+                        <Text style={styles.avatarSub}>TH{acc.townhall}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Stats */}
+            {profile.playerTag && (
+              <View style={styles.section}>
+                <ProfileStatsGrid
+                  profile={profile}
+                  builderCount={activeAccount?.builderCount ?? 1}
+                />
+              </View>
+            )}
+
+            {/* Actions */}
+            <View style={styles.actionsSection}>
+              <ProfileActions
+                onSync={handleSync}
+                onSetting={handleSetting}
+                onOpenProfile={handleOpenProfile}
+              />
+            </View>
+
+            {/* Close */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close profile"
+              onPress={() => bottomSheetRef.current?.dismiss()}
+              style={({ pressed }) => [
+                styles.closeButton,
+                pressed && styles.closeButtonPressed,
+              ]}
+            >
+              <Ionicons name="close" size={18} color="#94a3b8" />
+
+              <Text style={styles.closeButtonText}>Close</Text>
+            </Pressable>
+          </>
         )}
-
-        {/* Stats */}
-        {profile.playerTag && (
-          <View style={styles.section}>
-            <ProfileStatsGrid
-              profile={profile}
-              builderCount={activeAccount?.builderCount ?? 1}
-            />
-          </View>
-        )}
-
-        {/* Actions */}
-        <View style={styles.actionsSection}>
-          <ProfileActions
-            onSync={onSync}
-            onSetting={onSetting}
-            onOpenProfile={onOpenProfile}
-            onClose={onClose}
-          />
-        </View>
-
-        {/* Close */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Close profile"
-          onPress={() => bottomSheetRef.current?.dismiss()}
-          style={({ pressed }) => [
-            styles.closeButton,
-            pressed && styles.closeButtonPressed,
-          ]}
-        >
-          <Ionicons name="close" size={18} color="#94a3b8" />
-
-          <Text style={styles.closeButtonText}>Close</Text>
-        </Pressable>
       </BottomSheetScrollView>
     </BottomSheetModal>
   );
-}
+});
+
+export default ProfileDropdownSheet;
 
 const styles = StyleSheet.create({
   sheet: {
-    backgroundColor: "#0b1220",
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    borderTopWidth: 1,
-    borderColor: "#263449",
+    backgroundColor: "#0f172a",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: "#1e293b",
   },
 
   handle: {
-    width: 42,
+    paddingTop: 6,
+    paddingBottom: 6,
+  },
+
+  handleIndicator: {
+    width: 34,
     height: 4,
     borderRadius: 999,
     backgroundColor: "#475569",
   },
 
-  content: {
-    paddingHorizontal: 16,
-    paddingTop: 4,
+  contentContainer: {
+    paddingHorizontal: 18,
+    paddingBottom: 18,
+  },
+
+  emptyProfile: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+    gap: 10,
+  },
+
+  emptyProfileText: {
+    fontSize: 14,
+    color: "#64748b",
+    fontWeight: "600",
   },
 
   pressed: {

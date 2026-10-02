@@ -123,6 +123,33 @@ export function resolveEntityIcon(
     return `${ENV.CDN_BASE}/v2/builder/builderhalls/${level}.png`;
   }
 
+    /**
+   * Home Heroes
+   *
+   * Heroes have a single icon per entity.
+   * They do not have level-specific images.
+   *
+   * CDN:
+   * /v2/home/heroes/{entityId}/icon.png
+   */
+  if (
+    village === "home" &&
+    type === "hero"
+  ) {
+    return `${ENV.CDN_BASE}/v2/home/heroes/${entityId}/icon.png`;
+  }
+
+    /**
+   * Builder Heroes
+   * CDN:
+   * /v2/builder/heroes/{entityId}/icon.png
+   */
+  if (
+    village === "builderBase" &&
+    type === "hero"
+  ) {
+    return `${ENV.CDN_BASE}/v2/builder/heroes/${entityId}/icon.png`;
+  }
   /*
    * Normal Home entities.
    */

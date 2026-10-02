@@ -11,13 +11,13 @@ export function PetSection({
   pet,
   townHall,
   onAddPress,
-  onLongPress,
+  onPress,
 }: {
   pet: Upgrade | null;
   townHall: number;
 
   onAddPress?: () => void;
-  onLongPress?: (pet: Upgrade) => void;
+  onPress?: (pet: Upgrade) => void;
 }) {
   const activePet = pet;
   const isUnlocked = townHall >= 14;
@@ -46,7 +46,7 @@ export function PetSection({
                 source={{
                   uri: `${ENV.CDN_BASE}/entities/buildings/1000068.png`,
                 }}
-                style={{ width: 40, height: 40 }}
+                style={{ width: 30, height: 30 }}
                 contentFit="contain"
                 cachePolicy="memory-disk"
               />
@@ -76,12 +76,8 @@ export function PetSection({
       {/* Active Upgrade Card */}
       {isBusy ? (
         <Pressable
-          style={({ pressed }) => [
-            styles.card,
-            styles.petCard,
-            pressed && styles.cardPressed,
-          ]}
-          onLongPress={() => onLongPress?.(activePet)}
+          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+          onPress={() => onPress?.(activePet)}
           delayLongPress={300}
         >
           <View style={styles.cardContent}>
@@ -237,19 +233,25 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    borderRadius: 16,
-    overflow: "visible",
     shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+    borderRadius: 14,
+    overflow: "visible",
+    marginBottom: 8,
+    borderWidth: 1,
   },
 
   cardContent: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    backgroundColor: "#1e293b",
+    // borderWidth: 1,
+    // borderColor: "#263244",
+    gap: 10,
   },
 
   petBadge: {
@@ -294,17 +296,6 @@ const styles = StyleSheet.create({
   upgradeRight: {
     alignItems: "flex-end",
     gap: 4,
-  },
-  petCard: {
-    backgroundColor: "#1e293b",
-    borderWidth: 1,
-    borderColor: "#8b5cf6",
-  },
-
-  labCard: {
-    backgroundColor: "#1e293b",
-    borderWidth: 1,
-    borderColor: "#06b6d4",
   },
 
   cardPressed: {
@@ -365,7 +356,7 @@ const styles = StyleSheet.create({
   },
 
   remainingTime: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "800",
   },
 

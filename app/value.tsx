@@ -44,7 +44,7 @@ export default function ValueScreen() {
 
   useEffect(() => {
     loadAccounts();
-  }, []);
+  }, [loadAccounts]);
 
   useEffect(() => {
     if (!effectiveTag) return;
@@ -66,7 +66,7 @@ export default function ValueScreen() {
     if (!isLoadingAccounts && effectiveTag && !account) {
       router.replace("/(tabs)");
     }
-  }, [account, effectiveTag, isLoadingAccounts]);
+  }, [account, effectiveTag, isLoadingAccounts, router]);
 
   const {
     status,
@@ -222,9 +222,8 @@ export default function ValueScreen() {
                 <Image
                   source={{
                     uri: resolveEntityIcon(1000001, {
-                      context: {
-                        hallLevel: profile.townHallLevel,
-                      },
+                      village: "home",
+                      level: profile.townHallLevel,
                     }),
                   }}
                   style={styles.statIcon}
@@ -260,9 +259,8 @@ export default function ValueScreen() {
                 <Image
                   source={{
                     uri: resolveEntityIcon(1000034, {
-                      context: {
-                        hallLevel: profile.builderHallLevel,
-                      },
+                      village: "builderBase",
+                      level: profile.builderHallLevel,
                     }),
                   }}
                   style={styles.statIcon}
@@ -343,12 +341,9 @@ export default function ValueScreen() {
                     source={{
                       uri: resolveEntityIcon(nextUpgrade.dataId, {
                         isCrafted: nextUpgrade.isCrafted,
-
                         subType: nextUpgrade.subType,
-
-                        context: {
-                          hallLevel: profile?.townHallLevel,
-                        },
+                        village: "home",
+                        level: profile.townHallLevel,
                       }),
                     }}
                     style={{
@@ -358,7 +353,9 @@ export default function ValueScreen() {
                   />
                 ) : (
                   <Image
-                    source={require("@/assets/images/builder/builder-working.png")}
+                    source={{
+                      uri: `${ENV.CDN_BASE}/v2/home/fallbacks/builder-idle.png`,
+                    }}
                     style={{ width: 32, height: 32 }}
                   />
                 )}
@@ -424,9 +421,8 @@ export default function ValueScreen() {
                     uri: resolveEntityIcon(builderBaseNextUpgrade.dataId, {
                       isCrafted: builderBaseNextUpgrade.isCrafted,
                       subType: builderBaseNextUpgrade.subType,
-                      context: {
-                        hallLevel: profile?.builderHallLevel,
-                      },
+                      village: "builderBase",
+                      level: profile.builderHallLevel,
                     }),
                   }}
                   style={{
@@ -437,9 +433,7 @@ export default function ValueScreen() {
               ) : (
                 <Image
                   source={{
-                    uri: resolveEntityIcon(1000002, {
-                      subType: "BUILDERHALL",
-                    }),
+                    uri: `${ENV.CDN_BASE}/v2/builder/fallbacks/master-builder-sleeping.png`,
                   }}
                   style={{
                     width: 32,
@@ -506,12 +500,9 @@ export default function ValueScreen() {
                       source={{
                         uri: resolveEntityIcon(u.dataId, {
                           isCrafted: u.isCrafted,
-
                           subType: u.subType,
-
-                          context: {
-                            hallLevel: profile?.townHallLevel,
-                          },
+                          village: "home",
+                          level: profile.townHallLevel,
                         }),
                       }}
                       style={styles.liveImg}

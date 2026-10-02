@@ -3,12 +3,15 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
+const GOLD = "#fbbf24";
+
 interface EntitySectionProps {
   title: string;
   icon?: IconName;
   count: number;
   children: React.ReactNode;
   onViewAll?: () => void;
+  accent?: string;
 }
 
 export default function EntitySection({
@@ -17,15 +20,15 @@ export default function EntitySection({
   count,
   children,
   onViewAll,
+  accent = GOLD,
 }: EntitySectionProps) {
   return (
     <View style={styles.container}>
-      {/* Section Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           {icon && (
-            <View style={styles.iconContainer}>
-              <Ionicons name={icon} size={14} color="#fbbf24" />
+            <View style={[styles.iconChip, { backgroundColor: accent + "1f" }]}>
+              <Ionicons name={icon} size={14} color={accent} />
             </View>
           )}
           <Text style={styles.title}>{title}</Text>
@@ -36,19 +39,24 @@ export default function EntitySection({
 
         {onViewAll && (
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`View all ${title}`}
             onPress={onViewAll}
+            hitSlop={8}
             style={({ pressed }) => [
-              styles.viewAllButton,
-              pressed && styles.viewAllButtonPressed,
+              styles.viewAll,
+              { backgroundColor: accent + "14" },
+              pressed && styles.pressed,
             ]}
           >
-            <Text style={styles.viewAllText}>View All</Text>
-            <Ionicons name="chevron-forward" size={14} color="#fbbf24" />
+            <Text style={[styles.viewAllText, { color: accent }]}>
+              View all
+            </Text>
+            <Ionicons name="chevron-forward" size={12} color={accent} />
           </Pressable>
         )}
       </View>
 
-      {/* Content */}
       {children}
     </View>
   );
@@ -56,7 +64,7 @@ export default function EntitySection({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 10,
+    gap: 12,
   },
 
   header: {
@@ -69,30 +77,32 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    flexShrink: 1,
   },
 
-  iconContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    backgroundColor: "rgba(251, 191, 36, 0.1)",
+  iconChip: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
   },
 
   title: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: "700",
-    color: "#cbd5e1",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    color: "#e2e8f0",
+    letterSpacing: -0.2,
+    flexShrink: 1,
   },
 
   countBadge: {
-    backgroundColor: "rgba(148, 163, 184, 0.2)",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
+    minWidth: 22,
+    alignItems: "center",
+    backgroundColor: "rgba(148, 163, 184, 0.16)",
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 999,
   },
 
   countText: {
@@ -101,22 +111,22 @@ const styles = StyleSheet.create({
     color: "#94a3b8",
   },
 
-  viewAllButton: {
+  viewAll: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-  },
-
-  viewAllButtonPressed: {
-    opacity: 0.6,
+    gap: 2,
+    paddingVertical: 5,
+    paddingLeft: 10,
+    paddingRight: 6,
+    borderRadius: 999,
   },
 
   viewAllText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#fbbf24",
+  },
+
+  pressed: {
+    opacity: 0.6,
   },
 });

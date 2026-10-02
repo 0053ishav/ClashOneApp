@@ -8,14 +8,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Pressable,
-    RefreshControl,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -28,6 +28,17 @@ interface Troop {
   village: string;
 }
 
+type Filter = "all" | "maxed" | "upgradable";
+
+const GOLD = "#fbbf24";
+const GREEN = "#22c55e";
+
+const FILTERS: { key: Filter; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "upgradable", label: "Upgradable" },
+  { key: "maxed", label: "Maxed" },
+];
+
 export default function TroopsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -39,7 +50,8 @@ export default function TroopsScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "maxed" | "upgradable">("all");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [filter, setFilter] = useState<Filter>("all");
 
   useEffect(() => {
     track("screen_view", {
@@ -98,6 +110,13 @@ export default function TroopsScreen() {
     }
   };
 
+  const hasActiveFilters = search.trim().length > 0 || filter !== "all";
+
+  const resetFilters = () => {
+    setSearch("");
+    setFilter("all");
+  };
+
   const filtered = useMemo(() => {
     let list = troops;
 
@@ -135,12 +154,18 @@ export default function TroopsScreen() {
     };
   }, [troops]);
 
+  const filterCounts: Record<Filter, number> = {
+    all: troops.length,
+    upgradable: stats.remaining,
+    maxed: stats.maxed,
+  };
+
   if (loading && troops.length === 0) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size={42} color="#fbbf24" />
+        <ActivityIndicator size={42} color={GOLD} />
 
-        <Text style={styles.loadingText}>Loading troops...</Text>
+        <Text style={styles.loadingText}>Loading troops…</Text>
       </View>
     );
   }
@@ -148,16 +173,23 @@ export default function TroopsScreen() {
   if (error && troops.length === 0) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <Ionicons name="alert-circle-outline" size={52} color="#ef4444" />
+        <View style={styles.errorIcon}>
+          <Ionicons name="alert-circle" size={36} color="#ef4444" />
+        </View>
 
+        <Text style={styles.errorTitle}>Couldn&apos;t load troops</Text>
         <Text style={styles.errorText}>{error}</Text>
 
         <Pressable
           accessibilityRole="button"
           onPress={() => load()}
-          style={styles.retryButton}
+          style={({ pressed }) => [
+            styles.retryButton,
+            pressed && styles.pressed,
+          ]}
         >
-          <Text style={styles.retryButtonText}>Retry</Text>
+          <Ionicons name="refresh" size={16} color="#0f172a" />
+          <Text style={styles.retryButtonText}>Try again</Text>
         </Pressable>
       </View>
     );
@@ -169,19 +201,21 @@ export default function TroopsScreen() {
         data={filtered}
         numColumns={3}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         keyExtractor={(item) => `${item.dataId}-${item.level}-${item.village}`}
         columnWrapperStyle={styles.gridRow}
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingTop: insets.top + 8,
+            paddingTop: insets.top + 12,
           },
         ]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#fbbf24"
+            tintColor={GOLD}
           />
         }
         ListHeaderComponent={
@@ -190,23 +224,32 @@ export default function TroopsScreen() {
             <View style={styles.header}>
               <Pressable
                 accessibilityRole="button"
+                accessibilityLabel="Go back"
                 onPress={() => router.back()}
-                style={styles.backButton}
+                style={({ pressed }) => [
+                  styles.backButton,
+                  pressed && styles.pressed,
+                ]}
               >
                 <Ionicons name="chevron-back" size={22} color="#f8fafc" />
               </Pressable>
 
               <Text style={styles.headerTitle}>Troops</Text>
 
-              <View style={{ width: 40 }} />
+              <View style={styles.headerSpacer} />
             </View>
 
             {/* Overview */}
             <View style={styles.overviewCard}>
               <View style={styles.overviewTop}>
-                <Text style={styles.overviewTitle}>Progress</Text>
+                <View style={styles.overviewTitleGroup}>
+                  <Text style={styles.overviewLabel}>Upgrade progress</Text>
+                  <Text style={styles.overviewValue}>{stats.progress}%</Text>
+                </View>
 
-                <Text style={styles.overviewValue}>{stats.progress}%</Text>
+                <View style={styles.overviewIcon}>
+                  <Ionicons name="flash" size={20} color={GOLD} />
+                </View>
               </View>
 
               <View style={styles.overviewProgressBar}>
@@ -215,6 +258,7 @@ export default function TroopsScreen() {
                     styles.overviewProgressFill,
                     {
                       width: `${stats.progress}%`,
+                      backgroundColor: stats.progress === 100 ? GREEN : GOLD,
                     },
                   ]}
                 />
@@ -223,49 +267,60 @@ export default function TroopsScreen() {
               <View style={styles.overviewStats}>
                 <View style={styles.statBox}>
                   <Text style={styles.statValue}>{troops.length}</Text>
-
                   <Text style={styles.statLabel}>Total</Text>
                 </View>
 
                 <View style={styles.statDivider} />
 
                 <View style={styles.statBox}>
-                  <Text style={[styles.statValue, { color: "#22c55e" }]}>
+                  <Text style={[styles.statValue, { color: GREEN }]}>
                     {stats.maxed}
                   </Text>
-
                   <Text style={styles.statLabel}>Maxed</Text>
                 </View>
 
                 <View style={styles.statDivider} />
 
                 <View style={styles.statBox}>
-                  <Text style={[styles.statValue, { color: "#94a3b8" }]}>
+                  <Text style={[styles.statValue, { color: GOLD }]}>
                     {stats.remaining}
                   </Text>
-
-                  <Text style={styles.statLabel}>Remaining</Text>
+                  <Text style={styles.statLabel}>To upgrade</Text>
                 </View>
               </View>
             </View>
 
             {/* Search */}
-            <View style={styles.searchContainer}>
-              <Ionicons name="search" size={16} color="#64748b" />
+            <View
+              style={[
+                styles.searchContainer,
+                searchFocused && styles.searchContainerFocused,
+              ]}
+            >
+              <Ionicons
+                name="search"
+                size={16}
+                color={searchFocused ? GOLD : "#64748b"}
+              />
 
               <TextInput
-                placeholder="Search troops..."
+                placeholder="Search troops"
                 placeholderTextColor="#64748b"
                 value={search}
                 onChangeText={setSearch}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
                 style={styles.searchInput}
                 autoCapitalize="none"
                 autoCorrect={false}
+                returnKeyType="search"
               />
 
               {search.length > 0 && (
                 <Pressable
                   accessibilityRole="button"
+                  accessibilityLabel="Clear search"
+                  hitSlop={8}
                   onPress={() => setSearch("")}
                 >
                   <Ionicons name="close-circle" size={18} color="#64748b" />
@@ -273,52 +328,35 @@ export default function TroopsScreen() {
               )}
             </View>
 
-            {/* Filters */}
-            <View style={styles.filterButtons}>
-              {[
-                {
-                  key: "all",
-                  label: "All",
-                  icon: "grid",
-                },
-                {
-                  key: "upgradable",
-                  label: "Upgradable",
-                  icon: "arrow-up",
-                },
-                {
-                  key: "maxed",
-                  label: "Maxed",
-                  icon: "checkmark",
-                },
-              ].map((f) => {
+            {/* Filters — segmented control */}
+            <View style={styles.segmented}>
+              {FILTERS.map((f) => {
                 const active = filter === f.key;
 
                 return (
                   <Pressable
                     key={f.key}
                     accessibilityRole="button"
-                    onPress={() =>
-                      setFilter(f.key as "all" | "maxed" | "upgradable")
-                    }
-                    style={[
-                      styles.filterButton,
-                      active && styles.filterButtonActive,
-                    ]}
+                    accessibilityState={{ selected: active }}
+                    onPress={() => setFilter(f.key)}
+                    style={[styles.segment, active && styles.segmentActive]}
                   >
-                    <Ionicons
-                      name={f.icon as any}
-                      size={14}
-                      color={active ? "#fbbf24" : "#64748b"}
-                    />
-
                     <Text
                       style={[
-                        styles.filterButtonText,
-                        active && styles.filterButtonTextActive,
+                        styles.segmentText,
+                        active && styles.segmentTextActive,
                       ]}
                     >
                       {f.label}
+                    </Text>
+
+                    <Text
+                      style={[
+                        styles.segmentCount,
+                        active && styles.segmentCountActive,
+                      ]}
+                    >
+                      {filterCounts[f.key]}
                     </Text>
                   </Pressable>
                 );
@@ -326,10 +364,21 @@ export default function TroopsScreen() {
             </View>
 
             {/* Results */}
-            <Text style={styles.resultsText}>
-              {filtered.length} troop
-              {filtered.length !== 1 ? "s" : ""}
-            </Text>
+            <View style={styles.resultsRow}>
+              <Text style={styles.resultsText}>
+                {filtered.length} troop{filtered.length !== 1 ? "s" : ""}
+              </Text>
+
+              {hasActiveFilters && (
+                <Pressable
+                  accessibilityRole="button"
+                  hitSlop={8}
+                  onPress={resetFilters}
+                >
+                  <Text style={styles.clearText}>Clear filters</Text>
+                </Pressable>
+              )}
+            </View>
           </>
         }
         renderItem={({ item }) => (
@@ -342,13 +391,30 @@ export default function TroopsScreen() {
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="search-outline" size={42} color="#475569" />
+            <View style={styles.emptyIcon}>
+              <Ionicons name="search-outline" size={28} color="#64748b" />
+            </View>
 
             <Text style={styles.emptyText}>No troops found</Text>
 
             <Text style={styles.emptySubtext}>
-              Try changing your search or filters
+              {hasActiveFilters
+                ? "Nothing matches your search or filter."
+                : "There are no home troops to show yet."}
             </Text>
+
+            {hasActiveFilters && (
+              <Pressable
+                accessibilityRole="button"
+                onPress={resetFilters}
+                style={({ pressed }) => [
+                  styles.emptyButton,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text style={styles.emptyButtonText}>Clear filters</Text>
+              </Pressable>
+            )}
           </View>
         }
       />
@@ -365,7 +431,7 @@ const styles = StyleSheet.create({
   centerContent: {
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: 32,
   },
 
   scrollContent: {
@@ -378,73 +444,107 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
+  pressed: {
+    opacity: 0.6,
+  },
+
+  // ── Header ──────────────────────────────────────────────
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 18,
+    marginBottom: 20,
   },
 
   backButton: {
     width: 40,
     height: 40,
+    borderRadius: 12,
+    backgroundColor: "#1e293b",
+    borderWidth: 1,
+    borderColor: "#334155",
     justifyContent: "center",
     alignItems: "center",
   },
 
   headerTitle: {
     fontSize: 20,
-    fontWeight: "700",
-    color: "#fbbf24",
-    letterSpacing: -0.4,
+    fontWeight: "800",
+    color: GOLD,
+    letterSpacing: -0.5,
   },
 
+  headerSpacer: {
+    width: 40,
+  },
+
+  // ── Overview ────────────────────────────────────────────
   overviewCard: {
-    backgroundColor: "#111827",
-    borderRadius: 16,
+    backgroundColor: "#1e293b",
+    borderRadius: 20,
     padding: 16,
-    marginBottom: 16,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: "#334155",
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
 
   overviewTop: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 12,
+    marginBottom: 14,
   },
 
-  overviewTitle: {
+  overviewTitleGroup: {
+    gap: 2,
+  },
+
+  overviewLabel: {
     fontSize: 13,
     fontWeight: "600",
     color: "#94a3b8",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
   },
 
   overviewValue: {
-    fontSize: 22,
-    fontWeight: "700",
+    fontSize: 32,
+    fontWeight: "800",
     color: "#f8fafc",
-    letterSpacing: -0.5,
+    letterSpacing: -1,
+  },
+
+  overviewIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: "rgba(251, 191, 36, 0.12)",
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   overviewProgressBar: {
-    height: 6,
+    height: 8,
     borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "rgba(255,255,255,0.07)",
     overflow: "hidden",
     marginBottom: 16,
   },
 
   overviewProgressFill: {
     height: "100%",
-    backgroundColor: "#fbbf24",
     borderRadius: 999,
   },
 
   overviewStats: {
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: "#0f172a",
+    borderRadius: 14,
+    paddingVertical: 12,
   },
 
   statBox: {
@@ -454,33 +554,40 @@ const styles = StyleSheet.create({
   },
 
   statValue: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: 20,
+    fontWeight: "800",
     color: "#f8fafc",
+    letterSpacing: -0.4,
   },
 
   statLabel: {
     fontSize: 11,
     fontWeight: "600",
     color: "#64748b",
-    textTransform: "uppercase",
   },
 
   statDivider: {
     width: 1,
     height: 28,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "rgba(255,255,255,0.07)",
   },
 
+  // ── Search ──────────────────────────────────────────────
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#111827",
-    borderRadius: 12,
+    backgroundColor: "#1e293b",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#334155",
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 12,
     gap: 10,
+  },
+
+  searchContainerFocused: {
+    borderColor: "rgba(251, 191, 36, 0.6)",
   },
 
   searchInput: {
@@ -488,47 +595,78 @@ const styles = StyleSheet.create({
     color: "#f8fafc",
     fontSize: 14,
     fontWeight: "500",
+    padding: 0,
   },
 
-  filterButtons: {
+  // ── Segmented filter ────────────────────────────────────
+  segmented: {
     flexDirection: "row",
-    gap: 8,
-    marginBottom: 14,
+    backgroundColor: "#1e293b",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#334155",
+    padding: 4,
+    gap: 4,
+    marginBottom: 16,
   },
 
-  filterButton: {
+  segment: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    paddingVertical: 10,
+    paddingVertical: 9,
     borderRadius: 10,
-    backgroundColor: "#111827",
   },
 
-  filterButtonActive: {
-    backgroundColor: "rgba(251,191,36,0.12)",
+  segmentActive: {
+    backgroundColor: "rgba(251, 191, 36, 0.14)",
   },
 
-  filterButtonText: {
-    fontSize: 12,
+  segmentText: {
+    fontSize: 13,
     fontWeight: "600",
+    color: "#94a3b8",
+  },
+
+  segmentTextActive: {
+    color: GOLD,
+    fontWeight: "700",
+  },
+
+  segmentCount: {
+    fontSize: 11,
+    fontWeight: "700",
     color: "#64748b",
   },
 
-  filterButtonTextActive: {
-    color: "#fbbf24",
+  segmentCountActive: {
+    color: "rgba(251, 191, 36, 0.75)",
+  },
+
+  // ── Results ─────────────────────────────────────────────
+  resultsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+    paddingHorizontal: 2,
   },
 
   resultsText: {
     fontSize: 12,
     fontWeight: "600",
     color: "#64748b",
-    marginBottom: 12,
-    paddingHorizontal: 2,
   },
 
+  clearText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: GOLD,
+  },
+
+  // ── States ──────────────────────────────────────────────
   loadingText: {
     marginTop: 12,
     color: "#94a3b8",
@@ -536,41 +674,87 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
+  errorIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#f1f5f9",
+    marginBottom: 6,
+  },
+
   errorText: {
-    marginTop: 12,
-    color: "#ef4444",
+    color: "#94a3b8",
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "500",
     textAlign: "center",
   },
 
   retryButton: {
-    marginTop: 16,
-    backgroundColor: "#fbbf24",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 20,
+    backgroundColor: GOLD,
     paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingVertical: 11,
+    borderRadius: 12,
   },
 
   retryButtonText: {
     color: "#0f172a",
-    fontWeight: "700",
+    fontWeight: "800",
+    fontSize: 14,
   },
 
   emptyState: {
     alignItems: "center",
-    paddingVertical: 64,
-    gap: 10,
+    paddingVertical: 56,
+    paddingHorizontal: 24,
+    gap: 8,
+  },
+
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#1e293b",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 6,
   },
 
   emptyText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#94a3b8",
+    color: "#e2e8f0",
   },
 
   emptySubtext: {
     fontSize: 13,
     color: "#64748b",
+    textAlign: "center",
+  },
+
+  emptyButton: {
+    marginTop: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 10,
+    backgroundColor: "rgba(251, 191, 36, 0.12)",
+  },
+
+  emptyButtonText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: GOLD,
   },
 });

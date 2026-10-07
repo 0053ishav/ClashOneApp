@@ -9,8 +9,9 @@ All notable Clash One changes are documented here.
 - Consolidated the historical feature branches into `main`.
 - Added GitHub issue and pull request templates.
 - Added CI for linting and TypeScript checks.
-- Added Dependabot and CODEOWNERS.
+- Added CODEOWNERS.
 - Added contribution and security guidance.
+- Added automated GitHub releases from version tags.
 
 ## [1.2.1]
 

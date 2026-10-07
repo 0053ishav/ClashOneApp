@@ -30,6 +30,19 @@ The Clash of Clans API should be used for data it actually exposes. Do not assum
 
 Prefer conventional prefixes such as `feat:`, `fix:`, `refactor:`, `chore:`, `test:`, and `docs:`.
 
+## Releases
+
+Releases are tag-driven.
+
+1. Update `package.json` to the intended semantic version.
+2. Keep `app.json` version aligned with `package.json`.
+3. Add a matching `## [X.Y.Z]` section to `CHANGELOG.md`.
+4. Merge the release-ready changes into `main`.
+5. Create and push the tag `vX.Y.Z`.
+6. GitHub Actions validates the tag against `package.json` and publishes the matching changelog section as the GitHub Release.
+
+Do not create a release tag for an unpublished or incomplete version.
+
 ## Secrets
 
 Never commit API keys, EAS tokens, Sentry auth tokens, RevenueCat secrets, AdMob secrets, or user credentials. Use local environment files and GitHub/EAS secret storage.

@@ -1,7 +1,7 @@
 {
   "name": "clash-widget",
   "main": "index.ts",
-  "version": "1.1.0",
+  "version": "1.2.1",
   "scripts": {
     "start": "expo start --dev-client --localhost",
     "clear-cache": "expo start --dev-client --localhost -c",

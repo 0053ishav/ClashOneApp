@@ -5,6 +5,7 @@ import type {
   EntityManifest,
 } from "@/types/entities";
 
+import { CraftedDefenseMetadataPayload } from "@/services/cdnEntities/entities";
 import { STORAGE_KEYS } from "@/storage/keys";
 
 export function saveEntityGlobalManifestVersion(
@@ -46,7 +47,7 @@ export function loadEntityManifest():
 
 export function saveEntityCategory(
   category: string,
-  entities: EntityData[],
+  entities: EntityData[] | CraftedDefenseMetadataPayload,
 ) {
   storage.set(
     `entities_${category}`,
@@ -56,7 +57,7 @@ export function saveEntityCategory(
 
 export function loadEntityCategory(
   category: string,
-): EntityData[] | null {
+): EntityData[] | CraftedDefenseMetadataPayload | null {
   const raw = storage.getString(
     `entities_${category}`,
   );

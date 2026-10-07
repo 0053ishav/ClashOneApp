@@ -33,7 +33,7 @@ export function hydrateEntities() {
 
     const entities = loadEntityCategory(category);
 
-    if (!entities) continue;
+    if (!entities || !Array.isArray(entities)) continue;
 
     merged.push(...entities);
   }

@@ -1,9 +1,9 @@
 import type { CraftedProgressionResult } from "@/engine/crafted/model";
 import { ProgressionQueries } from "@/services/progression/progressionQueries";
 import type {
-    OverallProgressionResult,
-    ProgressionCostSummary,
-    ProgressionTypeSummary,
+  OverallProgressionResult,
+  ProgressionCostSummary,
+  ProgressionTypeSummary,
 } from "../models/OverallProgressionResult";
 import type { ProgressionResult } from "../models/ProgressionResult";
 
@@ -221,6 +221,7 @@ export class ProgressionAggregation {
     );
 
     return {
+      entities: results,
       entityCount: results.length,
 
       maxedCount,

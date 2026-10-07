@@ -1,5 +1,5 @@
 import {
-    UpgradeEvent
+  UpgradeEvent
 } from "@/engine/notifications/notificationEngine";
 
 export function getLabEvents(account: any): UpgradeEvent[] {
@@ -12,6 +12,7 @@ export function getLabEvents(account: any): UpgradeEvent[] {
   return [
     {
       id: `lab-${account.tag}`,
+      village: "home",
 
       playerTag: account.tag,
       accountName: account.name,

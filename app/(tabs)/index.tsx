@@ -9,13 +9,11 @@ import { SupportModal } from "@/components/SupportModal";
 import { XPBadge } from "@/components/XPBadge";
 import { ENV } from "@/config/env";
 import { useCraftedResolver } from "@/engine/crafted/craftedResolver";
+import type { ProgressionApplicationResult } from "@/engine/progression/models";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { useRemoteConfig } from "@/provider/remoteConfigProvider";
 import { getAccountState } from "@/services/accountStateService";
-import {
-  ProgressionApplicationResult,
-  ProgressionApplicationService,
-} from "@/services/progression";
+import { ProgressionApplicationService } from "@/services/progression";
 import { buildSupportInfo } from "@/services/supportDebugInfo";
 import { deleteUpgrade } from "@/services/upgradeService";
 import { setOnboardingIncomplete } from "@/storage/appConfig";

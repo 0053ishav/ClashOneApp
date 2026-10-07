@@ -8,7 +8,7 @@ import React from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { ENV } from "@/config/env";
-import type { ProgressionApplicationResult } from "@/services/progression";
+import type { ProgressionApplicationResult } from "@/engine/progression/models";
 import type { Village } from "@/types/entity";
 import { ResourceType } from "@/types/resource";
 import type { Upgrade } from "@/types/upgrade";

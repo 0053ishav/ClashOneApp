@@ -12,7 +12,7 @@ import { ResourceType } from "@/types/resource";
 const API =
   `${process.env.EXPO_PUBLIC_BACKEND_URL}/v2`;
 
-type CraftedDefenseMetadataPayload =
+export type CraftedDefenseMetadataPayload =
   Record<
     string,
     {

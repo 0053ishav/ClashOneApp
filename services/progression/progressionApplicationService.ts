@@ -4,13 +4,12 @@ import {
 } from "@/engine/progression";
 
 import type {
+  OverallProgressionResult,
+  ProgressionApplicationResult,
   ProgressionInput,
-  ProgressionResult
+  ProgressionOverviewResult
 } from "@/engine/progression/models";
 
-import type {
-  CraftedProgressionResult,
-} from "@/engine/crafted/model";
 import type { Upgrade } from "@/types/upgrade";
 
 import { useAccountStore } from "@/stores/accountStore";
@@ -18,9 +17,7 @@ import { CraftedDefenseProgressionApplicationService } from "./craftedDefensePro
 import { PlayerLevelResolver } from "./playerLevelResolver";
 import { ProgressionQueries } from "./progressionQueries";
 
-export type ProgressionApplicationResult =
-  | ProgressionResult
-  | CraftedProgressionResult;
+import { ProgressionAggregation } from "@/engine/progression/operations/progressionAggregation";
 
 export class ProgressionApplicationService {
   static resolveUpgrade(
@@ -98,6 +95,43 @@ export class ProgressionApplicationService {
     return ProgressionService.resolve(
       input,
     );
+  }
+
+  static resolveAll(
+    upgrades: Upgrade[],
+  ): ProgressionApplicationResult[] {
+    return upgrades
+      .map((upgrade) =>
+        this.resolveUpgrade(upgrade),
+      )
+      .filter(
+        (
+          result,
+        ): result is ProgressionApplicationResult =>
+          result !== null,
+      );
+  }
+
+  static resolveOverallProgression(
+    upgrades: Upgrade[],
+  ): OverallProgressionResult {
+    return this.resolveAccountProgression(upgrades).overall;
+  }
+
+  static resolveAccountProgression(
+    upgrades: Upgrade[],
+  ): ProgressionOverviewResult {
+    const entities = this.resolveAll(upgrades);
+
+    const overall =
+      ProgressionAggregation.aggregate(
+        entities,
+      );
+
+    return {
+      entities,
+      overall,
+    };
   }
 }
 

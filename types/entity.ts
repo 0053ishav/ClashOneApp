@@ -1,5 +1,9 @@
 export type Village = "home" | "builderBase" | "global";
 export type Resource = "gold" | "elixir" | "dark" ;
+
+/**
+ * Dont't use EntityType in progression, Use subType 
+ */
 export type EntityType =
     | "building"
     | "trap"

@@ -17,6 +17,7 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
+*.keystore
 
 # Metro
 .metro-health-check*
@@ -28,14 +29,23 @@ yarn-error.*
 
 # macOS
 .DS_Store
+
+# certificates / credentials
 *.pem
+*.p12
+*.key
+*.mobileprovision
+*.jks
 
 # local env files
-.env*.local
 .env
+.env.*
+!.env.example
+
 # typescript
 *.tsbuildinfo
 
+# generated starter files
 app-example
 
 # generated native folders

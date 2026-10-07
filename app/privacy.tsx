@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   Animated,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -64,7 +65,7 @@ export default function PrivacyScreen() {
               <Ionicons name="calendar" size={20} color="#fbbf24" />
               <View style={styles.infoText}>
                 <Text style={styles.infoLabel}>Last Updated</Text>
-                <Text style={styles.infoValue}>January 2024</Text>
+                <Text style={styles.infoValue}>May 2026</Text>
               </View>
             </View>
           </Animated.View>
@@ -76,9 +77,11 @@ export default function PrivacyScreen() {
               <Text style={styles.sectionTitle}>Your Privacy</Text>
             </View>
             <Text style={styles.sectionText}>
-              Clash Widget is designed with your privacy in mind. We collect
-              minimal data and never share your information with third parties.
-              Your player data remains on your device.
+              Clash One is designed to help players track upgrades and builder
+              activity. The app stores most gameplay data locally on your
+              device. Some third-party services such as advertising providers
+              may collect limited technical information in accordance with their
+              own privacy policies.
             </Text>
           </View>
 
@@ -93,23 +96,26 @@ export default function PrivacyScreen() {
               <View style={styles.bulletItem}>
                 <View style={styles.bullet} />
                 <Text style={styles.bulletText}>
-                  Upgrade information you manually enter
+                  Clash of Clans player tags you choose to add
                 </Text>
               </View>
               <View style={styles.bulletItem}>
                 <View style={styles.bullet} />
                 <Text style={styles.bulletText}>
-                  Builder count configuration
+                  Upgrade tracking and builder information
                 </Text>
               </View>
               <View style={styles.bulletItem}>
                 <View style={styles.bullet} />
-                <Text style={styles.bulletText}>Notification preferences</Text>
+                <Text style={styles.bulletText}>
+                  Notification preferences and reminder settings
+                </Text>
               </View>
               <View style={styles.bulletItem}>
                 <View style={styles.bullet} />
                 <Text style={styles.bulletText}>
-                  Optional player JSON data (stored locally only)
+                  Anonymous analytics and app performance information (if
+                  enabled)
                 </Text>
               </View>
             </View>
@@ -126,13 +132,19 @@ export default function PrivacyScreen() {
               <View style={styles.bulletItem}>
                 <View style={styles.bullet} />
                 <Text style={styles.bulletText}>
-                  Never share data with third parties
+                  We do not sell your personal information
                 </Text>
               </View>
               <View style={styles.bulletItem}>
                 <View style={styles.bullet} />
                 <Text style={styles.bulletText}>
-                  Don&apos;t sell or trade personal information
+                  We do not request your Clash of Clans login credentials
+                </Text>
+              </View>
+              <View style={styles.bulletItem}>
+                <View style={styles.bullet} />
+                <Text style={styles.bulletText}>
+                  We do not modify your Clash of Clans account or game data
                 </Text>
               </View>
             </View>
@@ -196,6 +208,22 @@ export default function PrivacyScreen() {
             </Text>
           </View>
 
+          {/* Advertising */}
+          <View style={styles.card}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="megaphone" size={20} color="#22c55e" />
+              <Text style={styles.sectionTitle}>Advertising</Text>
+            </View>
+
+            <Text style={styles.sectionText}>
+              Clash one may display advertisements provided by Google AdMob.
+              Advertising partners may collect device identifiers, approximate
+              location, and usage information to provide and measure ads. Please
+              review Google&apos;s privacy policy for more information about how
+              advertising data is handled.
+            </Text>
+          </View>
+
           {/* Changes */}
           <View style={styles.card}>
             <View style={styles.sectionHeader}>
@@ -216,10 +244,26 @@ export default function PrivacyScreen() {
               <Text style={styles.sectionTitle}>Disclaimer</Text>
             </View>
             <Text style={styles.sectionText}>
-              Clash Widget is an unofficial companion app and is not affiliated
-              with, endorsed, sponsored, or specifically approved by Supercell.
-              Clash of Clans and all related assets are trademarks of Supercell.
+              This content is not affiliated with, endorsed, sponsored, or
+              specifically approved by Supercell and Supercell is not
+              responsible for it. For more information see Supercell&apos;s Fan
+              Content Policy.
             </Text>
+            <Pressable
+              onPress={() =>
+                Linking.openURL("https://supercell.com/en/fan-content-policy/")
+              }
+            >
+              <Text
+                style={{
+                  color: "#fbbf24",
+                  marginTop: 10,
+                  fontWeight: "600",
+                }}
+              >
+                Open Fan Content Policy
+              </Text>
+            </Pressable>
           </View>
 
           {/* Contact */}
@@ -228,11 +272,25 @@ export default function PrivacyScreen() {
               <Ionicons name="mail" size={20} color="#f59e0b" />
               <Text style={styles.sectionTitle}>Contact Us</Text>
             </View>
+
             <Text style={styles.sectionText}>
-              If you have questions about this privacy policy or our practices,
-              please reach out. We&apos;re committed to transparency and
-              resolving any concerns.
+              Questions, feedback, bug reports, or privacy concerns? Contact us
+              anytime.
             </Text>
+
+            <Pressable
+              style={styles.linkButton}
+              onPress={() =>
+                Linking.openURL(
+                  "mailto:legal@clashwidget.online?subject=Clash One Support",
+                )
+              }
+            >
+              <Ionicons name="mail-outline" size={18} color="#fbbf24" />
+              <Text style={styles.linkButtonText}>
+                legal@clashwidget.online
+              </Text>
+            </Pressable>
           </View>
 
           {/* CTA */}
@@ -441,5 +499,18 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     color: "#0f172a",
+  },
+
+  linkButton: {
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  linkButtonText: {
+    color: "#fbbf24",
+    fontSize: 13,
+    fontWeight: "600",
   },
 });

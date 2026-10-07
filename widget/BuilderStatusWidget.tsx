@@ -1,8 +1,5 @@
 "use no memo";
-import { EntityType } from "@/types/entity";
-import { getCraftedResolver } from "@/utils/craftedResolver";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
-import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
 import React from "react";
 import {
   FlexWidget,
@@ -13,44 +10,28 @@ import {
 export function BuilderStatusWidget(props: {
   title: string;
   subtitle: string;
-  isCrafted?: boolean;
+  icon?: string | number;
   progress: number;
   showProgress: boolean;
+  isFree?: boolean;
   levelText?: string;
   builderCountText?: string;
   nextUpgradeText?: string;
   color?: string;
   accountInitials?: string;
-  dataId?: number;
-  type?: EntityType;
   updatedAt?: number;
-  renderedAt?: number;
+  cachedAt?: number;
 }) {
   const isFree = props.subtitle === "All builders free";
 
   const clamped = Math.max(0, Math.min(props.progress ?? 0, 1));
-  const progressWidth = Math.floor(90 * clamped);
-
-  const { getCraftedIcon } = getCraftedResolver();
-
-  const icon =
-    props.dataId && props.type
-      ? props.isCrafted && getCraftedIcon(props.dataId)
-        ? getCraftedIcon(props.dataId)
-        : getIconByEntityType(
-            props.dataId,
-            props.type,
-            undefined,
-            props.isCrafted,
-          )
-      : isFree
-        ? require("@/assets/images/builder/builder-idle.png")
-        : require("@/assets/images/builder/builder-working.png");
+  // const progressWidth = Math.floor(90 * clamped);
 
   const accentColor = (props.color ?? "#fbbf24") as any;
 
   return (
     <FlexWidget
+      clickAction="OPEN_APP"
       style={{
         width: "match_parent",
         height: "match_parent",
@@ -73,10 +54,10 @@ export function BuilderStatusWidget(props: {
       <FlexWidget
         style={{
           flex: 1,
-          paddingVertical: 8,
-          paddingHorizontal: 12,
+          paddingVertical: 4,
+          paddingHorizontal: 8,
           flexDirection: "column",
-          justifyContent: "space-between",
+          justifyContent: "flex-start",
         }}
       >
         {/* TOP SECTION */}
@@ -85,13 +66,14 @@ export function BuilderStatusWidget(props: {
             flexDirection: "row",
             alignItems: "flex-start",
             marginBottom: 6,
+            width: "match_parent",
           }}
         >
           {/* ICON */}
           <FlexWidget
             style={{
-              width: 50,
-              height: 50,
+              width: 40,
+              height: 40,
               borderRadius: 12,
               backgroundColor: isFree
                 ? "rgba(34, 197, 94, 0.15)"
@@ -101,7 +83,17 @@ export function BuilderStatusWidget(props: {
               marginRight: 10,
             }}
           >
-            <ImageWidget image={icon} imageWidth={32} imageHeight={32} />
+            <ImageWidget
+              image={
+                props.icon
+                  ? props.icon
+                  : isFree
+                    ? require("@/assets/images/builder/builder-idle.png")
+                    : require("@/assets/images/builder/builder-working.png")
+              }
+              imageWidth={24}
+              imageHeight={24}
+            />
           </FlexWidget>
 
           {/* TITLE + SUBTITLE + LEVEL + PROGRESS */}
@@ -109,6 +101,7 @@ export function BuilderStatusWidget(props: {
             style={{
               flex: 1,
               flexDirection: "column",
+              width: "match_parent",
               justifyContent: "center",
             }}
           >
@@ -145,23 +138,53 @@ export function BuilderStatusWidget(props: {
                 text={props.title}
                 style={{
                   color: "#f1f5f9",
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: "700",
                 }}
                 maxLines={1}
               />
             </FlexWidget>
 
-            <TextWidget
-              text={props.subtitle}
+            <FlexWidget
               style={{
-                color: isFree ? "#22c55e" : "#fbbf24",
-                fontSize: 12,
-                fontWeight: "700",
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                width: "match_parent",
               }}
-              maxLines={1}
-            />
+            >
+              <TextWidget
+                text={props.subtitle}
+                style={{
+                  color: isFree ? "#22c55e" : "#fbbf24",
+                  fontSize: 11,
+                  fontWeight: "700",
+                }}
+                maxLines={1}
+              />
 
+              {/* UPDATED AT */}
+              {/* <FlexWidget
+                style={{
+                  width: "match_parent",
+                  alignItems: "flex-end",
+                }}
+              > */}
+              <TextWidget
+                text={
+                  props.updatedAt
+                    ? formatTimeAgo(props.updatedAt) + " ago"
+                    : " ⚠ "
+                }
+                style={{
+                  color: "#64748b",
+                  fontSize: 8,
+                  fontWeight: "500",
+                }}
+                maxLines={1}
+              />
+              {/* </FlexWidget> */}
+            </FlexWidget>
             {!isFree && props.levelText && (
               <FlexWidget
                 style={{
@@ -188,20 +211,25 @@ export function BuilderStatusWidget(props: {
             {!isFree && props.showProgress && (
               <FlexWidget
                 style={{
+                  flexDirection: "row",
                   width: "match_parent",
                   height: 6,
                   backgroundColor: "rgba(148, 163, 184, 0.2)",
                   borderRadius: 3,
                   marginTop: 3,
-                  overflow: "hidden",
-                  flexDirection: "row",
                 }}
               >
                 <FlexWidget
                   style={{
-                    width: progressWidth,
+                    flex: clamped,
                     height: "match_parent",
                     backgroundColor: "#fbbf24",
+                  }}
+                />
+                <FlexWidget
+                  style={{
+                    flex: 1 - clamped,
+                    height: "match_parent",
                   }}
                 />
               </FlexWidget>
@@ -265,9 +293,7 @@ export function BuilderStatusWidget(props: {
               >
                 <TextWidget
                   text={
-                    props.nextUpgradeText
-                      ? "⏱ " + props.nextUpgradeText
-                      : "No next upgrade"
+                    props.nextUpgradeText ? "⏱ " + props.nextUpgradeText : " ⚠ "
                   }
                   style={{
                     color: "#fbbf24",
@@ -278,28 +304,6 @@ export function BuilderStatusWidget(props: {
                 />
               </FlexWidget>
             )}
-          </FlexWidget>
-
-          {/* UPDATED AT */}
-          <FlexWidget
-            style={{
-              width: "match_parent",
-              alignItems: "flex-end",
-            }}
-          >
-            <TextWidget
-              text={
-                props.updatedAt
-                  ? "↻ Synced " + formatTimeAgo(props.updatedAt) + " ago"
-                  : "⚠ No data"
-              }
-              style={{
-                color: "#475569",
-                fontSize: 8,
-                fontWeight: "500",
-              }}
-              maxLines={1}
-            />
           </FlexWidget>
         </FlexWidget>
       </FlexWidget>

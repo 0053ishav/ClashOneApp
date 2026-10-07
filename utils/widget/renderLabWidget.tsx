@@ -1,19 +1,25 @@
-import { useAccountStore } from "@/stores/accountStore";
+import { getAccounts } from "@/services/accountService";
+import { getActiveAccount } from "@/storage/activeAccount";
+import { getWidgetPrefs } from "@/storage/widgetPrefs";
+import { resolveWidgetEntityIcon } from "@/utils/icons/resolveWidgetEntityIcon";
 import { setWidgetCache } from "@/utils/widget/widgetCache";
 import { LabStatusWidget } from "@/widget/LabStatusWidget";
 import { getLabWidgetData } from "@/widget/getLabWidgetData";
 
 export async function renderLabWidget() {
   try {
-    const { activeTag, widgetPrefs, accounts } = useAccountStore.getState();
+    const accounts = await getAccounts();
 
+    const activeTag = getActiveAccount();
+
+    const widgetPrefs = getWidgetPrefs();
     const selectedTag = widgetPrefs.selectedAccountTag;
     const fallbackTag = accounts[0]?.tag;
 
     if (!accounts || accounts.length === 0) {
       return (
         <LabStatusWidget
-          title="Laboratory"
+          title="Lab"
           subtitle="Loading..."
           progress={0}
           showProgress={false}
@@ -30,7 +36,7 @@ export async function renderLabWidget() {
     if (!tag) {
       return (
         <LabStatusWidget
-          title="Laboratory"
+          title="Lab"
           subtitle="No account"
           progress={0}
           showProgress={false}
@@ -44,7 +50,7 @@ export async function renderLabWidget() {
       // ❌ avoid recursion
       return (
         <LabStatusWidget
-          title="Laboratory"
+          title="Lab"
           subtitle="Invalid account"
           progress={0}
           showProgress={false}
@@ -59,22 +65,23 @@ export async function renderLabWidget() {
     }
 
     const data = await getLabWidgetData(tag);
+    const icon = data.dataId
+      ? ((await resolveWidgetEntityIcon(data.dataId)) ?? undefined)
+      : undefined;
 
     setWidgetCache(tag, "lab", {
       ...data,
-      renderedAt: Date.now(),
+      cachedAt: Date.now(),
     });
-
     return (
       <LabStatusWidget
-        title={data.title ?? "Laboratory"}
+        title={data.title ?? "Lab"}
         subtitle={data.subtitle ?? "Idle"}
+        icon={icon}
         progress={data.progress ?? 0}
         showProgress={data.showProgress ?? false}
         levelText={data.levelText}
         nextUpgradeText={data.nextUpgradeText}
-        dataId={data.dataId}
-        type={data.type}
         color={data.color}
         accountInitials={data.accountInitials}
         updatedAt={data.updatedAt}
@@ -85,7 +92,7 @@ export async function renderLabWidget() {
 
     return (
       <LabStatusWidget
-        title="Laboratory"
+        title="Lab"
         subtitle="Open app to sync"
         progress={0}
         showProgress={false}

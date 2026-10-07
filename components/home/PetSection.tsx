@@ -1,23 +1,28 @@
-import { getEntityTypeByDataId } from "@/data/entityMap";
+import { ENV } from "@/config/env";
 import { Upgrade } from "@/types/upgrade";
 import { calculateProgress } from "@/utils/calculateProgress";
 import { formatCountdown } from "@/utils/formatCountdown";
-import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
+import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export function PetSection({
   pet,
+  townHall,
   onAddPress,
-  onLongPress,
+  onPress,
 }: {
   pet: Upgrade | null;
+  townHall: number;
+
   onAddPress?: () => void;
-  onLongPress?: (pet: Upgrade) => void;
+  onPress?: (pet: Upgrade) => void;
 }) {
   const activePet = pet;
+  const isUnlocked = townHall >= 14;
   const isBusy = !!activePet;
+  const isIdle = isUnlocked && !isBusy;
 
   const now = Date.now();
   const progress = activePet
@@ -26,17 +31,31 @@ export function PetSection({
   const remainingMs = activePet ? Math.max(activePet.endTime - now, 0) : 0;
   const totalMs = activePet ? activePet.endTime - activePet.startTime : 0;
 
-  const entityType = activePet?.dataId
-    ? getEntityTypeByDataId(activePet.dataId, activePet.isCrafted)
-    : undefined;
+  const petIconUri =
+    activePet?.dataId != null
+      ? resolveEntityIcon(activePet.dataId, {
+          village: "home",
+          level: activePet.currentLevel,
+        })
+      : null;
 
+  if (townHall < 14) return null;
   return (
     <View style={styles.container}>
       {/* Section Header */}
       <View style={styles.sectionHeader}>
         <View style={styles.headerLeft}>
           <View style={styles.titleRow}>
-            <Text style={styles.emoji}>🐾</Text>
+            <View style={{}}>
+              <Image
+                source={{
+                  uri: `${ENV.CDN_BASE}/entities/buildings/1000068.png`,
+                }}
+                style={{ width: 30, height: 30 }}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+              />
+            </View>
             <Text style={styles.sectionTitle}>Pet House</Text>
           </View>
           <View
@@ -60,76 +79,77 @@ export function PetSection({
       </View>
 
       {/* Active Upgrade Card */}
-      {activePet ? (
+      {isBusy ? (
         <Pressable
-          style={({ pressed }) => [
-            styles.card,
-            styles.petCard,
-            pressed && styles.cardPressed,
-          ]}
-          onLongPress={() => onLongPress?.(activePet)}
+          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+          onPress={() => onPress?.(activePet)}
           delayLongPress={300}
         >
           <View style={styles.cardContent}>
-            {/* Pet Icon */}
-            <View style={[styles.iconContainer, styles.petIconContainer]}>
-              <Image
-                source={
-                  activePet.dataId && entityType
-                    ? getIconByEntityType(
-                        activePet.dataId,
-                        entityType,
-                        undefined,
-                        activePet.isCrafted,
-                      )
-                    : require("@/assets/images/builder/builder-working.png")
-                }
-                style={styles.petIcon}
-                contentFit="contain"
-                cachePolicy="memory-disk"
-              />
+            {/* PET BADGE */}
+            <View style={styles.petBadge}>
+              <Text style={styles.petBadgeText}>PET</Text>
             </View>
 
-            {/* Info Section */}
-            <View style={styles.infoSection}>
-              <View style={styles.topRow}>
-                <Text style={styles.itemName} numberOfLines={1}>
-                  {activePet.entity}
-                </Text>
-                {activePet.currentLevel !== undefined &&
-                  activePet.nextLevel !== undefined && (
-                    <View style={[styles.levelBadge, styles.petLevelBadge]}>
-                      <Text style={styles.levelText}>
-                        Lv {activePet.currentLevel} → {activePet.nextLevel}
-                      </Text>
-                    </View>
-                  )}
+            <View style={styles.upgradeMain}>
+              {/* LEFT */}
+              <View style={styles.upgradeLeft}>
+                <View style={[styles.iconContainer, styles.petIconContainer]}>
+                  <Image
+                    source={
+                      petIconUri
+                        ? { uri: petIconUri }
+                        : require("@/assets/images/builder/builder-working.png")
+                    }
+                    style={styles.petIcon}
+                    contentFit="contain"
+                    cachePolicy="memory-disk"
+                  />
+                </View>
+
+                <View style={styles.upgradeNameSection}>
+                  <Text style={styles.itemName} numberOfLines={1}>
+                    {activePet.entity}
+                  </Text>
+
+                  {activePet.currentLevel !== undefined &&
+                    activePet.nextLevel !== undefined && (
+                      <View style={[styles.levelBadge, styles.petLevelBadge]}>
+                        <Text style={styles.levelText}>
+                          Lv {activePet.currentLevel} → Lv {activePet.nextLevel}
+                        </Text>
+                      </View>
+                    )}
+                </View>
               </View>
 
-              {/* Time Display */}
-              <View style={styles.timeRow}>
+              {/* RIGHT */}
+              <View style={styles.upgradeRight}>
                 <Text style={[styles.remainingTime, styles.petTime]}>
                   {formatCountdown(remainingMs)}
                 </Text>
+
                 <Text style={styles.totalTime}>
                   of {formatCountdown(totalMs)}
                 </Text>
               </View>
+            </View>
 
-              {/* Progress Bar */}
-              <View style={styles.progressTrack}>
-                <View
-                  style={[
-                    styles.progressBar,
-                    styles.petProgressBar,
-                    { width: `${progress * 100}%` },
-                  ]}
-                />
-              </View>
+            {/* PROGRESS */}
+            <View style={styles.progressTrack}>
+              <View
+                style={[
+                  styles.progressBar,
+                  styles.petProgressBar,
+                  {
+                    width: `${progress * 100}%`,
+                  },
+                ]}
+              />
             </View>
           </View>
         </Pressable>
-      ) : (
+      ) : isIdle ? (
         <View style={styles.emptyCard}>
           <View style={styles.emptyIconWrapper}>
             <Ionicons name="paw" size={28} color="#475569" />
@@ -150,7 +170,7 @@ export function PetSection({
             </Pressable>
           )}
         </View>
-      )}
+      ) : null}
     </View>
   );
 }
@@ -218,35 +238,73 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    borderRadius: 16,
-    overflow: "hidden",
     shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+    borderRadius: 14,
+    overflow: "visible",
+    marginBottom: 8,
+    borderWidth: 1,
   },
 
-  petCard: {
+  cardContent: {
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 14,
     backgroundColor: "#1e293b",
-    borderWidth: 1,
-    borderColor: "#8b5cf6",
+    // borderWidth: 1,
+    // borderColor: "#263244",
+    gap: 10,
   },
 
-  labCard: {
-    backgroundColor: "#1e293b",
-    borderWidth: 1,
-    borderColor: "#06b6d4",
+  petBadge: {
+    backgroundColor: "#8b5cf6",
+    position: "absolute",
+    top: -8,
+    right: 0,
+
+    flexDirection: "row",
+    alignItems: "center",
+
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    zIndex: 10,
+  },
+
+  petBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#0f172a",
+  },
+
+  upgradeMain: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  upgradeLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+
+  upgradeNameSection: {
+    flex: 1,
+    gap: 6,
+  },
+
+  upgradeRight: {
+    alignItems: "flex-end",
+    gap: 4,
   },
 
   cardPressed: {
     opacity: 0.9,
-  },
-
-  cardContent: {
-    flexDirection: "row",
-    padding: 16,
-    gap: 14,
   },
 
   iconContainer: {
@@ -275,18 +333,6 @@ const styles = StyleSheet.create({
     height: 40,
   },
 
-  infoSection: {
-    flex: 1,
-    gap: 8,
-  },
-
-  topRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-
   itemName: {
     fontSize: 15,
     fontWeight: "700",
@@ -295,17 +341,17 @@ const styles = StyleSheet.create({
   },
 
   levelBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
+    alignSelf: "flex-start",
   },
 
   petLevelBadge: {
     backgroundColor: "rgba(139, 92, 246, 0.2)",
-  },
-
-  labLevelBadge: {
-    backgroundColor: "rgba(6, 182, 212, 0.2)",
   },
 
   levelText: {
@@ -314,14 +360,8 @@ const styles = StyleSheet.create({
     color: "#a78bfa",
   },
 
-  timeRow: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    gap: 6,
-  },
-
   remainingTime: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "800",
   },
 

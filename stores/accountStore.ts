@@ -1,6 +1,5 @@
 import { Account, deleteAccount, getAccounts, replaceEntities, replaceUpgrades } from "@/services/accountService";
 import { switchAccountService } from "@/services/accountSwitchService";
-import { rescheduleAllBuilderNotifications } from "@/services/notifications/builderNotificationService";
 import { getActiveAccount } from "@/storage/activeAccount";
 import { getLastJsonSync, setLastJsonSync } from "@/storage/jsonSyncStorage";
 import { getPlayerProfile } from "@/storage/playerProfile";
@@ -12,8 +11,10 @@ import { create } from "zustand";
 type AccountState = {
   activeTag: string | null;
   accounts: Account[];
-  profile: PlayerProfile | null;
-
+  profilesByTag: Record<
+    string,
+    PlayerProfile
+  >;
   isLoadingProfile: boolean;
   isLoadingAccounts: boolean;
   widgetPrefs: {
@@ -29,9 +30,18 @@ type AccountState = {
   loadActiveAccount: () => Promise<void>;
   switchAccount: (tag: string) => Promise<void>;
   removeAccount: (tag: string) => Promise<void>;
-  setProfile: (profile: PlayerProfile) => void;
+
+  setProfile: (
+    tag: string,
+    profile: PlayerProfile,
+  ) => void;
+
+  getProfile: (
+    tag: string,
+  ) => PlayerProfile | null;
+
   importJsonData: (
-    tag: string, 
+    tag: string,
     upgrades: Upgrade[],
     entities: EntityRecord[]
   ) => Promise<void>;
@@ -40,7 +50,7 @@ type AccountState = {
 export const useAccountStore = create<AccountState>((set) => ({
   activeTag: null,
   accounts: [],
-  profile: null,
+  profilesByTag: {},
 
   isLoadingProfile: false,
   isLoadingAccounts: false,
@@ -49,6 +59,29 @@ export const useAccountStore = create<AccountState>((set) => ({
 
   lastJsonSyncMap: {},
   isSyncing: false,
+
+  setProfile: (
+    tag,
+    profile,
+  ) => {
+    set((state) => ({
+      profilesByTag: {
+        ...state.profilesByTag,
+        [tag]: profile,
+      },
+    }));
+  },
+
+  getProfile: (tag: string): PlayerProfile | null => {
+    const state =
+      useAccountStore.getState();
+
+    return (
+      state.profilesByTag[
+      tag
+      ] ?? null
+    );
+  },
 
   setWidgetAccount: (tag) => {
     set((state) => {
@@ -92,12 +125,36 @@ export const useAccountStore = create<AccountState>((set) => ({
     }));
   },
 
-  // 🔹 Load all accounts
   loadAccounts: async () => {
     set({ isLoadingAccounts: true });
 
     try {
       const list = await getAccounts();
+
+      const profilesByTag:
+        Record<
+          string,
+          PlayerProfile
+        > = {};
+
+
+      /**
+       * OVERLOADS MEMORY
+       * For loop
+       * is okay for:
+       * 2 accounts
+       * 5 accounts
+       * but bad long term.
+       * Not critical now though.
+       * Keep it for MVP.
+       * 
+       */
+      for (const acc of list) {
+        const profile = getPlayerProfile(acc.tag);
+        if (profile?.playerTag) {
+          profilesByTag[acc.tag] = profile;
+        }
+      }
 
       set((state) => {
         const exists = list.some(
@@ -113,12 +170,13 @@ export const useAccountStore = create<AccountState>((set) => ({
 
         return {
           accounts: list,
+          profilesByTag,
           widgetPrefs: updatedPrefs,
         };
       });
-
     } catch (e) {
       console.error("loadAccounts error:", e);
+      throw e;
     } finally {
       set({ isLoadingAccounts: false });
     }
@@ -130,12 +188,20 @@ export const useAccountStore = create<AccountState>((set) => ({
 
     try {
       const tag = await getActiveAccount();
-      const profile = getPlayerProfile();
+      const profile = tag
+        ? getPlayerProfile(tag)
+        : null;
       const time = tag ? getLastJsonSync(tag) : null;
 
       set((state) => ({
         activeTag: tag ?? null,
-        profile: profile ?? null,
+        profilesByTag:
+          profile && tag
+            ? {
+              ...state.profilesByTag,
+              [tag]: profile,
+            }
+            : state.profilesByTag,
         lastJsonSyncMap: time && tag
           ? {
             ...state.lastJsonSyncMap,
@@ -146,6 +212,7 @@ export const useAccountStore = create<AccountState>((set) => ({
 
     } catch (e) {
       console.error("loadActiveAccount error:", e);
+      throw e;
     } finally {
       set({ isLoadingProfile: false });
     }
@@ -162,18 +229,28 @@ export const useAccountStore = create<AccountState>((set) => ({
     try {
       await switchAccountService(tag);
 
-      const profile = getPlayerProfile();
+      const profile =
+        getPlayerProfile(tag);
+
       const time = getLastJsonSync(tag);
 
       set((state) => ({
         activeTag: tag,
-        profile: profile ?? null,
-        lastJsonSyncMap: time
-          ? {
-            ...state.lastJsonSyncMap,
-            [tag]: time,
-          }
-          : state.lastJsonSyncMap
+        profilesByTag:
+          profile
+            ? {
+              ...state.profilesByTag,
+              [tag]: profile,
+            }
+            : state.profilesByTag,
+
+        lastJsonSyncMap:
+          time
+            ? {
+              ...state.lastJsonSyncMap,
+              [tag]: time,
+            }
+            : state.lastJsonSyncMap
       }));
     } catch (e) {
       console.error("switchAccount error:", e);
@@ -207,11 +284,17 @@ export const useAccountStore = create<AccountState>((set) => ({
           saveWidgetPrefs(updatedPrefs);
         }
 
+        const updatedProfiles = {
+          ...state.profilesByTag,
+        };
+
+        delete updatedProfiles[tag];
+
         return {
           accounts: list,
           widgetPrefs: updatedPrefs,
           activeTag: newActiveTag,
-          profile: newActiveTag ? getPlayerProfile() : null,
+          profilesByTag: updatedProfiles,
         };
       });
 
@@ -220,11 +303,6 @@ export const useAccountStore = create<AccountState>((set) => ({
     } finally {
       set({ isLoadingProfile: false });
     }
-  },
-
-  // 🔹 Manual update
-  setProfile: (profile) => {
-    set({ profile });
   },
 
   importJsonData: async (tag, upgrades, entities) => {
@@ -242,8 +320,6 @@ export const useAccountStore = create<AccountState>((set) => ({
       await loadAccounts();
 
       await switchAccount(tag);
-      await rescheduleAllBuilderNotifications();
-
       const now = Date.now();
       setLastJsonSync(tag, now);
       setLastSync(tag, now);
@@ -254,6 +330,25 @@ export const useAccountStore = create<AccountState>((set) => ({
           [tag]: now,
         },
       }));
+      console.log(
+        "📦 ENTITIES CREATED",
+        tag,
+        entities.map((e) => ({
+          type: e.type,
+          dataId: e.dataId,
+          level: e.level,
+        })),
+      );
+      console.log(
+        "📦 Upgrades CREATED",
+        tag,
+        upgrades.map((e) => ({
+          type: e.type,
+          dataId: e.dataId,
+          hasHelper: e.hasHelper,
+          helperAppliedSeconds: e.helperAppliedSeconds,
+        })),
+      );
     } catch (e) {
       console.error("importJsonData error:", e);
     } finally {

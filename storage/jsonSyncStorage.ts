@@ -21,13 +21,13 @@ export function setLastJsonSync(tag: string, timestamp: number) {
 /**
  * Get last successful JSON sync time
  */
-export function getLastJsonSync(tag: string): number | null {
+export function getLastJsonSync(tag: string): number | undefined {
   try {
     const value = storage.getNumber(getKey(tag));
-    return typeof value === "number" ? value : null;
+    return typeof value === "number" ? value : undefined;
   } catch (error) {
     console.warn("Failed to read last JSON sync", error);
-    return null;
+    return undefined;
   }
 }
 

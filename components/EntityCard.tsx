@@ -1,6 +1,6 @@
+import { getUpgradeStatus } from "@/engine/progression/selectors/getUpgradeStatus";
 import { getProgressColor } from "@/utils/getProgressColor";
-import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
-import { getUpgradeStatus } from "@/utils/progression/getUpgradeStatus";
+import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -8,14 +8,12 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 export default function EntityCard({
   dataId,
   name,
-  type,
   level,
   maxLevel,
   onPress,
 }: {
   dataId: number;
   name: string;
-  type: "troop" | "hero" | "pet" | "spell" | "siege";
   level: number;
   maxLevel: number;
   onPress?: () => void;
@@ -43,7 +41,9 @@ export default function EntityCard({
         ]}
       >
         <Image
-          source={getIconByEntityType(dataId, type)}
+          source={{
+            uri: resolveEntityIcon(dataId),
+          }}
           style={styles.cardImage}
           contentFit="contain"
           cachePolicy="memory-disk"

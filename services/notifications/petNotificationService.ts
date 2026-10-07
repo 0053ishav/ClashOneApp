@@ -1,35 +1,23 @@
-import { getNotificationsEnabled } from "@/storage/notificationConfig";
 import {
-  cancelTimedNotification,
-  NotificationType,
-  scheduleTimedNotification,
-} from "@/utils/notificationEngine";
+    UpgradeEvent
+} from "@/engine/notifications/notificationEngine";
 
-import * as Notifications from "expo-notifications";
 
-async function hasPermission() {
-  const { status } = await Notifications.getPermissionsAsync();
-  return status === "granted";
-}
+export function getPetEvents(account: any): UpgradeEvent[] {
+  if (!account?.pets) return [];
 
-export async function scheduleLabNotification(
-  id: string,
-  petName: string,
-  endTime: number
-) {
-    if (!getNotificationsEnabled()) return;
-    
-    if (!(await hasPermission())) return;
+  return account.pets
+    .filter((p: any) => p.isUpgrading && p.finishTimestamp)
+    .map((p: any) => ({
+      id: `pet-${account.tag}-${p.name}`,
 
-  await scheduleTimedNotification({
-    type: NotificationType.PET,
-    id,
-    title: "Pet Training Done 🐾",
-    body: `${petName} level up complete.`,
-    endTime,
-  });
-}
+      playerTag: account.tag,
+      accountName: account.name,
+      accountColor: account.color ?? "#ffffff",
 
-export async function cancelLabNotification(id: string) {
-  await cancelTimedNotification(NotificationType.PET, id);
+      type: "PET",
+      entityId: p.name,
+
+      finishTimestamp: Number(p.finishTimestamp),
+    }));
 }

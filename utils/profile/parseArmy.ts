@@ -1,6 +1,5 @@
-import { getEntityId } from "@/data/entityMap";
-import { PETS, SIEGE_MACHINES, SUPER_TROOPS } from "@/entities/entityGroups";
 import { Village } from "@/types/entity";
+import { getEntity, getEntityId } from "@/utils/getEntity";
 
 interface ArmyEntity {
   name: string;
@@ -12,8 +11,12 @@ interface ArmyEntity {
 function attachId(entity: ArmyEntity) {
   const id = getEntityId(entity.name, entity.village);
 
-  if (!id) {
-    console.warn("Missing entity mapping: ", entity.name, entity.village);
+  if (__DEV__ && id === null) {
+    console.warn(
+      "Missing entity mapping:",
+      entity.name,
+      entity.village,
+    );
   }
 
   return {
@@ -23,34 +26,94 @@ function attachId(entity: ArmyEntity) {
 }
 
 export function parseArmy(data: any) {
+
+  const mappedTroops =
+    data.troops?.map(attachId) ?? [];
+  const mappedHeroes =
+    data.heroes?.map(attachId) ?? []
+
+  const validHeroes =
+    mappedHeroes.filter(
+      (t: any) => t.dataId !== -1,
+    );
+  const validTroops =
+    mappedTroops.filter(
+      (t: any) => t.dataId !== -1,
+    );
+
   const troops =
-    data.troops
-      ?.filter(
-        (t: any) =>
-          t.village === "home" &&
-          !PETS.includes(t.name) &&
-          !SIEGE_MACHINES.includes(t.name) &&
-          !SUPER_TROOPS.includes(t.name),
-      )
-      .map(attachId)
-      .sort((a: any, b: any) => a.name.localeCompare(b.name)) ?? [];
+    validTroops
+      .filter((t: any) => {
+        const entity = getEntity(t.dataId);
 
-  const pets = data.troops?.filter((t: any) => PETS.includes(t.name)).map(attachId) || [];
+        return (
+          entity.type === "troop" &&
+          entity.subType !== "SUPER_TROOP"
+        );
+      })
+      // .sort((a: any, b: any) =>
+      //   a.name.localeCompare(b.name),
+      // ) ?? [];
 
-  const superTroops =
-    data.troops?.filter((t: any) => SUPER_TROOPS.includes(t.name)).map(attachId) || [];
+  // const superTroops =
+  //   data.troops
+  //     ?.map(attachId)
+  //     .filter((t: any) => {
+  //       const entity = getEntity(t.dataId);
+
+  //       return (
+  //         entity.type === "troop" &&
+  //         entity.subType === "SUPER_TROOP"
+  //       );
+  //     }) ?? [];
+
+  const pets =
+    validTroops
+      .filter((t: any) => {
+        const entity = getEntity(t.dataId);
+
+        return entity.type === "pet";
+      }) ?? [];
 
   const siegeMachines =
-    data.troops?.filter((t: any) => SIEGE_MACHINES.includes(t.name)).map(attachId) || [];
+    validTroops
+      .filter((t: any) => {
+        const entity = getEntity(t.dataId);
+
+        return entity.type === "siege";
+      }) ?? [];
 
   const heroes =
-    data.heroes?.filter((h: any) => h.village === "home").map(attachId) || [];
+    validHeroes
+      .filter((h: any) => {
+        const entity = getEntity(h.dataId);
+
+        return entity.type === "hero";
+      }) ?? [];
 
   return {
-    troops,
-    pets,
-    superTroops,
-    siegeMachines,
-    heroes,
+    home: {
+      troops: troops.filter(
+        (t: any) => t.village === "home",
+      ),
+
+      pets,
+
+      siegeMachines,
+
+      heroes: heroes.filter(
+        (h: any) => h.village === "home",
+      ),
+    },
+
+    builderBase: {
+      troops: troops.filter(
+        (t: any) => t.village === "builderBase",
+      ),
+
+      heroes: heroes.filter(
+        (h: any) => h.village === "builderBase",
+      ),
+    },
   };
 }

@@ -1,6 +1,7 @@
-import { useCraftedStore } from "@/stores/craftedEventStore";
+import { ENV } from "@/config/env";
+import { useCraftedStore } from "@/stores/crafted";
 
-const CRAFTED_URL = process.env.EXPO_PUBLIC_CRAFTED_URL!;
+const CRAFTED_URL = `${ENV.BACKEND}/v2/events/crafted-defenses-event`!;
 
 let isLoaded = false;
 

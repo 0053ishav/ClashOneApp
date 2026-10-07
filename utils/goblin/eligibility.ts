@@ -28,3 +28,21 @@ export function canUseGoblinBuilder(
 
   return true;
 }
+
+type LabState = {
+  normal?: Upgrade | null;
+  goblin?: Upgrade | null;
+};
+
+export function canUseGoblinLab(labState: LabState): boolean {
+  // ❌ event not active → cannot START new goblin
+  if (!isWorkForHireActive()) return false;
+
+  // ❌ goblin already running → cannot start another
+  if (labState.goblin) return false;
+
+  // ❌ normal lab must be occupied
+  if (!labState.normal) return false;
+
+  return true;
+}

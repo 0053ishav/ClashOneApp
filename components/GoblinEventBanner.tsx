@@ -1,3 +1,4 @@
+import { ENV } from "@/config/env";
 import { formatCountdown } from "@/utils/formatCountdown";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
@@ -62,7 +63,7 @@ export default function GoblinEventBanner({ eventEndsAt, onDismiss }: Props) {
       <View style={styles.leftSection}>
         <View style={styles.iconWrapper}>
           <Image
-            source={require("@/assets/images/clash/resources/gem.png")}
+            source={{ uri: `${ENV.CDN_BASE}/entities/resources/gem.png` }}
             style={{ width: 18, height: 18 }}
             resizeMode="contain"
           />

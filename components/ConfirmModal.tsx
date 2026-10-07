@@ -29,9 +29,11 @@ export function ConfirmModal({
           <Text style={styles.message}>{message}</Text>
 
           <View style={styles.buttonRow}>
-            <Pressable style={styles.cancelButton} onPress={onCancel}>
-              <Text style={styles.cancelText}>{cancelText}</Text>
-            </Pressable>
+            {cancelText ? (
+              <Pressable style={styles.cancelButton} onPress={onCancel}>
+                <Text style={styles.cancelText}>{cancelText}</Text>
+              </Pressable>
+            ) : null}
 
             <Pressable
               style={[

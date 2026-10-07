@@ -1,34 +1,92 @@
-import { getPlayerProfile, savePlayerProfile } from "@/storage/playerProfile";
+// import { getPlayerProfile, savePlayerProfile } from "@/storage/playerProfile";
+// import { useAccountStore } from "@/stores/accountStore";
+// import { PlayerProfile } from "@/types/player";
+// import { useFocusEffect } from "expo-router";
+// import { useCallback, useState } from "react";
+
+// export const usePlayerProfile = () => {
+//     const [profile, setLocalProfile] = useState<PlayerProfile>(
+//         getPlayerProfile()
+//     );
+//     const setGlobalProfile = useAccountStore((s) => s.setProfile);
+
+//     useFocusEffect(
+//         useCallback(() => {
+//             const latest = getPlayerProfile();
+//             setLocalProfile(latest);
+//             setGlobalProfile(latest);
+//         }, [])
+//     );
+
+//     const updateProfile = useCallback((updated: Partial<PlayerProfile>) => {
+//         const newProfile = { ...profile, ...updated };
+
+//         savePlayerProfile(newProfile);
+
+//         setLocalProfile(newProfile);
+//         setGlobalProfile(newProfile);
+//     }, [profile, setGlobalProfile]);
+
+//     return {
+//         profile,
+//         updateProfile
+//     };
+// }
+
+import { savePlayerProfile } from "@/storage/playerProfile";
 import { useAccountStore } from "@/stores/accountStore";
-import { PlayerProfile } from "@/types/player";
-import { useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
 
-export const usePlayerProfile = () => {
-    const [profile, setLocalProfile] = useState<PlayerProfile>(
-        getPlayerProfile()
-    );
-    const setGlobalProfile = useAccountStore((s) => s.setProfile);
+export const usePlayerProfile =
+    () => {
+        const activeTag =
+            useAccountStore(
+                (s: any) => s.activeTag,
+            );
 
-    useFocusEffect(
-        useCallback(() => {
-            const latest = getPlayerProfile();
-            setLocalProfile(latest);
-            setGlobalProfile(latest);
-        }, [])
-    );
+        const profile =
+            useAccountStore(
+                (s: any) =>
+                    activeTag
+                        ? s
+                            .profilesByTag[
+                        activeTag
+                        ] ?? null
+                        : null,
+            );
 
-    const updateProfile = useCallback((updated: Partial<PlayerProfile>) => {
-        const newProfile = { ...profile, ...updated };
+        const setProfile =
+            useAccountStore(
+                (s: any) => s.setProfile,
+            );
 
-        savePlayerProfile(newProfile);
+        const updateProfile = (
+            updated: any,
+        ) => {
+            if (
+                !activeTag ||
+                !profile
+            )
+                return;
 
-        setLocalProfile(newProfile);
-        setGlobalProfile(newProfile);
-    }, [profile, setGlobalProfile]);
+            const merged = {
+                ...profile,
+                ...updated,
+            };
 
-    return {
-        profile,
-        updateProfile
+            savePlayerProfile(
+                activeTag,
+                merged,
+            );
+
+
+            setProfile(
+                activeTag,
+                merged,
+            );
+        };
+
+        return {
+            profile,
+            updateProfile,
+        };
     };
-}

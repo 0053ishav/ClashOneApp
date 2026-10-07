@@ -1,21 +1,42 @@
 import { getAccountByTag } from "@/services/accountService";
+
 import { setActiveAccount } from "@/storage/activeAccount";
-import { getPlayerProfile, savePlayerProfile } from "@/storage/playerProfile";
 
-export async function switchAccountService(tag: string) {
+import {
+    getPlayerProfile,
+    savePlayerProfile,
+} from "@/storage/playerProfile";
 
-    setActiveAccount(tag);
+export async function switchAccountService(
+  tag: string,
+) {
+  setActiveAccount(tag);
 
-    const account = await getAccountByTag(tag);
+  const account =
+    await getAccountByTag(
+      tag,
+    );
 
-    if (!account) return;
+  if (!account) return;
 
-    const current = getPlayerProfile();
+  // ✅ per-account profile
+  const existing =
+    getPlayerProfile(tag);
 
-    savePlayerProfile({
-        ...current,
-        playerTag: account.tag,
-        playerName: account.name,
-        townHallLevel: account.townhall,
-    });
+  // create minimal profile if missing
+  const profile = {
+    ...(existing ?? {}),
+    playerTag:
+      account.tag,
+    playerName:
+      account.name,
+    townHallLevel:
+      account.townhall,
+  };
+
+  // ✅ save ONLY this account profile
+  savePlayerProfile(
+    tag,
+    profile,
+  );
 }

@@ -1,7 +1,5 @@
 "use no memo";
-import { EntityType } from "@/types/entity";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
-import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
 import React from "react";
 import {
   ColorProp,
@@ -13,32 +11,25 @@ import {
 export function PetStatusWidget(props: {
   title: string;
   subtitle: string;
+  icon?: string | number;
   progress: number;
   showProgress: boolean;
   levelText?: string;
   suggestion?: string;
   color?: string;
   accountInitials?: string;
-  dataId?: number;
-  type?: EntityType;
   updatedAt?: number;
 }) {
   const isIdle = props.subtitle === "Idle";
 
   const clamped = Math.max(0, Math.min(props.progress ?? 0, 1));
-  const progressWidth = Math.floor(90 * clamped);
-
-  const icon =
-    props.dataId && props.type
-      ? getIconByEntityType(props.dataId, props.type)
-      : isIdle
-        ? require("@/assets/images/builder/builder-idle.png")
-        : require("@/assets/images/builder/builder-working.png");
+  // const progressWidth = Math.floor(90 * clamped);
 
   const accentColor = (props.color ?? "#ec4899") as any;
 
   return (
     <FlexWidget
+      clickAction="OPEN_APP"
       style={{
         width: "match_parent",
         height: "match_parent",
@@ -64,7 +55,7 @@ export function PetStatusWidget(props: {
           paddingVertical: 8,
           paddingHorizontal: 12,
           flexDirection: "column",
-          justifyContent: "space-between",
+          justifyContent: "flex-start",
         }}
       >
         {/* TOP */}
@@ -73,13 +64,14 @@ export function PetStatusWidget(props: {
             flexDirection: "row",
             alignItems: "flex-start",
             marginBottom: 6,
+            width: "match_parent",
           }}
         >
           {/* ICON */}
           <FlexWidget
             style={{
-              width: 50,
-              height: 50,
+              width: 40,
+              height: 40,
               borderRadius: 12,
               backgroundColor: isIdle
                 ? "rgba(34, 197, 94, 0.15)"
@@ -89,7 +81,17 @@ export function PetStatusWidget(props: {
               marginRight: 10,
             }}
           >
-            <ImageWidget image={icon} imageWidth={32} imageHeight={32} />
+            <ImageWidget
+              image={
+                props.icon
+                  ? props.icon
+                  : isIdle
+                    ? require("@/assets/images/builder/builder-idle.png")
+                    : require("@/assets/images/builder/builder-working.png")
+              }
+              imageWidth={24}
+              imageHeight={24}
+            />
           </FlexWidget>
 
           {/* TEXT */}
@@ -127,16 +129,35 @@ export function PetStatusWidget(props: {
               />
             </FlexWidget>
 
-            <TextWidget
-              text={props.subtitle}
+            <FlexWidget
               style={{
-                color: isIdle ? "#22c55e" : "#ec4899",
-                fontSize: 13,
-                fontWeight: "700",
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                width: "match_parent",
               }}
-              maxLines={1}
-            />
-
+            >
+              <TextWidget
+                text={props.subtitle}
+                style={{
+                  color: isIdle ? "#22c55e" : "#ec4899",
+                  fontSize: 13,
+                  fontWeight: "700",
+                }}
+                maxLines={1}
+              />
+              <TextWidget
+                text={
+                  props.updatedAt
+                    ? formatTimeAgo(props.updatedAt) + " ago"
+                    : " ⚠ "
+                }
+                style={{
+                  color: "#475569",
+                  fontSize: 8,
+                }}
+              />
+            </FlexWidget>
             {!isIdle && props.levelText && (
               <FlexWidget
                 style={{
@@ -171,7 +192,9 @@ export function PetStatusWidget(props: {
               >
                 <FlexWidget
                   style={{
-                    width: progressWidth,
+                    // width: progressWidth,
+                    flex: clamped,
+
                     height: "match_parent",
                     backgroundColor: "#ec4899",
                   }}
@@ -205,18 +228,6 @@ export function PetStatusWidget(props: {
               />
             </FlexWidget>
           )}
-
-          <TextWidget
-            text={
-              props.updatedAt
-                ? "↻ Synced " + formatTimeAgo(props.updatedAt) + " ago"
-                : "⚠ No data"
-            }
-            style={{
-              color: "#475569",
-              fontSize: 8,
-            }}
-          />
         </FlexWidget>
       </FlexWidget>
     </FlexWidget>

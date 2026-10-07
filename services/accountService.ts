@@ -7,6 +7,7 @@ export type Account = {
   color: string;
   townhall: number;
   builderCount: number;
+  builderBaseBuilderCount: number;
   lastUpdated?: number;
 };
 
@@ -16,14 +17,15 @@ export const addAccount = async (
   color: string,
   townhall: number,
   builderCount: number,
+  builderBasebuilderCount: number,
 ) => {
   const db = await getDB();
 
   await db.runAsync(
     `INSERT OR REPLACE INTO accounts
-     (player_tag, account_name, display_color, townhall_level, builder_count, last_updated)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [tag, name, color, townhall, builderCount, Date.now()]
+     (player_tag, account_name, display_color, townhall_level, builder_count, builder_base_builder_count, last_updated)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [tag, name, color, townhall, builderCount, builderBasebuilderCount, Date.now()]
   );
 };
 
@@ -36,7 +38,8 @@ export const getAccounts = async (): Promise<Account[]> => {
       account_name AS name,
       display_color AS color,
       townhall_level AS townhall,
-      builder_count AS builderCount
+      builder_count AS builderCount,
+      builder_base_builder_count AS builderBaseBuilderCount
       FROM accounts
       ORDER BY last_updated DESC
       `);
@@ -54,7 +57,8 @@ export async function getAccountByTag(
       account_name AS name,
       display_color AS color,
       townhall_level AS townhall,
-      builder_count AS builderCount
+      builder_count AS builderCount,
+      builder_base_builder_count AS builderBaseBuilderCount
     FROM accounts
     WHERE player_tag = ?
     `,
@@ -68,28 +72,33 @@ export const updateAccount = async (
   tag: string,
   name: string,
   color: string,
-  townhall?: number
+  townhall: number,
+  builderCount: number,
+  builderBaseBuilderCount: number,
 ) => {
   const db = await getDB();
 
-  if (typeof townhall === "number") {
-    await db.runAsync(
-      `UPDATE accounts
-       SET account_name=?, display_color=?, townhall_level=?, last_updated=?
-       WHERE player_tag=?`,
-      [name, color, townhall, Date.now(), tag]
-    );
-    return;
-  }
-
   await db.runAsync(
     `UPDATE accounts
-     SET account_name=?, display_color=?, last_updated=?
-     WHERE player_tag=?`,
-    [name, color, Date.now(), tag]
+     SET
+       account_name = ?,
+       display_color = ?,
+       townhall_level = ?,
+       builder_count = ?,
+       builder_base_builder_count = ?,
+       last_updated = ?
+     WHERE player_tag = ?`,
+    [
+      name,
+      color,
+      townhall,
+      builderCount,
+      builderBaseBuilderCount,
+      Date.now(),
+      tag,
+    ]
   );
 };
-
 export const deleteAccount = async (tag: string) => {
   const db = await getDB();
 
@@ -110,14 +119,35 @@ export const updateAccountColor = async (tag: string, color: string) => {
   );
 };
 
-export const updateBuilderCount = async (tag: string, count: number) => {
+// export const updateBuilderCount = async (
+//   tag: string, 
+//   homeCount: number,
+//   builderBaseCount: number,
+// ) => {
+//   const db = await getDB();
+//   if (!tag) return;
+//   await db.runAsync(
+//     `UPDATE accounts
+//       SET 
+//         builder_count = ?,
+//         builder_base_builder_count= ?
+//       WHERE player_tag = ?`,
+//     [homeCount, builderBaseCount, tag]
+//   );
+// };
+
+export const updateBuilderCount = async (
+  tag: string,
+  homeCount: number,
+) => {
   const db = await getDB();
   if (!tag) return;
   await db.runAsync(
     `UPDATE accounts
-      SET builder_count = ?
+      SET 
+        builder_count = ?
       WHERE player_tag = ?`,
-    [count, tag]
+    [homeCount, tag]
   );
 };
 
@@ -138,9 +168,11 @@ export async function replaceUpgrades(tag: string, upgrades: Upgrade[]) {
   (
     id,
     account_player_tag,
+    village,
     data_id,
     entity,
     type,
+    sub_type,
     upgrade_type,
     builder_slot,
     builder_type,
@@ -150,19 +182,24 @@ export async function replaceUpgrades(tag: string, upgrades: Upgrade[]) {
     start_time,
     duration_minutes,
     finish_timestamp,
+    has_helper,
+    recurrent_helper,
+    helper_applied_seconds,
     is_completed,
     source,
     is_crafted,
     module_id
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           u.id,
           tag,
+          u.village ?? "home",
           u.dataId ?? null,
           u.entity,
 
           u.type,
+          u.subType ?? null,
           u.upgradeType,
 
           u.builderSlot != null ? String(u.builderSlot) : null,
@@ -172,11 +209,13 @@ export async function replaceUpgrades(tag: string, upgrades: Upgrade[]) {
 
           u.currentLevel ?? null,
           u.nextLevel ?? null,
-          
+
           u.startTime,
           u.durationMinutes,
           u.endTime,
-          
+          u.hasHelper ? 1 : 0,
+          u.recurrentHelper ? 1 : 0,
+          u.helperAppliedSeconds ?? 0,
           u.isCompleted ? 1 : 0,
           u.source ?? null,
 
@@ -200,7 +239,11 @@ export async function replaceEntities(
 ) {
   const db = await getDB();
   if (!tag) return;
-
+  // console.log(
+  //   "📝 replaceEntities START",
+  //   tag,
+  //   entities.length,
+  // );
   try {
     await db.execAsync("BEGIN TRANSACTION");
 
@@ -210,6 +253,12 @@ export async function replaceEntities(
     );
 
     for (const e of entities) {
+      //       console.log(
+      //   "📝 INSERT ENTITY",
+      //   tag,
+      //   e.type,
+      //   e.dataId,
+      // );
       await db.runAsync(
         `INSERT INTO entities
         (id, account_player_tag, data_id, type, level, cooldown)
@@ -225,7 +274,12 @@ export async function replaceEntities(
       );
     }
 
+
     await db.execAsync("COMMIT");
+    //     console.log(
+    //   "✅ replaceEntities COMMIT",
+    //   tag,
+    // );
   } catch (e) {
     console.error("replaceEntities failed:", e);
     await db.execAsync("ROLLBACK");

@@ -1,0 +1,7 @@
+# Default owner for the repository
+* @0053ishav
+
+# Release/build configuration
+/eas.json @0053ishav
+/app.json @0053ishav
+/.github/ @0053ishav

@@ -1,19 +1,24 @@
-import { getEntityTypeByDataId } from "@/data/entityMap";
+import { getAccounts } from "@/services/accountService";
 import { getAccountState } from "@/services/accountStateService";
-import { useAccountStore } from "@/stores/accountStore";
+import { getActiveAccount } from "@/storage/activeAccount";
+import { getLastJsonSync } from "@/storage/jsonSyncStorage";
+import { getWidgetPrefs } from "@/storage/widgetPrefs";
 import { calculateProgress } from "@/utils/calculateProgress";
 import { formatBuildingName } from "@/utils/formatBuildingName";
 import { formatCountdown } from "@/utils/formatCountdown";
 
 export async function getLabWidgetData(inputTag?: string) {
-  const { activeTag, widgetPrefs, accounts, lastJsonSyncMap } =
-    useAccountStore.getState();
+    const accounts = await getAccounts();
+  
+    const activeTag = getActiveAccount();
+  
+    const widgetPrefs = getWidgetPrefs();
 
   const tag = inputTag ?? widgetPrefs.selectedAccountTag ?? activeTag;
 
   if (!tag) {
     return {
-      title: "Laboratory",
+      title: "Lab",
       subtitle: "No account selected",
       progress: 0,
       showProgress: false,
@@ -21,11 +26,12 @@ export async function getLabWidgetData(inputTag?: string) {
   }
 
   const account = accounts.find((a) => a.tag === tag);
-  const updatedAt = lastJsonSyncMap[tag] ?? null;
+    const updatedAt = tag ? getLastJsonSync(tag) : undefined;
+  
 
   if (!account) {
     return {
-      title: "Laboratory",
+      title: "Lab",
       subtitle: "Open app to sync",
       progress: 0,
       showProgress: false,
@@ -35,13 +41,13 @@ export async function getLabWidgetData(inputTag?: string) {
   // ✅ SINGLE SOURCE OF TRUTH
   const state = await getAccountState(tag);
 
-  const normal = state.lab.normal;
-  const goblin = state.lab.goblin;
+  const normal = state.lab.home.normal;
+  const goblin = state.lab.home.goblin;
 
   // 🟢 IDLE
   if (!normal && !goblin) {
     return {
-      title: "Laboratory",
+      title: "Lab",
       subtitle: "Idle",
       progress: 0,
       showProgress: false,
@@ -63,13 +69,9 @@ export async function getLabWidgetData(inputTag?: string) {
       ? calculateProgress(current.startTime, current.endTime)
       : 0;
 
-  const type = current.dataId
-    ? getEntityTypeByDataId(current.dataId)
-    : undefined;
-
   return {
-    title: `${isGoblinOnly ? "Goblin Lab" : "Lab"} - ${formatBuildingName(current.entity)}`,
-    subtitle: formatCountdown(remainingMs),
+    title: formatBuildingName(current.entity),
+    subtitle: `${isGoblinOnly ? "Goblin Lab" : "Lab"} -  ${formatCountdown(remainingMs)}`,
     progress,
     showProgress: true,
 
@@ -86,7 +88,6 @@ export async function getLabWidgetData(inputTag?: string) {
         : "No parallel research",
 
     dataId: current.dataId,
-    type,
 
     color: account.color,
     accountInitials: account.name.slice(0, 2).toUpperCase(),

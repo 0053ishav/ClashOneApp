@@ -1,34 +1,27 @@
-import { getNotificationsEnabled } from "@/storage/notificationConfig";
 import {
-  cancelTimedNotification,
-  NotificationType,
-  scheduleTimedNotification,
-} from "@/utils/notificationEngine";
-import * as Notifications from "expo-notifications";
+  UpgradeEvent
+} from "@/engine/notifications/notificationEngine";
 
-async function hasPermission() {
-  const { status } = await Notifications.getPermissionsAsync();
-  return status === "granted";
-}
+export function getLabEvents(account: any): UpgradeEvent[] {
+  const lab = account?.lab;
 
-export async function scheduleLabNotification(
-  id: string,
-  labName: string,
-  endTime: number
-) {
-  if (!getNotificationsEnabled()) return;
+  if (!lab || lab.state !== "RESEARCHING" || !lab.finishTimestamp) {
+    return [];
+  }
 
-  if (!(await hasPermission())) return;
+  return [
+    {
+      id: `lab-${account.tag}`,
+      village: "home",
 
-  await scheduleTimedNotification({
-    type: NotificationType.LAB,
-    id,
-    title: "Research Complete 🧪",
-    body: `${labName} research finished.`,
-    endTime,
-  });
-}
+      playerTag: account.tag,
+      accountName: account.name,
+      accountColor: account.color ?? "#ffffff",
 
-export async function cancelLabNotification(id: string) {
-  await cancelTimedNotification(NotificationType.LAB, id);
+      type: "LAB",
+      entityId: "lab",
+
+      finishTimestamp: Number(lab.finishTimestamp),
+    },
+  ];
 }

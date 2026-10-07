@@ -1,5 +1,5 @@
 import { getAccountState } from "@/services/accountStateService";
-import { getPlayerProfile } from "@/storage/playerProfile";
+import { useAccountStore } from "@/stores/accountStore";
 import { renderBuilderWidget } from "@/utils/widget/renderBuilderWidget";
 import { requestWidgetUpdate } from "react-native-android-widget";
 
@@ -20,10 +20,11 @@ export function startSmartWidgetScheduler() {
   stopSmartWidgetScheduler();
 
   refreshInterval = setInterval(async () => {
-    const profile = getPlayerProfile();
-    const tag = profile.playerTag!;
 
-    const state = await getAccountState(tag);
+    const {activeTag } = useAccountStore.getState();
+
+    if (!activeTag) return;
+    const state = await getAccountState(activeTag);
     const active = state.activeUpgrades;
 
     if (!active.length) {

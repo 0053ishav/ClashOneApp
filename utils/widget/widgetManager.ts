@@ -5,6 +5,7 @@ import { prefillAllWidgetCache } from "./prefillAllWidgetCache";
 import { renderLabWidget } from "./renderLabWidget";
 import { renderMultiWidget } from "./renderMultiWidget";
 import { renderPetWidget } from "./renderPetWidget";
+import { renderUpcomingUpgradesWidget } from "./renderUpcomingUpgradesWidget";
 
 let timeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -35,6 +36,12 @@ async function updateWidget() {
       widgetName: "PetWidget",
       renderWidget: async () => {
         return await renderPetWidget();
+      },
+    });
+    await requestWidgetUpdate({
+      widgetName: "UpcomingUpgradesWidget",
+      renderWidget: async () => {
+        return await renderUpcomingUpgradesWidget(); 
       },
     });
   } catch (e) {

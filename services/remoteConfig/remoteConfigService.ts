@@ -1,8 +1,14 @@
-import { loadRemoteConfigFromStorage, resetGoblinBannerDismissal, saveRemoteConfigToStorage } from "@/storage/goblinStorage";
+import { ENV } from "@/config/env";
+import {
+  loadRemoteConfigFromStorage,
+  resetGoblinBannerDismissal,
+  saveRemoteConfigToStorage,
+} from "@/storage/goblinStorage";
 
 export type GoblinRemoteConfig = {
   goblinBuilderEnabled: boolean;
   goblinLabEnabled: boolean;
+
   workForHireEvents: {
     startsAt: number;
     endsAt: number;
@@ -15,134 +21,387 @@ const DEFAULT_CONFIG: GoblinRemoteConfig = {
   workForHireEvents: [],
 };
 
+/**
+ * Refresh policy
+ *
+ * The app does not need to fetch Goblin config constantly.
+ *
+ * 1. Refresh shortly before an event boundary.
+ * 2. Otherwise refresh periodically as a safety check.
+ * 3. If the server returns 429/error, keep the cached config.
+ * 4. Retry later instead of hammering the server.
+ */
+const EVENT_REFRESH_BUFFER_MS =
+  5 * 60 * 1000; // 5 minutes
 
-const CACHE_DURATION_MS = 3600000; // 1 hour
+const MAX_REFRESH_INTERVAL_MS =
+  6 * 60 * 60 * 1000; // 6 hours
 
-const CONFIG_URL = process.env.EXPO_PUBLIC_CONFIG_URL!;
+const RETRY_INTERVAL_MS =
+  30 * 60 * 1000; // 30 minutes
 
-let cachedConfig: GoblinRemoteConfig = DEFAULT_CONFIG;
-let lastFetchTime: number = 0;
+const CONFIG_URL =
+  `${ENV.BACKEND}/v2/events/goblin-config`;
+
+let cachedConfig: GoblinRemoteConfig =
+  DEFAULT_CONFIG;
+
+let lastFetchTime = 0;
+
+let nextRetryTime = 0;
+
 let isInitialized = false;
 
-export async function initRemoteConfig(): Promise<void> {
-  if (isInitialized) return;
+let isFetching = false;
 
-  const cachedFromStorage = loadRemoteConfigFromStorage();
-  if (cachedFromStorage) {
-    cachedConfig = cachedFromStorage;
+/**
+ * Find the next meaningful event boundary.
+ *
+ * We refresh shortly before:
+ *
+ * - an upcoming event starts
+ * - an active event ends
+ *
+ * Past boundaries are ignored.
+ */
+function getNextEventRefreshTime(
+  now: number,
+): number | null {
+  const boundaries =
+    cachedConfig.workForHireEvents
+      .flatMap((event) => [
+        event.startsAt -
+          EVENT_REFRESH_BUFFER_MS,
+
+        event.endsAt -
+          EVENT_REFRESH_BUFFER_MS,
+      ])
+      .filter(
+        (time) =>
+          Number.isFinite(time) &&
+          time > now,
+      );
+
+  if (boundaries.length === 0) {
+    return null;
   }
 
+  return Math.min(...boundaries);
+}
+
+/**
+ * Determine when the next refresh should happen.
+ */
+function getNextRefreshTime(
+  now: number,
+): number {
+  const safetyRefresh =
+    lastFetchTime > 0
+      ? lastFetchTime +
+        MAX_REFRESH_INTERVAL_MS
+      : now;
+
+  const eventRefresh =
+    getNextEventRefreshTime(now);
+
+  if (eventRefresh == null) {
+    return safetyRefresh;
+  }
+
+  return Math.min(
+    safetyRefresh,
+    eventRefresh,
+  );
+}
+
+/**
+ * Initialize remote config.
+ *
+ * Load cached config first so the app has
+ * something usable even when the network fails.
+ *
+ * Then attempt a refresh.
+ */
+export async function initRemoteConfig(): Promise<void> {
+  if (isInitialized) {
+    return;
+  }
+
+  const cachedFromStorage =
+    loadRemoteConfigFromStorage();
+
+  if (cachedFromStorage) {
+    cachedConfig =
+      cachedFromStorage;
+  }
+
+  isInitialized = true;
+
+  await refreshRemoteConfig();
+}
+
+/**
+ * Fetch fresh config from the backend.
+ */
+async function fetchRemoteConfig(): Promise<void> {
+  if (isFetching) {
+    return;
+  }
+
+  isFetching = true;
+
   try {
-    // const response = await fetch(CONFIG_URL, {
-    //   method: "GET",
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //   },
-    // });
+    const response =
+      await fetch(CONFIG_URL);
 
-    const response = await fetch(CONFIG_URL);
-    
-    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    if (!response.ok) {
+      throw new Error(
+        `HTTP ${response.status}: ${response.statusText}`,
+      );
+    }
 
-    const parsed = await response.json();
+    const parsed =
+      await response.json();
 
     validateAndSetConfig(parsed);
 
-    saveRemoteConfigToStorage(cachedConfig);
+    /**
+     * Only replace local config after
+     * the response has been validated.
+     */
+    saveRemoteConfigToStorage(
+      cachedConfig,
+    );
 
-    lastFetchTime = Date.now();
-    isInitialized = true;
+    lastFetchTime =
+      Date.now();
+
+    /**
+     * Successful request clears
+     * any previous retry delay.
+     */
+    nextRetryTime = 0;
+
+    console.log(
+      "✅ Goblin remote config refreshed",
+    );
   } catch (error) {
-    console.warn("⚠️ Remote config fetch failed, using fallback", {
-      message: error instanceof Error ? error.message : String(error),
-      url: CONFIG_URL,
-    });
+    /**
+     * IMPORTANT:
+     *
+     * Never replace cachedConfig with
+     * DEFAULT_CONFIG here.
+     *
+     * A 429/network failure must not
+     * invalidate a previously valid config.
+     */
+    console.warn(
+      "⚠️ Remote config fetch failed, using cached config",
+      {
+        message:
+          error instanceof Error
+            ? error.message
+            : String(error),
 
-    cachedConfig = DEFAULT_CONFIG;
-    isInitialized = true;
+        url: CONFIG_URL,
+      },
+    );
+
+    /**
+     * Don't immediately hammer the
+     * backend again.
+     */
+    nextRetryTime =
+      Date.now() +
+      RETRY_INTERVAL_MS;
+  } finally {
+    isFetching = false;
   }
 }
 
-function validateAndSetConfig(parsed: unknown): void {
-  if (!parsed || typeof parsed !== "object") {
-    throw new Error("Invalid config format.");
+/**
+ * Validate and update the in-memory config.
+ */
+function validateAndSetConfig(
+  parsed: unknown,
+): void {
+  if (
+    !parsed ||
+    typeof parsed !== "object"
+  ) {
+    throw new Error(
+      "Invalid config format.",
+    );
   }
 
-  const config = parsed as Record<string, unknown>;
+  const config =
+    parsed as Record<
+      string,
+      unknown
+    >;
 
-  const goblinBuilderEnabled = typeof config.goblinBuilderEnabled === 'boolean'
-    ? config.goblinBuilderEnabled
-    : false;
+  const goblinBuilderEnabled =
+    typeof config.goblinBuilderEnabled ===
+    "boolean"
+      ? config.goblinBuilderEnabled
+      : false;
 
-  const goblinLabEnabled = typeof config.goblinLabEnabled === "boolean"
-    ? config.goblinLabEnabled
-    : false;
+  const goblinLabEnabled =
+    typeof config.goblinLabEnabled ===
+    "boolean"
+      ? config.goblinLabEnabled
+      : false;
 
-  let workForHireEvents: GoblinRemoteConfig["workForHireEvents"] = [];
+  let workForHireEvents:
+    GoblinRemoteConfig[
+      "workForHireEvents"
+    ] = [];
 
-  if (!Array.isArray(config.workForHireEvents)) {
-    workForHireEvents = [];
-  }
+  if (
+    Array.isArray(
+      config.workForHireEvents,
+    )
+  ) {
+    workForHireEvents =
+      config.workForHireEvents.filter(
+        (event) => {
+          if (
+            !event ||
+            typeof event !== "object"
+          ) {
+            return false;
+          }
 
-  if (Array.isArray(config.workForHireEvents)) {
-    workForHireEvents = config.workForHireEvents.filter(
-      (event) =>
-        event &&
-        typeof event === "object" &&
-        typeof (event as Record<string, unknown>).startsAt === "number" &&
-        typeof (event as Record<string, unknown>).endsAt === "number"
-    ) as GoblinRemoteConfig["workForHireEvents"];
+          const item =
+            event as Record<
+              string,
+              unknown
+            >;
+
+          return (
+            typeof item.startsAt ===
+              "number" &&
+            Number.isFinite(
+              item.startsAt,
+            ) &&
+            typeof item.endsAt ===
+              "number" &&
+            Number.isFinite(
+              item.endsAt,
+            ) &&
+            item.endsAt >
+              item.startsAt
+          );
+        },
+      ) as GoblinRemoteConfig[
+        "workForHireEvents"
+      ];
   }
 
   cachedConfig = {
     goblinBuilderEnabled,
     goblinLabEnabled,
-    workForHireEvents
+    workForHireEvents,
   };
 }
 
-export function getGoblinRemoteConfig(): GoblinRemoteConfig {
+export function getGoblinRemoteConfig():
+  GoblinRemoteConfig {
   return cachedConfig;
 }
 
-export async function refreshRemoteConfig(): Promise<void> {
+/**
+ * Refresh config if the service considers
+ * a refresh necessary.
+ *
+ * The Provider can safely call this every
+ * 10 minutes.
+ *
+ * The service decides whether an actual
+ * network request is necessary.
+ */
+export async function refreshRemoteConfig():
+  Promise<void> {
   const now = Date.now();
-  const cacheAge = now - lastFetchTime;
 
-  if (cacheAge > CACHE_DURATION_MS) {
-    isInitialized = false;
-    await initRemoteConfig();
+  /**
+   * If we're waiting for a retry after
+   * a failed request, don't request again.
+   */
+  if (
+    nextRetryTime > now
+  ) {
+    return;
   }
+
+  const nextRefreshTime =
+    getNextRefreshTime(now);
+
+  if (
+    now < nextRefreshTime
+  ) {
+    return;
+  }
+
+  await fetchRemoteConfig();
 }
 
-export function resetRemoteConfig(): void {
-  cachedConfig = DEFAULT_CONFIG;
+export function resetRemoteConfig():
+  void {
+  cachedConfig =
+    DEFAULT_CONFIG;
+
   lastFetchTime = 0;
+
+  nextRetryTime = 0;
+
   isInitialized = false;
+
+  isFetching = false;
 }
 
-// ==============================
-// DEV / TEST UTILITIES
-// ==============================
+/**
+ * ==============================
+ * DEV / TEST UTILITIES
+ * ==============================
+ */
 
 export function __setRemoteConfigForTesting(
-  config: GoblinRemoteConfig
+  config: GoblinRemoteConfig,
 ): void {
   cachedConfig = config;
-  isInitialized = true;
-  lastFetchTime = Date.now();
 
-  console.log("🧪 Remote config manually injected:", cachedConfig);
+  isInitialized = true;
+
+  lastFetchTime =
+    Date.now();
+
+  nextRetryTime = 0;
+
+  console.log(
+    "🧪 Remote config manually injected:",
+    cachedConfig,
+  );
 }
 
-export function __enableGoblinForTesting(): void {
+export function __enableGoblinForTesting():
+  void {
   cachedConfig = {
     goblinBuilderEnabled: true,
+
     goblinLabEnabled: true,
+
     workForHireEvents: [
       {
-        startsAt: Date.now() - 1000,
-        endsAt: Date.now() + 1000 * 60 * 60 * 24, // 24 hours active
+        startsAt:
+          Date.now() - 1000,
+
+        endsAt:
+          Date.now() +
+          1000 *
+            60 *
+            60 *
+            24,
       },
     ],
   };
@@ -150,15 +409,30 @@ export function __enableGoblinForTesting(): void {
   resetGoblinBannerDismissal();
 
   isInitialized = true;
-  lastFetchTime = Date.now();
 
-  console.log("🧪 Goblin test event enabled");
+  lastFetchTime =
+    Date.now();
+
+  nextRetryTime = 0;
+
+  console.log(
+    "🧪 Goblin test event enabled",
+  );
 }
 
-export function __disableGoblinForTesting(): void {
-  cachedConfig = DEFAULT_CONFIG;
-  isInitialized = true;
-  lastFetchTime = Date.now();
+export function __disableGoblinForTesting():
+  void {
+  cachedConfig =
+    DEFAULT_CONFIG;
 
-  console.log("🧪 Goblin disabled (test)");
+  isInitialized = true;
+
+  lastFetchTime =
+    Date.now();
+
+  nextRetryTime = 0;
+
+  console.log(
+    "🧪 Goblin disabled (test)",
+  );
 }

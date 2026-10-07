@@ -1,4 +1,9 @@
-export type Village = "home" | "builder" | "global";
+export type Village = "home" | "builderBase" | "global";
+export type Resource = "gold" | "elixir" | "dark" ;
+
+/**
+ * Dont't use EntityType in progression, Use subType 
+ */
 export type EntityType =
     | "building"
     | "trap"
@@ -10,5 +15,9 @@ export type EntityType =
     | "helper"
     | "guardian"
     | "townhall"
+    | "builderhall"
     | "lab"
-    | "Custom";
+    | "crafted"
+    | "custom"
+    | "unknown";
+export type SubType= "TOWNHALL" | "DEFENSE" | "RESOURCE" | "HERO_ALT" | "SUPER_TROOP" | "OTHER";

@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/react-native";
+
 export async function fetchPlayerFromApi(playerTag: string) {
   console.log("📡 Fetching player from API:", playerTag);
 
@@ -61,6 +63,8 @@ export async function fetchFullPlayer(
   );
 
   if (!res.ok) {
+      Sentry.captureException(res);
+
     throw new Error("API_FETCH_FAILED");
   }
 

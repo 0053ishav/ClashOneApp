@@ -1,76 +1,105 @@
+import { Upgrade } from "@/types/upgrade";
+import { isWorkForHireActive } from "@/utils/goblin";
 import { getEntities } from "./entityService";
 import { getUpgrades } from "./upgradeService";
-
-
-// export async function getAccountState(tag: string) {
-//   const upgrades = await getUpgrades(tag);
-//   const entities = await getEntities(tag);
-
-//   const now = Date.now();
-
-//   const activeUpgrades = upgrades.filter(
-//     (u) => !u.isCompleted && u.endTime > now
-//   );
-//   console.log("LAB fetch:", upgrades.filter(u => u.upgradeType === "LAB"));
-
-//   return {
-//     upgrades,
-//     activeUpgrades,
-
-//     builders: activeUpgrades.filter(
-//       (u) => u.upgradeType === "BUILDER" && u.builderSlot !== undefined
-//     ),
-//     lab: activeUpgrades.find((u) => u.upgradeType === "LAB"),
-//     labNormal: activeUpgrades.find(
-//       (u) => u.upgradeType === "LAB" && u.labSlot === "NORMAL"
-//     ),
-//     labGoblin: activeUpgrades.find(
-//       (u) => u.upgradeType === "LAB" && u.labSlot === "GOBLIN"
-//     ),
-//     pets: activeUpgrades.filter((u) => u.upgradeType === "PET"),
-//     guardians: activeUpgrades.filter((u) => u.type === "GUARDIAN"),
-
-//     entities,
-//     helpers: entities.filter((e) => e.type === "helper"),
-//     petsState: entities.filter((e) => e.type === "pet"),
-//     guardiansState: entities.filter((e) => e.type === "guardian"),
-//   };
-// }
 
 export async function getAccountState(tag: string) {
   const upgrades = await getUpgrades(tag);
   const entities = await getEntities(tag);
-
   const now = Date.now();
 
   const activeUpgrades = upgrades.filter(
     (u) => !u.isCompleted && u.endTime > now
   );
 
-  const labUpgrades = activeUpgrades.filter(
-    (u) => u.upgradeType === "LAB"
-  );
+  const homeBuilders: Upgrade[] = [];
+  const builderBaseBuilders: Upgrade[] = [];
 
-  const petUpgrade = activeUpgrades.find(
-    (u) => u.upgradeType === "PET"
-  );
+  const homeLabs: Upgrade[] = [];
+  const builderBaseLabs: Upgrade[] = [];
 
+  const guardians: Upgrade[] = [];
+
+  let petUpgrade: Upgrade | null = null;
+
+  for (const upgrade of activeUpgrades) {
+    switch (upgrade.upgradeType) {
+      case "BUILDER":
+        if (upgrade.village === "home") {
+          homeBuilders.push(upgrade);
+        } else if (upgrade.village === "builderBase") {
+          builderBaseBuilders.push(upgrade);
+        }
+        break;
+
+      case "LAB":
+        if (upgrade.village === "home") {
+          homeLabs.push(upgrade);
+        } else if (upgrade.village === "builderBase") {
+          builderBaseLabs.push(upgrade);
+        }
+        break;
+
+      case "PET":
+        if (!petUpgrade) {
+          petUpgrade = upgrade;
+        }
+        break;
+    }
+
+    if (upgrade.type === "GUARDIAN") {
+      guardians.push(upgrade);
+    }
+  }
+
+  const goblinEventActive = isWorkForHireActive();
+
+  const homeLabNormal =
+    homeLabs.find((u) => u.labSlot === "NORMAL") ?? null;
+
+  const homeLabGoblinRaw =
+    homeLabs.find((u) => u.labSlot === "GOBLIN") ?? null;
+
+  const homeLabGoblin = goblinEventActive
+    ? homeLabGoblinRaw
+    : null;
+
+  const builderBaseLab =
+    builderBaseLabs.find(
+      (u) => u.labSlot === "NORMAL"
+    ) ?? null;
+
+  if (!goblinEventActive && homeLabGoblinRaw) {
+    console.warn(
+      "⚠️ Stale goblin lab upgrade detected (event inactive)"
+    );
+  }
   return {
     upgrades,
     activeUpgrades,
 
-    builders: activeUpgrades.filter(
-      (u) => u.upgradeType === "BUILDER" && u.builderSlot !== undefined
-    ),
-
-    lab: {
-      normal: labUpgrades.find((u) => u.labSlot === "NORMAL"),
-      goblin: labUpgrades.find((u) => u.labSlot === "GOBLIN"),
+    builders: {
+      home: homeBuilders,
+      builderBase: builderBaseBuilders,
     },
 
-    pet: petUpgrade ?? null,
+    lab: {
+      home: {
+        normal: homeLabNormal,
+        goblin: homeLabGoblin,
+        goblinAvailable: goblinEventActive,
+      },
 
-    guardians: activeUpgrades.filter((u) => u.type === "GUARDIAN"),
+      builderBase: {
+        normal: builderBaseLab,
+        goblin: null,
+        goblinAvailable: false,
+      },
+    },
+
+    pet: petUpgrade,
+
+    guardians,
 
     entities,
     helpers: entities.filter((e) => e.type === "helper"),

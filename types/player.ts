@@ -5,6 +5,7 @@ export type PlayerProfile = {
   expLevel?: number;
   townHallLevel: number;
   normalBuilderCount: number;
+  builderBaseBuilderCount: number;
 
   // Best League (legacy)
   leagueName?: string;
@@ -35,4 +36,15 @@ export type PlayerProfile = {
 
   playerApiConnected: boolean;
   lastSyncedAt?: number;
+
+  builderHallLevel?: number;
+  builderBaseTrophies?: number;
+  bestBuilderBaseTrophies?: number;
+
+
+  builderBaseLeague?: {
+    id?: number;
+    name?: string;
+  };
+
 };

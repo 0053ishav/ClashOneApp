@@ -1,35 +1,53 @@
-import { getEntityTypeByDataId } from "@/data/entityMap";
+import { ENV } from "@/config/env";
+import { Village } from "@/types/entity";
 import { Upgrade } from "@/types/upgrade";
 import { calculateProgress } from "@/utils/calculateProgress";
 import { formatCountdown } from "@/utils/formatCountdown";
-import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
+import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+
 export function LabSection({
+  village,
   labNormal,
   labGoblin,
   onAddPress,
-  onLongPress,
+  onPress,
 }: {
-  labNormal?: Upgrade;
-  labGoblin?: Upgrade;
+  village: Village;
+  labNormal?: Upgrade | null;
+  labGoblin?: Upgrade | null;
   onAddPress?: () => void;
-  onLongPress?: (lab: Upgrade) => void;
+  onPress?: (lab: Upgrade) => void;
 }) {
   const isNormalBusy = !!labNormal && !labNormal.isCompleted;
   const isGoblinBusy = !!labGoblin && !labGoblin.isCompleted;
 
   const isAnyBusy = isNormalBusy || isGoblinBusy;
-
   return (
     <View style={styles.container}>
       {/* HEADER */}
       <View style={styles.sectionHeader}>
         <View style={styles.headerLeft}>
           <View style={styles.titleRow}>
-            <Text style={styles.emoji}>🧪</Text>
-            <Text style={styles.sectionTitle}>Research Lab</Text>
+            <View style={{}}>
+              <Image
+                source={
+                  village === "home"
+                    ? { uri: `${ENV.CDN_BASE}/entities/buildings/1000007.png` }
+                    : {
+                        uri: `${ENV.CDN_BASE}/entities/builder/buildings/1000046.png`,
+                      }
+                }
+                style={{ width: 30, height: 30 }}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+              />
+            </View>
+            <Text style={styles.sectionTitle}>
+              {village === "home" ? "Laboratory" : "Star Laboratory"}
+            </Text>
           </View>
 
           <View
@@ -56,15 +74,21 @@ export function LabSection({
 
       {/* NORMAL LAB */}
       {labNormal && (
-        <LabCard label="Lab" lab={labNormal} onLongPress={onLongPress} />
+        <LabCard
+          village={village}
+          label="Lab"
+          lab={labNormal}
+          onPress={onPress}
+        />
       )}
 
       {/* GOBLIN LAB */}
       {labGoblin && (
         <LabCard
+          village={village}
           label="Goblin"
           lab={labGoblin}
-          onLongPress={onLongPress}
+          onPress={onPress}
           isGoblin
         />
       )}
@@ -97,15 +121,17 @@ export function LabSection({
 }
 
 function LabCard({
+  village,
   lab,
   label,
   isGoblin,
-  onLongPress,
+  onPress,
 }: {
+  village: Village;
   lab: Upgrade;
   label: string;
   isGoblin?: boolean;
-  onLongPress?: (lab: Upgrade) => void;
+  onPress?: (lab: Upgrade) => void;
 }) {
   const now = Date.now();
 
@@ -113,10 +139,13 @@ function LabCard({
   const remainingMs = Math.max(lab.endTime - now, 0);
   const totalMs = lab.endTime - lab.startTime;
 
-  const entityType = lab.dataId
-    ? getEntityTypeByDataId(lab.dataId, lab.isCrafted)
-    : undefined;
-
+  const iconUri =
+    lab.dataId != null
+      ? resolveEntityIcon(lab.dataId, {
+          village: village,
+          level: lab.currentLevel,
+        })
+      : null;
   return (
     <Pressable
       style={({ pressed }) => [
@@ -125,59 +154,83 @@ function LabCard({
         isGoblin && styles.goblinCard,
         pressed && styles.cardPressed,
       ]}
-      onLongPress={() => onLongPress?.(lab)}
+      onPress={() => onPress?.(lab)}
       delayLongPress={300}
     >
       <View style={styles.cardContent}>
-        {/* ICON */}
-        <View style={[styles.iconContainer, styles.labIconContainer]}>
-          <Image
-            source={
-              lab.dataId && entityType
-                ? getIconByEntityType(
-                    lab.dataId,
-                    entityType,
-                    undefined,
-                    lab.isCrafted,
-                  )
-                : require("@/assets/images/builder/builder-working.png")
-            }
-            style={styles.labIcon}
-          />
+        <View style={[styles.builderBadge, isGoblin && styles.goblinBadge]}>
+          <Text style={styles.builderBadgeText}>{isGoblin ? "G" : "LAB"}</Text>
+
+          {isGoblin && (
+            <Image
+              source={require("@/assets/images/clash/goblin-builder.png")}
+              style={styles.goblinBadgeIcon}
+              contentFit="contain"
+            />
+          )}
         </View>
+        <View style={styles.upgradeMain}>
+          {/* LEFT */}
+          <View style={styles.upgradeLeft}>
+            <View style={[styles.iconContainer, styles.labIconContainer]}>
+              <Image
+                source={
+                  iconUri
+                    ? { uri: iconUri }
+                    : require("@/assets/images/builder/builder-working.png")
+                }
+                style={styles.labIcon}
+              />
+            </View>
 
-        {/* INFO */}
-        <View style={styles.infoSection}>
-          <View style={styles.topRow}>
-            <Text style={styles.itemName} numberOfLines={1}>
-              {lab.entity}
-            </Text>
+            <View style={styles.upgradeNameSection}>
+              <View style={styles.topRow}>
+                <Text style={styles.itemName} numberOfLines={1}>
+                  {lab.entity}
+                </Text>
+              </View>
+              <View style={{ flexDirection: "row", gap: 4 }}>
+                {lab.currentLevel !== undefined &&
+                  lab.nextLevel !== undefined && (
+                    <View style={[styles.levelBadge, styles.labLevelBadge]}>
+                      <Text style={styles.levelText}>
+                        Lv {lab.currentLevel} → {lab.nextLevel}
+                      </Text>
+                    </View>
+                  )}
+                {lab.hasHelper && (
+                  <View style={styles.helperRow}>
+                    <Image
+                      source={{
+                        uri: resolveEntityIcon(93000001),
+                      }}
+                      style={styles.helperIcon}
+                      contentFit="contain"
+                      cachePolicy="memory-disk"
+                    />
 
-            <Text
-              style={[
-                styles.slotLabel,
-                isGoblin ? styles.slotLabelGoblin : styles.slotLabelNormal,
-              ]}
-            >
-              {isGoblin ? "Goblin" : "Lab"}
-              {isGoblin && (
-                <Image
-                  source={require("@/assets/images/clash/goblin-builder.png")}
-                  style={{ width: 15, height: 15, marginLeft: 2 }}
-                />
-              )}
-            </Text>
+                    {(lab.helperAppliedSeconds ?? 0) && (
+                      <Text style={styles.helperSaved}>
+                        -
+                        {formatCountdown(
+                          (lab.helperAppliedSeconds ?? 0) * 1000,
+                        )}
+                      </Text>
+                    )}
+
+                    {lab.recurrentHelper && (
+                      <View style={styles.recurrentBadge}>
+                        <Ionicons name="repeat" size={10} color="#fbbf24" />
+                      </View>
+                    )}
+                  </View>
+                )}
+              </View>
+            </View>
           </View>
 
-          {/* LEVEL */}
-          {lab.currentLevel !== undefined && lab.nextLevel !== undefined && (
-            <Text style={styles.levelText}>
-              Lv {lab.currentLevel} → {lab.nextLevel}
-            </Text>
-          )}
-
-          {/* TIME */}
-          <View style={styles.timeRow}>
+          {/* RIGHT */}
+          <View style={styles.upgradeRight}>
             <Text
               style={[
                 styles.remainingTime,
@@ -187,24 +240,27 @@ function LabCard({
             >
               {formatCountdown(remainingMs)}
             </Text>
+
             <Text style={styles.totalTime}>of {formatCountdown(totalMs)}</Text>
           </View>
+        </View>
 
-          {/* PROGRESS */}
-          <View style={styles.progressTrack}>
-            <View
-              style={[
-                styles.progressBar,
-                isGoblin && styles.goblinProgress,
-                { width: `${progress * 100}%` },
-              ]}
-            />
-          </View>
+        <View style={styles.progressTrack}>
+          <View
+            style={[
+              styles.progressBar,
+              isGoblin && styles.goblinProgress,
+              {
+                width: `${progress * 100}%`,
+              },
+            ]}
+          />
         </View>
       </View>
     </Pressable>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     marginTop: 32,
@@ -264,26 +320,21 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    borderRadius: 16,
-    overflow: "hidden",
+    borderRadius: 14,
+    overflow: "visible",
     shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
     marginBottom: 8,
   },
 
   labCard: {
     backgroundColor: "#1e293b",
-    borderWidth: 1,
-    borderColor: "#06b6d4",
   },
 
   goblinCard: {
-    borderColor: "#f97316",
-    borderWidth: 1,
-    shadowColor: "#f97316",
     shadowOpacity: 0.25,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
@@ -295,9 +346,67 @@ const styles = StyleSheet.create({
   },
 
   cardContent: {
+    backgroundColor: "#1e293b",
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#263244",
+    gap: 10,
+  },
+
+  builderBadge: {
+    position: "absolute",
+    top: -8,
+    right: 0,
+
     flexDirection: "row",
-    padding: 16,
-    gap: 14,
+    alignItems: "center",
+
+    backgroundColor: "#06b6d4",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    zIndex: 10,
+  },
+
+  goblinBadge: {
+    backgroundColor: "#22c55e",
+  },
+
+  builderBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#0f172a",
+  },
+
+  goblinBadgeIcon: {
+    width: 14,
+    height: 14,
+    marginLeft: 3,
+  },
+
+  upgradeMain: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  upgradeLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+
+  upgradeRight: {
+    alignItems: "flex-end",
+    gap: 4,
+  },
+
+  upgradeNameSection: {
+    flex: 1,
+    gap: 6,
   },
 
   iconContainer: {
@@ -336,29 +445,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  slotLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    overflow: "hidden",
-  },
-
-  slotLabelNormal: {
-    color: "#22d3ee",
-    backgroundColor: "rgba(34, 211, 238, 0.12)",
-  },
-
-  slotLabelGoblin: {
-    color: "#fb923c",
-    backgroundColor: "rgba(251, 146, 60, 0.15)",
-  },
-
   levelBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
+    alignSelf: "flex-start",
   },
 
   labLevelBadge: {
@@ -368,7 +462,37 @@ const styles = StyleSheet.create({
   levelText: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#a78bfa",
+    color: "#06b6d4",
+  },
+
+  helperRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+
+  helperIcon: {
+    width: 14,
+    height: 14,
+  },
+
+  recurrentBadge: {
+    marginLeft: 4,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  helperText: {
+    marginLeft: 4,
+    fontSize: 11,
+    color: "#fbbf24",
+    fontWeight: "600",
+  },
+
+  helperSaved: {
+    marginLeft: 4,
+    fontSize: 10,
+    color: "#94a3b8",
   },
 
   timeRow: {
@@ -378,7 +502,7 @@ const styles = StyleSheet.create({
   },
 
   remainingTime: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "800",
   },
 
@@ -387,7 +511,7 @@ const styles = StyleSheet.create({
   },
 
   goblinLabTime: {
-    color: "#fb923c",
+    color: "#22c55e",
   },
 
   totalTime: {
@@ -414,7 +538,7 @@ const styles = StyleSheet.create({
   },
 
   goblinProgress: {
-    backgroundColor: "#fb923c",
+    backgroundColor: "#22c55e",
   },
 
   emptyCard: {

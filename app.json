@@ -1,27 +1,23 @@
 {
   "expo": {
-    "name": "clash-widget",
-    "slug": "clash-widget",
-    "version": "1.0.0",
+    "name": "Clash One",
+    "slug": "clash-one",
+    "version": "1.2.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "clashwidget",
+    "scheme": "clashone",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "jsEngine": "hermes",
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "versionCode": 4,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#0e1c3e",
+        "foregroundImage": "./assets/images/icon.png"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.strnge.clashwidget"
+      "package": "com.strngelabs.clashone"
     },
     "web": {
       "output": "static",
@@ -35,9 +31,13 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#0e1c3e",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#0e1c3e"
+          },
+          "android": {
+            "image": "./assets/images/splash-icon.png",
+            "backgroundColor": "#0e1c3e"
           }
         }
       ],
@@ -46,53 +46,91 @@
         {
           "widgets": [
             {
+              "name": "UpcomingUpgradesWidget",
+              "label": "Upcoming Upgrades",
+              "description": "View all active builder, lab and pet upgrades sorted by completion time.",
+              "minWidth": "250dp",
+              "minHeight": "140dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 3,
+              "resizeMode": "horizontal|vertical",
+              "previewImage": "./assets/images/widget/upcomingUpgrades.png",
+              "updatePeriodMillis": 1800000
+            },
+            {
               "name": "BuilderStatusWidget",
-              "label": "Builder Tracker",
+              "label": "Builder Status",
               "description": "Track your next free builder with live countdown and progress.",
               "minWidth": "110dp",
               "minHeight": "40dp",
               "targetCellWidth": 2,
               "targetCellHeight": 1,
-              "previewImage": "./assets/images/icon.png",
+              "previewImage": "./assets/images/widget/builderStatusWidget.png",
+              "resizeMode": "horizontal",
               "updatePeriodMillis": 1800000
             },
             {
               "name": "MultiAccountWidget",
-              "label": "All Accounts Tracker",
+              "label": "All Accounts",
               "description": "View all your accounts and see which upgrade finishes first.",
               "minWidth": "250dp",
               "minHeight": "40dp",
               "targetCellWidth": 4,
               "targetCellHeight": 1,
-              "previewImage": "./assets/images/icon.png",
+              "resizeMode": "horizontal",
+              "previewImage": "./assets/images/widget/builder.png",
               "updatePeriodMillis": 1800000
             },
             {
               "name": "LabWidget",
-              "label": "Laboratory Tracker",
+              "label": "Laboratory",
               "description": "Track your current research and remaining time.",
               "minWidth": "110dp",
               "minHeight": "40dp",
               "targetCellWidth": 2,
               "targetCellHeight": 1,
-              "previewImage": "./assets/images/icon.png",
+              "resizeMode": "horizontal",
+              "previewImage": "./assets/images/widget/lab.png",
               "updatePeriodMillis": 1800000
             },
             {
               "name": "PetWidget",
-              "label": "Pet Tracker",
+              "label": "Pets",
               "description": "Track your pet upgrades and remaining time.",
               "minWidth": "110dp",
               "minHeight": "40dp",
               "targetCellWidth": 2,
               "targetCellHeight": 1,
-              "previewImage": "./assets/images/icon.png",
+              "resizeMode": "horizontal",
+              "previewImage": "./assets/images/widget/pet.png",
               "updatePeriodMillis": 1800000
-            }
+            }            
           ]
         }
       ],
-      "expo-sqlite"
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon-hammer.png",
+          "color": "#0e1c3e"
+        }
+      ],
+      "expo-sqlite",
+      "expo-localization",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-9105764742528026~9244034429"
+        }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "clash-one",
+          "organization": "strnge-labs"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
@@ -101,7 +139,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "89d6cd7f-510d-44cb-8806-055429b40a81"
+        "projectId": "0b64007f-16bf-4a86-84fe-d98db381ad3b"
       }
     },
     "owner": "0007ishav"

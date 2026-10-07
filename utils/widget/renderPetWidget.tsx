@@ -1,12 +1,20 @@
-import { useAccountStore } from "@/stores/accountStore";
+import { getAccounts } from "@/services/accountService";
+import { getActiveAccount } from "@/storage/activeAccount";
+import { getWidgetPrefs } from "@/storage/widgetPrefs";
+import { resolveWidgetEntityIcon } from "@/utils/icons/resolveWidgetEntityIcon";
 import { setWidgetCache } from "@/utils/widget/widgetCache";
 import { PetStatusWidget } from "@/widget/PetStatusWidget";
 import { getPetWidgetData } from "@/widget/getPetWidgetData";
 
 export async function renderPetWidget() {
   try {
-    const { activeTag, widgetPrefs, accounts } = useAccountStore.getState();
+    // const { activeTag, widgetPrefs, accounts } = useAccountStore.getState();
 
+    const accounts = await getAccounts();
+
+    const activeTag = getActiveAccount();
+
+    const widgetPrefs = getWidgetPrefs();
     const selectedTag = widgetPrefs.selectedAccountTag;
     const fallbackTag = accounts[0]?.tag;
 
@@ -45,21 +53,23 @@ export async function renderPetWidget() {
     }
 
     const data = await getPetWidgetData(tag);
+    const icon = data.dataId
+      ? ((await resolveWidgetEntityIcon(data.dataId)) ?? undefined)
+      : undefined;
 
     setWidgetCache(tag, "pet", {
       ...data,
-      renderedAt: Date.now(),
+      cachedAt: Date.now(),
     });
 
     return (
       <PetStatusWidget
         title={data.title ?? "Pet"}
         subtitle={data.subtitle ?? "Idle"}
+        icon={icon}
         progress={data.progress ?? 0}
         showProgress={data.showProgress ?? false}
         levelText={data.levelText}
-        dataId={data.dataId}
-        type={data.type}
         suggestion={data.suggestion}
         color={data.color}
         accountInitials={data.accountInitials}

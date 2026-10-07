@@ -1,9 +1,9 @@
 import EntityCard from "@/components/EntityCard";
+import { getUpgradeStatus } from "@/engine/progression/selectors/getUpgradeStatus";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { fetchFullPlayer } from "@/services/clashApi";
 import { track } from "@/utils/analytics/analytics";
 import { parseArmy } from "@/utils/profile/parseArmy";
-import { getUpgradeStatus } from "@/utils/progression/getUpgradeStatus";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
@@ -28,6 +28,17 @@ interface Troop {
   village: string;
 }
 
+type Filter = "all" | "maxed" | "upgradable";
+
+const GOLD = "#fbbf24";
+const GREEN = "#22c55e";
+
+const FILTERS: { key: Filter; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "upgradable", label: "Upgradable" },
+  { key: "maxed", label: "Maxed" },
+];
+
 export default function TroopsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -37,27 +48,35 @@ export default function TroopsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "maxed" | "upgradable">("all");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [filter, setFilter] = useState<Filter>("all");
 
   useEffect(() => {
-    track("screen_view", { screen: "troops" });
+    track("screen_view", {
+      screen: "troops",
+    });
   }, []);
 
-  const load = async () => {
+  const load = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
+
       setError(null);
 
-      if (!profile.playerTag) {
+      if (!profile?.playerTag) {
         setError("No player tag found");
         return;
       }
 
       const data = await fetchFullPlayer(profile.playerTag);
-      const { troops } = parseArmy(data);
 
-      const homeTroops = troops
+      const parsed = parseArmy(data);
+
+      const homeTroops: Troop[] = parsed.home.troops
         ?.filter((t: any) => t.village === "home")
         .map((t: any) => ({
           dataId: t.dataId,
@@ -66,62 +85,87 @@ export default function TroopsScreen() {
           maxLevel: t.maxLevel,
           village: t.village,
           status: getUpgradeStatus(t.level, t.maxLevel),
-        }))
-        .sort((a: Troop, b: Troop) => {
-          if (a.status === "max" && b.status !== "max") return 1;
-          if (b.status === "max" && a.status !== "max") return -1;
-
-          const remainingA = a.maxLevel - a.level;
-          const remainingB = b.maxLevel - b.level;
-
-          return remainingB - remainingA;
-        });
+        }));
 
       setTroops(homeTroops);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load troops");
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
     load();
-  }, [profile.playerTag]);
+  }, [profile?.playerTag]);
 
   const onRefresh = async () => {
-    setRefreshing(true);
-    await load();
-    setRefreshing(false);
+    try {
+      setRefreshing(true);
+      await load(true);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const hasActiveFilters = search.trim().length > 0 || filter !== "all";
+
+  const resetFilters = () => {
+    setSearch("");
+    setFilter("all");
   };
 
   const filtered = useMemo(() => {
     let list = troops;
 
-    if (search) {
+    if (search.trim()) {
       list = list.filter((t) =>
         t.name.toLowerCase().includes(search.toLowerCase()),
       );
     }
 
-    if (filter === "maxed") list = list.filter((t) => t.status === "max");
-    if (filter === "upgradable") list = list.filter((t) => t.status !== "max");
+    if (filter === "maxed") {
+      list = list.filter((t) => t.status === "max");
+    }
+
+    if (filter === "upgradable") {
+      list = list.filter((t) => t.status !== "max");
+    }
 
     return list;
   }, [troops, search, filter]);
 
-  const maxedCount = troops.filter((t) => t.status === "max").length;
-  const totalLevels = troops.reduce((sum, t) => sum + t.level, 0);
-  const maxLevels = troops.reduce((sum, t) => sum + t.maxLevel, 0);
+  const stats = useMemo(() => {
+    const maxed = troops.filter((t) => t.status === "max").length;
 
-  const overallProgress =
-    maxLevels > 0 ? Math.round((totalLevels / maxLevels) * 100) : 0;
+    const totalLevels = troops.reduce((sum, troop) => sum + troop.level, 0);
+
+    const maxLevels = troops.reduce((sum, troop) => sum + troop.maxLevel, 0);
+
+    const progress =
+      maxLevels > 0 ? Math.round((totalLevels / maxLevels) * 100) : 0;
+
+    return {
+      maxed,
+      remaining: troops.length - maxed,
+      progress,
+    };
+  }, [troops]);
+
+  const filterCounts: Record<Filter, number> = {
+    all: troops.length,
+    upgradable: stats.remaining,
+    maxed: stats.maxed,
+  };
 
   if (loading && troops.length === 0) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size={48} color="#fbbf24" />
-        <Text style={styles.loadingText}>Loading troops...</Text>
+        <ActivityIndicator size={42} color={GOLD} />
+
+        <Text style={styles.loadingText}>Loading troops…</Text>
       </View>
     );
   }
@@ -129,10 +173,23 @@ export default function TroopsScreen() {
   if (error && troops.length === 0) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <Ionicons name="alert-circle" size={56} color="#ef4444" />
+        <View style={styles.errorIcon}>
+          <Ionicons name="alert-circle" size={36} color="#ef4444" />
+        </View>
+
+        <Text style={styles.errorTitle}>Couldn&apos;t load troops</Text>
         <Text style={styles.errorText}>{error}</Text>
-        <Pressable style={styles.retryButton} onPress={load}>
-          <Text style={styles.retryButtonText}>Retry</Text>
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => load()}
+          style={({ pressed }) => [
+            styles.retryButton,
+            pressed && styles.pressed,
+          ]}
+        >
+          <Ionicons name="refresh" size={16} color="#0f172a" />
+          <Text style={styles.retryButtonText}>Try again</Text>
         </Pressable>
       </View>
     );
@@ -142,18 +199,23 @@ export default function TroopsScreen() {
     <View style={styles.container}>
       <FlatList
         data={filtered}
-        keyExtractor={(item) => item.dataId.toString()}
         numColumns={3}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        keyExtractor={(item) => `${item.dataId}-${item.level}-${item.village}`}
         columnWrapperStyle={styles.gridRow}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + 8 },
+          {
+            paddingTop: insets.top + 12,
+          },
         ]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#fbbf24"
+            tintColor={GOLD}
           />
         }
         ListHeaderComponent={
@@ -161,26 +223,32 @@ export default function TroopsScreen() {
             {/* Header */}
             <View style={styles.header}>
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Go back"
                 onPress={() => router.back()}
-                style={styles.backButton}
+                style={({ pressed }) => [
+                  styles.backButton,
+                  pressed && styles.pressed,
+                ]}
               >
-                <Ionicons name="chevron-back" size={24} color="#fbbf24" />
+                <Ionicons name="chevron-back" size={22} color="#f8fafc" />
               </Pressable>
 
-              <Text style={styles.headerTitle}>Troops Collection</Text>
+              <Text style={styles.headerTitle}>Troops</Text>
 
-              <View style={{ width: 40 }} />
+              <View style={styles.headerSpacer} />
             </View>
 
-            {/* Overview Card */}
+            {/* Overview */}
             <View style={styles.overviewCard}>
-              <View style={styles.overviewHeader}>
-                <View style={styles.overviewIconWrapper}>
-                  <Ionicons name="flash" size={20} color="#fbbf24" />
+              <View style={styles.overviewTop}>
+                <View style={styles.overviewTitleGroup}>
+                  <Text style={styles.overviewLabel}>Upgrade progress</Text>
+                  <Text style={styles.overviewValue}>{stats.progress}%</Text>
                 </View>
-                <View style={styles.overviewHeaderText}>
-                  <Text style={styles.overviewLabel}>Collection Progress</Text>
-                  <Text style={styles.overviewValue}>{overallProgress}%</Text>
+
+                <View style={styles.overviewIcon}>
+                  <Ionicons name="flash" size={20} color={GOLD} />
                 </View>
               </View>
 
@@ -188,7 +256,10 @@ export default function TroopsScreen() {
                 <View
                   style={[
                     styles.overviewProgressFill,
-                    { width: `${overallProgress}%` },
+                    {
+                      width: `${stats.progress}%`,
+                      backgroundColor: stats.progress === 100 ? GREEN : GOLD,
+                    },
                   ]}
                 />
               </View>
@@ -198,80 +269,116 @@ export default function TroopsScreen() {
                   <Text style={styles.statValue}>{troops.length}</Text>
                   <Text style={styles.statLabel}>Total</Text>
                 </View>
+
                 <View style={styles.statDivider} />
+
                 <View style={styles.statBox}>
-                  <Text style={[styles.statValue, { color: "#22c55e" }]}>
-                    {maxedCount}
+                  <Text style={[styles.statValue, { color: GREEN }]}>
+                    {stats.maxed}
                   </Text>
                   <Text style={styles.statLabel}>Maxed</Text>
                 </View>
+
                 <View style={styles.statDivider} />
+
                 <View style={styles.statBox}>
-                  <Text style={[styles.statValue, { color: "#ef4444" }]}>
-                    {troops.length - maxedCount}
+                  <Text style={[styles.statValue, { color: GOLD }]}>
+                    {stats.remaining}
                   </Text>
-                  <Text style={styles.statLabel}>Remaining</Text>
+                  <Text style={styles.statLabel}>To upgrade</Text>
                 </View>
               </View>
             </View>
 
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-              <Ionicons name="search" size={18} color="#94a3b8" />
+            {/* Search */}
+            <View
+              style={[
+                styles.searchContainer,
+                searchFocused && styles.searchContainerFocused,
+              ]}
+            >
+              <Ionicons
+                name="search"
+                size={16}
+                color={searchFocused ? GOLD : "#64748b"}
+              />
+
               <TextInput
-                placeholder="Search troops..."
+                placeholder="Search troops"
                 placeholderTextColor="#64748b"
                 value={search}
                 onChangeText={setSearch}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
                 style={styles.searchInput}
                 autoCapitalize="none"
                 autoCorrect={false}
+                returnKeyType="search"
               />
+
               {search.length > 0 && (
-                <Pressable onPress={() => setSearch("")}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear search"
+                  hitSlop={8}
+                  onPress={() => setSearch("")}
+                >
                   <Ionicons name="close-circle" size={18} color="#64748b" />
                 </Pressable>
               )}
             </View>
 
-            {/* Filter Buttons */}
-            <View style={styles.filterButtons}>
-              {[
-                { key: "all", label: "All", icon: "grid" },
-                { key: "upgradable", label: "Upgradable", icon: "arrow-up" },
-                { key: "maxed", label: "Maxed", icon: "checkmark" },
-              ].map((f) => (
-                <Pressable
-                  key={f.key}
-                  onPress={() => setFilter(f.key as any)}
-                  style={({ pressed }) => [
-                    styles.filterButton,
-                    filter === f.key && styles.filterButtonActive,
-                    pressed && styles.filterButtonPressed,
-                  ]}
-                >
-                  <Ionicons
-                    name={f.icon as any}
-                    size={14}
-                    color={filter === f.key ? "#0f172a" : "#94a3b8"}
-                  />
-                  <Text
-                    style={[
-                      styles.filterButtonText,
-                      filter === f.key && styles.filterButtonTextActive,
-                    ]}
+            {/* Filters — segmented control */}
+            <View style={styles.segmented}>
+              {FILTERS.map((f) => {
+                const active = filter === f.key;
+
+                return (
+                  <Pressable
+                    key={f.key}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    onPress={() => setFilter(f.key)}
+                    style={[styles.segment, active && styles.segmentActive]}
                   >
-                    {f.label}
-                  </Text>
-                </Pressable>
-              ))}
+                    <Text
+                      style={[
+                        styles.segmentText,
+                        active && styles.segmentTextActive,
+                      ]}
+                    >
+                      {f.label}
+                    </Text>
+
+                    <Text
+                      style={[
+                        styles.segmentCount,
+                        active && styles.segmentCountActive,
+                      ]}
+                    >
+                      {filterCounts[f.key]}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
 
-            {/* Results Count */}
-            <Text style={styles.resultsText}>
-              {filtered.length} {filtered.length === 1 ? "troop" : "troops"}{" "}
-              {search || filter !== "all" ? "found" : ""}
-            </Text>
+            {/* Results */}
+            <View style={styles.resultsRow}>
+              <Text style={styles.resultsText}>
+                {filtered.length} troop{filtered.length !== 1 ? "s" : ""}
+              </Text>
+
+              {hasActiveFilters && (
+                <Pressable
+                  accessibilityRole="button"
+                  hitSlop={8}
+                  onPress={resetFilters}
+                >
+                  <Text style={styles.clearText}>Clear filters</Text>
+                </Pressable>
+              )}
+            </View>
           </>
         }
         renderItem={({ item }) => (
@@ -280,16 +387,34 @@ export default function TroopsScreen() {
             level={item.level}
             maxLevel={item.maxLevel}
             dataId={item.dataId}
-            type="troop"
           />
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="search" size={48} color="#475569" />
+            <View style={styles.emptyIcon}>
+              <Ionicons name="search-outline" size={28} color="#64748b" />
+            </View>
+
             <Text style={styles.emptyText}>No troops found</Text>
+
             <Text style={styles.emptySubtext}>
-              Try adjusting your search or filters
+              {hasActiveFilters
+                ? "Nothing matches your search or filter."
+                : "There are no home troops to show yet."}
             </Text>
+
+            {hasActiveFilters && (
+              <Pressable
+                accessibilityRole="button"
+                onPress={resetFilters}
+                style={({ pressed }) => [
+                  styles.emptyButton,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text style={styles.emptyButtonText}>Clear filters</Text>
+              </Pressable>
+            )}
           </View>
         }
       />
@@ -303,14 +428,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f172a",
   },
 
-  gridRow: {
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-
   centerContent: {
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 32,
   },
 
   scrollContent: {
@@ -318,6 +439,16 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
 
+  gridRow: {
+    gap: 10,
+    marginBottom: 10,
+  },
+
+  pressed: {
+    opacity: 0.6,
+  },
+
+  // ── Header ──────────────────────────────────────────────
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -325,222 +456,305 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#fbbf24",
-    letterSpacing: -0.5,
-  },
-
   backButton: {
     width: 40,
     height: 40,
+    borderRadius: 12,
+    backgroundColor: "#1e293b",
+    borderWidth: 1,
+    borderColor: "#334155",
     justifyContent: "center",
     alignItems: "center",
   },
 
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: GOLD,
+    letterSpacing: -0.5,
+  },
+
+  headerSpacer: {
+    width: 40,
+  },
+
+  // ── Overview ────────────────────────────────────────────
   overviewCard: {
     backgroundColor: "#1e293b",
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 16,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 14,
     borderWidth: 1,
     borderColor: "#334155",
     shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
 
-  overviewHeader: {
+  overviewTop: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    justifyContent: "space-between",
     marginBottom: 14,
   },
 
-  overviewIconWrapper: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: "rgba(251, 191, 36, 0.15)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  overviewHeaderText: {
-    flex: 1,
-    gap: 4,
+  overviewTitleGroup: {
+    gap: 2,
   },
 
   overviewLabel: {
-    color: "#94a3b8",
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    color: "#94a3b8",
   },
 
   overviewValue: {
-    fontSize: 28,
-    fontWeight: "900",
-    color: "#fbbf24",
-    letterSpacing: -0.5,
+    fontSize: 32,
+    fontWeight: "800",
+    color: "#f8fafc",
+    letterSpacing: -1,
+  },
+
+  overviewIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: "rgba(251, 191, 36, 0.12)",
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   overviewProgressBar: {
     height: 8,
-    backgroundColor: "rgba(51, 65, 85, 0.5)",
-    borderRadius: 4,
-    marginBottom: 14,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.07)",
     overflow: "hidden",
+    marginBottom: 16,
   },
 
   overviewProgressFill: {
     height: "100%",
-    backgroundColor: "#fbbf24",
+    borderRadius: 999,
   },
 
   overviewStats: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    backgroundColor: "#0f172a",
+    borderRadius: 14,
+    paddingVertical: 12,
   },
 
   statBox: {
     flex: 1,
     alignItems: "center",
-    gap: 4,
+    gap: 2,
   },
 
   statValue: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#fbbf24",
+    color: "#f8fafc",
+    letterSpacing: -0.4,
   },
 
   statLabel: {
     fontSize: 11,
-    color: "#94a3b8",
     fontWeight: "600",
-    textTransform: "uppercase",
+    color: "#64748b",
   },
 
   statDivider: {
     width: 1,
-    height: 32,
-    backgroundColor: "#334155",
+    height: 28,
+    backgroundColor: "rgba(255,255,255,0.07)",
   },
 
+  // ── Search ──────────────────────────────────────────────
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#1e293b",
-    borderRadius: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#334155",
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#334155",
     gap: 10,
+  },
+
+  searchContainerFocused: {
+    borderColor: "rgba(251, 191, 36, 0.6)",
   },
 
   searchInput: {
     flex: 1,
-    color: "#fff",
+    color: "#f8fafc",
     fontSize: 14,
     fontWeight: "500",
+    padding: 0,
   },
 
-  filterButtons: {
+  // ── Segmented filter ────────────────────────────────────
+  segmented: {
     flexDirection: "row",
-    gap: 8,
+    backgroundColor: "#1e293b",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#334155",
+    padding: 4,
+    gap: 4,
     marginBottom: 16,
   },
 
-  filterButton: {
+  segment: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    paddingVertical: 10,
+    paddingVertical: 9,
     borderRadius: 10,
-    backgroundColor: "#1e293b",
-    borderWidth: 1,
-    borderColor: "#334155",
   },
 
-  filterButtonActive: {
-    backgroundColor: "#fbbf24",
-    borderColor: "#fbbf24",
+  segmentActive: {
+    backgroundColor: "rgba(251, 191, 36, 0.14)",
   },
 
-  filterButtonPressed: {
-    opacity: 0.7,
-  },
-
-  filterButtonText: {
-    textAlign: "center",
+  segmentText: {
+    fontSize: 13,
+    fontWeight: "600",
     color: "#94a3b8",
-    fontWeight: "700",
-    fontSize: 12,
   },
 
-  filterButtonTextActive: {
-    color: "#0f172a",
+  segmentTextActive: {
+    color: GOLD,
+    fontWeight: "700",
+  },
+
+  segmentCount: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#64748b",
+  },
+
+  segmentCountActive: {
+    color: "rgba(251, 191, 36, 0.75)",
+  },
+
+  // ── Results ─────────────────────────────────────────────
+  resultsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+    paddingHorizontal: 2,
   },
 
   resultsText: {
     fontSize: 12,
-    color: "#64748b",
     fontWeight: "600",
-    marginBottom: 12,
-    textAlign: "center",
+    color: "#64748b",
   },
 
+  clearText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: GOLD,
+  },
+
+  // ── States ──────────────────────────────────────────────
   loadingText: {
-    color: "#94a3b8",
     marginTop: 12,
+    color: "#94a3b8",
     fontSize: 14,
     fontWeight: "600",
+  },
+
+  errorIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#f1f5f9",
+    marginBottom: 6,
   },
 
   errorText: {
-    color: "#ef4444",
-    marginVertical: 12,
+    color: "#94a3b8",
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "500",
+    textAlign: "center",
   },
 
   retryButton: {
-    backgroundColor: "#fbbf24",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 10,
-    marginTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 20,
+    backgroundColor: GOLD,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    borderRadius: 12,
   },
 
   retryButtonText: {
-    fontWeight: "700",
     color: "#0f172a",
+    fontWeight: "800",
+    fontSize: 14,
   },
 
   emptyState: {
     alignItems: "center",
-    paddingVertical: 60,
-    gap: 12,
+    paddingVertical: 56,
+    paddingHorizontal: 24,
+    gap: 8,
+  },
+
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#1e293b",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 6,
   },
 
   emptyText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#64748b",
+    color: "#e2e8f0",
   },
 
   emptySubtext: {
     fontSize: 13,
-    color: "#475569",
+    color: "#64748b",
+    textAlign: "center",
+  },
+
+  emptyButton: {
+    marginTop: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 10,
+    backgroundColor: "rgba(251, 191, 36, 0.12)",
+  },
+
+  emptyButtonText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: GOLD,
   },
 });

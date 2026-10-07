@@ -42,6 +42,7 @@ export const SIEGE_MACHINES = [
   "Flame Flinger",
   "Battle Drill",
   "Troop Launcher",
+  "Sky Wagon",
 ];
 
 export const BUILDER_BASE_TROOPS = [

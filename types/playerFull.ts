@@ -70,4 +70,15 @@ export type PlayerFull = {
     id: number;
     level: number;
   }[];
+
+  builderHallLevel?: number;
+  builderBaseTrophies?: number;
+  bestBuilderBaseTrophies?: number;
+
+
+  builderBaseLeague?: {
+    id?: number;
+    name?: string;
+  };
+
 };

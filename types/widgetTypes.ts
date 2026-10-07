@@ -2,8 +2,10 @@
 export type WidgetCacheData = {
   title: string;
   subtitle: string;
+  icon?: string;
   isCrafted?: boolean;
   progress: number;
+  currentLevel?: number;
   showProgress: boolean;
   levelText?: string;
   builderCountText?: string;
@@ -13,7 +15,7 @@ export type WidgetCacheData = {
   color?: string;
   accountInitials?: string;
   updatedAt?: number;
-  renderedAt: number;
+  cachedAt: number;
   remainingMs?: number;
 };
 

@@ -1,9 +1,7 @@
 "use no memo";
 
 import { MultiWidgetItem } from "@/types/widgetTypes";
-import { getCraftedResolver } from "@/utils/craftedResolver";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
-import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
 import React from "react";
 import {
   ColorProp,
@@ -16,7 +14,7 @@ type Props = {
   accounts: MultiWidgetItem[];
   totalAccounts?: number;
   error?: boolean;
-  isPro?: boolean;
+  isPremium?: boolean;
 };
 
 // ---------- URGENCY ----------
@@ -41,24 +39,13 @@ function getColor(u: ReturnType<typeof getUrgency>) {
   }
 }
 
-function getBg(u: ReturnType<typeof getUrgency>): ColorProp {
-  switch (u) {
-    case "free":
-      return "rgba(34,197,94,0.15)" as ColorProp;
-    case "critical":
-      return "rgba(239,68,68,0.15)" as ColorProp;
-    case "high":
-      return "rgba(251,191,36,0.15)" as ColorProp;
-    default:
-      return "rgba(148,163,184,0.1)" as ColorProp;
-  }
-}
-
 // ---------- FALLBACK SCREENS ----------
 
 function renderNoAccounts(): React.ReactNode {
   return (
     <FlexWidget
+      clickAction="OPEN_URI"
+      clickActionData={{ uri: "clashone://add-account?source=widget" }}
       style={{
         width: "match_parent",
         height: "match_parent",
@@ -382,7 +369,7 @@ function renderUpsellCard(totalAccounts?: number): React.ReactNode {
   return (
     <FlexWidget
       clickAction="OPEN_URI"
-      clickActionData={{ uri: "clashwidget://pro?source=widget&upsell=true" }}
+      clickActionData={{ uri: "clashone://pro?source=widget&upsell=true" }}
       style={{
         width: "match_parent",
         height: "match_parent",
@@ -452,7 +439,7 @@ function renderAddAccountCard(totalAccounts?: number): React.ReactNode {
   return (
     <FlexWidget
       clickAction="OPEN_URI"
-      clickActionData={{ uri: "clashwidget://add-account?source=widget" }}
+      clickActionData={{ uri: "clashone://add-account?source=widget" }}
       style={{
         width: "match_parent",
         height: "match_parent",
@@ -530,36 +517,21 @@ function renderAddAccountCard(totalAccounts?: number): React.ReactNode {
 }
 
 // ---------- CARD ----------
-function renderCard(
-  item: MultiWidgetItem,
-  index: number,
-  totalAccounts?: number,
-  isPro?: boolean,
-): React.ReactNode {
+function renderCard(item: MultiWidgetItem): React.ReactNode {
   const { tag, data } = item;
 
   const urgency = getUrgency(data);
   const urgencyColor = getColor(urgency) as any;
-  const urgencyBg = getBg(urgency) as any;
   const accentColor = (data.color ?? "#fbbf24") as any;
 
   const clamped = Math.max(0, Math.min(data.progress ?? 0, 1));
   const BAR_MAX_WIDTH = 100;
   const progressWidth = Math.floor(BAR_MAX_WIDTH * 0.8 * clamped);
 
-  const { getCraftedIcon } = getCraftedResolver();
-
-  const icon =
-    data.dataId && data.type
-      ? data.isCrafted && getCraftedIcon(data.dataId)
-        ? getCraftedIcon(data.dataId)
-        : getIconByEntityType(data.dataId, data.type, undefined, data.isCrafted)
-      : urgency === "free"
-        ? require("@/assets/images/builder/builder-idle.png")
-        : require("@/assets/images/builder/builder-working.png");
-
+  const icon = data.icon;
   return (
     <FlexWidget
+      clickAction="OPEN_APP"
       key={tag}
       style={{
         width: "match_parent",
@@ -617,7 +589,17 @@ function renderCard(
                   : "rgba(251, 191, 36, 0.15)",
             }}
           >
-            <ImageWidget image={icon} imageWidth={28} imageHeight={28} />
+            <ImageWidget
+              image={
+                icon
+                  ? icon
+                  : urgency === "free"
+                    ? require("@/assets/images/builder/builder-idle.png")
+                    : require("@/assets/images/builder/builder-working.png")
+              }
+              imageWidth={28}
+              imageHeight={28}
+            />
           </FlexWidget>
 
           {/* TITLE COLUMN */}
@@ -852,7 +834,7 @@ export function MultiAccountWidget({
   accounts,
   totalAccounts,
   error,
-  isPro,
+  isPremium,
 }: Props) {
   if (error) return renderError();
 
@@ -861,21 +843,22 @@ export function MultiAccountWidget({
 
   // Accounts exist but no cached data yet
   if (accounts.length === 0) return renderNoCache(totalAccounts);
+  const total = totalAccounts ?? 0;
 
-  console.log("UPSELL CHECK:", {
-    isPro,
-    totalAccounts,
-    accountsLength: accounts.length,
-  });
+  let visibleCount = 0;
 
-  const visibleAccounts = accounts.slice(
-    0,
-    isPro ? accounts.length : Math.min(3, accounts.length),
-  );
-  console.log(
-    "WIDGET DATA:",
-    accounts.map((a) => a.tag),
-  );
+  if (isPremium) {
+    visibleCount = Math.min(3, accounts.length);
+  } else {
+    visibleCount = total >= 3 ? 2 : Math.min(2, accounts.length);
+  }
+
+  const visibleAccounts = accounts.slice(0, visibleCount);
+
+  const shouldShowUpsell = !isPremium && total >= 3;
+
+  const shouldShowAddAccount = total === 1;
+
   return (
     <FlexWidget
       style={{
@@ -888,7 +871,7 @@ export function MultiAccountWidget({
         backgroundColor: "#0f172a",
       }}
     >
-      {visibleAccounts.map((acc, i) => (
+      {visibleAccounts.map((acc) => (
         <FlexWidget
           key={acc.tag}
           style={{
@@ -896,18 +879,28 @@ export function MultiAccountWidget({
             marginRight: 4,
           }}
         >
-          {renderCard(acc, i, totalAccounts, isPro)}
+          {renderCard(acc)}
         </FlexWidget>
       ))}
 
-      {!isPro && (totalAccounts ?? 0) > 2 && (
-        <FlexWidget style={{ flex: 1, height: "match_parent" }}>
+      {shouldShowUpsell && (
+        <FlexWidget
+          style={{
+            flex: 1,
+            height: "match_parent",
+          }}
+        >
           {renderUpsellCard(totalAccounts)}
         </FlexWidget>
       )}
 
-      {(totalAccounts ?? 0) === 1 && (
-        <FlexWidget style={{ flex: 1, height: "match_parent" }}>
+      {shouldShowAddAccount && (
+        <FlexWidget
+          style={{
+            flex: 1,
+            height: "match_parent",
+          }}
+        >
           {renderAddAccountCard(totalAccounts)}
         </FlexWidget>
       )}

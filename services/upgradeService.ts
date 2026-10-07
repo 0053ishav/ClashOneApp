@@ -14,14 +14,15 @@ export async function getUpgrades(tag: string): Promise<Upgrade[]> {
     `SELECT * FROM upgrades WHERE account_player_tag=?`,
     [tag]
   );
-
   const normalized: Upgrade[] = rows.map((r: any) => ({
     id: r.id,
     accountTag: r.account_player_tag,
+    village: r.village ?? "home",
     dataId: r.data_id,
     entity: r.entity,
 
     type: r.type,
+    subType: r.sub_type,
     upgradeType: r.upgrade_type,
 
     builderSlot:
@@ -43,6 +44,11 @@ export async function getUpgrades(tag: string): Promise<Upgrade[]> {
     startTime: Number(r.start_time),
     durationMinutes: Number(r.duration_minutes),
     endTime: Number(r.finish_timestamp),
+
+
+    hasHelper: r.has_helper === 1,
+    recurrentHelper: r.recurrent_helper === 1,
+    helperAppliedSeconds: Number(r.helper_applied_seconds ?? 0),
 
     currentLevel: r.current_level ?? undefined,
     nextLevel: r.next_level ?? undefined,
@@ -73,11 +79,13 @@ export async function getActiveUpgrades(tag: string): Promise<Upgrade[]> {
   return rows.map((r: any) => ({
     id: r.id,
     accountTag: r.account_player_tag,
+    village: r.village ?? "home",
 
     dataId: r.data_id,
     entity: r.entity,
 
     type: r.type,
+    subType: r.sub_type,
     upgradeType: r.upgrade_type,
 
     builderSlot:
@@ -99,6 +107,9 @@ export async function getActiveUpgrades(tag: string): Promise<Upgrade[]> {
     durationMinutes: r.duration_minutes,
     endTime: r.finish_timestamp,
 
+    hasHelper: r.has_helper === 1,
+    recurrentHelper: r.recurrent_helper === 1,
+    helperAppliedSeconds: Number(r.helper_applied_seconds ?? 0),
     currentLevel: r.current_level ?? undefined,
     nextLevel: r.next_level ?? undefined,
 
@@ -120,11 +131,13 @@ export async function addUpgrade(tag: string, upgrade: Upgrade) {
 
   if (upgrade.upgradeType === "BUILDER") {
     const existing = await db.getFirstAsync(
-      `SELECT id FROM upgrades
-   WHERE account_player_tag=? 
-   AND builder_slot=?
-   AND is_completed=0`,
-      [tag, String(upgrade.builderSlot)]
+      `SELECT id 
+      FROM upgrades
+      WHERE account_player_tag=? 
+      AND village=?
+      AND builder_slot=?
+      AND is_completed=0`,
+      [tag, upgrade.village, String(upgrade.builderSlot)]
     );
 
     if (existing) {
@@ -132,23 +145,75 @@ export async function addUpgrade(tag: string, upgrade: Upgrade) {
     }
   }
 
+  if (upgrade.upgradeType === "LAB") {
+    const existing = await db.getFirstAsync(
+      `SELECT id 
+      FROM upgrades
+      WHERE account_player_tag=?
+      AND village=? 
+      AND upgrade_type='LAB'
+      AND is_completed=0`,
+      [tag, upgrade.village]
+    );
+
+    if (existing) throw new Error("LAB_ALREADY_RUNNING");
+  }
+
+  if (upgrade.upgradeType === "PET") {
+    const existing = await db.getFirstAsync(
+      `SELECT id FROM upgrades
+     WHERE account_player_tag=? 
+     AND upgrade_type='PET'
+     AND is_completed=0`,
+      [tag]
+    );
+
+    if (existing) throw new Error("PET_HOUSE_OCCUPIED");
+  }
+
   await db.runAsync(
     `INSERT INTO upgrades
-    (id, account_player_tag, data_id, entity, type, upgrade_type, builder_slot, builder_type,
-    current_level, next_level, start_time, duration_minutes,
-    finish_timestamp, is_completed, source, is_crafted, module_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  (
+    id,
+    account_player_tag,
+    village,
+    data_id,
+    entity,
+    type,
+    sub_type,
+    upgrade_type,
+    builder_slot,
+    builder_type,
+    lab_slot,
+    current_level,
+    next_level,
+    start_time,
+    duration_minutes,
+    finish_timestamp,
+    has_helper,
+    recurrent_helper,
+    helper_applied_seconds,
+    is_completed,
+    source,
+    is_crafted,
+    module_id
+  )
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       upgrade.id,
       tag,
+      upgrade.village ?? "home",
       upgrade.dataId ?? null,
       upgrade.entity,
 
       upgrade.type,
+      upgrade.subType ?? null,
       upgrade.upgradeType,
 
       upgrade.builderSlot != null ? String(upgrade.builderSlot) : null,
       upgrade.builderType ?? null,
+
+      upgrade.labSlot ?? null,
 
       upgrade.currentLevel ?? null,
       upgrade.nextLevel ?? null,
@@ -157,11 +222,15 @@ export async function addUpgrade(tag: string, upgrade: Upgrade) {
       upgrade.durationMinutes,
       upgrade.endTime,
 
+      upgrade.hasHelper ? 1 : 0,
+      upgrade.recurrentHelper ? 1 : 0,
+      upgrade.helperAppliedSeconds ?? 0,
+
       upgrade.isCompleted ? 1 : 0,
       upgrade.source ?? null,
 
       upgrade.isCrafted ? 1 : 0,
-      upgrade.moduleId ?? null
+      upgrade.moduleId ?? null,
     ]
   );
 }

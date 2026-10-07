@@ -73,7 +73,6 @@ export async function renderLabWidget() {
       ...data,
       cachedAt: Date.now(),
     });
-
     return (
       <LabStatusWidget
         title={data.title ?? "Lab"}

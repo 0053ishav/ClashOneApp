@@ -112,25 +112,34 @@ export default function HomeScreen() {
   const [showSupport, setShowSupport] = useState(false);
   const [debugInfo, setDebugInfo] = useState("");
 
+  const hasLoadedAccountState = useRef(false);
   const refreshState = useCallback(async () => {
     if (!activeTag) return;
 
     try {
-      if (!accountState) {
+      if (!hasLoadedAccountState.current) {
         setIsLoadingAccountState(true);
       }
+
       const state = await getAccountState(activeTag);
+
       setAccountState(state);
+      hasLoadedAccountState.current = true;
+    } catch (error) {
+      console.error("[HOME] Failed to refresh account state:", error);
     } finally {
       setIsLoadingAccountState(false);
     }
-  }, [activeTag, accountState]);
-
-  const { width } = useWindowDimensions();
+  }, [activeTag]);
 
   useEffect(() => {
-    if (activeTag) refreshState();
+    if (activeTag) {
+      hasLoadedAccountState.current = false;
+      refreshState();
+    }
   }, [activeTag, refreshState]);
+
+  const { width } = useWindowDimensions();
 
   const builders = useMemo(
     () =>
@@ -713,7 +722,7 @@ export default function HomeScreen() {
                   {currentNextUpgrade.entity
                     ? formatBuildingName(currentNextUpgrade.entity)
                     : "Upgrade"}
-                  finishing first
+                  &nbsp;finishing first
                 </Text>
               )}
             </View>

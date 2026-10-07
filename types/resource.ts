@@ -8,4 +8,5 @@ export enum ResourceType {
   SEASON_POINTS = 6,
   GOLD_OR_ELIXIR = 7,
   BUILDER_GOLD_OR_ELIXIR = 8,
+  ORE = 9,
 }

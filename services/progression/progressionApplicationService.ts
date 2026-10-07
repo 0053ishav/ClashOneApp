@@ -106,7 +106,7 @@ export class ProgressionApplicationService {
  * Later, without changing the engine, you can add:
  * resolvePlayerTroop(...)
  * resolvePlayerHero(...)
- * resolvePlayerBuilding(...)w
+ * resolvePlayerBuilding(...)
  * resolvePlannedUpgrade(...)
  * resolveSimulation(...)
  */

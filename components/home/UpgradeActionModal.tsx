@@ -163,7 +163,27 @@ export function UpgradeActionModal({
       return "—";
     }
 
-    return value.toLocaleString();
+    return value.toLocaleString("en-US");
+  };
+
+  const formatGameCost = (value?: number) => {
+    if (value == null) {
+      return "—";
+    }
+
+    if (value >= 1_000_000_000) {
+      return `${(value / 1_000_000_000).toFixed(1).replace(/\.0$/, "")}B`;
+    }
+
+    if (value >= 1_000_000) {
+      return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+    }
+
+    if (value >= 1_000) {
+      return `${(value / 1_000).toFixed(1).replace(/\.0$/, "")}K`;
+    }
+
+    return value.toString();
   };
 
   /*
@@ -668,7 +688,7 @@ export function UpgradeActionModal({
               label="Cost"
               value={
                 progression.nextCost != null
-                  ? formatNumber(progression.nextCost)
+                  ? formatGameCost(progression.nextCost)
                   : "—"
               }
               valueIconUri={resourceIcon}
@@ -836,7 +856,7 @@ export function UpgradeActionModal({
             <DetailRow
               icon="wallet-outline"
               label="Total cost"
-              value={formatNumber(progression.remainingCost)}
+              value={formatGameCost(progression.remainingCost)}
               valueIconUri={resourceIcon}
               valueColor={resourceColor}
             />

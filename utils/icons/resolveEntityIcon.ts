@@ -123,15 +123,15 @@ export function resolveEntityIcon(
     return `${ENV.CDN_BASE}/v2/builder/builderhalls/${level}.png`;
   }
 
-    /**
-   * Home Heroes
-   *
-   * Heroes have a single icon per entity.
-   * They do not have level-specific images.
-   *
-   * CDN:
-   * /v2/home/heroes/{entityId}/icon.png
-   */
+  /**
+ * Home Heroes
+ *
+ * Heroes have a single icon per entity.
+ * They do not have level-specific images.
+ *
+ * CDN:
+ * /v2/home/heroes/{entityId}/icon.png
+ */
   if (
     village === "home" &&
     type === "hero"
@@ -139,24 +139,44 @@ export function resolveEntityIcon(
     return `${ENV.CDN_BASE}/v2/home/heroes/${entityId}/icon.png`;
   }
 
-    /**
-   * Builder Heroes
-   * CDN:
-   * /v2/builder/heroes/{entityId}/icon.png
-   */
+  /**
+ * Builder Heroes
+ * CDN:
+ * /v2/builder/heroes/{entityId}/icon.png
+ */
   if (
     village === "builderBase" &&
     type === "hero"
   ) {
     return `${ENV.CDN_BASE}/v2/builder/heroes/${entityId}/icon.png`;
   }
+
+  /**
+ * Home Pets & Guardians.
+ *
+ * Pets and Guardians have a single level-independent icon.
+ * Their CDN image is always 1.png.
+ *
+ * CDN:
+ * /v2/home/{category}/{entityId}/1.png
+ */
+  if (
+    village === "home" &&
+    (type === "pet" || type === "guardian" || type === "spell")
+  ) {
+    const category = HOME_ICON_CATEGORIES[type];
+
+    if (category) {
+      return `${ENV.CDN_BASE}/v2/home/${category}/${entityId}/1.png`;
+    }
+  }
+
   /*
    * Normal Home entities.
    */
   if (village === "home") {
     const category =
       HOME_ICON_CATEGORIES[type];
-
     if (category) {
       return `${ENV.CDN_BASE}/v2/home/${category}/${entityId}/${level}.png`;
     }
@@ -175,7 +195,6 @@ export function resolveEntityIcon(
       return `${ENV.CDN_BASE}/v2/builder/${category}/${entityId}/${level}.png`;
     }
   }
-
   /*
    * Unknown category:
    * fall back to metadata icon.

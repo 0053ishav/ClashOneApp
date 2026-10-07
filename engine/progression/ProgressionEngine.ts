@@ -53,14 +53,6 @@ export class ProgressionEngine {
           0,
         );
 
-
-    console.log("PROGRESSION ENGINE:", {
-      dataId: progression.entity.id,
-      currentLevel,
-      currentHallLevel,
-      achievableLevel,
-    });
-
     return {
       dataId: progression.entity.id,
       currentLevel,

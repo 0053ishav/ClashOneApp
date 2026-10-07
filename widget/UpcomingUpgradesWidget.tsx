@@ -2,11 +2,11 @@
 
 import React from "react";
 import {
-    ColorProp,
-    FlexWidget,
-    ImageWidget,
-    ListWidget,
-    TextWidget,
+  ColorProp,
+  FlexWidget,
+  ImageWidget,
+  ListWidget,
+  TextWidget,
 } from "react-native-android-widget";
 
 import { formatCountdown } from "@/utils/formatCountdown";
@@ -276,8 +276,8 @@ export function UpcomingUpgradesWidget(props: {
                             row.icon ??
                             require("@/assets/images/builder/builder-working.png")
                           }
-                          imageWidth={24}
-                          imageHeight={24}
+                          imageWidth={28}
+                          imageHeight={30}
                         />
                       </FlexWidget>
 

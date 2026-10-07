@@ -715,33 +715,6 @@ export async function importVillageJson(
   // 🔥 API SYNC (UNCHANGED)
   // =========================================================
 
-  // const busyHomeBuilders = validUpgrades.filter((u) => {
-  //   const entity = getEntity(u.data);
-
-  //   if (!entity) return false;
-
-  //   return (
-  //     resolveUpgradeType(entity.type) === "BUILDER" &&
-  //     entity.village === "home"
-  //   );
-  // }).length;
-
-  // const busyBuilderBaseBuilders = validUpgrades.filter((u) => {
-  //   const entity = getEntity(u.data);
-
-  //   if (!entity) return false;
-
-  //   return (
-  //     resolveUpgradeType(entity.type) === "BUILDER" &&
-  //     entity.village === "builderBase"
-  //   );
-  // }).length;
-
-  // const totalHomeBuilders = Math.max(1, Math.min(busyHomeBuilders, 6));
-
-  // const totalBuilderBaseBuilders = Math.max(1, Math.min(busyBuilderBaseBuilders, 3));
-
-
   try {
     apiData = await fetchPlayerFromApi(parsed.tag);
 

@@ -32,7 +32,12 @@ export function PetSection({
   const totalMs = activePet ? activePet.endTime - activePet.startTime : 0;
 
   const petIconUri =
-    activePet?.dataId != null ? resolveEntityIcon(activePet.dataId) : null;
+    activePet?.dataId != null
+      ? resolveEntityIcon(activePet.dataId, {
+          village: "home",
+          level: activePet.currentLevel,
+        })
+      : null;
 
   if (townHall < 14) return null;
   return (

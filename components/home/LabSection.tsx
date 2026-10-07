@@ -73,11 +73,24 @@ export function LabSection({
       </View>
 
       {/* NORMAL LAB */}
-      {labNormal && <LabCard label="Lab" lab={labNormal} onPress={onPress} />}
+      {labNormal && (
+        <LabCard
+          village={village}
+          label="Lab"
+          lab={labNormal}
+          onPress={onPress}
+        />
+      )}
 
       {/* GOBLIN LAB */}
       {labGoblin && (
-        <LabCard label="Goblin" lab={labGoblin} onPress={onPress} isGoblin />
+        <LabCard
+          village={village}
+          label="Goblin"
+          lab={labGoblin}
+          onPress={onPress}
+          isGoblin
+        />
       )}
 
       {/* EMPTY STATE */}
@@ -108,11 +121,13 @@ export function LabSection({
 }
 
 function LabCard({
+  village,
   lab,
   label,
   isGoblin,
   onPress,
 }: {
+  village: Village;
   lab: Upgrade;
   label: string;
   isGoblin?: boolean;
@@ -124,7 +139,13 @@ function LabCard({
   const remainingMs = Math.max(lab.endTime - now, 0);
   const totalMs = lab.endTime - lab.startTime;
 
-  const iconUri = lab.dataId != null ? resolveEntityIcon(lab.dataId) : null;
+  const iconUri =
+    lab.dataId != null
+      ? resolveEntityIcon(lab.dataId, {
+          village: village,
+          level: lab.currentLevel,
+        })
+      : null;
   return (
     <Pressable
       style={({ pressed }) => [
@@ -190,7 +211,7 @@ function LabCard({
 
                     {(lab.helperAppliedSeconds ?? 0) && (
                       <Text style={styles.helperSaved}>
-                        -{" "}
+                        -
                         {formatCountdown(
                           (lab.helperAppliedSeconds ?? 0) * 1000,
                         )}

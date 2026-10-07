@@ -1,0 +1,58 @@
+name: Bug report
+description: Report a reproducible problem in Clash One.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do not include API keys, account credentials, private tokens, or other secrets.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the problem and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open...
+        2. Import...
+        3. Tap...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Clash One version
+      placeholder: 1.2.1
+    validations:
+      required: true
+  - type: input
+    id: android
+    attributes:
+      label: Android version/device
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - JSON import
+        - Progression
+        - Builders / Upgrades
+        - Builder Base
+        - Widgets
+        - Notifications
+        - Account / Profile
+        - Premium / Billing
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Redact tokens, player credentials, and other sensitive data.

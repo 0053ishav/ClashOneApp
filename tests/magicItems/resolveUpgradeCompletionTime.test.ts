@@ -135,7 +135,7 @@ describe("resolveUpgradeCompletionTime", () => {
     });
 
     expect(result).toBe(
-      startedAt + (20 / 11) * 60 * 60 * 1000,
+      startedAt + 10 * 60 * 60 * 1000,
     );
   });
 
@@ -185,6 +185,6 @@ describe("resolveUpgradeCompletionTime", () => {
 
     // 30m at 11x = 5.5h of work, then 30m at 10x = 5h of work,
     // leaving 9.5h of normal work.
-    expect(result).toBe(startedAt + 10 * 60 * 60 * 1000);
+    expect(result).toBe(startedAt + 10.5 * 60 * 60 * 1000);
   });
 });

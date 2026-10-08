@@ -52,7 +52,7 @@ export const MAGIC_ITEMS: readonly MagicItem[] = [
       type: "ONGOING_SPEED",
       multiplier: 24,
       durationMinutes: 60,
-      appliesTo: ["pets"],
+      appliesTo: ["pet"],
     },
     villages: ["home"],
     maxCapacity: 5,
@@ -112,7 +112,7 @@ export const MAGIC_ITEMS: readonly MagicItem[] = [
     itemType: "book",
     effect: {
       type: "INSTANT_COMPLETE",
-      appliesTo: ["buildings"],
+      appliesTo: ["building"],
     },
     villages: ["home", "builderBase"],
     maxCapacity: 1,
@@ -127,7 +127,7 @@ export const MAGIC_ITEMS: readonly MagicItem[] = [
     itemType: "book",
     effect: {
       type: "INSTANT_COMPLETE",
-      appliesTo: ["troops"],
+      appliesTo: ["troop"],
     },
     villages: ["home", "builderBase"],
     maxCapacity: 1,
@@ -142,7 +142,7 @@ export const MAGIC_ITEMS: readonly MagicItem[] = [
     itemType: "book",
     effect: {
       type: "INSTANT_COMPLETE",
-      appliesTo: ["spells"],
+      appliesTo: ["spell"],
     },
     villages: ["home"],
     maxCapacity: 1,
@@ -187,7 +187,7 @@ export const MAGIC_ITEMS: readonly MagicItem[] = [
     itemType: "hammer",
     effect: {
       type: "INSTANT_UPGRADE",
-      appliesTo: ["buildings"],
+      appliesTo: ["building"],
     },
     villages: ["home", "builderBase"],
     maxCapacity: 1,
@@ -202,7 +202,7 @@ export const MAGIC_ITEMS: readonly MagicItem[] = [
     itemType: "hammer",
     effect: {
       type: "INSTANT_UPGRADE",
-      appliesTo: ["troops"],
+      appliesTo: ["troop"],
     },
     villages: ["home", "builderBase"],
     maxCapacity: 1,
@@ -232,7 +232,7 @@ export const MAGIC_ITEMS: readonly MagicItem[] = [
     itemType: "hammer",
     effect: {
       type: "INSTANT_UPGRADE",
-      appliesTo: ["spells"],
+      appliesTo: ["spell"],
     },
     villages: ["home"],
     maxCapacity: 1,

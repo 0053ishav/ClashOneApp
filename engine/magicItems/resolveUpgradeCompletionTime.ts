@@ -10,17 +10,20 @@ type ResolveUpgradeCompletionTimeInput = {
   village: Village;
 };
 
-type SpeedInterval = {
-  start: number;
-  end?: number;
-  multiplier: number;
+type SpeedEffect = {
+  startedAt: number;
+  expiresAt?: number;
+  bonusMultiplier: number;
 };
 
-function getRelevantSpeedIntervals({
+function getRelevantSpeedEffects({
   effects,
   target,
   village,
-}: Omit<ResolveUpgradeCompletionTimeInput, "baseDurationMs" | "startedAt">): SpeedInterval[] {
+}: Pick<
+  ResolveUpgradeCompletionTimeInput,
+  "effects" | "target" | "village"
+>): SpeedEffect[] {
   return effects.flatMap((effect) => {
     const item = getMagicItem(effect.itemId);
 
@@ -30,22 +33,24 @@ function getRelevantSpeedIntervals({
 
     const multiplier = item.effect.multiplier;
 
-    if (multiplier == null || multiplier <= 0) return [];
+    if (multiplier == null || multiplier <= 1) return [];
 
     return [{
-      start: effect.startedAt,
-      end: effect.expiresAt,
-      multiplier,
+      startedAt: effect.startedAt,
+      expiresAt: effect.expiresAt,
+      bonusMultiplier: multiplier - 1,
     }];
   });
 }
 
 /**
- * Resolves the completion timestamp for an upgrade affected by active
- * Magic Item speed effects.
+ * Resolves completion time using Magic Item work-speed effects.
  *
- * Potion effects accelerate work while active. Overlapping potion effects
- * do not multiply together; the fastest applicable effect wins.
+ * Magic Item multipliers represent total speed:
+ * 10x = 1x normal + 9x bonus.
+ *
+ * Helpers are intentionally excluded. Builder's Apprentice and Lab Assistant
+ * are separate progression modifiers.
  */
 export function resolveUpgradeCompletionTime({
   baseDurationMs,
@@ -56,26 +61,24 @@ export function resolveUpgradeCompletionTime({
 }: ResolveUpgradeCompletionTimeInput): number {
   if (baseDurationMs <= 0) return startedAt;
 
-  const intervals = getRelevantSpeedIntervals({
+  const speedEffects = getRelevantSpeedEffects({
     effects,
     target,
     village,
-  })
-    .filter((interval) => interval.end == null || interval.end > startedAt)
-    .sort((a, b) => a.start - b.start);
+  });
 
   let cursor = startedAt;
   let remainingWorkMs = baseDurationMs;
 
   const eventTimes = new Set<number>([startedAt]);
 
-  for (const interval of intervals) {
-    if (interval.start > startedAt) {
-      eventTimes.add(interval.start);
+  for (const effect of speedEffects) {
+    if (effect.startedAt > startedAt) {
+      eventTimes.add(effect.startedAt);
     }
 
-    if (interval.end != null && interval.end > startedAt) {
-      eventTimes.add(interval.end);
+    if (effect.expiresAt != null && effect.expiresAt > startedAt) {
+      eventTimes.add(effect.expiresAt);
     }
   }
 
@@ -84,45 +87,41 @@ export function resolveUpgradeCompletionTime({
   for (let index = 0; index < sortedEventTimes.length; index += 1) {
     const segmentStart = Math.max(cursor, sortedEventTimes[index]);
     const segmentEnd = sortedEventTimes[index + 1];
+    const effectiveSpeed = getEffectiveSpeed(speedEffects, segmentStart);
 
     if (segmentEnd == null) {
-      const multiplier = getEffectiveMultiplier(intervals, segmentStart);
-
-      return segmentStart + remainingWorkMs / multiplier;
+      return segmentStart + remainingWorkMs / effectiveSpeed;
     }
 
     if (segmentEnd <= segmentStart) continue;
 
-    const multiplier = getEffectiveMultiplier(intervals, segmentStart);
-    const segmentDurationMs = segmentEnd - segmentStart;
-    const workCompletedMs = segmentDurationMs * multiplier;
+    const elapsedMs = segmentEnd - segmentStart;
+    const workCompletedMs = elapsedMs * effectiveSpeed;
 
     if (workCompletedMs >= remainingWorkMs) {
-      return segmentStart + remainingWorkMs / multiplier;
+      return segmentStart + remainingWorkMs / effectiveSpeed;
     }
 
     remainingWorkMs -= workCompletedMs;
     cursor = segmentEnd;
   }
 
-  const multiplier = getEffectiveMultiplier(intervals, cursor);
-  return cursor + remainingWorkMs / multiplier;
+  return cursor + remainingWorkMs;
 }
 
-function getEffectiveMultiplier(
-  intervals: SpeedInterval[],
+function getEffectiveSpeed(
+  effects: SpeedEffect[],
   timestamp: number,
 ): number {
-  return intervals.reduce(
-    (maximum, interval) => {
-      const isActive =
-        interval.start <= timestamp &&
-        (interval.end == null || timestamp < interval.end);
+  const bonusMultiplier = effects.reduce((total, effect) => {
+    const isActive =
+      effect.startedAt <= timestamp &&
+      (effect.expiresAt == null || timestamp < effect.expiresAt);
 
-      return isActive
-        ? Math.max(maximum, interval.multiplier)
-        : maximum;
-    },
-    1,
-  );
+    return isActive
+      ? total + effect.bonusMultiplier
+      : total;
+  }, 0);
+
+  return 1 + bonusMultiplier;
 }

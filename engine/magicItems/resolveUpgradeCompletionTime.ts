@@ -11,8 +11,9 @@ type ResolveUpgradeCompletionTimeInput = {
 };
 
 type SpeedEffect = {
+  itemId: string;
   startedAt: number;
-  expiresAt?: number;
+  expiresAt: number;
   bonusMultiplier: number;
 };
 
@@ -24,22 +25,68 @@ function getRelevantSpeedEffects({
   ResolveUpgradeCompletionTimeInput,
   "effects" | "target" | "village"
 >): SpeedEffect[] {
-  return effects.flatMap((effect) => {
+  const effectsByItem = new Map<string, ActiveMagicEffect[]>();
+
+  for (const effect of effects) {
     const item = getMagicItem(effect.itemId);
 
-    if (!item || item.effect.type !== "ONGOING_SPEED") return [];
-    if (!item.villages.includes(village)) return [];
-    if (!item.effect.appliesTo?.includes(target)) return [];
+    if (!item || item.effect.type !== "ONGOING_SPEED") continue;
+    if (!item.villages.includes(village)) continue;
+    if (!item.effect.appliesTo?.includes(target)) continue;
 
     const multiplier = item.effect.multiplier;
+    if (multiplier == null || multiplier <= 1) continue;
 
-    if (multiplier == null || multiplier <= 1) return [];
+    const itemEffects = effectsByItem.get(item.id) ?? [];
+    itemEffects.push(effect);
+    effectsByItem.set(item.id, itemEffects);
+  }
 
-    return [{
-      startedAt: effect.startedAt,
-      expiresAt: effect.expiresAt,
-      bonusMultiplier: multiplier - 1,
-    }];
+  return [...effectsByItem].flatMap(([itemId, itemEffects]) => {
+    const item = getMagicItem(itemId);
+    if (!item || item.effect.type !== "ONGOING_SPEED") return [];
+
+    const bonusMultiplier = item.effect.multiplier;
+    const durationMs = item.effect.durationMinutes
+      ? item.effect.durationMinutes * 60 * 1000
+      : undefined;
+
+    if (bonusMultiplier == null || bonusMultiplier <= 1 || durationMs == null) {
+      return [];
+    }
+
+    const sortedEffects = [...itemEffects].sort(
+      (a, b) => a.startedAt - b.startedAt,
+    );
+
+    const normalized: SpeedEffect[] = [];
+
+    for (const effect of sortedEffects) {
+      const effectDurationMs =
+        effect.expiresAt != null && effect.expiresAt > effect.startedAt
+          ? effect.expiresAt - effect.startedAt
+          : durationMs;
+
+      const expiresAt = effect.startedAt + effectDurationMs;
+      const previous = normalized.at(-1);
+
+      if (previous && effect.startedAt <= previous.expiresAt) {
+        // Reusing the same potion while its effect is active extends the
+        // existing effect by one full potion duration; it does not increase
+        // the potion's multiplier.
+        previous.expiresAt += effectDurationMs;
+        continue;
+      }
+
+      normalized.push({
+        itemId,
+        startedAt: effect.startedAt,
+        expiresAt,
+        bonusMultiplier: bonusMultiplier - 1,
+      });
+    }
+
+    return normalized;
   });
 }
 
@@ -48,6 +95,9 @@ function getRelevantSpeedEffects({
  *
  * Magic Item multipliers represent total speed:
  * 10x = 1x normal + 9x bonus.
+ *
+ * Repeated uses of the same Magic Item extend that item's effect duration.
+ * Different compatible Magic Items add their bonus speeds together.
  *
  * Helpers are intentionally excluded. Builder's Apprentice and Lab Assistant
  * are separate progression modifiers.
@@ -77,7 +127,7 @@ export function resolveUpgradeCompletionTime({
       eventTimes.add(effect.startedAt);
     }
 
-    if (effect.expiresAt != null && effect.expiresAt > startedAt) {
+    if (effect.expiresAt > startedAt) {
       eventTimes.add(effect.expiresAt);
     }
   }
@@ -115,12 +165,9 @@ function getEffectiveSpeed(
 ): number {
   const bonusMultiplier = effects.reduce((total, effect) => {
     const isActive =
-      effect.startedAt <= timestamp &&
-      (effect.expiresAt == null || timestamp < effect.expiresAt);
+      effect.startedAt <= timestamp && timestamp < effect.expiresAt;
 
-    return isActive
-      ? total + effect.bonusMultiplier
-      : total;
+    return isActive ? total + effect.bonusMultiplier : total;
   }, 0);
 
   return 1 + bonusMultiplier;

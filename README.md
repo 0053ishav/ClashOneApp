@@ -4,7 +4,7 @@
 
 It helps players track upgrades, research, builders, Builder Base progression, multiple accounts, notifications, and Android home-screen widgets without relying on the game being open.
 
-> Clash One is an independent project by Strnge Labs and is not affiliated with Supercell.
+> Clash One is an independent project and is not affiliated with Supercell.
 
 ## What it does
 
@@ -184,4 +184,4 @@ See [SECURITY.md](SECURITY.md) for vulnerability reporting.
 
 ## License
 
-The project is maintained by **Strnge Labs**. Licensing terms will be added before external redistribution is enabled.
+Licensing terms will be added before external redistribution is enabled.

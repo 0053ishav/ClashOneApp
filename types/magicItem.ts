@@ -13,7 +13,7 @@ import type { EntityType, Village } from "./entity";
  * to that upgrade and does not change when the event later expires.
  */
 
-export type MagicItemType = "potion" | "book" | "hammer";
+export type MagicItemType = "potion" | "book" | "hammer" | "snack";
 
 export type MagicItemEffectType =
   | "ONGOING_SPEED"

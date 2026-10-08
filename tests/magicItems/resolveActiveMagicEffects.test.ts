@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveActiveMagicEffects } from "./resolveActiveMagicEffects";
+import { resolveActiveMagicEffects } from "@/engine/magicItems/resolveActiveMagicEffects";
 
 describe("resolveActiveMagicEffects", () => {
   const now = 1_000_000;

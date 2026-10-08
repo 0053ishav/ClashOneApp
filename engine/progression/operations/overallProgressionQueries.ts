@@ -1,6 +1,6 @@
 import type { ResourceType } from "@/types/resource";
 
-import { ProgressionQueries } from "@/services/progression";
+import { ProgressionQueries } from "@/services/progression/progressionQueries";
 import { ProgressionApplicationResult } from "../models";
 import type {
   OverallProgressionResult,

@@ -1,50 +1,187 @@
-# Welcome to your Expo app 👋
+# Clash One
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+**Clash One** is an Android companion app for Clash of Clans progression.
 
-## Get started
+It helps players track upgrades, research, builders, Builder Base progression, multiple accounts, notifications, and Android home-screen widgets without relying on the game being open.
 
-1. Install dependencies
+> Clash One is an independent project and is not affiliated with Supercell.
 
-   ```bash
-   npm install
-   ```
+## What it does
 
-2. Start the app
+- Track Home Village builder upgrades
+- Track Laboratory research
+- Track Hero and Pet upgrades
+- Track Builder Base upgrades
+- View upcoming upgrades across an account
+- Support multiple Clash of Clans accounts
+- Provide Android home-screen widgets
+- Send upgrade completion notifications
+- Import supported village data
+- Build progression and planning features on top of a shared game-data model
 
-   ```bash
-   npx expo start
-   ```
+## Data and the Clash of Clans API
 
-In the output, you'll find options to open the app in a
+Clash One uses the [Clash of Clans API](https://developer.clashofclans.com/) for data that the API actually exposes.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+The API is **not** treated as the source of client-side timers or all progression state. Clash One also uses imported village data, its own persisted account state, and its game-data pipeline to derive progression information.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- **Clash of Clans API** — live game/player data that the API exposes
+- **Imported game data** — village/progression information supplied by supported imports
+- **Clash One game data** — entity metadata, levels, costs, durations, and other static data
+- **Progression logic** — derived state calculated by Clash One
+- **Local storage** — account and app state required by the client
+- **Backend/CDN services** — shared application and game-data resources
 
-## Get a fresh project
+## Tech stack
 
-When you're ready, run:
+- Expo SDK 54
+- React Native 0.81
+- TypeScript
+- Expo Router
+- `react-native-android-widget`
+- Zustand
+- MMKV
+- Expo SQLite
+- RevenueCat
+- Google Mobile Ads
+- Sentry
+- PostHog
 
-```bash
-npm run reset-project
+Clash One is currently focused on **Android** because Android home-screen widgets are a core product feature.
+
+## Repository structure
+
+```text
+app/                 Expo Router screens
+components/          Reusable UI components
+hooks/               React hooks
+services/            API, account, progression and data services
+store/               Client state
+types/               Shared TypeScript types
+utils/               Shared utilities
+assets/              Images and widget assets
+config/              Runtime configuration
+.github/             CI, releases and repository automation
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Development
 
-## Learn more
+### Requirements
 
-To learn more about developing your project with Expo, look at the following resources:
+- Node.js 20.19+
+- npm
+- Android Studio / Android SDK for local Android development
+- An Expo development build for native functionality
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Install dependencies:
 
-## Join the community
+```bash
+npm ci
+```
 
-Join our community of developers creating universal apps.
+Start the development server:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+npm run start
+```
+
+Run on Android:
+
+```bash
+npm run android
+```
+
+Run linting:
+
+```bash
+npm run lint
+```
+
+Run TypeScript checks:
+
+```bash
+npm run typecheck
+```
+
+Run Expo project health checks:
+
+```bash
+npm run doctor
+```
+
+## Environment variables
+
+Create a local environment file from the example:
+
+```bash
+cp .env.example .env.local
+```
+
+Do not commit `.env.local`, API credentials, access tokens, or other private configuration.
+
+Expo `EXPO_PUBLIC_*` variables are embedded into the client bundle and **must not contain secrets**. Anything that must remain secret belongs on a trusted backend or in the appropriate secret store.
+
+## Git workflow
+
+`main` is protected.
+
+```text
+feature/fix branch
+       ↓
+Pull Request → main
+       ↓
+CI
+       ↓
+review
+       ↓
+merge
+```
+
+Do not push directly to `main`.
+
+Branch names should follow:
+
+- `feature/<name>`
+- `fix/<name>`
+- `refactor/<name>`
+- `chore/<name>`
+- `hotfix/<name>`
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the repository workflow.
+
+## CI and releases
+
+Pull requests must pass the required **Lint & Typecheck** check and the protected `main` branch also enforces repository rules.
+
+CI currently validates:
+
+- dependency installation from the lockfile
+- ESLint
+- TypeScript
+- Expo project health
+
+Security automation also runs dependency review and CodeQL analysis.
+
+Releases are tag-driven:
+
+```text
+version + CHANGELOG
+       ↓
+merge to main
+       ↓
+git tag vX.Y.Z
+       ↓
+GitHub Actions
+       ↓
+GitHub Release
+```
+
+## Security
+
+Please do not publish credentials, player identifiers, API keys, tokens, or other sensitive information in issues or pull requests.
+
+See [SECURITY.md](SECURITY.md) for vulnerability reporting.
+
+## License
+
+Licensing terms will be added before external redistribution is enabled.

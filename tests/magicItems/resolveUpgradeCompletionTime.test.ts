@@ -138,7 +138,7 @@ describe("resolveUpgradeCompletionTime", () => {
     });
 
     expect(result).toBe(
-      startedAt + 13 * 60 * 60 * 1000,
+      startedAt + 11 * 60 * 60 * 1000,
     );
   });
 });

@@ -1,4 +1,7 @@
+import { ENV } from "@/config/env";
 import type { MagicItem } from "@/types/magicItem";
+
+const MAGIC_ITEM_CDN_PATH = `${ENV.CDN_BASE}/v2/home/magic-item`;
 
 /**
  * Normalized Magic Item metadata for the app.
@@ -23,7 +26,7 @@ export const MAGIC_ITEMS: readonly MagicItem[] = [
     villages: ["home"],
     maxCapacity: 5,
     sellingPrice: 10,
-    image: "images/magic-items/potions/builder-potion.png",
+    image: `${MAGIC_ITEM_CDN_PATH}/potions/builder-potion.png`,
   },
   {
     id: "research-potion",
@@ -40,7 +43,7 @@ export const MAGIC_ITEMS: readonly MagicItem[] = [
     villages: ["home"],
     maxCapacity: 5,
     sellingPrice: 10,
-    image: "images/magic-items/potions/research-potion.png",
+    image: `${MAGIC_ITEM_CDN_PATH}/potions/research-potion.png`,
   },
   {
     id: "pet-potion",
@@ -57,7 +60,7 @@ export const MAGIC_ITEMS: readonly MagicItem[] = [
     villages: ["home"],
     maxCapacity: 5,
     sellingPrice: 10,
-    image: "images/magic-items/potions/pet-potion.png",
+    image: `${MAGIC_ITEM_CDN_PATH}/potions/pet-potion.png`,
   },
   {
     id: "clock-tower-potion",
@@ -72,7 +75,7 @@ export const MAGIC_ITEMS: readonly MagicItem[] = [
     villages: ["builderBase"],
     maxCapacity: 5,
     sellingPrice: 10,
-    image: "images/magic-items/potions/clock-tower-potion.png",
+    image: `${MAGIC_ITEM_CDN_PATH}/potions/clock-tower-potion.png`,
   },
   {
     id: "study-soup",
@@ -87,7 +90,7 @@ export const MAGIC_ITEMS: readonly MagicItem[] = [
       appliesTo: ["research"],
     },
     villages: ["home"],
-    image: "images/magic-items/snacks/study-soup.png",
+    image: `${MAGIC_ITEM_CDN_PATH}/snacks/study-soup.png`,
   },
   {
     id: "builder-bite",
@@ -102,7 +105,7 @@ export const MAGIC_ITEMS: readonly MagicItem[] = [
       appliesTo: ["builders"],
     },
     villages: ["home"],
-    image: "images/magic-items/snacks/builder-bite.png",
+    image: `${MAGIC_ITEM_CDN_PATH}/snacks/builder-bite.png`,
   },
   {
     id: "book-of-building",
@@ -117,7 +120,7 @@ export const MAGIC_ITEMS: readonly MagicItem[] = [
     villages: ["home", "builderBase"],
     maxCapacity: 1,
     sellingPrice: 50,
-    image: "images/magic-items/books/book-of-building.png",
+    image: `${MAGIC_ITEM_CDN_PATH}/books/book-of-building.png`,
   },
   {
     id: "book-of-fighting",
@@ -132,7 +135,7 @@ export const MAGIC_ITEMS: readonly MagicItem[] = [
     villages: ["home", "builderBase"],
     maxCapacity: 1,
     sellingPrice: 50,
-    image: "images/magic-items/books/book-of-fighting.png",
+    image: `${MAGIC_ITEM_CDN_PATH}/books/book-of-fighting.png`,
   },
   {
     id: "book-of-spells",
@@ -147,7 +150,7 @@ export const MAGIC_ITEMS: readonly MagicItem[] = [
     villages: ["home"],
     maxCapacity: 1,
     sellingPrice: 50,
-    image: "images/magic-items/books/book-of-spells.png",
+    image: `${MAGIC_ITEM_CDN_PATH}/books/book-of-spells.png`,
   },
   {
     id: "book-of-heroes",
@@ -162,7 +165,7 @@ export const MAGIC_ITEMS: readonly MagicItem[] = [
     villages: ["home", "builderBase"],
     maxCapacity: 1,
     sellingPrice: 500,
-    image: "images/magic-items/books/book-of-heroes.png",
+    image: `${MAGIC_ITEM_CDN_PATH}/books/book-of-heroes.png`,
   },
   {
     id: "book-of-everything",
@@ -177,7 +180,7 @@ export const MAGIC_ITEMS: readonly MagicItem[] = [
     villages: ["home", "builderBase"],
     maxCapacity: 1,
     sellingPrice: 100,
-    image: "images/magic-items/books/book-of-everything.png",
+    image: `${MAGIC_ITEM_CDN_PATH}/books/book-of-everything.png`,
   },
   {
     id: "hammer-of-building",
@@ -192,7 +195,7 @@ export const MAGIC_ITEMS: readonly MagicItem[] = [
     villages: ["home", "builderBase"],
     maxCapacity: 1,
     sellingPrice: 100,
-    image: "images/magic-items/hammers/hammer-of-building.png",
+    image: `${MAGIC_ITEM_CDN_PATH}/hammers/hammer-of-building.png`,
   },
   {
     id: "hammer-of-fighting",
@@ -207,7 +210,7 @@ export const MAGIC_ITEMS: readonly MagicItem[] = [
     villages: ["home", "builderBase"],
     maxCapacity: 1,
     sellingPrice: 100,
-    image: "images/magic-items/hammers/hammer-of-fighting.png",
+    image: `${MAGIC_ITEM_CDN_PATH}/hammers/hammer-of-fighting.png`,
   },
   {
     id: "hammer-of-heroes",
@@ -222,7 +225,7 @@ export const MAGIC_ITEMS: readonly MagicItem[] = [
     villages: ["home", "builderBase"],
     maxCapacity: 1,
     sellingPrice: 100,
-    image: "images/magic-items/hammers/hammer-of-heroes.png",
+    image: `${MAGIC_ITEM_CDN_PATH}/hammers/hammer-of-heroes.png`,
   },
   {
     id: "hammer-of-spells",
@@ -237,7 +240,7 @@ export const MAGIC_ITEMS: readonly MagicItem[] = [
     villages: ["home"],
     maxCapacity: 1,
     sellingPrice: 100,
-    image: "images/magic-items/hammers/hammer-of-spells.png",
+    image: `${MAGIC_ITEM_CDN_PATH}/hammers/hammer-of-spells.png`,
   },
 ] as const;
 

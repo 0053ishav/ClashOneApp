@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { resolveActiveMagicEffects } from "@/engine/magicItems/resolveActiveMagicEffects";
 
 describe("resolveActiveMagicEffects", () => {

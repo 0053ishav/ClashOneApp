@@ -4,9 +4,12 @@ jest.mock("@/db/database", () => ({
 
 import { getDB } from "@/db/database";
 import {
+  addMagicItem,
   consumeMagicItem,
+  consumeMagicItemQuantity,
   getActiveMagicEffects,
   getMagicItemInventory,
+  getMagicItemQuantity,
   removeExpiredMagicEffects,
   setMagicItemQuantity,
 } from "@/services/magicItemService";
@@ -70,9 +73,32 @@ describe("magicItemService", () => {
     );
   });
 
-  it("atomically consumes one item and records its effect", async () => {
-    db.getFirstAsync.mockResolvedValue({ quantity: 1 });
+  it("adds inventory with one atomic upsert", async () => {
+    db.getFirstAsync.mockResolvedValue({ quantity: 4 });
 
+    await expect(addMagicItem("#ACCOUNT", "builder-potion", 2)).resolves.toBe(4);
+
+    expect(db.runAsync).toHaveBeenCalledWith(
+      expect.stringContaining("magic_item_inventory.quantity + excluded.quantity"),
+      ["#ACCOUNT", "builder-potion", 2],
+    );
+    expect(db.getFirstAsync).toHaveBeenCalledWith(
+      expect.stringContaining("WHERE account_player_tag = ? AND item_id = ?"),
+      ["#ACCOUNT", "builder-potion"],
+    );
+  });
+
+  it("reads one item's quantity for the requested account", async () => {
+    db.getFirstAsync.mockResolvedValue({ quantity: 3 });
+
+    await expect(getMagicItemQuantity("#ACCOUNT", "builder-potion")).resolves.toBe(3);
+    expect(db.getFirstAsync).toHaveBeenCalledWith(
+      expect.stringContaining("WHERE account_player_tag = ? AND item_id = ?"),
+      ["#ACCOUNT", "builder-potion"],
+    );
+  });
+
+  it("atomically consumes one item and records its effect", async () => {
     await consumeMagicItem({
       accountTag: "#ACCOUNT",
       itemId: "builder-potion",
@@ -98,7 +124,7 @@ describe("magicItemService", () => {
   });
 
   it("rolls back when the account has no item to consume", async () => {
-    db.getFirstAsync.mockResolvedValue({ quantity: 0 });
+    db.runAsync.mockResolvedValueOnce({ changes: 0 });
 
     await expect(
       consumeMagicItem({
@@ -109,6 +135,7 @@ describe("magicItemService", () => {
 
     expect(db.execAsync).toHaveBeenCalledWith("ROLLBACK");
     expect(db.execAsync).not.toHaveBeenCalledWith("COMMIT");
+    expect(db.runAsync).toHaveBeenCalledTimes(1);
   });
 
   it("rejects effects for a different item", async () => {
@@ -124,6 +151,29 @@ describe("magicItemService", () => {
       }),
     ).rejects.toThrow("MAGIC_ITEM_EFFECT_ITEM_MISMATCH");
     expect(db.execAsync).not.toHaveBeenCalled();
+  });
+
+  it("consumes a requested quantity atomically", async () => {
+    await expect(
+      consumeMagicItemQuantity("#ACCOUNT", "builder-potion", 2),
+    ).resolves.toBe(true);
+
+    expect(db.runAsync).toHaveBeenCalledWith(
+      expect.stringContaining("quantity >= ?"),
+      [2, "#ACCOUNT", "builder-potion", 2],
+    );
+    expect(db.execAsync).toHaveBeenLastCalledWith("COMMIT");
+  });
+
+  it("returns false and rolls back when quantity is insufficient", async () => {
+    db.runAsync.mockResolvedValueOnce({ changes: 0 });
+
+    await expect(
+      consumeMagicItemQuantity("#ACCOUNT", "builder-potion", 2),
+    ).resolves.toBe(false);
+
+    expect(db.execAsync).toHaveBeenCalledWith("ROLLBACK");
+    expect(db.execAsync).not.toHaveBeenCalledWith("COMMIT");
   });
 
   it("reads active effects scoped to one account", async () => {

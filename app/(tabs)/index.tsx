@@ -1,4 +1,5 @@
 import GoblinEventBanner from "@/components/GoblinEventBanner";
+import { MagicItemsQuickModal } from "@/components/home/MagicItemsQuickModal";
 import { LabSection } from "@/components/home/LabSection";
 import { PetSection } from "@/components/home/PetSection";
 import { UpgradeActionModal } from "@/components/home/UpgradeActionModal";
@@ -16,6 +17,10 @@ import { getAccountState } from "@/services/accountStateService";
 import { ProgressionApplicationService } from "@/services/progression";
 import { buildSupportInfo } from "@/services/supportDebugInfo";
 import { deleteUpgrade } from "@/services/upgradeService";
+import { getMagicItemInventory } from "@/services/magicItemService";
+import { useBookOnActiveUpgrade } from "@/services/useBookOnActiveUpgrade";
+import { MAGIC_ITEMS } from "@/config/magicItems";
+import { getEntity } from "@/utils/getEntity";
 import { setOnboardingIncomplete } from "@/storage/appConfig";
 import {
   setGoblinBannerDismissedUntil,
@@ -51,6 +56,7 @@ import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
   LayoutAnimation,
   Pressable,
   RefreshControl,
@@ -83,6 +89,7 @@ export default function HomeScreen() {
   const [isLoadingAccountState, setIsLoadingAccountState] = useState(true);
   const [selectedUpgrade, setSelectedUpgrade] = useState<Upgrade | null>(null);
   const [actionModalVisible, setActionModalVisible] = useState(false);
+  const [magicItemsVisible, setMagicItemsVisible] = useState(false);
   const [selectedProgression, setSelectedProgression] =
     useState<ProgressionApplicationResult | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -191,6 +198,59 @@ export default function HomeScreen() {
     startSmartWidgetScheduler();
     await resyncNotifications();
   }, [refreshState]);
+
+  const handleUseBook = useCallback(async (upgrade: Upgrade) => {
+    if (!activeTag) return;
+
+    const village = upgrade.village ?? "home";
+    const target = upgrade.dataId != null
+      ? getEntity(Number(upgrade.dataId)).type
+      : "unknown";
+    const inventory = await getMagicItemInventory(activeTag);
+    const quantities = new Map(inventory.map((entry) => [entry.itemId, entry.quantity]));
+    const compatibleBooks = MAGIC_ITEMS.filter((item) => {
+      if (item.itemType !== "book" || !item.villages.includes(village)) return false;
+      const targets = item.effect.appliesTo ?? [];
+      const compatible = targets.includes("any") ||
+        targets.includes(target as (typeof targets)[number]) ||
+        (targets.includes("heroes-and-pets") && (target === "hero" || target === "pet"));
+      return compatible && (quantities.get(item.id) ?? 0) > 0;
+    });
+
+    if (compatibleBooks.length === 0) {
+      Alert.alert("No compatible Books", "You don't have a compatible Book in this account's tracked inventory.");
+      return;
+    }
+
+    Alert.alert(
+      "Use a Book",
+      `Choose a Book to complete ${upgrade.entity}.`,
+      [
+        ...compatibleBooks.map((item) => ({
+          text: `${item.name} · ${quantities.get(item.id) ?? 0}`,
+          onPress: () => {
+            void (async () => {
+              const result = await useBookOnActiveUpgrade({
+                accountTag: activeTag,
+                itemId: item.id,
+                upgradeId: upgrade.id,
+              });
+              if (!result.used) {
+                Alert.alert("Couldn't use Book", result.reason.replaceAll("-", " "));
+                return;
+              }
+              setActionModalVisible(false);
+              setSelectedUpgrade(null);
+              setSelectedProgression(null);
+              await performSync();
+              Alert.alert("Book used", `${item.name} completed the tracked upgrade.`);
+            })().catch(() => Alert.alert("Couldn't use Book", "Please try again."));
+          },
+        })),
+        { text: "Cancel", style: "cancel" as const },
+      ],
+    );
+  }, [activeTag, performSync]);
 
   useEffect(() => {
     if (!completedId) return;
@@ -783,6 +843,19 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        <View style={styles.magicItemsActionRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open potions and snacks"
+            onPress={() => setMagicItemsVisible(true)}
+            style={({ pressed }) => [styles.magicItemsButton, pressed && styles.magicItemsButtonPressed]}
+          >
+            <Ionicons name="sparkles" size={16} color="#fbbf24" />
+            <Text style={styles.magicItemsButtonText}>Potions & Snacks</Text>
+            <Ionicons name="chevron-forward" size={14} color="#fbbf24" />
+          </Pressable>
+        </View>
+
         {/* Village tabs */}
         <View style={styles.villageTabs}>
           <Animated.View
@@ -1172,10 +1245,18 @@ export default function HomeScreen() {
         )}
       </ScrollView>
       {/* Action Modal */}
+      <MagicItemsQuickModal
+        visible={magicItemsVisible}
+        village={selectedVillage}
+        accountTag={activeTag}
+        onClose={() => setMagicItemsVisible(false)}
+        onActivated={performSync}
+      />
       <UpgradeActionModal
         visible={actionModalVisible}
         upgrade={selectedUpgrade}
         progression={selectedProgression}
+        onUseBook={handleUseBook}
         onClose={() => {
           setActionModalVisible(false);
           setSelectedUpgrade(null);
@@ -1601,6 +1682,26 @@ const styles = StyleSheet.create({
   },
 
   // ── Village tabs ──
+  magicItemsActionRow: {
+    paddingHorizontal: 16,
+    alignItems: "flex-end",
+    marginTop: -4,
+    marginBottom: 10,
+  },
+  magicItemsButton: {
+    minHeight: 34,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingHorizontal: 11,
+    borderRadius: 10,
+    backgroundColor: "rgba(251, 191, 36, 0.09)",
+    borderWidth: 1,
+    borderColor: "rgba(251, 191, 36, 0.25)",
+  },
+  magicItemsButtonPressed: { opacity: 0.65 },
+  magicItemsButtonText: { color: "#fbbf24", fontSize: 11, fontWeight: "800" },
+
   villageTabs: {
     flexDirection: "row",
     backgroundColor: "#111c2e",

@@ -2,29 +2,10 @@ import { ENV } from "@/config/env";
 import {
   DEFAULT_HAMMER_JAM_MANIFEST,
   type HammerJamManifest,
-  type HammerJamTarget,
 } from "@/engine/magicItems/hammerJam";
-import type { Village } from "@/types/entity";
-
-const HAMMER_JAM_TARGETS: readonly HammerJamTarget[] = [
-  "building",
-  "troop",
-  "spell",
-  "hero",
-  "pet",
-];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function isHammerJamTarget(value: unknown): value is HammerJamTarget {
-  return typeof value === "string" &&
-    HAMMER_JAM_TARGETS.some((target) => target === value);
-}
-
-function isVillage(value: unknown): value is Village {
-  return value === "home" || value === "builderBase";
 }
 
 function parseHammerJamManifest(value: unknown): HammerJamManifest | null {
@@ -36,13 +17,11 @@ function parseHammerJamManifest(value: unknown): HammerJamManifest | null {
     !(event.startsAt === null || typeof event.startsAt === "string") ||
     !(event.endsAt === null || typeof event.endsAt === "string") ||
     typeof event.timeMultiplier !== "number" ||
-    !Number.isFinite(event.timeMultiplier) ||
     typeof event.costMultiplier !== "number" ||
-    !Number.isFinite(event.costMultiplier) ||
     !Array.isArray(event.appliesTo) ||
-    !event.appliesTo.every(isHammerJamTarget) ||
+    !event.appliesTo.every((target) => typeof target === "string") ||
     !Array.isArray(event.villages) ||
-    !event.villages.every(isVillage)
+    !event.villages.every((village) => village === "home" || village === "builderBase")
   ) {
     return null;
   }
@@ -53,7 +32,7 @@ function parseHammerJamManifest(value: unknown): HammerJamManifest | null {
     endsAt: event.endsAt,
     timeMultiplier: event.timeMultiplier,
     costMultiplier: event.costMultiplier,
-    appliesTo: event.appliesTo,
+    appliesTo: event.appliesTo as HammerJamManifest["appliesTo"],
     villages: event.villages,
   };
 }

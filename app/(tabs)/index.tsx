@@ -1318,6 +1318,7 @@ export default function HomeScreen() {
         accountTag={activeTag}
         onClose={() => setMagicItemsVisible(false)}
         onActivated={performSync}
+        upgrades={accountState?.activeUpgrades ?? []}
       />
       <UpgradeActionModal
         visible={actionModalVisible}

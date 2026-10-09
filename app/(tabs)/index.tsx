@@ -968,7 +968,7 @@ export default function HomeScreen() {
               source={{
                 uri: resolveEntityIcon(1000034, {
                   village: "builderBase",
-                  level: profile.townHallLevel,
+                  level: profile.builderHallLevel,
                 }),
               }}
               style={[

@@ -31,6 +31,8 @@ type MagicItemDialogProps = {
   onClose: () => void;
 };
 
+const EMPTY_CHOICES: MagicItemDialogChoice[] = [];
+
 const TONE_COLOR = {
   confirm: "#fbbf24",
   success: "#34d399",
@@ -43,7 +45,7 @@ export function MagicItemDialog({
   title,
   message,
   item,
-  choices = [],
+  choices = EMPTY_CHOICES,
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
   tone = "confirm",

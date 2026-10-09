@@ -1185,8 +1185,8 @@ export default function HomeScreen() {
                             </Text>
                             <Text style={styles.totalTimeText}>
                               of {formatCountdown(totalMs)}
-                            <MagicItemTimeSaved milliseconds={u.magicItemTimeSavedMs} />
                             </Text>
+                            <MagicItemTimeSaved milliseconds={u.magicItemTimeSavedMs} />
                           </View>
                         </View>
 

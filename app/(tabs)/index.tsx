@@ -1,6 +1,9 @@
 import GoblinEventBanner from "@/components/GoblinEventBanner";
 import { LabSection } from "@/components/home/LabSection";
-import { formatSavedDuration } from "@/components/home/MagicItemActivitySummary";
+import {
+  formatSavedDuration,
+  MagicItemTimeSaved,
+} from "@/components/home/MagicItemActivitySummary";
 import { MagicItemsQuickModal } from "@/components/home/MagicItemsQuickModal";
 import { PetSection } from "@/components/home/PetSection";
 import { UpgradeActionModal } from "@/components/home/UpgradeActionModal";
@@ -391,6 +394,55 @@ export default function HomeScreen() {
       }
     });
 
+  const showMagicItemActivity = useCallback(async () => {
+    const totalSavedMs = (accountState?.activeUpgrades ?? [])
+      .filter((upgrade) => upgrade.village === selectedVillage)
+      .reduce(
+        (total, upgrade) => total + (upgrade.magicItemTimeSavedMs ?? 0),
+        0,
+      );
+
+    if (!activeTag) {
+      Alert.alert("Potion & Snack Effects", "Connect a village to view tracked effects.");
+      return;
+    }
+
+    try {
+      const effects = await getActiveMagicEffects(activeTag);
+      const activeItems = Array.from(
+        new Set(
+          effects
+            .filter(
+              (effect) =>
+                effect.village === selectedVillage &&
+                (effect.expiresAt == null || effect.expiresAt > Date.now()),
+            )
+            .map((effect) => effect.itemId),
+        ),
+      )
+        .map((itemId) => MAGIC_ITEMS.find((item) => item.id === itemId))
+        .filter(
+          (item): item is (typeof MAGIC_ITEMS)[number] =>
+            item !== undefined &&
+            (item.itemType === "potion" || item.itemType === "snack"),
+        );
+
+      const villageName =
+        selectedVillage === "home" ? "Home Village" : "Builder Base";
+      const activeItemsText =
+        activeItems.length > 0
+          ? activeItems.map((item) => `• ${item.name}`).join("\n")
+          : "No potions or snacks are currently active.";
+
+      Alert.alert(
+        "Potion & Snack Effects",
+        `${villageName}\n\nTotal time saved: ${formatSavedDuration(totalSavedMs)}\n\nActive items:\n${activeItemsText}`,
+      );
+    } catch {
+      Alert.alert("Potion & Snack Effects", "Could not load active effects. Please try again.");
+    }
+  }, [accountState?.activeUpgrades, activeTag, selectedVillage]);
+
   if (isLoadingProfile) {
     return (
       <View style={[styles.container, styles.loadingOverlay]}>
@@ -628,55 +680,6 @@ export default function HomeScreen() {
 
   const currentBuilderCount =
     selectedVillage === "home" ? builderCount : builderBaseBuilderCount;
-
-  const showMagicItemActivity = useCallback(async () => {
-    const totalSavedMs = (accountState?.activeUpgrades ?? [])
-      .filter((upgrade) => upgrade.village === selectedVillage)
-      .reduce(
-        (total, upgrade) => total + (upgrade.magicItemTimeSavedMs ?? 0),
-        0,
-      );
-
-    if (!activeTag) {
-      Alert.alert("Potion & Snack Effects", "Connect a village to view tracked effects.");
-      return;
-    }
-
-    try {
-      const effects = await getActiveMagicEffects(activeTag);
-      const activeItems = Array.from(
-        new Set(
-          effects
-            .filter(
-              (effect) =>
-                effect.village === selectedVillage &&
-                (effect.expiresAt == null || effect.expiresAt > Date.now()),
-            )
-            .map((effect) => effect.itemId),
-        ),
-      )
-        .map((itemId) => MAGIC_ITEMS.find((item) => item.id === itemId))
-        .filter(
-          (item): item is (typeof MAGIC_ITEMS)[number] =>
-            item !== undefined &&
-            (item.itemType === "potion" || item.itemType === "snack"),
-        );
-
-      const villageName =
-        selectedVillage === "home" ? "Home Village" : "Builder Base";
-      const activeItemsText =
-        activeItems.length > 0
-          ? activeItems.map((item) => `• ${item.name}`).join("\n")
-          : "No potions or snacks are currently active.";
-
-      Alert.alert(
-        "Potion & Snack Effects",
-        `${villageName}\n\nTotal time saved: ${formatSavedDuration(totalSavedMs)}\n\nActive items:\n${activeItemsText}`,
-      );
-    } catch {
-      Alert.alert("Potion & Snack Effects", "Could not load active effects. Please try again.");
-    }
-  }, [accountState?.activeUpgrades, activeTag, selectedVillage]);
 
   const openSupport = async () => {
     const info = await buildSupportInfo();

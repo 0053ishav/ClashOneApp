@@ -91,6 +91,30 @@ describe("resolveUpgradeCompletionTime", () => {
     expect(resolve(30 * HOUR, effects)).toBe(START + 12 * HOUR);
   });
 
+  it("applies Clock Tower Potion to Builder Base construction", () => {
+    const clockTowerEffect = effect(
+      "clock-tower-potion",
+      START,
+      30 * MINUTE,
+      "builderBase",
+    );
+
+    // A 10x boost for 30 minutes completes 5h of work; 15h remains.
+    expect(
+      resolve(20 * HOUR, [clockTowerEffect], "builders", "builderBase"),
+    ).toBe(START + 15 * HOUR + 30 * MINUTE);
+  });
+
+  it("applies Pet Potion only to pet upgrades", () => {
+    expect(
+      resolve(20 * HOUR, [effect("pet-potion", START)], "pet"),
+    ).toBe(START + 17 * HOUR);
+
+    expect(
+      resolve(20 * HOUR, [effect("pet-potion", START)], "builders"),
+    ).toBe(START + 20 * HOUR);
+  });
+
   it("does not apply Home Village effects to Builder Base upgrades", () => {
     expect(
       resolve(

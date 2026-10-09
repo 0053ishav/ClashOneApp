@@ -19,7 +19,7 @@ import { ProgressionApplicationService } from "@/services/progression";
 import { buildSupportInfo } from "@/services/supportDebugInfo";
 import { deleteUpgrade } from "@/services/upgradeService";
 import { getMagicItemInventory } from "@/services/magicItemService";
-import { useBookOnActiveUpgrade } from "@/services/useBookOnActiveUpgrade";
+import { applyBookToActiveUpgrade } from "@/services/useBookOnActiveUpgrade";
 import { MAGIC_ITEMS } from "@/config/magicItems";
 import type { MagicItem } from "@/types/magicItem";
 import { getEntity } from "@/utils/getEntity";
@@ -250,7 +250,7 @@ export default function HomeScreen() {
         if (!selectedItem) return;
         setMagicItemDialog(null);
         void (async () => {
-          const result = await useBookOnActiveUpgrade({
+          const result = await applyBookToActiveUpgrade({
             accountTag: activeTag,
             itemId: selectedItem.id,
             upgradeId: upgrade.id,

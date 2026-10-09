@@ -3,7 +3,7 @@ import { useAccountStore } from "@/stores/accountStore";
 import { PlayerFull } from "@/types/playerFull";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -65,11 +65,7 @@ export default function AchievementsScreen() {
 
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    load();
-  }, [activeTag]);
-
-  async function load() {
+  const load = useCallback(async () => {
     if (!activeTag) return;
 
     try {
@@ -79,9 +75,13 @@ export default function AchievementsScreen() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [activeTag]);
 
-  const achievements = data?.achievements ?? [];
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const achievements = useMemo(() => data?.achievements ?? [], [data]);
 
   const normalizedSearch = search.trim().toLowerCase();
 

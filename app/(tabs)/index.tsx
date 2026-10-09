@@ -1,30 +1,33 @@
 import GoblinEventBanner from "@/components/GoblinEventBanner";
-import { MagicItemsQuickModal } from "@/components/home/MagicItemsQuickModal";
-import { MagicItemTimeSaved } from "@/components/home/MagicItemActivitySummary";
-import { formatSavedDuration } from "@/components/home/MagicItemActivitySummary";
-import { MagicItemDialog, type MagicItemDialogChoice } from "@/components/magicItems/MagicItemDialog";
 import { LabSection } from "@/components/home/LabSection";
+import {
+  formatSavedDuration,
+  MagicItemTimeSaved,
+} from "@/components/home/MagicItemActivitySummary";
+import { MagicItemsQuickModal } from "@/components/home/MagicItemsQuickModal";
 import { PetSection } from "@/components/home/PetSection";
 import { UpgradeActionModal } from "@/components/home/UpgradeActionModal";
+import {
+  MagicItemDialog,
+  type MagicItemDialogChoice,
+} from "@/components/magicItems/MagicItemDialog";
 import ProfileDropdownSheet, {
   ProfileDropdownSheetRef,
 } from "@/components/ProfileSheet/ProfileDropdownSheet";
 import { SupportModal } from "@/components/SupportModal";
 import { XPBadge } from "@/components/XPBadge";
 import { ENV } from "@/config/env";
+import { MAGIC_ITEMS } from "@/config/magicItems";
 import { useCraftedResolver } from "@/engine/crafted/craftedResolver";
 import type { ProgressionApplicationResult } from "@/engine/progression/models";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { useRemoteConfig } from "@/provider/remoteConfigProvider";
 import { getAccountState } from "@/services/accountStateService";
+import { getMagicItemInventory } from "@/services/magicItemService";
 import { ProgressionApplicationService } from "@/services/progression";
 import { buildSupportInfo } from "@/services/supportDebugInfo";
 import { deleteUpgrade } from "@/services/upgradeService";
-import { getMagicItemInventory } from "@/services/magicItemService";
 import { applyBookToActiveUpgrade } from "@/services/useBookOnActiveUpgrade";
-import { MAGIC_ITEMS } from "@/config/magicItems";
-import type { MagicItem } from "@/types/magicItem";
-import { getEntity } from "@/utils/getEntity";
 import { setOnboardingIncomplete } from "@/storage/appConfig";
 import {
   setGoblinBannerDismissedUntil,
@@ -33,12 +36,14 @@ import {
 import { useAccountStore } from "@/stores/accountStore";
 import { usePremiumStore } from "@/stores/premiumStore";
 import { Village } from "@/types/entity";
+import type { MagicItem } from "@/types/magicItem";
 import { Upgrade } from "@/types/upgrade";
 import { setSessionSource, track } from "@/utils/analytics/analytics";
 import { calculateProgress } from "@/utils/calculateProgress";
 import { formatBuildingName } from "@/utils/formatBuildingName";
 import { formatCountdown } from "@/utils/formatCountdown";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
+import { getEntity } from "@/utils/getEntity";
 import {
   canUseGoblinBuilder,
   getCurrentWorkForHireEventEnd,
@@ -60,15 +65,14 @@ import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
   LayoutAnimation,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
-  View,
   useWindowDimensions,
+  View,
 } from "react-native";
 
 import { ActiveUpgradesSkeleton } from "@/components/home/ActiveUpgradesSkeleton";
@@ -146,8 +150,15 @@ export default function HomeScreen() {
       ]);
       setAccountState(state);
       const trackedPotionCount = inventory.reduce((total, entry) => {
-        const item = MAGIC_ITEMS.find((candidate) => candidate.id === entry.itemId);
-        return total + (item && (item.itemType === "potion" || item.itemType === "snack") ? entry.quantity : 0);
+        const item = MAGIC_ITEMS.find(
+          (candidate) => candidate.id === entry.itemId,
+        );
+        return (
+          total +
+          (item && (item.itemType === "potion" || item.itemType === "snack")
+            ? entry.quantity
+            : 0)
+        );
       }, 0);
       setMagicItemInventoryCount(trackedPotionCount);
       hasLoadedAccountState.current = true;
@@ -220,79 +231,91 @@ export default function HomeScreen() {
     await resyncNotifications();
   }, [refreshState]);
 
-  const handleUseBook = useCallback(async (upgrade: Upgrade) => {
-    if (!activeTag) return;
+  const handleUseBook = useCallback(
+    async (upgrade: Upgrade) => {
+      if (!activeTag) return;
 
-    const village = upgrade.village ?? "home";
-    const target = upgrade.dataId != null
-      ? getEntity(Number(upgrade.dataId)).type
-      : "unknown";
-    const inventory = await getMagicItemInventory(activeTag);
-    const quantities = new Map(inventory.map((entry) => [entry.itemId, entry.quantity]));
-    const compatibleBooks = MAGIC_ITEMS.filter((item) => {
-      if (item.itemType !== "book" || !item.villages.includes(village)) return false;
-      const targets = item.effect.appliesTo ?? [];
-      const compatible = targets.includes("any") ||
-        targets.includes(target as (typeof targets)[number]) ||
-        (targets.includes("heroes-and-pets") && (target === "hero" || target === "pet"));
-      return compatible && (quantities.get(item.id) ?? 0) > 0;
-    });
-
-    if (compatibleBooks.length === 0) {
-      setMagicItemDialog({
-        title: "No compatible Books",
-        message: "You do not have a compatible Book in this account’s tracked inventory.",
-        tone: "info",
+      const village = upgrade.village ?? "home";
+      const target =
+        upgrade.dataId != null
+          ? getEntity(Number(upgrade.dataId)).type
+          : "unknown";
+      const inventory = await getMagicItemInventory(activeTag);
+      const quantities = new Map(
+        inventory.map((entry) => [entry.itemId, entry.quantity]),
+      );
+      const compatibleBooks = MAGIC_ITEMS.filter((item) => {
+        if (item.itemType !== "book" || !item.villages.includes(village))
+          return false;
+        const targets = item.effect.appliesTo ?? [];
+        const compatible =
+          targets.includes("any") ||
+          targets.includes(target as (typeof targets)[number]) ||
+          (targets.includes("heroes-and-pets") &&
+            (target === "hero" || target === "pet"));
+        return compatible && (quantities.get(item.id) ?? 0) > 0;
       });
-      return;
-    }
 
-    setMagicItemDialog({
-      title: "Use a Book",
-      message: `Choose a Book to complete ${upgrade.entity}.`,
-      choices: compatibleBooks.map((item) => ({
-        item,
-        quantity: quantities.get(item.id) ?? 0,
-      })),
-      tone: "confirm",
-      confirmLabel: "Use Book",
-      onConfirm: (selectedItem) => {
-        if (!selectedItem) return;
-        setMagicItemDialog(null);
-        void (async () => {
-          const result = await applyBookToActiveUpgrade({
-            accountTag: activeTag,
-            itemId: selectedItem.id,
-            upgradeId: upgrade.id,
-          });
-          if (!result.used) {
+      if (compatibleBooks.length === 0) {
+        setMagicItemDialog({
+          title: "No compatible Books",
+          message:
+            "You do not have a compatible Book in this account’s tracked inventory.",
+          tone: "info",
+        });
+        return;
+      }
+
+      setMagicItemDialog({
+        title: "Use a Book",
+        message: `Choose a Book to complete ${upgrade.entity}.`,
+        choices: compatibleBooks.map((item) => ({
+          item,
+          quantity: quantities.get(item.id) ?? 0,
+        })),
+        tone: "confirm",
+        confirmLabel: "Use Book",
+        onConfirm: (selectedItem) => {
+          if (!selectedItem) return;
+          setMagicItemDialog(null);
+          void (async () => {
+            const result = await applyBookToActiveUpgrade({
+              accountTag: activeTag,
+              itemId: selectedItem.id,
+              upgradeId: upgrade.id,
+            });
+            if (!result.used) {
+              setMagicItemDialog({
+                title: "Could not use Book",
+                message: result.reason.replaceAll("-", " "),
+                item: selectedItem,
+                tone: "error",
+              });
+              return;
+            }
+            setActionModalVisible(false);
+            setSelectedUpgrade(null);
+            setSelectedProgression(null);
+            await performSync();
+            setMagicItemDialog({
+              title: "Book used",
+              message: `${selectedItem.name} completed the tracked upgrade.`,
+              item: selectedItem,
+              tone: "success",
+            });
+          })().catch(() =>
             setMagicItemDialog({
               title: "Could not use Book",
-              message: result.reason.replaceAll("-", " "),
+              message: "Please try again.",
               item: selectedItem,
               tone: "error",
-            });
-            return;
-          }
-          setActionModalVisible(false);
-          setSelectedUpgrade(null);
-          setSelectedProgression(null);
-          await performSync();
-          setMagicItemDialog({
-            title: "Book used",
-            message: `${selectedItem.name} completed the tracked upgrade.`,
-            item: selectedItem,
-            tone: "success",
-          });
-        })().catch(() => setMagicItemDialog({
-          title: "Could not use Book",
-          message: "Please try again.",
-          item: selectedItem,
-          tone: "error",
-        }));
-      },
-    });
-  }, [activeTag, performSync]);
+            }),
+          );
+        },
+      });
+    },
+    [activeTag, performSync],
+  );
 
   useEffect(() => {
     if (!completedId) return;
@@ -693,8 +716,12 @@ export default function HomeScreen() {
             ]}
           >
             {/* Avatar circle */}
-            <View style={[styles.avatar, { borderColor: activeAccount?.color }]}>
-              <Text style={[styles.avatarText, { color: activeAccount?.color }]}>
+            <View
+              style={[styles.avatar, { borderColor: activeAccount?.color }]}
+            >
+              <Text
+                style={[styles.avatarText, { color: activeAccount?.color }]}
+              >
                 {playerInitials}
               </Text>
             </View>
@@ -717,7 +744,7 @@ export default function HomeScreen() {
                   </View>
                 )}
               </View>
-  
+
               {profile.playerTag && (
                 <View style={styles.profileMeta}>
                   {typeof profile.expLevel === "number" && (
@@ -783,20 +810,28 @@ export default function HomeScreen() {
             <View style={styles.profileSavedBadge}>
               <Ionicons name="flash" size={11} color="#34d399" />
               <Text style={styles.profileSavedText}>
-                {formatSavedDuration((accountState?.activeUpgrades ?? []).reduce(
-                  (total, upgrade) => total + (upgrade.magicItemTimeSavedMs ?? 0),
-                  0,
-                ))}
+                {formatSavedDuration(
+                  (accountState?.activeUpgrades ?? []).reduce(
+                    (total, upgrade) =>
+                      total + (upgrade.magicItemTimeSavedMs ?? 0),
+                    0,
+                  ),
+                )}
               </Text>
             </View>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Open Potion and Snack inventory, ${magicItemInventoryCount} available`}
               onPress={() => setMagicItemsVisible(true)}
-              style={({ pressed }) => [styles.profileInventoryButton, pressed && styles.magicItemsButtonPressed]}
+              style={({ pressed }) => [
+                styles.profileInventoryButton,
+                pressed && styles.magicItemsButtonPressed,
+              ]}
             >
               <Ionicons name="flask" size={13} color="#fbbf24" />
-              <Text style={styles.profileInventoryText}>{magicItemInventoryCount}</Text>
+              <Text style={styles.profileInventoryText}>
+                {magicItemInventoryCount}
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -926,8 +961,6 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-
-
         {/* ── Status Card (dimensions preserved) ── */}
         <View style={styles.statusCard}>
           <View style={styles.statusCardTop}>
@@ -1017,7 +1050,6 @@ export default function HomeScreen() {
             </View>
           </View>
         </View>
-
 
         <GestureDetector gesture={swipeGesture}>
           <Animated.View
@@ -1198,7 +1230,9 @@ export default function HomeScreen() {
                             <Text style={styles.totalTimeText}>
                               of {formatCountdown(totalMs)}
                             </Text>
-                            <MagicItemTimeSaved milliseconds={u.magicItemTimeSavedMs} />
+                            <MagicItemTimeSaved
+                              milliseconds={u.magicItemTimeSavedMs}
+                            />
                           </View>
                         </View>
 
@@ -1309,7 +1343,11 @@ export default function HomeScreen() {
         choices={magicItemDialog?.choices}
         tone={magicItemDialog?.tone}
         confirmLabel={magicItemDialog?.confirmLabel}
-        onConfirm={magicItemDialog?.onConfirm ? (item) => void magicItemDialog.onConfirm?.(item) : undefined}
+        onConfirm={
+          magicItemDialog?.onConfirm
+            ? (item) => void magicItemDialog.onConfirm?.(item)
+            : undefined
+        }
         onClose={() => setMagicItemDialog(null)}
       />
       <MagicItemsQuickModal
@@ -1517,11 +1555,39 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 
-  profileActionsRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, gap: 6 },
+  profileActionsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    gap: 6,
+  },
   profileMagicActions: { flexDirection: "row", alignItems: "center", gap: 5 },
-  profileSavedBadge: { minHeight: 27, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 3, paddingHorizontal: 6, borderRadius: 8, backgroundColor: "rgba(52,211,153,0.08)", borderWidth: 1, borderColor: "rgba(52,211,153,0.22)" },
+  profileSavedBadge: {
+    minHeight: 27,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
+    paddingHorizontal: 6,
+    borderRadius: 8,
+    backgroundColor: "rgba(52,211,153,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(52,211,153,0.22)",
+  },
   profileSavedText: { color: "#34d399", fontSize: 9, fontWeight: "900" },
-  profileInventoryButton: { minWidth: 34, minHeight: 27, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 3, paddingHorizontal: 6, borderRadius: 8, backgroundColor: "rgba(251,191,36,0.08)", borderWidth: 1, borderColor: "rgba(251,191,36,0.22)" },
+  profileInventoryButton: {
+    minWidth: 34,
+    minHeight: 27,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
+    paddingHorizontal: 6,
+    borderRadius: 8,
+    backgroundColor: "rgba(251,191,36,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(251,191,36,0.22)",
+  },
   profileInventoryText: { color: "#fbbf24", fontSize: 9, fontWeight: "900" },
   profileRow: {
     flex: 1,
@@ -1554,7 +1620,6 @@ const styles = StyleSheet.create({
   },
 
   profileInfo: {
-    minWidth: 0,
     minWidth: 0,
   },
 

@@ -24,7 +24,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function AddAccountScreen() {
   const router = useRouter();
   const [isImporting, setIsImporting] = useState(false);
-  const [error, setError] = useState("");
   const [tag, setTag] = useState("");
 
   const [modalVisible, setModalVisible] = useState(false);
@@ -57,7 +56,7 @@ export default function AddAccountScreen() {
       );
 
       setModalVisible(true);
-    } catch (error) {
+    } catch {
       setShouldNavigate(false);
 
       setModalTitle("Demo Import Failed");
@@ -238,8 +237,6 @@ export default function AddAccountScreen() {
             <Text style={styles.demoButtonText}>Use Demo Account</Text>
           </Pressable>
         </View>
-        {/* 🔹 Error */}
-        {error ? <Text style={styles.error}>{error}</Text> : null}
         {/* 🔹 Trust */}
         <View style={styles.trustBox}>
           <Text style={styles.trustTitle}>How it works:</Text>

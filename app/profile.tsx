@@ -10,7 +10,7 @@ import { EntityRecord } from "@/types/upgrade";
 import { getSessionSource, track } from "@/utils/analytics/analytics";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -37,7 +37,7 @@ export default function ProfileScreen() {
     track("screen_view", { screen: "profile" });
   }, []);
 
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -72,11 +72,11 @@ export default function ProfileScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTag]);
 
   useEffect(() => {
     loadProfile();
-  }, []);
+  }, [loadProfile]);
 
   const onRefresh = async () => {
     track("profile_refresh", {

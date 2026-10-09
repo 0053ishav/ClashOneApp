@@ -817,6 +817,7 @@ export default function HomeScreen() {
           />
         }
       >
+        <View style={styles.villageTabsTopSpacer} />
         {/* Village tabs */}
         <View style={styles.villageTabs}>
           <Animated.View
@@ -926,20 +927,6 @@ export default function HomeScreen() {
         </View>
 
 
-        <View style={styles.magicItemsActionRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Open ${selectedVillage === "home" ? "Home Village" : "Builder Base"} potions and snacks`}
-            onPress={() => setMagicItemsVisible(true)}
-            style={({ pressed }) => [styles.magicItemsButton, pressed && styles.magicItemsButtonPressed]}
-          >
-            <Ionicons name="sparkles" size={14} color="#fbbf24" />
-            <Text style={styles.magicItemsButtonText}>
-              {selectedVillage === "home" ? "Home Potions & Snacks" : "Builder Base Potions"}
-            </Text>
-            <Ionicons name="chevron-forward" size={13} color="#fbbf24" />
-          </Pressable>
-        </View>
 
         {/* ── Status Card (dimensions preserved) ── */}
         <View style={styles.statusCard}>
@@ -1769,6 +1756,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(34,197,94,0.25)",
   },
 
+  villageTabsTopSpacer: { height: 12 },
   // ── Village tabs ──
   magicItemsActionRow: {
     paddingHorizontal: 14,

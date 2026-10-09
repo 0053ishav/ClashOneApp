@@ -132,8 +132,8 @@ export function PetSection({
 
                 <Text style={styles.totalTime}>
                   of {formatCountdown(totalMs)}
-                <MagicItemTimeSaved milliseconds={activePet.magicItemTimeSavedMs} />
                 </Text>
+                <MagicItemTimeSaved milliseconds={activePet.magicItemTimeSavedMs} />
               </View>
             </View>
 

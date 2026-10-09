@@ -7,6 +7,7 @@ import {
 import React from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { MagicItemTimeSaved } from "@/components/home/MagicItemActivitySummary";
 import { ENV } from "@/config/env";
 import type { ProgressionApplicationResult } from "@/engine/progression/models";
 import type { Village } from "@/types/entity";
@@ -599,6 +600,7 @@ export function UpgradeActionModal({
             <Text style={styles.tinyText}>{formatMs(totalMs)}</Text>
           </View>
         </View>
+        <MagicItemTimeSaved milliseconds={upgrade.magicItemTimeSavedMs} />
 
         {/* =====================================================
             AVAILABLE AT CURRENT HALL

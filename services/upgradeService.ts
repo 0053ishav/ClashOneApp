@@ -1,6 +1,8 @@
 import { getDB } from "@/db/database";
 import { Upgrade } from "@/types/upgrade";
 import { deriveCompletionState } from "@/utils/deriveCompletionState";
+import { getActiveMagicEffects } from "@/services/magicItemService";
+import { applyMagicItemEffectsToUpgrades } from "@/engine/magicItems/applyMagicItemEffectsToUpgrades";
 
 
 /**
@@ -59,7 +61,7 @@ export async function getUpgrades(tag: string): Promise<Upgrade[]> {
     isCrafted: r.is_crafted === 1,
     moduleId: r.module_id
   }));
-  return deriveCompletionState(normalized);
+  const effects = await getActiveMagicEffects(tag);\n  return deriveCompletionState(applyMagicItemEffectsToUpgrades(normalized, effects));
 }
 
 
@@ -76,7 +78,7 @@ export async function getActiveUpgrades(tag: string): Promise<Upgrade[]> {
     [tag, now]
   );
 
-  return rows.map((r: any) => ({
+  const normalized: Upgrade[] = rows.map((r: any) => ({
     id: r.id,
     accountTag: r.account_player_tag,
     village: r.village ?? "home",
@@ -103,9 +105,9 @@ export async function getActiveUpgrades(tag: string): Promise<Upgrade[]> {
           ? "NORMAL"
           : undefined,
 
-    startTime: r.start_time,
-    durationMinutes: r.duration_minutes,
-    endTime: r.finish_timestamp,
+    startTime: Number(r.start_time),
+    durationMinutes: Number(r.duration_minutes),
+    endTime: Number(r.finish_timestamp),
 
     hasHelper: r.has_helper === 1,
     recurrentHelper: r.recurrent_helper === 1,
@@ -119,6 +121,9 @@ export async function getActiveUpgrades(tag: string): Promise<Upgrade[]> {
     isCompleted: !!r.is_completed,
     source: r.source,
   }));
+  const effects = await getActiveMagicEffects(tag);
+  return applyMagicItemEffectsToUpgrades(normalized, effects)
+    .filter((upgrade) => !upgrade.isCompleted && upgrade.endTime > now);
 }
 
 

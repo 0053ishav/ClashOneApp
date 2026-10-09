@@ -1,0 +1,117 @@
+import { MAGIC_ITEMS, getMagicItem } from "@/config/magicItems";
+import type { ActiveMagicEffect } from "@/types/magicItem";
+import type { Upgrade } from "@/types/upgrade";
+import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { useMemo } from "react";
+import { StyleSheet, Text, View } from "react-native";
+
+type MagicItemActivitySummaryProps = {
+  effects: ActiveMagicEffect[];
+  upgrades: Upgrade[];
+  now?: number;
+};
+
+export function formatSavedDuration(milliseconds: number): string {
+  const totalMinutes = Math.max(0, Math.floor(milliseconds / 60_000));
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+  if (days > 0) return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
+  if (hours > 0) return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+  return `${minutes}m`;
+}
+
+export function MagicItemTimeSaved({ milliseconds }: { milliseconds?: number }) {
+  if (!milliseconds || milliseconds <= 0) return null;
+  return (
+    <View style={styles.savedInline}>
+      <Ionicons name="flash" size={11} color="#34d399" />
+      <Text style={styles.savedInlineText}>Saved {formatSavedDuration(milliseconds)}</Text>
+    </View>
+  );
+}
+
+export function MagicItemActivitySummary({
+  effects,
+  upgrades,
+  now = Date.now(),
+}: MagicItemActivitySummaryProps) {
+  const activeItems = useMemo(() => {
+    const seen = new Set<string>();
+    return effects
+      .filter((effect) => effect.expiresAt == null || effect.expiresAt > now)
+      .map((effect) => getMagicItem(effect.itemId))
+      .filter((item) => {
+        if (!item || (item.itemType !== "potion" && item.itemType !== "snack")) return false;
+        if (seen.has(item.id)) return false;
+        seen.add(item.id);
+        return true;
+      });
+  }, [effects, now]);
+
+  const totalSavedMs = upgrades.reduce(
+    (total, upgrade) => total + (upgrade.magicItemTimeSavedMs ?? 0),
+    0,
+  );
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.header}>
+        <View style={styles.headerIcon}>
+          <Ionicons name="sparkles" size={17} color="#fbbf24" />
+        </View>
+        <View style={styles.headerText}>
+          <Text style={styles.title}>Potion & Snack Effects</Text>
+          <Text style={styles.subtitle}>Across both villages</Text>
+        </View>
+        <View style={styles.savedTotal}>
+          <Text style={styles.savedLabel}>TOTAL SAVED</Text>
+          <Text style={styles.savedValue}>{formatSavedDuration(totalSavedMs)}</Text>
+        </View>
+      </View>
+
+      {activeItems.length > 0 ? (
+        <View style={styles.items}>
+          {activeItems.map((item) => (
+            <View key={item.id} style={styles.itemChip}>
+              {item.image ? (
+                <Image source={{ uri: item.image }} style={styles.itemImage} contentFit="contain" />
+              ) : (
+                <Ionicons name="sparkles" size={18} color="#fbbf24" />
+              )}
+              <Text style={styles.itemName}>{item.name}</Text>
+              <View style={styles.activeDot} />
+            </View>
+          ))}
+        </View>
+      ) : (
+        <Text style={styles.emptyText}>No potions or snacks are currently active.</Text>
+      )}
+      <Text style={styles.footnote}>
+        Time saved is calculated from the original finish time versus the effect-adjusted finish time for tracked active upgrades.
+      </Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: { marginHorizontal: 14, marginTop: 2, marginBottom: 12, padding: 13, borderRadius: 15, backgroundColor: "#111c31", borderWidth: 1, borderColor: "#263449" },
+  header: { flexDirection: "row", alignItems: "center", gap: 9 },
+  headerIcon: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(251,191,36,0.1)" },
+  headerText: { flex: 1 },
+  title: { color: "#f8fafc", fontSize: 12, fontWeight: "900" },
+  subtitle: { color: "#64748b", fontSize: 9, marginTop: 3 },
+  savedTotal: { alignItems: "flex-end" },
+  savedLabel: { color: "#64748b", fontSize: 8, fontWeight: "800", letterSpacing: 0.5 },
+  savedValue: { color: "#34d399", fontSize: 15, fontWeight: "900", marginTop: 2 },
+  items: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 12 },
+  itemChip: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 6, paddingHorizontal: 8, borderRadius: 9, backgroundColor: "#0f172a", borderWidth: 1, borderColor: "#263449" },
+  itemImage: { width: 23, height: 23 },
+  itemName: { color: "#cbd5e1", fontSize: 10, fontWeight: "700" },
+  activeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#34d399" },
+  emptyText: { marginTop: 11, color: "#94a3b8", fontSize: 10 },
+  footnote: { marginTop: 10, color: "#64748b", fontSize: 9, lineHeight: 13 },
+  savedInline: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 3 },
+  savedInlineText: { color: "#34d399", fontSize: 9, fontWeight: "700" },
+});

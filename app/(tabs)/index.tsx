@@ -630,10 +630,12 @@ export default function HomeScreen() {
     selectedVillage === "home" ? builderCount : builderBaseBuilderCount;
 
   const showMagicItemActivity = useCallback(async () => {
-    const totalSavedMs = (accountState?.activeUpgrades ?? []).reduce(
-      (total, upgrade) => total + (upgrade.magicItemTimeSavedMs ?? 0),
-      0,
-    );
+    const totalSavedMs = (accountState?.activeUpgrades ?? [])
+      .filter((upgrade) => upgrade.village === selectedVillage)
+      .reduce(
+        (total, upgrade) => total + (upgrade.magicItemTimeSavedMs ?? 0),
+        0,
+      );
 
     if (!activeTag) {
       Alert.alert("Potion & Snack Effects", "Connect a village to view tracked effects.");
@@ -655,7 +657,7 @@ export default function HomeScreen() {
       )
         .map((itemId) => MAGIC_ITEMS.find((item) => item.id === itemId))
         .filter(
-          (item) =>
+          (item): item is (typeof MAGIC_ITEMS)[number] =>
             item !== undefined &&
             (item.itemType === "potion" || item.itemType === "snack"),
         );

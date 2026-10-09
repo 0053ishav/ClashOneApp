@@ -1,5 +1,6 @@
 import GoblinEventBanner from "@/components/GoblinEventBanner";
 import { MagicItemsQuickModal } from "@/components/home/MagicItemsQuickModal";
+import { MagicItemActivitySummary } from "@/components/home/MagicItemActivitySummary";
 import { MagicItemDialog, type MagicItemDialogChoice } from "@/components/magicItems/MagicItemDialog";
 import { LabSection } from "@/components/home/LabSection";
 import { PetSection } from "@/components/home/PetSection";
@@ -18,10 +19,10 @@ import { getAccountState } from "@/services/accountStateService";
 import { ProgressionApplicationService } from "@/services/progression";
 import { buildSupportInfo } from "@/services/supportDebugInfo";
 import { deleteUpgrade } from "@/services/upgradeService";
-import { getMagicItemInventory } from "@/services/magicItemService";
+import { getActiveMagicEffects, getMagicItemInventory } from "@/services/magicItemService";
 import { applyBookToActiveUpgrade } from "@/services/useBookOnActiveUpgrade";
 import { MAGIC_ITEMS } from "@/config/magicItems";
-import type { MagicItem } from "@/types/magicItem";
+import type { ActiveMagicEffect, MagicItem } from "@/types/magicItem";
 import { getEntity } from "@/utils/getEntity";
 import { setOnboardingIncomplete } from "@/storage/appConfig";
 import {
@@ -92,6 +93,7 @@ export default function HomeScreen() {
   const [selectedUpgrade, setSelectedUpgrade] = useState<Upgrade | null>(null);
   const [actionModalVisible, setActionModalVisible] = useState(false);
   const [magicItemsVisible, setMagicItemsVisible] = useState(false);
+  const [magicEffects, setMagicEffects] = useState<ActiveMagicEffect[]>([]);
   const [magicItemDialog, setMagicItemDialog] = useState<{
     title: string;
     message: string;
@@ -137,9 +139,13 @@ export default function HomeScreen() {
         setIsLoadingAccountState(true);
       }
 
-      const state = await getAccountState(activeTag);
+      const [state, effects] = await Promise.all([
+        getAccountState(activeTag),
+        getActiveMagicEffects(activeTag),
+      ]);
 
       setAccountState(state);
+      setMagicEffects(effects);
       hasLoadedAccountState.current = true;
     } catch (error) {
       console.error("[HOME] Failed to refresh account state:", error);
@@ -887,6 +893,11 @@ export default function HomeScreen() {
             <Ionicons name="chevron-forward" size={14} color="#fbbf24" />
           </Pressable>
         </View>
+
+        <MagicItemActivitySummary
+          effects={magicEffects}
+          upgrades={accountState?.activeUpgrades ?? []}
+        />
 
         {/* Village tabs */}
         <View style={styles.villageTabs}>

@@ -1736,9 +1736,6 @@ const styles = StyleSheet.create({
     marginTop: -8,
     marginBottom: 8,
   },
-    marginTop: -4,
-    marginBottom: 10,
-  },
   magicItemsButton: {
     minHeight: 29,
     flexDirection: "row",

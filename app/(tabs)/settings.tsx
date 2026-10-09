@@ -470,6 +470,17 @@ export default function SettingsScreen() {
       >
         <ChiefCard />
 
+        <Section title="Game tools">
+          <Row
+            icon="sparkles"
+            iconColor="#fbbf24"
+            title="Magic Items"
+            subtitle="Track potions, snacks, books and hammers"
+            chevron
+            onPress={() => router.push("/magic-items")}
+          />
+        </Section>
+
         {/* ── Active village ── */}
         <Section title="Active village">
           {profile?.playerTag ? (

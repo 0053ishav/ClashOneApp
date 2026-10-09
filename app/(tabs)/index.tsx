@@ -2,6 +2,7 @@ import GoblinEventBanner from "@/components/GoblinEventBanner";
 import { LabSection } from "@/components/home/LabSection";
 import {
   formatSavedDuration,
+  MagicItemActivityPopup,
   MagicItemTimeSaved,
 } from "@/components/home/MagicItemActivitySummary";
 import { MagicItemsQuickModal } from "@/components/home/MagicItemsQuickModal";
@@ -68,7 +69,6 @@ import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
   LayoutAnimation,
   Pressable,
   RefreshControl,
@@ -102,6 +102,12 @@ export default function HomeScreen() {
   const [selectedUpgrade, setSelectedUpgrade] = useState<Upgrade | null>(null);
   const [actionModalVisible, setActionModalVisible] = useState(false);
   const [magicItemsVisible, setMagicItemsVisible] = useState(false);
+  const [magicItemActivity, setMagicItemActivity] = useState<{
+    village: Village;
+    totalSavedMs: number;
+    items: MagicItem[];
+    error?: string;
+  } | null>(null);
   const [magicItemInventoryCount, setMagicItemInventoryCount] = useState(0);
   const [magicItemDialog, setMagicItemDialog] = useState<{
     title: string;
@@ -403,7 +409,12 @@ export default function HomeScreen() {
       );
 
     if (!activeTag) {
-      Alert.alert("Potion & Snack Effects", "Connect a village to view tracked effects.");
+      setMagicItemActivity({
+        village: selectedVillage,
+        totalSavedMs,
+        items: [],
+        error: "Connect a village to view tracked effects.",
+      });
       return;
     }
 
@@ -427,259 +438,20 @@ export default function HomeScreen() {
             (item.itemType === "potion" || item.itemType === "snack"),
         );
 
-      const villageName =
-        selectedVillage === "home" ? "Home Village" : "Builder Base";
-      const activeItemsText =
-        activeItems.length > 0
-          ? activeItems.map((item) => `• ${item.name}`).join("\n")
-          : "No potions or snacks are currently active.";
-
-      Alert.alert(
-        "Potion & Snack Effects",
-        `${villageName}\n\nTotal time saved: ${formatSavedDuration(totalSavedMs)}\n\nActive items:\n${activeItemsText}`,
-      );
+      setMagicItemActivity({
+        village: selectedVillage,
+        totalSavedMs,
+        items: activeItems,
+      });
     } catch {
-      Alert.alert("Potion & Snack Effects", "Could not load active effects. Please try again.");
+      setMagicItemActivity({
+        village: selectedVillage,
+        totalSavedMs,
+        items: [],
+        error: "Could not load active effects. Please try again.",
+      });
     }
   }, [accountState?.activeUpgrades, activeTag, selectedVillage]);
-
-  if (isLoadingProfile) {
-    return (
-      <View style={[styles.container, styles.loadingOverlay]}>
-        <View style={styles.loadingContent}>
-          <View style={styles.imageWrapper}>
-            <Image
-              source={require("@/assets/images/builder/builder-idle.png")}
-              style={styles.builderImage}
-              contentFit="contain"
-              cachePolicy="memory-disk"
-            />
-          </View>
-          <Text style={styles.loadingTitle}>Switching Village</Text>
-          <Text style={styles.loadingMessage}>Loading your profile...</Text>
-          <View style={styles.dotsContainer}>
-            {[0, 1, 2].map((i) => (
-              <View key={i} style={styles.dot} />
-            ))}
-          </View>
-        </View>
-      </View>
-    );
-  }
-
-  if (!profile) {
-    return (
-      <View style={[styles.container, styles.loadingOverlay]}>
-        <View style={styles.loadingContent}>
-          <View style={styles.imageWrapper}>
-            <Image
-              source={require("@/assets/images/builder/builder-idle.png")}
-              style={styles.builderImage}
-              contentFit="contain"
-              cachePolicy="memory-disk"
-            />
-          </View>
-          <Text style={styles.loadingTitle}>No Village Connected</Text>
-          <Pressable
-            onPress={() => router.replace("/add-account")}
-            style={styles.connectButton}
-          >
-            <Text style={styles.connectButtonText}>Connect</Text>
-          </Pressable>
-        </View>
-      </View>
-    );
-  }
-
-  const isGoblinActive = config.goblinBuilderEnabled && isWorkForHireActive();
-  const eventEndsAt = getCurrentWorkForHireEventEnd();
-  const showBanner = !!eventEndsAt && shouldShowGoblinBanner(eventEndsAt);
-  const isStale = lastSync && Date.now() - lastSync > 1000 * 60 * 60 * 12;
-
-  const status = getBuilderStatus({
-    village: "home",
-    normalBuilderCount: builderCount,
-    goblinBuilderUnlocked: isGoblinActive,
-    activeUpgrades: builders,
-  });
-
-  const builderBaseStatus = getBuilderBaseBuilderStatus({
-    builderCount: builderBaseBuilderCount,
-    activeUpgrades: accountState?.builders.builderBase ?? [],
-  });
-
-  const builderBaseVillageStatus = getBuilderBaseVillageStatus({
-    builders: accountState?.builders.builderBase ?? [],
-    builderCount: builderBaseBuilderCount,
-    lab: accountState?.lab.builderBase.normal,
-  });
-
-  const sortedUpgrades = [...builders].sort((a, b) => {
-    const slotA =
-      a.builderSlot === "G"
-        ? 999
-        : typeof a.builderSlot === "number"
-          ? a.builderSlot
-          : 999;
-    const slotB =
-      b.builderSlot === "G"
-        ? 999
-        : typeof b.builderSlot === "number"
-          ? b.builderSlot
-          : 999;
-    return slotA - slotB;
-  });
-
-  const builderBaseSortedUpgrades = [...builderBaseBuilders].sort((a, b) => {
-    const slotA = typeof a.builderSlot === "number" ? a.builderSlot : 999;
-
-    const slotB = typeof b.builderSlot === "number" ? b.builderSlot : 999;
-
-    return slotA - slotB;
-  });
-
-  const nextUpgrade =
-    sortedUpgrades.length > 0
-      ? sortedUpgrades.reduce((prev, curr) =>
-          prev.endTime < curr.endTime ? prev : curr,
-        )
-      : null;
-
-  const builderBaseNextUpgrade =
-    builderBaseSortedUpgrades.length > 0
-      ? builderBaseSortedUpgrades.reduce((prev, curr) =>
-          prev.endTime < curr.endTime ? prev : curr,
-        )
-      : null;
-
-  const remainingMs = nextUpgrade
-    ? Math.max(nextUpgrade.endTime - Date.now(), 0)
-    : 0;
-
-  const builderBaseRemainingMs = builderBaseNextUpgrade
-    ? Math.max(builderBaseNextUpgrade.endTime - Date.now(), 0)
-    : 0;
-
-  let nextBuilderLabel: string | undefined;
-  if (nextUpgrade) {
-    if (nextUpgrade.builderSlot === "G") {
-      nextBuilderLabel = "Goblin";
-    } else if (typeof nextUpgrade.builderSlot === "number") {
-      nextBuilderLabel = `B${nextUpgrade.builderSlot + 1}`;
-    } else {
-      nextBuilderLabel = "Builder";
-    }
-  }
-
-  let builderBaseNextBuilderLabel: string | undefined;
-
-  if (builderBaseNextUpgrade) {
-    if (typeof builderBaseNextUpgrade.builderSlot === "number") {
-      builderBaseNextBuilderLabel = `B${builderBaseNextUpgrade.builderSlot + 1}`;
-    } else {
-      builderBaseNextBuilderLabel = "Builder";
-    }
-  }
-  const handleRowPress = (upgrade: Upgrade) => {
-    const progression = ProgressionApplicationService.resolveUpgrade(upgrade);
-
-    setSelectedUpgrade(upgrade);
-    setSelectedProgression(progression);
-    setActionModalVisible(true);
-  };
-
-  let statusIcon = require("@/assets/images/builder/builder-idle.png");
-  if (!status.allFree && nextUpgrade?.dataId) {
-    statusIcon = resolveEntityIcon(nextUpgrade.dataId, {
-      village: "home",
-      level: nextUpgrade.currentLevel,
-      isCrafted: nextUpgrade.isCrafted,
-    });
-  }
-
-  let builderBaseStatusIcon = require("@/assets/images/builder/builder-idle.png");
-
-  if (!builderBaseStatus.allFree && builderBaseNextUpgrade?.dataId) {
-    builderBaseStatusIcon = resolveEntityIcon(builderBaseNextUpgrade.dataId, {
-      village: "builderBase",
-      level: builderBaseNextUpgrade.currentLevel,
-      isCrafted: builderBaseNextUpgrade.isCrafted,
-    });
-  }
-
-  const villageStatus = getVillageStatus({
-    townHall,
-    builders,
-    builderCount,
-    pet: townHall >= 14 ? pet : null,
-    labNormal: lab?.normal,
-    labGoblin: lab?.goblin,
-    goblinAvailable: lab?.goblinAvailable,
-  });
-
-  let insightParts: string[] = [];
-
-  if (selectedVillage === "home") {
-    if (villageStatus.freeBuilders > 0) {
-      insightParts.push(`🚨 ${villageStatus.freeBuilders} builder idle`);
-    }
-
-    if (villageStatus.goblinBuilderIdle) {
-      insightParts.push("⚒️ Goblin Builder idle");
-    }
-
-    if (villageStatus.labIdle) {
-      insightParts.push("🧪 Lab idle");
-    }
-
-    if (villageStatus.goblinLabIdle) {
-      insightParts.push("🧪 Goblin Lab idle");
-    }
-
-    if (townHall >= 14 && villageStatus.petIdle) {
-      insightParts.push("🐾 Pet idle");
-    }
-  } else {
-    if (builderBaseVillageStatus.freeBuilders > 0) {
-      insightParts.push(
-        `🚨 ${builderBaseVillageStatus.freeBuilders}/3 builders idle`,
-      );
-    }
-
-    if (builderBaseVillageStatus.labIdle) {
-      insightParts.push("🧪 Star Laboratory idle");
-    }
-  }
-
-  const insight =
-    insightParts.length > 0
-      ? insightParts.join(" • ")
-      : selectedVillage === "home"
-        ? "All systems running"
-        : "All Builder Base systems running";
-
-  const isUrgent =
-    selectedVillage === "home"
-      ? villageStatus.freeBuilders > 0
-      : builderBaseVillageStatus.freeBuilders > 0 ||
-        builderBaseVillageStatus.labIdle;
-
-  const currentStatus = selectedVillage === "home" ? status : builderBaseStatus;
-
-  const currentNextUpgrade =
-    selectedVillage === "home" ? nextUpgrade : builderBaseNextUpgrade;
-
-  const currentRemainingMs =
-    selectedVillage === "home" ? remainingMs : builderBaseRemainingMs;
-
-  const currentNextBuilderLabel =
-    selectedVillage === "home" ? nextBuilderLabel : builderBaseNextBuilderLabel;
-
-  const currentStatusIcon =
-    selectedVillage === "home" ? statusIcon : builderBaseStatusIcon;
-
-  const currentBuilderCount =
-    selectedVillage === "home" ? builderCount : builderBaseBuilderCount;
 
   const openSupport = async () => {
     const info = await buildSupportInfo();
@@ -1410,6 +1182,14 @@ export default function HomeScreen() {
             : undefined
         }
         onClose={() => setMagicItemDialog(null)}
+      />
+      <MagicItemActivityPopup
+        visible={magicItemActivity !== null}
+        village={magicItemActivity?.village ?? selectedVillage}
+        totalSavedMs={magicItemActivity?.totalSavedMs ?? 0}
+        items={magicItemActivity?.items ?? []}
+        error={magicItemActivity?.error}
+        onClose={() => setMagicItemActivity(null)}
       />
       <MagicItemsQuickModal
         visible={magicItemsVisible}

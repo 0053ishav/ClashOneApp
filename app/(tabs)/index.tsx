@@ -1736,8 +1736,6 @@ const styles = StyleSheet.create({
     marginTop: -8,
     marginBottom: 8,
   },
-    paddingHorizontal: 16,
-    alignItems: "flex-end",
     marginTop: -4,
     marginBottom: 10,
   },

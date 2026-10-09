@@ -1,4 +1,5 @@
 import { MAGIC_ITEMS } from "@/config/magicItems";
+import { MagicItemActivitySummary } from "@/components/home/MagicItemActivitySummary";
 import { activateClockTowerPotion } from "@/services/activateClockTowerPotion";
 import { activateTimedMagicItem } from "@/services/activateTimedMagicItem";
 import {
@@ -6,6 +7,8 @@ import {
   getActiveMagicEffects,
 } from "@/services/magicItemService";
 import type { MagicItem, MagicItemTarget } from "@/types/magicItem";
+import type { ActiveMagicEffect } from "@/types/magicItem";
+import type { Upgrade } from "@/types/upgrade";
 import type { Village } from "@/types/entity";
 import { useAccountStore } from "@/stores/accountStore";
 import { MagicItemDialog } from "@/components/magicItems/MagicItemDialog";
@@ -28,6 +31,7 @@ type MagicItemsQuickModalProps = {
   accountTag: string | null;
   onClose: () => void;
   onActivated: () => Promise<void>;
+  upgrades: Upgrade[];
 };
 
 const SPEED_TARGETS: Readonly<Record<string, MagicItemTarget>> = {
@@ -44,10 +48,12 @@ export function MagicItemsQuickModal({
   accountTag,
   onClose,
   onActivated,
+  upgrades,
 }: MagicItemsQuickModalProps) {
   const accounts = useAccountStore((state) => state.accounts);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [activeEffectIds, setActiveEffectIds] = useState<Set<string>>(new Set());
+  const [activeEffects, setActiveEffects] = useState<ActiveMagicEffect[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activatingItemId, setActivatingItemId] = useState<string | null>(null);
   const [dialog, setDialog] = useState<{
@@ -65,6 +71,7 @@ export function MagicItemsQuickModal({
     if (!accountTag) {
       setQuantities({});
       setActiveEffectIds(new Set());
+      setActiveEffects([]);
       return;
     }
 
@@ -83,6 +90,9 @@ export function MagicItemsQuickModal({
             .filter((effect) => effect.expiresAt == null || effect.expiresAt > Date.now())
             .map((effect) => effect.itemId),
         ),
+      );
+      setActiveEffects(
+        effects.filter((effect) => effect.expiresAt == null || effect.expiresAt > Date.now()),
       );
     } catch {
       setDialog({ title: "Inventory unavailable", message: "Could not load Magic Items. Please close and try again.", tone: "error" });
@@ -228,6 +238,10 @@ export function MagicItemsQuickModal({
             </View>
           ) : (
             <ScrollView contentContainerStyle={styles.content}>
+              <MagicItemActivitySummary
+                effects={activeEffects.filter((effect) => effect.village === village)}
+                upgrades={upgrades.filter((upgrade) => upgrade.village === village)}
+              />
               {items.map((item) => {
                 const quantity = quantities[item.id] ?? 0;
                 const active = activeEffectIds.has(item.id);

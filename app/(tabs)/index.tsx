@@ -894,6 +894,21 @@ export default function HomeScreen() {
         </View>
 
 
+        <View style={styles.magicItemsActionRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Open ${selectedVillage === "home" ? "Home Village" : "Builder Base"} potions and snacks`}
+            onPress={() => setMagicItemsVisible(true)}
+            style={({ pressed }) => [styles.magicItemsButton, pressed && styles.magicItemsButtonPressed]}
+          >
+            <Ionicons name="sparkles" size={14} color="#fbbf24" />
+            <Text style={styles.magicItemsButtonText}>
+              {selectedVillage === "home" ? "Home Potions & Snacks" : "Builder Base Potions"}
+            </Text>
+            <Ionicons name="chevron-forward" size={13} color="#fbbf24" />
+          </Pressable>
+        </View>
+
         {/* ── Status Card (dimensions preserved) ── */}
         <View style={styles.statusCard}>
           <View style={styles.statusCardTop}>
@@ -984,18 +999,6 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <View style={styles.magicItemsActionRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Open potions and snacks"
-            onPress={() => setMagicItemsVisible(true)}
-            style={({ pressed }) => [styles.magicItemsButton, pressed && styles.magicItemsButtonPressed]}
-          >
-            <Ionicons name="sparkles" size={16} color="#fbbf24" />
-            <Text style={styles.magicItemsButtonText}>Potions & Snacks</Text>
-            <Ionicons name="chevron-forward" size={14} color="#fbbf24" />
-          </Pressable>
-        </View>
 
         <GestureDetector gesture={swipeGesture}>
           <Animated.View
@@ -1728,13 +1731,18 @@ const styles = StyleSheet.create({
 
   // ── Village tabs ──
   magicItemsActionRow: {
+    paddingHorizontal: 14,
+    alignItems: "flex-end",
+    marginTop: -8,
+    marginBottom: 8,
+  },
     paddingHorizontal: 16,
     alignItems: "flex-end",
     marginTop: -4,
     marginBottom: 10,
   },
   magicItemsButton: {
-    minHeight: 34,
+    minHeight: 29,
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
@@ -1745,7 +1753,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(251, 191, 36, 0.25)",
   },
   magicItemsButtonPressed: { opacity: 0.65 },
-  magicItemsButtonText: { color: "#fbbf24", fontSize: 11, fontWeight: "800" },
+  magicItemsButtonText: { color: "#fbbf24", fontSize: 10, fontWeight: "800" },
 
   villageTabs: {
     flexDirection: "row",

@@ -1,6 +1,6 @@
 import GoblinEventBanner from "@/components/GoblinEventBanner";
 import { MagicItemsQuickModal } from "@/components/home/MagicItemsQuickModal";
-import { MagicItemActivitySummary, MagicItemTimeSaved } from "@/components/home/MagicItemActivitySummary";
+import { MagicItemTimeSaved } from "@/components/home/MagicItemActivitySummary";
 import { MagicItemDialog, type MagicItemDialogChoice } from "@/components/magicItems/MagicItemDialog";
 import { LabSection } from "@/components/home/LabSection";
 import { PetSection } from "@/components/home/PetSection";
@@ -19,10 +19,10 @@ import { getAccountState } from "@/services/accountStateService";
 import { ProgressionApplicationService } from "@/services/progression";
 import { buildSupportInfo } from "@/services/supportDebugInfo";
 import { deleteUpgrade } from "@/services/upgradeService";
-import { getActiveMagicEffects, getMagicItemInventory } from "@/services/magicItemService";
+import { getMagicItemInventory } from "@/services/magicItemService";
 import { applyBookToActiveUpgrade } from "@/services/useBookOnActiveUpgrade";
 import { MAGIC_ITEMS } from "@/config/magicItems";
-import type { ActiveMagicEffect, MagicItem } from "@/types/magicItem";
+import type { MagicItem } from "@/types/magicItem";
 import { getEntity } from "@/utils/getEntity";
 import { setOnboardingIncomplete } from "@/storage/appConfig";
 import {
@@ -93,7 +93,6 @@ export default function HomeScreen() {
   const [selectedUpgrade, setSelectedUpgrade] = useState<Upgrade | null>(null);
   const [actionModalVisible, setActionModalVisible] = useState(false);
   const [magicItemsVisible, setMagicItemsVisible] = useState(false);
-  const [magicEffects, setMagicEffects] = useState<ActiveMagicEffect[]>([]);
   const [magicItemDialog, setMagicItemDialog] = useState<{
     title: string;
     message: string;
@@ -139,13 +138,8 @@ export default function HomeScreen() {
         setIsLoadingAccountState(true);
       }
 
-      const [state, effects] = await Promise.all([
-        getAccountState(activeTag),
-        getActiveMagicEffects(activeTag),
-      ]);
-
+      const state = await getAccountState(activeTag);
       setAccountState(state);
-      setMagicEffects(effects);
       hasLoadedAccountState.current = true;
     } catch (error) {
       console.error("[HOME] Failed to refresh account state:", error);
@@ -791,114 +785,6 @@ export default function HomeScreen() {
           />
         }
       >
-        {/* ── Status Card (dimensions preserved) ── */}
-        <View style={styles.statusCard}>
-          <View style={styles.statusCardTop}>
-            <View style={styles.statusIconBox}>
-              <Image
-                source={currentStatusIcon}
-                style={styles.statusCardIcon}
-                contentFit="contain"
-                cachePolicy="memory-disk"
-              />
-            </View>
-            <View style={styles.statusBody}>
-              <Text style={styles.statusEyebrow}>
-                {currentStatus.allFree
-                  ? "All builders free"
-                  : `Next free · ${currentNextBuilderLabel}`}
-              </Text>
-              <Text style={styles.statusCountdown}>
-                {currentStatus.allFree
-                  ? "Start an upgrade"
-                  : formatCountdown(currentRemainingMs)}
-              </Text>
-              {!currentStatus.allFree && currentNextUpgrade && (
-                <Text style={styles.statusSub} numberOfLines={1}>
-                  {currentNextUpgrade.entity
-                    ? formatBuildingName(currentNextUpgrade.entity)
-                    : "Upgrade"}
-                  &nbsp;finishing first
-                </Text>
-              )}
-            </View>
-          </View>
-
-          <View style={styles.statusDivider} />
-
-          <View style={styles.statusBottom}>
-            <Text
-              style={[styles.insightText, isUrgent && styles.insightUrgent]}
-              numberOfLines={1}
-            >
-              {insight}
-            </Text>
-            <View style={styles.builderDots}>
-              {Array.from({ length: currentBuilderCount }).map((_, i) => {
-                const isBusy = (
-                  selectedVillage === "home"
-                    ? busySlots
-                    : new Set(
-                        builderBaseBuilders
-                          .filter((u) => typeof u.builderSlot === "number")
-                          .map((u) => u.builderSlot as number),
-                      )
-                ).has(i);
-                return (
-                  <View
-                    key={`normal-${i}`}
-                    style={[
-                      styles.builderDot,
-                      isBusy ? styles.builderDotBusy : styles.builderDotFree,
-                    ]}
-                  />
-                );
-              })}
-              {selectedVillage === "home" &&
-                isGoblinActive &&
-                (() => {
-                  const goblinBusy = builders.some(
-                    (u) => u.builderSlot === "G",
-                  );
-                  const goblinCanBeUsed = canUseGoblinBuilder(
-                    profile,
-                    builders,
-                  );
-                  return (
-                    <View
-                      style={[
-                        styles.builderDot,
-                        goblinBusy
-                          ? styles.goblinDotBusy
-                          : goblinCanBeUsed
-                            ? styles.goblinDotFree
-                            : styles.goblinDotInactive,
-                      ]}
-                    />
-                  );
-                })()}
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.magicItemsActionRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Open potions and snacks"
-            onPress={() => setMagicItemsVisible(true)}
-            style={({ pressed }) => [styles.magicItemsButton, pressed && styles.magicItemsButtonPressed]}
-          >
-            <Ionicons name="sparkles" size={16} color="#fbbf24" />
-            <Text style={styles.magicItemsButtonText}>Potions & Snacks</Text>
-            <Ionicons name="chevron-forward" size={14} color="#fbbf24" />
-          </Pressable>
-        </View>
-
-        <MagicItemActivitySummary
-          effects={magicEffects}
-          upgrades={accountState?.activeUpgrades ?? []}
-        />
-
         {/* Village tabs */}
         <View style={styles.villageTabs}>
           <Animated.View
@@ -1004,6 +890,110 @@ export default function HomeScreen() {
                 BH{profile.builderHallLevel}
               </Text>
             </View>
+          </Pressable>
+        </View>
+
+
+        {/* ── Status Card (dimensions preserved) ── */}
+        <View style={styles.statusCard}>
+          <View style={styles.statusCardTop}>
+            <View style={styles.statusIconBox}>
+              <Image
+                source={currentStatusIcon}
+                style={styles.statusCardIcon}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+              />
+            </View>
+            <View style={styles.statusBody}>
+              <Text style={styles.statusEyebrow}>
+                {currentStatus.allFree
+                  ? "All builders free"
+                  : `Next free · ${currentNextBuilderLabel}`}
+              </Text>
+              <Text style={styles.statusCountdown}>
+                {currentStatus.allFree
+                  ? "Start an upgrade"
+                  : formatCountdown(currentRemainingMs)}
+              </Text>
+              {!currentStatus.allFree && currentNextUpgrade && (
+                <Text style={styles.statusSub} numberOfLines={1}>
+                  {currentNextUpgrade.entity
+                    ? formatBuildingName(currentNextUpgrade.entity)
+                    : "Upgrade"}
+                  &nbsp;finishing first
+                </Text>
+              )}
+            </View>
+          </View>
+
+          <View style={styles.statusDivider} />
+
+          <View style={styles.statusBottom}>
+            <Text
+              style={[styles.insightText, isUrgent && styles.insightUrgent]}
+              numberOfLines={1}
+            >
+              {insight}
+            </Text>
+            <View style={styles.builderDots}>
+              {Array.from({ length: currentBuilderCount }).map((_, i) => {
+                const isBusy = (
+                  selectedVillage === "home"
+                    ? busySlots
+                    : new Set(
+                        builderBaseBuilders
+                          .filter((u) => typeof u.builderSlot === "number")
+                          .map((u) => u.builderSlot as number),
+                      )
+                ).has(i);
+                return (
+                  <View
+                    key={`normal-${i}`}
+                    style={[
+                      styles.builderDot,
+                      isBusy ? styles.builderDotBusy : styles.builderDotFree,
+                    ]}
+                  />
+                );
+              })}
+              {selectedVillage === "home" &&
+                isGoblinActive &&
+                (() => {
+                  const goblinBusy = builders.some(
+                    (u) => u.builderSlot === "G",
+                  );
+                  const goblinCanBeUsed = canUseGoblinBuilder(
+                    profile,
+                    builders,
+                  );
+                  return (
+                    <View
+                      style={[
+                        styles.builderDot,
+                        goblinBusy
+                          ? styles.goblinDotBusy
+                          : goblinCanBeUsed
+                            ? styles.goblinDotFree
+                            : styles.goblinDotInactive,
+                      ]}
+                    />
+                  );
+                })()}
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.magicItemsActionRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open potions and snacks"
+            onPress={() => setMagicItemsVisible(true)}
+            style={({ pressed }) => [styles.magicItemsButton, pressed && styles.magicItemsButtonPressed]}
+          >
+            <Ionicons name="sparkles" size={16} color="#fbbf24" />
+            <Text style={styles.magicItemsButtonText}>Potions & Snacks</Text>
+            <Ionicons name="chevron-forward" size={14} color="#fbbf24" />
           </Pressable>
         </View>
 

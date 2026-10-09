@@ -1,7 +1,6 @@
 /**
  * @deprecated Import from "@/services/magicItemService" instead.
- * This compatibility facade keeps existing storage-layer imports working
- * while all SQLite access remains centralized in the application service.
+ * Compatibility facade: all persistence logic lives in the service.
  */
 import type { ActiveMagicEffect, MagicItemInventory } from "@/types/magicItem";
 import {
@@ -31,15 +30,17 @@ export async function setMagicItemQuantity(
   await setQuantity({ accountTag, itemId, quantity: Math.max(0, Math.floor(quantity)) });
 }
 
-export function addMagicItem(
+export async function addMagicItem(
   accountTag: string,
   itemId: string,
   quantity = 1,
 ): Promise<number> {
-  return addItem(accountTag, itemId, Math.max(1, Math.floor(quantity)));
+  const amount = Math.max(0, Math.floor(quantity));
+  if (amount === 0) return getQuantity(accountTag, itemId);
+  return addItem(accountTag, itemId, amount);
 }
 
-export async function consumeMagicItem(
+export function consumeMagicItem(
   accountTag: string,
   itemId: string,
   quantity = 1,

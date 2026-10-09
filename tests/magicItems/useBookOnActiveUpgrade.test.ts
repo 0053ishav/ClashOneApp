@@ -8,7 +8,7 @@ jest.mock("@/utils/getEntity", () => ({
 
 import { getDB } from "@/db/database";
 import { getEntity } from "@/utils/getEntity";
-import { useBookOnActiveUpgrade } from "@/services/useBookOnActiveUpgrade";
+import { applyBookToActiveUpgrade } from "@/services/applyBookToActiveUpgrade";
 
 type MockDb = {
   getFirstAsync: jest.Mock;
@@ -16,7 +16,7 @@ type MockDb = {
   execAsync: jest.Mock;
 };
 
-describe("useBookOnActiveUpgrade", () => {
+describe("applyBookToActiveUpgrade", () => {
   let db: MockDb;
 
   beforeEach(() => {
@@ -40,7 +40,7 @@ describe("useBookOnActiveUpgrade", () => {
 
   it("consumes a Book of Building and removes the matching active upgrade atomically", async () => {
     await expect(
-      useBookOnActiveUpgrade({
+      applyBookToActiveUpgrade({
         accountTag: "#ACCOUNT",
         itemId: "book-of-building",
         upgradeId: "upgrade-1",
@@ -83,7 +83,7 @@ describe("useBookOnActiveUpgrade", () => {
     });
 
     await expect(
-      useBookOnActiveUpgrade({
+      applyBookToActiveUpgrade({
         accountTag: "#ACCOUNT",
         itemId: "book-of-building",
         upgradeId: "upgrade-1",
@@ -99,7 +99,7 @@ describe("useBookOnActiveUpgrade", () => {
     (getEntity as jest.Mock).mockReturnValueOnce({ type: "troop" });
 
     await expect(
-      useBookOnActiveUpgrade({
+      applyBookToActiveUpgrade({
         accountTag: "#ACCOUNT",
         itemId: "book-of-building",
         upgradeId: "upgrade-1",
@@ -115,7 +115,7 @@ describe("useBookOnActiveUpgrade", () => {
     db.runAsync.mockResolvedValueOnce({ changes: 0 });
 
     await expect(
-      useBookOnActiveUpgrade({
+      applyBookToActiveUpgrade({
         accountTag: "#ACCOUNT",
         itemId: "book-of-building",
         upgradeId: "upgrade-1",
@@ -129,7 +129,7 @@ describe("useBookOnActiveUpgrade", () => {
 
   it("rejects a Hammer from the Book-use path", async () => {
     await expect(
-      useBookOnActiveUpgrade({
+      applyBookToActiveUpgrade({
         accountTag: "#ACCOUNT",
         itemId: "hammer-of-building",
         upgradeId: "upgrade-1",

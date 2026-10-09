@@ -106,9 +106,10 @@ describe("resolveUpgradeCompletionTime", () => {
   });
 
   it("applies Pet Potion only to pet upgrades", () => {
+    // 20h of work at 24x speed takes 50 minutes.
     expect(
       resolve(20 * HOUR, [effect("pet-potion", START)], "pet"),
-    ).toBe(START + 17 * HOUR);
+    ).toBe(START + (20 / 24) * HOUR);
 
     expect(
       resolve(20 * HOUR, [effect("pet-potion", START)], "builders"),

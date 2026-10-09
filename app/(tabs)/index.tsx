@@ -1,4 +1,5 @@
 import GoblinEventBanner from "@/components/GoblinEventBanner";
+import { HammerJamBanner } from "@/components/HammerJamBanner";
 import { LabSection } from "@/components/home/LabSection";
 import {
   formatSavedDuration,
@@ -38,6 +39,7 @@ import {
   shouldShowGoblinBanner,
 } from "@/storage/goblinStorage";
 import { useAccountStore } from "@/stores/accountStore";
+import { useHammerJamStore } from "@/stores/hammerJamStore";
 import { usePremiumStore } from "@/stores/premiumStore";
 import { Village } from "@/types/entity";
 import type { MagicItem } from "@/types/magicItem";
@@ -96,6 +98,7 @@ import { scheduleOnRN } from "react-native-worklets";
 export default function HomeScreen() {
   const router = useRouter();
   const isPremium = usePremiumStore((s) => s.isPremium);
+  const hammerJamManifest = useHammerJamStore((s) => s.manifest);
   type AccountState = Awaited<ReturnType<typeof getAccountState>>;
   const [accountState, setAccountState] = useState<AccountState | null>(null);
   const [isLoadingAccountState, setIsLoadingAccountState] = useState(true);
@@ -760,6 +763,8 @@ export default function HomeScreen() {
             onDismiss={() => setGoblinBannerDismissedUntil(eventEndsAt)}
           />
         )}
+
+        <HammerJamBanner manifest={hammerJamManifest} />
 
         {/* Profile row and compact Magic Item shortcuts */}
         <View style={styles.profileActionsRow}>

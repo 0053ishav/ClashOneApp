@@ -1,5 +1,6 @@
 import GoblinEventBanner from "@/components/GoblinEventBanner";
 import { MagicItemsQuickModal } from "@/components/home/MagicItemsQuickModal";
+import { MagicItemDialog, type MagicItemDialogChoice } from "@/components/magicItems/MagicItemDialog";
 import { LabSection } from "@/components/home/LabSection";
 import { PetSection } from "@/components/home/PetSection";
 import { UpgradeActionModal } from "@/components/home/UpgradeActionModal";
@@ -20,6 +21,7 @@ import { deleteUpgrade } from "@/services/upgradeService";
 import { getMagicItemInventory } from "@/services/magicItemService";
 import { useBookOnActiveUpgrade } from "@/services/useBookOnActiveUpgrade";
 import { MAGIC_ITEMS } from "@/config/magicItems";
+import type { MagicItem } from "@/types/magicItem";
 import { getEntity } from "@/utils/getEntity";
 import { setOnboardingIncomplete } from "@/storage/appConfig";
 import {
@@ -90,6 +92,15 @@ export default function HomeScreen() {
   const [selectedUpgrade, setSelectedUpgrade] = useState<Upgrade | null>(null);
   const [actionModalVisible, setActionModalVisible] = useState(false);
   const [magicItemsVisible, setMagicItemsVisible] = useState(false);
+  const [magicItemDialog, setMagicItemDialog] = useState<{
+    title: string;
+    message: string;
+    item?: MagicItem;
+    choices?: MagicItemDialogChoice[];
+    tone?: "confirm" | "success" | "error" | "info";
+    confirmLabel?: string;
+    onConfirm?: (item?: MagicItem) => void | Promise<void>;
+  } | null>(null);
   const [selectedProgression, setSelectedProgression] =
     useState<ProgressionApplicationResult | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -218,38 +229,59 @@ export default function HomeScreen() {
     });
 
     if (compatibleBooks.length === 0) {
-      Alert.alert("No compatible Books", "You don't have a compatible Book in this account's tracked inventory.");
+      setMagicItemDialog({
+        title: "No compatible Books",
+        message: "You do not have a compatible Book in this account’s tracked inventory.",
+        tone: "info",
+      });
       return;
     }
 
-    Alert.alert(
-      "Use a Book",
-      `Choose a Book to complete ${upgrade.entity}.`,
-      [
-        ...compatibleBooks.map((item) => ({
-          text: `${item.name} · ${quantities.get(item.id) ?? 0}`,
-          onPress: () => {
-            void (async () => {
-              const result = await useBookOnActiveUpgrade({
-                accountTag: activeTag,
-                itemId: item.id,
-                upgradeId: upgrade.id,
-              });
-              if (!result.used) {
-                Alert.alert("Couldn't use Book", result.reason.replaceAll("-", " "));
-                return;
-              }
-              setActionModalVisible(false);
-              setSelectedUpgrade(null);
-              setSelectedProgression(null);
-              await performSync();
-              Alert.alert("Book used", `${item.name} completed the tracked upgrade.`);
-            })().catch(() => Alert.alert("Couldn't use Book", "Please try again."));
-          },
-        })),
-        { text: "Cancel", style: "cancel" as const },
-      ],
-    );
+    setMagicItemDialog({
+      title: "Use a Book",
+      message: `Choose a Book to complete ${upgrade.entity}.`,
+      choices: compatibleBooks.map((item) => ({
+        item,
+        quantity: quantities.get(item.id) ?? 0,
+      })),
+      tone: "confirm",
+      confirmLabel: "Use Book",
+      onConfirm: (selectedItem) => {
+        if (!selectedItem) return;
+        setMagicItemDialog(null);
+        void (async () => {
+          const result = await useBookOnActiveUpgrade({
+            accountTag: activeTag,
+            itemId: selectedItem.id,
+            upgradeId: upgrade.id,
+          });
+          if (!result.used) {
+            setMagicItemDialog({
+              title: "Could not use Book",
+              message: result.reason.replaceAll("-", " "),
+              item: selectedItem,
+              tone: "error",
+            });
+            return;
+          }
+          setActionModalVisible(false);
+          setSelectedUpgrade(null);
+          setSelectedProgression(null);
+          await performSync();
+          setMagicItemDialog({
+            title: "Book used",
+            message: `${selectedItem.name} completed the tracked upgrade.`,
+            item: selectedItem,
+            tone: "success",
+          });
+        })().catch(() => setMagicItemDialog({
+          title: "Could not use Book",
+          message: "Please try again.",
+          item: selectedItem,
+          tone: "error",
+        }));
+      },
+    });
   }, [activeTag, performSync]);
 
   useEffect(() => {
@@ -1245,6 +1277,17 @@ export default function HomeScreen() {
         )}
       </ScrollView>
       {/* Action Modal */}
+      <MagicItemDialog
+        visible={magicItemDialog !== null}
+        title={magicItemDialog?.title ?? ""}
+        message={magicItemDialog?.message ?? ""}
+        item={magicItemDialog?.item}
+        choices={magicItemDialog?.choices}
+        tone={magicItemDialog?.tone}
+        confirmLabel={magicItemDialog?.confirmLabel}
+        onConfirm={magicItemDialog?.onConfirm ? (item) => void magicItemDialog.onConfirm?.(item) : undefined}
+        onClose={() => setMagicItemDialog(null)}
+      />
       <MagicItemsQuickModal
         visible={magicItemsVisible}
         village={selectedVillage}

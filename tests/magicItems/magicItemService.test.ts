@@ -1,0 +1,164 @@
+jest.mock("@/db/database", () => ({
+  getDB: jest.fn(),
+}));
+
+import { getDB } from "@/db/database";
+import {
+  consumeMagicItem,
+  getActiveMagicEffects,
+  getMagicItemInventory,
+  removeExpiredMagicEffects,
+  setMagicItemQuantity,
+} from "@/services/magicItemService";
+
+type MockDb = {
+  getAllAsync: jest.Mock;
+  getFirstAsync: jest.Mock;
+  runAsync: jest.Mock;
+  execAsync: jest.Mock;
+};
+
+describe("magicItemService", () => {
+  let db: MockDb;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    db = {
+      getAllAsync: jest.fn(),
+      getFirstAsync: jest.fn(),
+      runAsync: jest.fn().mockResolvedValue({ changes: 1 }),
+      execAsync: jest.fn().mockResolvedValue(undefined),
+    };
+    (getDB as jest.Mock).mockResolvedValue(db);
+  });
+
+  it("reads inventory scoped to the requested account", async () => {
+    db.getAllAsync.mockResolvedValue([
+      { item_id: "builder-potion", quantity: 2 },
+    ]);
+
+    await expect(getMagicItemInventory("#ACCOUNT")).resolves.toEqual([
+      { itemId: "builder-potion", quantity: 2 },
+    ]);
+    expect(db.getAllAsync).toHaveBeenCalledWith(
+      expect.stringContaining("WHERE account_player_tag = ?"),
+      ["#ACCOUNT"],
+    );
+  });
+
+  it("rejects invalid quantities before writing", async () => {
+    await expect(
+      setMagicItemQuantity({
+        accountTag: "#ACCOUNT",
+        itemId: "builder-potion",
+        quantity: -1,
+      }),
+    ).rejects.toThrow("INVALID_MAGIC_ITEM_QUANTITY");
+    expect(db.runAsync).not.toHaveBeenCalled();
+  });
+
+  it("upserts a quantity for the specified account", async () => {
+    await setMagicItemQuantity({
+      accountTag: "#ACCOUNT",
+      itemId: "builder-potion",
+      quantity: 3,
+    });
+
+    expect(db.runAsync).toHaveBeenCalledWith(
+      expect.stringContaining("ON CONFLICT(account_player_tag, item_id)"),
+      ["#ACCOUNT", "builder-potion", 3],
+    );
+  });
+
+  it("atomically consumes one item and records its effect", async () => {
+    db.getFirstAsync.mockResolvedValue({ quantity: 1 });
+
+    await consumeMagicItem({
+      accountTag: "#ACCOUNT",
+      itemId: "builder-potion",
+      effect: {
+        id: "effect-1",
+        itemId: "builder-potion",
+        startedAt: 100,
+        expiresAt: 3_600_100,
+        village: "home",
+      },
+    });
+
+    expect(db.execAsync).toHaveBeenNthCalledWith(1, "BEGIN TRANSACTION");
+    expect(db.runAsync).toHaveBeenCalledWith(
+      expect.stringContaining("quantity = quantity - 1"),
+      ["#ACCOUNT", "builder-potion"],
+    );
+    expect(db.runAsync).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO active_magic_effects"),
+      ["effect-1", "#ACCOUNT", "builder-potion", 100, 3_600_100, "home"],
+    );
+    expect(db.execAsync).toHaveBeenLastCalledWith("COMMIT");
+  });
+
+  it("rolls back when the account has no item to consume", async () => {
+    db.getFirstAsync.mockResolvedValue({ quantity: 0 });
+
+    await expect(
+      consumeMagicItem({
+        accountTag: "#ACCOUNT",
+        itemId: "builder-potion",
+      }),
+    ).rejects.toThrow("MAGIC_ITEM_NOT_IN_INVENTORY");
+
+    expect(db.execAsync).toHaveBeenCalledWith("ROLLBACK");
+    expect(db.execAsync).not.toHaveBeenCalledWith("COMMIT");
+  });
+
+  it("rejects effects for a different item", async () => {
+    await expect(
+      consumeMagicItem({
+        accountTag: "#ACCOUNT",
+        itemId: "builder-potion",
+        effect: {
+          id: "effect-1",
+          itemId: "research-potion",
+          startedAt: 100,
+        },
+      }),
+    ).rejects.toThrow("MAGIC_ITEM_EFFECT_ITEM_MISMATCH");
+    expect(db.execAsync).not.toHaveBeenCalled();
+  });
+
+  it("reads active effects scoped to one account", async () => {
+    db.getAllAsync.mockResolvedValue([
+      {
+        id: "effect-1",
+        item_id: "builder-bite",
+        started_at: 100,
+        expires_at: 200,
+        village: "home",
+      },
+    ]);
+
+    await expect(getActiveMagicEffects("#ACCOUNT")).resolves.toEqual([
+      {
+        id: "effect-1",
+        itemId: "builder-bite",
+        startedAt: 100,
+        expiresAt: 200,
+        village: "home",
+      },
+    ]);
+    expect(db.getAllAsync).toHaveBeenCalledWith(
+      expect.stringContaining("WHERE account_player_tag = ?"),
+      ["#ACCOUNT"],
+    );
+  });
+
+  it("removes expired effects for the requested account", async () => {
+    db.runAsync.mockResolvedValue({ changes: 2 });
+
+    await expect(removeExpiredMagicEffects("#ACCOUNT", 500)).resolves.toBe(2);
+    expect(db.runAsync).toHaveBeenCalledWith(
+      expect.stringContaining("expires_at <= ?"),
+      ["#ACCOUNT", 500],
+    );
+  });
+});

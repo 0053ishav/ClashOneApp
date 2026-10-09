@@ -1,7 +1,7 @@
 import { ENV } from "@/config/env";
 import type { MagicItem } from "@/types/magicItem";
 
-const MAGIC_ITEM_CDN_PATH = `${ENV.CDN_BASE}/v2/home/magic-item`;
+const MAGIC_ITEM_CDN_PATH = `${ENV.CDN_BASE}/v2/home/magic-items`;
 
 /**
  * Normalized Magic Item metadata for the app.

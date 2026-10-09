@@ -144,7 +144,7 @@ export function MagicItemsQuickModal({
           effectId,
         });
         if (!result.activated) {
-          Alert.alert("Couldn't activate item", result.reason);
+          setDialog({ title: "Could not activate item", message: result.reason.replaceAll("-", " "), item, tone: "error" });
           return;
         }
       }

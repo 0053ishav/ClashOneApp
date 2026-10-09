@@ -30,7 +30,7 @@ export type UseBookOnUpgradeResult =
  * The inventory decrement and tracked-upgrade removal are atomic so a failed
  * consume cannot accidentally free a builder/lab slot.
  */
-export async function useBookOnActiveUpgrade({
+export async function applyBookToActiveUpgrade({
   accountTag,
   itemId,
   upgradeId,

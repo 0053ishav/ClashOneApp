@@ -4,22 +4,33 @@ import type {
   UpgradeStartModifier,
 } from "@/types/magicItem";
 
+export type HammerJamTarget =
+  | "building"
+  | "troop"
+  | "spell"
+  | "hero"
+  | "pet";
+
 export type HammerJamManifest = {
+  title: string;
   enabled: boolean;
   startsAt: string | null;
   endsAt: string | null;
   timeMultiplier: number;
   costMultiplier: number;
-  appliesTo: readonly ["building", "troop", "spell", "hero", "pet"];
+  resourceMultiplier: number;
+  appliesTo: readonly HammerJamTarget[];
   villages: readonly Village[];
 };
 
 export const DEFAULT_HAMMER_JAM_MANIFEST: HammerJamManifest = {
+  title: "Hammer Jam 2026",
   enabled: false,
   startsAt: null,
   endsAt: null,
   timeMultiplier: 0.5,
   costMultiplier: 0.5,
+  resourceMultiplier: 2,
   appliesTo: ["building", "troop", "spell", "hero", "pet"],
   villages: ["home"],
 };
@@ -56,7 +67,7 @@ export function resolveHammerJamStartModifier({
 }): ResolvedUpgradeStartModifiers {
   const activeAtStart = isHammerJamActive(manifest, startsAt);
   const appliesToTarget = manifest.appliesTo.includes(
-    target as (typeof manifest.appliesTo)[number],
+    target as HammerJamTarget,
   );
   const appliesToVillage = manifest.villages.includes(village);
 

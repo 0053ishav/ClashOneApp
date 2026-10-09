@@ -2,7 +2,7 @@
  * @deprecated Import from "@/services/magicItemService" instead.
  * Compatibility facade: all persistence logic lives in the service.
  */
-import type { ActiveMagicEffect, MagicItemInventory } from "@/types/magicItem";
+import type { ActiveMagicEffect } from "@/types/magicItem";
 import {
   addActiveMagicEffect as addEffect,
   addMagicItem as addItem,

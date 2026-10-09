@@ -48,12 +48,16 @@ describe("applyMagicItemEffectsToUpgrades", () => {
       id: "research-1",
       upgradeType: "LAB",
       type: "LAB",
+      durationMinutes: 48 * 60,
+      endTime: startedAt + 48 * 60 * 60 * 1000,
     };
     const pet: Upgrade = {
       ...baseUpgrade,
       id: "pet-1",
       upgradeType: "PET",
       type: "PET",
+      durationMinutes: 48 * 60,
+      endTime: startedAt + 48 * 60 * 60 * 1000,
     };
     const effects: ActiveMagicEffect[] = [
       {
@@ -74,8 +78,8 @@ describe("applyMagicItemEffectsToUpgrades", () => {
 
     const result = applyMagicItemEffectsToUpgrades([research, pet], effects);
     expect(result.map((upgrade) => upgrade.endTime)).toEqual([
-      startedAt + 17 * 60 * 60 * 1000,
-      startedAt + 17 * 60 * 60 * 1000,
+      startedAt + 25 * 60 * 60 * 1000,
+      startedAt + 25 * 60 * 60 * 1000,
     ]);
   });
 

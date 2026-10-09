@@ -33,6 +33,7 @@ function getRelevantSpeedEffects({
   for (const effect of effects) {
     const item = getMagicItem(effect.itemId);
     if (!item || !item.villages.includes(village)) continue;
+    if (effect.village != null && effect.village !== village) continue;
 
     if (item.effect.type === "CLOCK_TOWER_BOOST") {
       if (village !== "builderBase" || !CLOCK_TOWER_TARGETS.includes(target)) {

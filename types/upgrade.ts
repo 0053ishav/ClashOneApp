@@ -30,6 +30,9 @@ export type Upgrade = {
   durationMinutes: number;
   endTime: number;
 
+  /** Derived milliseconds saved by applicable timed Magic Item effects. */
+  magicItemTimeSavedMs?: number;
+
   isCompleted: boolean;
 
   currentLevel?: number;

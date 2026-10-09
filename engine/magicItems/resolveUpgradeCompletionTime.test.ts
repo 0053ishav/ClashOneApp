@@ -86,8 +86,9 @@ describe("resolveUpgradeCompletionTime", () => {
       effect("builder-potion", START + 2 * HOUR),
     ];
 
-    // Boosted for hour 0-1 and 2-3; 30h work completes at hour 28.
-    expect(resolve(30 * HOUR, effects)).toBe(START + 28 * HOUR);
+    // Two boosted hours complete 20h of work; the remaining 10h includes
+    // one normal-speed hour between boosts and nine normal-speed hours after.
+    expect(resolve(30 * HOUR, effects)).toBe(START + 12 * HOUR);
   });
 
   it("does not apply Home Village effects to Builder Base upgrades", () => {

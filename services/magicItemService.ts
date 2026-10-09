@@ -22,6 +22,17 @@ function assertQuantity(quantity: number): void {
   }
 }
 
+function assertPositiveQuantity(quantity: number): void {
+  if (!Number.isSafeInteger(quantity) || quantity <= 0) {
+    throw new Error("INVALID_MAGIC_ITEM_QUANTITY");
+  }
+}
+
+function assertAccountAndItem(accountTag: string, itemId: string): void {
+  assertNonEmpty(accountTag, "account_tag");
+  assertNonEmpty(itemId, "item_id");
+}
+
 /** Read inventory for one account only. */
 export async function getMagicItemInventory(
   accountTag: string,
@@ -46,17 +57,29 @@ export async function getMagicItemInventory(
   }));
 }
 
+export async function getMagicItemQuantity(
+  accountTag: string,
+  itemId: string,
+): Promise<number> {
+  assertAccountAndItem(accountTag, itemId);
+  const db = await getDB();
+  const row = await db.getFirstAsync<{ quantity: number }>(
+    `SELECT quantity FROM magic_item_inventory
+     WHERE account_player_tag = ? AND item_id = ?`,
+    [accountTag, itemId],
+  );
+  return Number(row?.quantity ?? 0);
+}
+
 /**
- * Set the known quantity for an item, upserting only within the given account.
- * A quantity of zero is retained as an explicit inventory record.
+ * Set a known quantity. Zero is retained as an explicit inventory record.
  */
 export async function setMagicItemQuantity({
   accountTag,
   itemId,
   quantity,
 }: SetMagicItemQuantityInput): Promise<void> {
-  assertNonEmpty(accountTag, "account_tag");
-  assertNonEmpty(itemId, "item_id");
+  assertAccountAndItem(accountTag, itemId);
   assertQuantity(quantity);
 
   const db = await getDB();
@@ -68,6 +91,27 @@ export async function setMagicItemQuantity({
      DO UPDATE SET quantity = excluded.quantity`,
     [accountTag, itemId, quantity],
   );
+}
+
+/** Add quantity atomically within a single SQL statement. */
+export async function addMagicItem(
+  accountTag: string,
+  itemId: string,
+  quantity = 1,
+): Promise<number> {
+  assertAccountAndItem(accountTag, itemId);
+  assertPositiveQuantity(quantity);
+
+  const db = await getDB();
+  await db.runAsync(
+    `INSERT INTO magic_item_inventory
+       (account_player_tag, item_id, quantity)
+     VALUES (?, ?, ?)
+     ON CONFLICT(account_player_tag, item_id)
+     DO UPDATE SET quantity = magic_item_inventory.quantity + excluded.quantity`,
+    [accountTag, itemId, quantity],
+  );
+  return getMagicItemQuantity(accountTag, itemId);
 }
 
 /**
@@ -83,34 +127,25 @@ export async function consumeMagicItem({
   itemId: string;
   effect?: ActiveMagicEffect;
 }): Promise<void> {
-  assertNonEmpty(accountTag, "account_tag");
-  assertNonEmpty(itemId, "item_id");
+  assertAccountAndItem(accountTag, itemId);
 
   if (effect && effect.itemId !== itemId) {
     throw new Error("MAGIC_ITEM_EFFECT_ITEM_MISMATCH");
   }
 
   const db = await getDB();
-
   await db.execAsync("BEGIN TRANSACTION");
   try {
-    const row = await db.getFirstAsync<{ quantity: number }>(
-      `SELECT quantity
-       FROM magic_item_inventory
-       WHERE account_player_tag = ? AND item_id = ?`,
-      [accountTag, itemId],
-    );
-
-    if (!row || Number(row.quantity) <= 0) {
-      throw new Error("MAGIC_ITEM_NOT_IN_INVENTORY");
-    }
-
-    await db.runAsync(
+    const result = await db.runAsync(
       `UPDATE magic_item_inventory
        SET quantity = quantity - 1
        WHERE account_player_tag = ? AND item_id = ? AND quantity > 0`,
       [accountTag, itemId],
     );
+
+    if (result.changes !== 1) {
+      throw new Error("MAGIC_ITEM_NOT_IN_INVENTORY");
+    }
 
     if (effect) {
       await db.runAsync(
@@ -129,6 +164,38 @@ export async function consumeMagicItem({
     }
 
     await db.execAsync("COMMIT");
+  } catch (error) {
+    await db.execAsync("ROLLBACK");
+    throw error;
+  }
+}
+
+/** Consume a requested quantity atomically; false means inventory was insufficient. */
+export async function consumeMagicItemQuantity(
+  accountTag: string,
+  itemId: string,
+  quantity = 1,
+): Promise<boolean> {
+  assertAccountAndItem(accountTag, itemId);
+  assertPositiveQuantity(quantity);
+
+  const db = await getDB();
+  await db.execAsync("BEGIN TRANSACTION");
+  try {
+    const result = await db.runAsync(
+      `UPDATE magic_item_inventory
+       SET quantity = quantity - ?
+       WHERE account_player_tag = ? AND item_id = ? AND quantity >= ?`,
+      [quantity, accountTag, itemId, quantity],
+    );
+
+    if (result.changes !== 1) {
+      await db.execAsync("ROLLBACK");
+      return false;
+    }
+
+    await db.execAsync("COMMIT");
+    return true;
   } catch (error) {
     await db.execAsync("ROLLBACK");
     throw error;
@@ -165,13 +232,46 @@ export async function getActiveMagicEffects(
   }));
 }
 
-/** Remove expired timed effects for one account. */
+export async function addActiveMagicEffect(
+  accountTag: string,
+  effect: ActiveMagicEffect,
+): Promise<void> {
+  assertAccountAndItem(accountTag, effect.itemId);
+  const db = await getDB();
+  await db.runAsync(
+    `INSERT INTO active_magic_effects
+       (id, account_player_tag, item_id, started_at, expires_at, village)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [
+      effect.id,
+      accountTag,
+      effect.itemId,
+      effect.startedAt,
+      effect.expiresAt ?? null,
+      effect.village ?? null,
+    ],
+  );
+}
+
+export async function removeActiveMagicEffect(
+  accountTag: string,
+  effectId: string,
+): Promise<void> {
+  assertNonEmpty(accountTag, "account_tag");
+  assertNonEmpty(effectId, "effect_id");
+  const db = await getDB();
+  await db.runAsync(
+    `DELETE FROM active_magic_effects
+     WHERE account_player_tag = ? AND id = ?`,
+    [accountTag, effectId],
+  );
+}
+
 export async function removeExpiredMagicEffects(
   accountTag: string,
   now = Date.now(),
 ): Promise<number> {
   assertNonEmpty(accountTag, "account_tag");
-
   const db = await getDB();
   const result = await db.runAsync(
     `DELETE FROM active_magic_effects
@@ -180,6 +280,57 @@ export async function removeExpiredMagicEffects(
        AND expires_at <= ?`,
     [accountTag, now],
   );
-
   return result.changes;
+}
+
+export async function pruneExpiredMagicEffects(
+  accountTag?: string,
+  now = Date.now(),
+): Promise<void> {
+  const db = await getDB();
+  if (accountTag) {
+    await removeExpiredMagicEffects(accountTag, now);
+    return;
+  }
+
+  await db.runAsync(
+    `DELETE FROM active_magic_effects
+     WHERE expires_at IS NOT NULL AND expires_at <= ?`,
+    [now],
+  );
+}
+
+/** Replace one account's inventory atomically. */
+export async function replaceMagicItemInventory(
+  accountTag: string,
+  inventory: MagicItemInventory[],
+): Promise<void> {
+  assertNonEmpty(accountTag, "account_tag");
+  for (const item of inventory) {
+    assertNonEmpty(item.itemId, "item_id");
+    assertQuantity(item.quantity);
+  }
+
+  const db = await getDB();
+  await db.execAsync("BEGIN TRANSACTION");
+  try {
+    await db.runAsync(
+      "DELETE FROM magic_item_inventory WHERE account_player_tag = ?",
+      [accountTag],
+    );
+
+    for (const item of inventory) {
+      await db.runAsync(
+        `INSERT INTO magic_item_inventory
+           (account_player_tag, item_id, quantity)
+         VALUES (?, ?, ?)`,
+        [accountTag, item.itemId, item.quantity],
+      );
+    }
+
+    await db.execAsync("COMMIT");
+  } catch (error) {
+    await db.execAsync("ROLLBACK");
+    throw error;
+  }
 }

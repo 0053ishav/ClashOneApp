@@ -1,4 +1,5 @@
 import { getMagicItem } from "@/config/magicItems";
+import { resolveUpgradeCompletionTime } from "@/engine/magicItems/resolveUpgradeCompletionTime";
 import type { ActiveMagicEffect } from "@/types/magicItem";
 import type { Upgrade } from "@/types/upgrade";
 import { Ionicons } from "@expo/vector-icons";
@@ -55,6 +56,34 @@ export function MagicItemActivitySummary({
     0,
   );
 
+  const itemSavedMs = useMemo(() => {
+    const savedByItem = new Map<string, number>();
+    for (const item of activeItems) {
+      const itemEffects = effects.filter((effect) => effect.itemId === item.id);
+      const saved = upgrades.reduce((total, upgrade) => {
+        if (upgrade.isCompleted) return total;
+        const target = upgrade.upgradeType === "BUILDER"
+          ? "builders"
+          : upgrade.upgradeType === "LAB"
+            ? "research"
+            : upgrade.upgradeType === "PET" ? "pet" : null;
+        if (!target || !item.villages.includes(upgrade.village)) return total;
+        const baseDurationMs = upgrade.durationMinutes * 60_000;
+        const projectedEndTime = resolveUpgradeCompletionTime({
+          baseDurationMs,
+          startedAt: upgrade.startTime,
+          effects: itemEffects,
+          target,
+          village: upgrade.village,
+        });
+        const baselineEndTime = upgrade.startTime + baseDurationMs;
+        return total + Math.max(0, baselineEndTime - projectedEndTime);
+      }, 0);
+      savedByItem.set(item.id, saved);
+    }
+    return savedByItem;
+  }, [activeItems, effects, upgrades]);
+
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -78,9 +107,12 @@ export function MagicItemActivitySummary({
               {item.image ? (
                 <Image source={{ uri: item.image }} style={styles.itemImage} contentFit="contain" />
               ) : (
-                <Ionicons name="sparkles" size={18} color="#fbbf24" />
+                <Ionicons name="sparkles" size={16} color="#fbbf24" />
               )}
-              <Text style={styles.itemName}>{item.name}</Text>
+              <View style={styles.itemDetails}>
+                <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
+                <Text style={styles.itemSaved}>Saved {formatSavedDuration(itemSavedMs.get(item.id) ?? 0)}</Text>
+              </View>
               <View style={styles.activeDot} />
             </View>
           ))}
@@ -88,9 +120,6 @@ export function MagicItemActivitySummary({
       ) : (
         <Text style={styles.emptyText}>No potions or snacks are currently active.</Text>
       )}
-      <Text style={styles.footnote}>
-        Time saved is calculated from the original finish time versus the effect-adjusted finish time for tracked active upgrades.
-      </Text>
     </View>
   );
 }
@@ -105,13 +134,14 @@ const styles = StyleSheet.create({
   savedTotal: { alignItems: "flex-end" },
   savedLabel: { color: "#64748b", fontSize: 8, fontWeight: "800", letterSpacing: 0.5 },
   savedValue: { color: "#34d399", fontSize: 15, fontWeight: "900", marginTop: 2 },
-  items: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 12 },
-  itemChip: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 6, paddingHorizontal: 8, borderRadius: 9, backgroundColor: "#0f172a", borderWidth: 1, borderColor: "#263449" },
-  itemImage: { width: 23, height: 23 },
-  itemName: { color: "#cbd5e1", fontSize: 10, fontWeight: "700" },
+  items: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 9 },
+  itemChip: { flexDirection: "row", alignItems: "center", gap: 5, paddingVertical: 5, paddingHorizontal: 7, borderRadius: 9, backgroundColor: "#0f172a", borderWidth: 1, borderColor: "#263449", maxWidth: "100%" },
+  itemImage: { width: 20, height: 20 },
+  itemDetails: { flexShrink: 1 },
+  itemName: { color: "#cbd5e1", fontSize: 9, fontWeight: "700" },
+  itemSaved: { color: "#34d399", fontSize: 8, fontWeight: "800", marginTop: 1 },
   activeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#34d399" },
   emptyText: { marginTop: 11, color: "#94a3b8", fontSize: 10 },
-  footnote: { marginTop: 10, color: "#64748b", fontSize: 9, lineHeight: 13 },
   savedInline: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 3 },
   savedInlineText: { color: "#34d399", fontSize: 9, fontWeight: "700" },
 });

@@ -183,6 +183,7 @@ export function MagicItemsQuickModal({
   };
 
   return (
+    <>
     <Modal
       visible={visible}
       animationType="slide"
@@ -285,6 +286,7 @@ export function MagicItemsQuickModal({
       onConfirm={dialog?.onConfirm ? () => void dialog.onConfirm?.() : undefined}
       onClose={() => setDialog(null)}
     />
+    </>
   );
 }
 

@@ -60,15 +60,15 @@ describe("applyMagicItemEffectsToUpgrades", () => {
     expect(result[0]).toBe(completed);
   });
 
-  it("does not alter upgrades with unsupported upgrade types", () => {
-    const unsupported = upgrade({ upgradeType: "LAB" });
+  it("does not accelerate research with a builder-only effect", () => {
+    const research = upgrade({ upgradeType: "LAB" });
     const result = applyMagicItemEffectsToUpgrades(
-      [unsupported],
+      [research],
       [builderPotion()],
     );
 
-    expect(result[0]).toEqual(unsupported);
-    expect(result[0].endTime).toBe(unsupported.endTime);
+    expect(result[0].endTime).toBe(research.endTime);
+    expect(result[0].magicItemTimeSavedMs).toBe(0);
   });
 
   it("does not produce invalid projections for non-positive durations", () => {

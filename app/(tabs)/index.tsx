@@ -1,9 +1,6 @@
 import GoblinEventBanner from "@/components/GoblinEventBanner";
 import { LabSection } from "@/components/home/LabSection";
-import {
-  formatSavedDuration,
-  MagicItemTimeSaved,
-} from "@/components/home/MagicItemActivitySummary";
+import { formatSavedDuration } from "@/components/home/MagicItemActivitySummary";
 import { MagicItemsQuickModal } from "@/components/home/MagicItemsQuickModal";
 import { PetSection } from "@/components/home/PetSection";
 import { UpgradeActionModal } from "@/components/home/UpgradeActionModal";
@@ -23,7 +20,10 @@ import type { ProgressionApplicationResult } from "@/engine/progression/models";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { useRemoteConfig } from "@/provider/remoteConfigProvider";
 import { getAccountState } from "@/services/accountStateService";
-import { getMagicItemInventory } from "@/services/magicItemService";
+import {
+  getActiveMagicEffects,
+  getMagicItemInventory,
+} from "@/services/magicItemService";
 import { ProgressionApplicationService } from "@/services/progression";
 import { buildSupportInfo } from "@/services/supportDebugInfo";
 import { deleteUpgrade } from "@/services/upgradeService";
@@ -65,6 +65,7 @@ import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
   LayoutAnimation,
   Pressable,
   RefreshControl,
@@ -628,6 +629,53 @@ export default function HomeScreen() {
   const currentBuilderCount =
     selectedVillage === "home" ? builderCount : builderBaseBuilderCount;
 
+  const showMagicItemActivity = useCallback(async () => {
+    const totalSavedMs = (accountState?.activeUpgrades ?? []).reduce(
+      (total, upgrade) => total + (upgrade.magicItemTimeSavedMs ?? 0),
+      0,
+    );
+
+    if (!activeTag) {
+      Alert.alert("Potion & Snack Effects", "Connect a village to view tracked effects.");
+      return;
+    }
+
+    try {
+      const effects = await getActiveMagicEffects(activeTag);
+      const activeItems = Array.from(
+        new Set(
+          effects
+            .filter(
+              (effect) =>
+                effect.village === selectedVillage &&
+                (effect.expiresAt == null || effect.expiresAt > Date.now()),
+            )
+            .map((effect) => effect.itemId),
+        ),
+      )
+        .map((itemId) => MAGIC_ITEMS.find((item) => item.id === itemId))
+        .filter(
+          (item) =>
+            item !== undefined &&
+            (item.itemType === "potion" || item.itemType === "snack"),
+        );
+
+      const villageName =
+        selectedVillage === "home" ? "Home Village" : "Builder Base";
+      const activeItemsText =
+        activeItems.length > 0
+          ? activeItems.map((item) => `• ${item.name}`).join("\n")
+          : "No potions or snacks are currently active.";
+
+      Alert.alert(
+        "Potion & Snack Effects",
+        `${villageName}\n\nTotal time saved: ${formatSavedDuration(totalSavedMs)}\n\nActive items:\n${activeItemsText}`,
+      );
+    } catch {
+      Alert.alert("Potion & Snack Effects", "Could not load active effects. Please try again.");
+    }
+  }, [accountState?.activeUpgrades, activeTag, selectedVillage]);
+
   const openSupport = async () => {
     const info = await buildSupportInfo();
     setDebugInfo(info);
@@ -807,7 +855,15 @@ export default function HomeScreen() {
             </View>
           </Pressable>
           <View style={styles.profileMagicActions}>
-            <View style={styles.profileSavedBadge}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="View Potion and Snack effects and time saved"
+              onPress={() => void showMagicItemActivity()}
+              style={({ pressed }) => [
+                styles.profileSavedBadge,
+                pressed && styles.magicItemsButtonPressed,
+              ]}
+            >
               <Ionicons name="flash" size={11} color="#34d399" />
               <Text style={styles.profileSavedText}>
                 {formatSavedDuration(
@@ -818,7 +874,7 @@ export default function HomeScreen() {
                   ),
                 )}
               </Text>
-            </View>
+            </Pressable>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Open Potion and Snack inventory, ${magicItemInventoryCount} available`}
@@ -1356,7 +1412,6 @@ export default function HomeScreen() {
         accountTag={activeTag}
         onClose={() => setMagicItemsVisible(false)}
         onActivated={performSync}
-        upgrades={accountState?.activeUpgrades ?? []}
       />
       <UpgradeActionModal
         visible={actionModalVisible}

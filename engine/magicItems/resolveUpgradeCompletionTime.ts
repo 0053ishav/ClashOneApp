@@ -17,6 +17,9 @@ type SpeedEffect = {
   bonusMultiplier: number;
 };
 
+const CLOCK_TOWER_MULTIPLIER = 10;
+const CLOCK_TOWER_TARGETS: readonly MagicItemTarget[] = ["builders", "research"];
+
 function getRelevantSpeedEffects({
   effects,
   target,
@@ -29,12 +32,22 @@ function getRelevantSpeedEffects({
 
   for (const effect of effects) {
     const item = getMagicItem(effect.itemId);
+    if (!item || !item.villages.includes(village)) continue;
 
-    if (!item || item.effect.type !== "ONGOING_SPEED") continue;
-    if (!item.villages.includes(village)) continue;
-    if (!item.effect.appliesTo?.includes(target)) continue;
+    if (item.effect.type === "CLOCK_TOWER_BOOST") {
+      if (village !== "builderBase" || !CLOCK_TOWER_TARGETS.includes(target)) {
+        continue;
+      }
+    } else {
+      if (item.effect.type !== "ONGOING_SPEED") continue;
+      if (!item.effect.appliesTo?.includes(target)) continue;
+    }
 
-    const multiplier = item.effect.multiplier;
+    const multiplier =
+      item.effect.type === "CLOCK_TOWER_BOOST"
+        ? CLOCK_TOWER_MULTIPLIER
+        : item.effect.multiplier;
+
     if (multiplier == null || multiplier <= 1) continue;
 
     const itemEffects = effectsByItem.get(item.id) ?? [];
@@ -44,9 +57,14 @@ function getRelevantSpeedEffects({
 
   return [...effectsByItem].flatMap(([itemId, itemEffects]) => {
     const item = getMagicItem(itemId);
-    if (!item || item.effect.type !== "ONGOING_SPEED") return [];
+    if (!item) return [];
 
-    const bonusMultiplier = item.effect.multiplier;
+    const isClockTower = item.effect.type === "CLOCK_TOWER_BOOST";
+    const bonusMultiplier = isClockTower
+      ? CLOCK_TOWER_MULTIPLIER
+      : item.effect.type === "ONGOING_SPEED"
+        ? item.effect.multiplier
+        : undefined;
     const durationMs = item.effect.durationMinutes
       ? item.effect.durationMinutes * 60 * 1000
       : undefined;
@@ -58,7 +76,6 @@ function getRelevantSpeedEffects({
     const sortedEffects = [...itemEffects].sort(
       (a, b) => a.startedAt - b.startedAt,
     );
-
     const normalized: SpeedEffect[] = [];
 
     for (const effect of sortedEffects) {
@@ -66,14 +83,12 @@ function getRelevantSpeedEffects({
         effect.expiresAt != null && effect.expiresAt > effect.startedAt
           ? effect.expiresAt - effect.startedAt
           : durationMs;
-
       const expiresAt = effect.startedAt + effectDurationMs;
       const previous = normalized.at(-1);
 
       if (previous && effect.startedAt <= previous.expiresAt) {
-        // Reusing the same potion while its effect is active extends the
-        // existing effect by one full potion duration; it does not increase
-        // the potion's multiplier.
+        // Reusing the same potion extends its active window; it does not
+        // multiply the speed effect a second time.
         previous.expiresAt += effectDurationMs;
         continue;
       }
@@ -91,16 +106,11 @@ function getRelevantSpeedEffects({
 }
 
 /**
- * Resolves completion time using Magic Item work-speed effects.
+ * Resolves an upgrade's completion time using timed Magic Item effects.
  *
- * Magic Item multipliers represent total speed:
- * 10x = 1x normal + 9x bonus.
- *
- * Repeated uses of the same Magic Item extend that item's effect duration.
- * Different compatible Magic Items add their bonus speeds together.
- *
- * Helpers are intentionally excluded. Builder's Apprentice and Lab Assistant
- * are separate progression modifiers.
+ * Multipliers are total speed (10x means normal speed plus 9x bonus).
+ * Clock Tower Potion is a Builder Base-only 10x boost for construction and
+ * research timers. Builder's Apprentice and Lab Assistant remain separate.
  */
 export function resolveUpgradeCompletionTime({
   baseDurationMs,
@@ -111,25 +121,14 @@ export function resolveUpgradeCompletionTime({
 }: ResolveUpgradeCompletionTimeInput): number {
   if (baseDurationMs <= 0) return startedAt;
 
-  const speedEffects = getRelevantSpeedEffects({
-    effects,
-    target,
-    village,
-  });
-
+  const speedEffects = getRelevantSpeedEffects({ effects, target, village });
   let cursor = startedAt;
   let remainingWorkMs = baseDurationMs;
-
   const eventTimes = new Set<number>([startedAt]);
 
   for (const effect of speedEffects) {
-    if (effect.startedAt > startedAt) {
-      eventTimes.add(effect.startedAt);
-    }
-
-    if (effect.expiresAt > startedAt) {
-      eventTimes.add(effect.expiresAt);
-    }
+    if (effect.startedAt > startedAt) eventTimes.add(effect.startedAt);
+    if (effect.expiresAt > startedAt) eventTimes.add(effect.expiresAt);
   }
 
   const sortedEventTimes = [...eventTimes].sort((a, b) => a - b);
@@ -139,15 +138,11 @@ export function resolveUpgradeCompletionTime({
     const segmentEnd = sortedEventTimes[index + 1];
     const effectiveSpeed = getEffectiveSpeed(speedEffects, segmentStart);
 
-    if (segmentEnd == null) {
-      return segmentStart + remainingWorkMs / effectiveSpeed;
-    }
-
+    if (segmentEnd == null) return segmentStart + remainingWorkMs / effectiveSpeed;
     if (segmentEnd <= segmentStart) continue;
 
     const elapsedMs = segmentEnd - segmentStart;
     const workCompletedMs = elapsedMs * effectiveSpeed;
-
     if (workCompletedMs >= remainingWorkMs) {
       return segmentStart + remainingWorkMs / effectiveSpeed;
     }
@@ -159,14 +154,10 @@ export function resolveUpgradeCompletionTime({
   return cursor + remainingWorkMs;
 }
 
-function getEffectiveSpeed(
-  effects: SpeedEffect[],
-  timestamp: number,
-): number {
+function getEffectiveSpeed(effects: SpeedEffect[], timestamp: number): number {
   const bonusMultiplier = effects.reduce((total, effect) => {
     const isActive =
       effect.startedAt <= timestamp && timestamp < effect.expiresAt;
-
     return isActive ? total + effect.bonusMultiplier : total;
   }, 0);
 

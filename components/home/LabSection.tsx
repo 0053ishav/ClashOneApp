@@ -210,7 +210,7 @@ function LabCard({
                       cachePolicy="memory-disk"
                     />
 
-                    {(lab.helperAppliedSeconds ?? 0) && (
+                    {(lab.helperAppliedSeconds ?? 0) > 0 && (
                       <Text style={styles.helperSaved}>
                         -
                         {formatCountdown(

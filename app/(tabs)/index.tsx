@@ -1536,11 +1536,12 @@ const styles = StyleSheet.create({
   profileInventoryButton: { minWidth: 34, minHeight: 27, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 3, paddingHorizontal: 6, borderRadius: 8, backgroundColor: "rgba(251,191,36,0.08)", borderWidth: 1, borderColor: "rgba(251,191,36,0.22)" },
   profileInventoryText: { color: "#fbbf24", fontSize: 9, fontWeight: "900" },
   profileRow: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
     marginTop: 10,
-    alignSelf: "flex-start",
   },
 
   avatar: {
@@ -1565,6 +1566,7 @@ const styles = StyleSheet.create({
   },
 
   profileInfo: {
+    minWidth: 0,
     minWidth: 0,
   },
 

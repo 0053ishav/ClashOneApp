@@ -66,8 +66,8 @@ export function resolveHammerJamStartModifier({
   startsAt: number;
 }): ResolvedUpgradeStartModifiers {
   const activeAtStart = isHammerJamActive(manifest, startsAt);
-  const appliesToTarget = manifest.appliesTo.includes(
-    target as HammerJamTarget,
+  const appliesToTarget = manifest.appliesTo.some(
+    (supportedTarget) => supportedTarget === target,
   );
   const appliesToVillage = manifest.villages.includes(village);
 
@@ -75,8 +75,10 @@ export function resolveHammerJamStartModifier({
     !activeAtStart ||
     !appliesToTarget ||
     !appliesToVillage ||
+    !Number.isFinite(manifest.timeMultiplier) ||
     manifest.timeMultiplier <= 0 ||
     manifest.timeMultiplier > 1 ||
+    !Number.isFinite(manifest.costMultiplier) ||
     manifest.costMultiplier <= 0 ||
     manifest.costMultiplier > 1
   ) {

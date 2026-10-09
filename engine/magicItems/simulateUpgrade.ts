@@ -94,13 +94,18 @@ export function simulateUpgrade(
     throw new Error("INVALID_UPGRADE_START_TIMESTAMP");
   }
 
-  const uniqueItemIds = [...new Set(selectedItemIds)];
+  // Sort and deduplicate selections so the same selection always resolves
+  // to the same applied/rejected item order, independent of UI interaction order.
+  const uniqueItemIds = [...new Set(selectedItemIds)].sort((left, right) =>
+    left < right ? -1 : left > right ? 1 : 0,
+  );
   const rejectedItems: UpgradeSimulationResult["rejectedItems"] = [];
   const appliedItemIds: string[] = [];
   const timedItemIds: string[] = [];
-  let instantResult:
-    | { kind: "instant-complete" | "instant-upgrade"; itemId: string }
-    | undefined;
+  const instantCandidates: Array<{
+    kind: "instant-complete" | "instant-upgrade";
+    itemId: string;
+  }> = [];
 
   for (const itemId of uniqueItemIds) {
     const item = getMagicItem(itemId);
@@ -109,9 +114,15 @@ export function simulateUpgrade(
       continue;
     }
 
-    if (item.effect.type === "ONGOING_SPEED" || item.effect.type === "CLOCK_TOWER_BOOST") {
+    if (
+      item.effect.type === "ONGOING_SPEED" ||
+      item.effect.type === "CLOCK_TOWER_BOOST"
+    ) {
       if (!isTimedItemCompatible(itemId, village, workTarget)) {
-        rejectedItems.push({ itemId, reason: "incompatible-village-or-work-target" });
+        rejectedItems.push({
+          itemId,
+          reason: "incompatible-village-or-work-target",
+        });
         continue;
       }
       timedItemIds.push(itemId);
@@ -133,44 +144,51 @@ export function simulateUpgrade(
       continue;
     }
 
-    const kind =
-      instant.action.kind === "complete-current-upgrade"
-        ? "instant-complete"
-        : "instant-upgrade";
-    if (instantResult || timedItemIds.length > 0) {
-      rejectedItems.push({ itemId, reason: "cannot-combine-instant-and-timed-items" });
-      continue;
-    }
-
-    instantResult = { kind, itemId };
-    appliedItemIds.push(itemId);
-  }
-
-  if (instantResult && timedItemIds.length > 0) {
-    rejectedItems.push({
-      itemId: instantResult.itemId,
-      reason: "cannot-combine-instant-and-timed-items",
+    instantCandidates.push({
+      kind:
+        instant.action.kind === "complete-current-upgrade"
+          ? "instant-complete"
+          : "instant-upgrade",
+      itemId,
     });
-    const index = appliedItemIds.indexOf(instantResult.itemId);
-    if (index >= 0) appliedItemIds.splice(index, 1);
-    instantResult = undefined;
   }
 
-  if (instantResult) {
-    const isHammer = instantResult.kind === "instant-upgrade";
-    return {
-      baseCost,
-      effectiveCost: isHammer ? 0 : baseCost,
-      baseDurationMinutes,
-      effectiveDurationMinutes: 0,
-      durationSavedMinutes: baseDurationMinutes,
-      costSaved: isHammer ? baseCost : 0,
-      estimatedCompletionAt: startsAt,
-      completionMode: instantResult.kind,
-      appliedModifierIds: [],
-      appliedItemIds,
-      rejectedItems,
-    };
+  if (instantCandidates.length > 0 && timedItemIds.length > 0) {
+    // Keep the timed simulation, but reject every instant action in the
+    // incompatible combination rather than letting iteration order choose.
+    rejectedItems.push(
+      ...instantCandidates.map(({ itemId }) => ({
+        itemId,
+        reason: "cannot-combine-instant-and-timed-items",
+      })),
+    );
+  } else if (instantCandidates.length > 1) {
+    // Instant actions are mutually exclusive. Do not silently pick a winner.
+    rejectedItems.push(
+      ...instantCandidates.map(({ itemId }) => ({
+        itemId,
+        reason: "cannot-combine-instant-items",
+      })),
+    );
+  } else if (instantCandidates.length === 1) {
+    const instantResult = instantCandidates[0];
+    if (instantResult) {
+      appliedItemIds.push(instantResult.itemId);
+      const isHammer = instantResult.kind === "instant-upgrade";
+      return {
+        baseCost,
+        effectiveCost: isHammer ? 0 : baseCost,
+        baseDurationMinutes,
+        effectiveDurationMinutes: 0,
+        durationSavedMinutes: baseDurationMinutes,
+        costSaved: isHammer ? baseCost : 0,
+        estimatedCompletionAt: startsAt,
+        completionMode: instantResult.kind,
+        appliedModifierIds: [],
+        appliedItemIds,
+        rejectedItems,
+      };
+    }
   }
 
   const startValues = applyHammerJamToUpgradeStart({

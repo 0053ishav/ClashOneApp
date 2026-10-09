@@ -134,18 +134,65 @@ describe("simulateUpgrade", () => {
     });
   });
 
-  it("rejects combining an instant item and a timed potion", () => {
-    const result = simulate({
+  it("rejects combining an instant item and a timed potion independent of selection order", () => {
+    const forward = simulate({
       selectedItemIds: ["hammer-of-building", "builder-potion"],
       freeBuilderAvailable: true,
     });
+    const reversed = simulate({
+      selectedItemIds: ["builder-potion", "hammer-of-building"],
+      freeBuilderAvailable: true,
+    });
 
-    expect(result.completionMode).toBe("timed");
-    expect(result.appliedItemIds).toEqual(["builder-potion"]);
-    expect(result.rejectedItems).toContainEqual({
+    expect(forward).toEqual(reversed);
+    expect(forward.completionMode).toBe("timed");
+    expect(forward.appliedItemIds).toEqual(["builder-potion"]);
+    expect(forward.rejectedItems).toContainEqual({
       itemId: "hammer-of-building",
       reason: "cannot-combine-instant-and-timed-items",
     });
+  });
+
+  it("rejects multiple compatible instant items instead of choosing one by selection order", () => {
+    const forward = simulate({
+      selectedItemIds: ["book-of-building", "book-of-everything"],
+      hasActiveUpgrade: true,
+    });
+    const reversed = simulate({
+      selectedItemIds: ["book-of-everything", "book-of-building"],
+      hasActiveUpgrade: true,
+    });
+
+    expect(forward).toEqual(reversed);
+    expect(forward.completionMode).toBe("timed");
+    expect(forward.appliedItemIds).toEqual([]);
+    expect(forward.rejectedItems).toEqual([
+      { itemId: "book-of-building", reason: "cannot-combine-instant-items" },
+      { itemId: "book-of-everything", reason: "cannot-combine-instant-items" },
+    ]);
+  });
+
+  it("deduplicates repeated selections so one item is only applied once", () => {
+    const single = simulate({ selectedItemIds: ["builder-potion"] });
+    const repeated = simulate({
+      selectedItemIds: ["builder-potion", "builder-potion", "builder-potion"],
+    });
+
+    expect(repeated).toEqual(single);
+  });
+
+  it("ignores non-finite Hammer Jam multipliers instead of corrupting simulated values", () => {
+    const result = simulate({
+      hammerJam: {
+        ...activeHammerJam,
+        timeMultiplier: Number.NaN,
+        costMultiplier: Number.POSITIVE_INFINITY,
+      },
+    });
+
+    expect(result.effectiveCost).toBe(1_000_000);
+    expect(result.effectiveDurationMinutes).toBe(7_200);
+    expect(result.appliedModifierIds).toEqual([]);
   });
 
   it("rejects invalid input values", () => {

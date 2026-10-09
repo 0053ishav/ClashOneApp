@@ -1,4 +1,4 @@
-import { MAGIC_ITEMS, getMagicItem } from "@/config/magicItems";
+import { getMagicItem } from "@/config/magicItems";
 import type { ActiveMagicEffect } from "@/types/magicItem";
 import type { Upgrade } from "@/types/upgrade";
 import { Ionicons } from "@expo/vector-icons";

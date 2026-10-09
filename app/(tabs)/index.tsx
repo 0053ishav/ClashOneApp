@@ -1,6 +1,7 @@
 import GoblinEventBanner from "@/components/GoblinEventBanner";
 import { MagicItemsQuickModal } from "@/components/home/MagicItemsQuickModal";
 import { MagicItemTimeSaved } from "@/components/home/MagicItemActivitySummary";
+import { formatSavedDuration } from "@/components/home/MagicItemActivitySummary";
 import { MagicItemDialog, type MagicItemDialogChoice } from "@/components/magicItems/MagicItemDialog";
 import { LabSection } from "@/components/home/LabSection";
 import { PetSection } from "@/components/home/PetSection";
@@ -93,6 +94,7 @@ export default function HomeScreen() {
   const [selectedUpgrade, setSelectedUpgrade] = useState<Upgrade | null>(null);
   const [actionModalVisible, setActionModalVisible] = useState(false);
   const [magicItemsVisible, setMagicItemsVisible] = useState(false);
+  const [magicItemInventoryCount, setMagicItemInventoryCount] = useState(0);
   const [magicItemDialog, setMagicItemDialog] = useState<{
     title: string;
     message: string;
@@ -138,8 +140,16 @@ export default function HomeScreen() {
         setIsLoadingAccountState(true);
       }
 
-      const state = await getAccountState(activeTag);
+      const [state, inventory] = await Promise.all([
+        getAccountState(activeTag),
+        getMagicItemInventory(activeTag),
+      ]);
       setAccountState(state);
+      const trackedPotionCount = inventory.reduce((total, entry) => {
+        const item = MAGIC_ITEMS.find((candidate) => candidate.id === entry.itemId);
+        return total + (item && (item.itemType === "potion" || item.itemType === "snack") ? entry.quantity : 0);
+      }, 0);
+      setMagicItemInventoryCount(trackedPotionCount);
       hasLoadedAccountState.current = true;
     } catch (error) {
       console.error("[HOME] Failed to refresh account state:", error);
@@ -665,109 +675,131 @@ export default function HomeScreen() {
           />
         )}
 
-        {/* Profile row */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Open profile for ${
-            profile.playerTag ? profile.playerName : "Unsnced account"
-          }`}
-          accessibilityHint="Open profile and account actions"
-          onPress={() => {
-            console.log("🔥 [HOME] PROFILE ROW PRESSED");
-            profileSheetRef.current?.present();
-          }}
-          style={({ pressed }) => [
-            styles.profileRow,
-            pressed && styles.profileRowPressed,
-          ]}
-        >
-          {/* Avatar circle */}
-          <View style={[styles.avatar, { borderColor: activeAccount?.color }]}>
-            <Text style={[styles.avatarText, { color: activeAccount?.color }]}>
-              {playerInitials}
-            </Text>
-          </View>
-          <View style={styles.profileInfo}>
-            <View style={styles.profileNameRow}>
-              <Text style={styles.profileName} numberOfLines={1}>
-                {profile.playerTag ? profile.playerName : "No Profile Synced"}
+        {/* Profile row and compact Magic Item shortcuts */}
+        <View style={styles.profileActionsRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Open profile for ${
+              profile.playerTag ? profile.playerName : "Unsnced account"
+            }`}
+            accessibilityHint="Open profile and account actions"
+            onPress={() => {
+              console.log("🔥 [HOME] PROFILE ROW PRESSED");
+              profileSheetRef.current?.present();
+            }}
+            style={({ pressed }) => [
+              styles.profileRow,
+              pressed && styles.profileRowPressed,
+            ]}
+          >
+            {/* Avatar circle */}
+            <View style={[styles.avatar, { borderColor: activeAccount?.color }]}>
+              <Text style={[styles.avatarText, { color: activeAccount?.color }]}>
+                {playerInitials}
               </Text>
-              {profile.leagueTierIconUrl && (
-                <Image
-                  source={{ uri: profile.leagueTierIconUrl }}
-                  style={styles.leagueIcon}
-                  contentFit="contain"
-                  cachePolicy="memory-disk"
-                />
-              )}
-              {isPremium && (
-                <View style={styles.chiefBadge}>
-                  <Text style={styles.chiefBadgeText}>Chief</Text>
-                </View>
-              )}
             </View>
-
-            {profile.playerTag && (
-              <View style={styles.profileMeta}>
-                {typeof profile.expLevel === "number" && (
-                  <XPBadge level={profile.expLevel} />
+            <View style={styles.profileInfo}>
+              <View style={styles.profileNameRow}>
+                <Text style={styles.profileName} numberOfLines={1}>
+                  {profile.playerTag ? profile.playerName : "No Profile Synced"}
+                </Text>
+                {profile.leagueTierIconUrl && (
+                  <Image
+                    source={{ uri: profile.leagueTierIconUrl }}
+                    style={styles.leagueIcon}
+                    contentFit="contain"
+                    cachePolicy="memory-disk"
+                  />
                 )}
-                <Image
-                  source={{
-                    uri: resolveEntityIcon(1000001, {
-                      village: "home",
-                      level: profile.townHallLevel,
-                    }),
-                  }}
-                  style={styles.hallIcon}
-                  contentFit="contain"
-                  cachePolicy="memory-disk"
-                />
-                {typeof profile.trophies === "number" && (
-                  <View style={styles.trophyRow}>
-                    <Image
-                      source={{
-                        uri: `${ENV.CDN_BASE}/entities/other/trophy.png`,
-                      }}
-                      style={styles.trophyIcon}
-                      contentFit="contain"
-                    />
-                    <Text style={styles.profileSub}>{profile.trophies}</Text>
-                  </View>
-                )}
-                <View style={styles.metaDot} />
-                <Image
-                  source={{
-                    uri: resolveEntityIcon(1000034, {
-                      village: "builderBase",
-                      level: profile.builderHallLevel,
-                    }),
-                  }}
-                  style={styles.hallIcon}
-                  contentFit="contain"
-                  cachePolicy="memory-disk"
-                />
-                {typeof profile.builderBaseTrophies === "number" && (
-                  <View style={styles.trophyRow}>
-                    <Image
-                      source={{
-                        uri: `${ENV.CDN_BASE}/entities/other/trophy.png`,
-                      }}
-                      style={styles.trophyIcon}
-                      contentFit="contain"
-                    />
-                    <Text style={styles.profileSub}>
-                      {profile.builderBaseTrophies}
-                    </Text>
+                {isPremium && (
+                  <View style={styles.chiefBadge}>
+                    <Text style={styles.chiefBadgeText}>Chief</Text>
                   </View>
                 )}
               </View>
-            )}
+  
+              {profile.playerTag && (
+                <View style={styles.profileMeta}>
+                  {typeof profile.expLevel === "number" && (
+                    <XPBadge level={profile.expLevel} />
+                  )}
+                  <Image
+                    source={{
+                      uri: resolveEntityIcon(1000001, {
+                        village: "home",
+                        level: profile.townHallLevel,
+                      }),
+                    }}
+                    style={styles.hallIcon}
+                    contentFit="contain"
+                    cachePolicy="memory-disk"
+                  />
+                  {typeof profile.trophies === "number" && (
+                    <View style={styles.trophyRow}>
+                      <Image
+                        source={{
+                          uri: `${ENV.CDN_BASE}/entities/other/trophy.png`,
+                        }}
+                        style={styles.trophyIcon}
+                        contentFit="contain"
+                      />
+                      <Text style={styles.profileSub}>{profile.trophies}</Text>
+                    </View>
+                  )}
+                  <View style={styles.metaDot} />
+                  <Image
+                    source={{
+                      uri: resolveEntityIcon(1000034, {
+                        village: "builderBase",
+                        level: profile.builderHallLevel,
+                      }),
+                    }}
+                    style={styles.hallIcon}
+                    contentFit="contain"
+                    cachePolicy="memory-disk"
+                  />
+                  {typeof profile.builderBaseTrophies === "number" && (
+                    <View style={styles.trophyRow}>
+                      <Image
+                        source={{
+                          uri: `${ENV.CDN_BASE}/entities/other/trophy.png`,
+                        }}
+                        style={styles.trophyIcon}
+                        contentFit="contain"
+                      />
+                      <Text style={styles.profileSub}>
+                        {profile.builderBaseTrophies}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+            <View style={styles.chevronButton}>
+              <Ionicons name="chevron-down" size={14} color="#94a3b8" />
+            </View>
+          </Pressable>
+          <View style={styles.profileMagicActions}>
+            <View style={styles.profileSavedBadge}>
+              <Ionicons name="flash" size={11} color="#34d399" />
+              <Text style={styles.profileSavedText}>
+                {formatSavedDuration((accountState?.activeUpgrades ?? []).reduce(
+                  (total, upgrade) => total + (upgrade.magicItemTimeSavedMs ?? 0),
+                  0,
+                ))}
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Open Potion and Snack inventory, ${magicItemInventoryCount} available`}
+              onPress={() => setMagicItemsVisible(true)}
+              style={({ pressed }) => [styles.profileInventoryButton, pressed && styles.magicItemsButtonPressed]}
+            >
+              <Ionicons name="flask" size={13} color="#fbbf24" />
+              <Text style={styles.profileInventoryText}>{magicItemInventoryCount}</Text>
+            </Pressable>
           </View>
-          <View style={styles.chevronButton}>
-            <Ionicons name="chevron-down" size={14} color="#94a3b8" />
-          </View>
-        </Pressable>
+        </View>
       </View>
 
       {/* ── Scrollable content ── */}
@@ -1497,6 +1529,12 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 
+  profileActionsRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, gap: 6 },
+  profileMagicActions: { flexDirection: "row", alignItems: "center", gap: 5 },
+  profileSavedBadge: { minHeight: 27, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 3, paddingHorizontal: 6, borderRadius: 8, backgroundColor: "rgba(52,211,153,0.08)", borderWidth: 1, borderColor: "rgba(52,211,153,0.22)" },
+  profileSavedText: { color: "#34d399", fontSize: 9, fontWeight: "900" },
+  profileInventoryButton: { minWidth: 34, minHeight: 27, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 3, paddingHorizontal: 6, borderRadius: 8, backgroundColor: "rgba(251,191,36,0.08)", borderWidth: 1, borderColor: "rgba(251,191,36,0.22)" },
+  profileInventoryText: { color: "#fbbf24", fontSize: 9, fontWeight: "900" },
   profileRow: {
     flexDirection: "row",
     alignItems: "center",

@@ -20,6 +20,7 @@ import { buildSupportInfo } from "@/services/supportDebugInfo";
 import { isOnboardingComplete } from "@/storage/appConfig";
 import { syncEntities } from "@/storage/syncEntities";
 import { useAccountStore } from "@/stores/accountStore";
+import { useHammerJamStore } from "@/stores/hammerJamStore";
 import { setSessionSource, track } from "@/utils/analytics/analytics";
 import { log } from "@/utils/logger";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
@@ -193,6 +194,10 @@ export default Sentry.wrap(function RootLayout() {
 
   const runBackgroundBoot = useCallback(async () => {
     await Promise.allSettled([
+      safeTask("Hammer Jam", async () => {
+        await useHammerJamStore.getState().sync();
+      }),
+
       safeTask("RevenueCat", async () => {
         await initRevenueCat();
         await syncPremiumStatus();

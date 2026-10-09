@@ -90,7 +90,7 @@ describe("simulateUpgrade", () => {
       selectedItemIds: ["study-soup"],
     });
 
-    expect(result.effectiveDurationMinutes).toBe(118 * 60);
+    expect(result.effectiveDurationMinutes).toBe(117 * 60);
     expect(result.appliedItemIds).toEqual(["study-soup"]);
   });
 

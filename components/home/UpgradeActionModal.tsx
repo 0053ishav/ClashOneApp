@@ -22,6 +22,7 @@ type UpgradeActionModalProps = {
   progression: ProgressionApplicationResult | null;
   onClose: () => void;
   onDelete: (upgradeId: string) => Promise<void>;
+  onUseBook?: (upgrade: Upgrade) => Promise<void>;
 };
 
 const SPARKY_ICON = `${ENV.CDN_BASE}/v2/home/other/sparky.png`;
@@ -46,6 +47,7 @@ export function UpgradeActionModal({
   progression,
   onClose,
   onDelete,
+  onUseBook,
 }: UpgradeActionModalProps) {
   const bottomSheetRef = React.useRef<BottomSheetModal>(null);
 
@@ -869,6 +871,23 @@ export function UpgradeActionModal({
           </View>
         )}
 
+        {onUseBook && upgrade.endTime > now && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Use a Book on ${upgrade.entity}`}
+            style={({ pressed }) => [
+              styles.useBookButton,
+              pressed && styles.pressed,
+            ]}
+            onPress={() => {
+              void onUseBook(upgrade);
+            }}
+          >
+            <Ionicons name="book" size={16} color="#0f172a" />
+            <Text style={styles.useBookText}>Use Book to Finish Upgrade</Text>
+          </Pressable>
+        )}
+
         {/* =====================================================
             DELETE
         ====================================================== */}
@@ -1522,6 +1541,22 @@ const styles = StyleSheet.create({
    * DELETE
    * ----------------------------------------------------------
    */
+
+  useBookButton: {
+    minHeight: 40,
+    marginTop: 12,
+    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#fbbf24",
+  },
+  useBookText: {
+    color: "#0f172a",
+    fontSize: 11,
+    fontWeight: "800",
+  },
 
   deleteButton: {
     height: 38,

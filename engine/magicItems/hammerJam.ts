@@ -4,13 +4,15 @@ import type {
   UpgradeStartModifier,
 } from "@/types/magicItem";
 
+export type HammerJamTarget = "building" | "troop" | "spell" | "hero" | "pet";
+
 export type HammerJamManifest = {
   enabled: boolean;
   startsAt: string | null;
   endsAt: string | null;
   timeMultiplier: number;
   costMultiplier: number;
-  appliesTo: readonly ["building", "troop", "spell", "hero", "pet"];
+  appliesTo: readonly HammerJamTarget[];
   villages: readonly Village[];
 };
 

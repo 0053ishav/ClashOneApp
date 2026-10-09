@@ -8,7 +8,7 @@ jest.mock("@/utils/getEntity", () => ({
 
 import { getDB } from "@/db/database";
 import { getEntity } from "@/utils/getEntity";
-import { applyBookToActiveUpgrade } from "@/services/applyBookToActiveUpgrade";
+import { applyBookToActiveUpgrade } from "@/services/useBookOnActiveUpgrade";
 
 type MockDb = {
   getFirstAsync: jest.Mock;

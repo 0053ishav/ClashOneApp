@@ -61,7 +61,8 @@ export async function getUpgrades(tag: string): Promise<Upgrade[]> {
     isCrafted: r.is_crafted === 1,
     moduleId: r.module_id
   }));
-  const effects = await getActiveMagicEffects(tag);\n  return deriveCompletionState(applyMagicItemEffectsToUpgrades(normalized, effects));
+  const effects = await getActiveMagicEffects(tag);
+  return deriveCompletionState(applyMagicItemEffectsToUpgrades(normalized, effects));
 }
 
 

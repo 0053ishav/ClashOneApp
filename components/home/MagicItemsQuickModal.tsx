@@ -3,6 +3,7 @@ import { MAGIC_ITEMS } from "@/config/magicItems";
 import { activateClockTowerPotion } from "@/services/activateClockTowerPotion";
 import { activateTimedMagicItem } from "@/services/activateTimedMagicItem";
 import {
+  getActiveMagicEffects,
   getMagicItemInventory,
 } from "@/services/magicItemService";
 import { useAccountStore } from "@/stores/accountStore";
@@ -76,7 +77,10 @@ export function MagicItemsQuickModal({
 
     setIsLoading(true);
     try {
-      const inventory = await getMagicItemInventory(accountTag);
+      const [inventory, effects] = await Promise.all([
+        getMagicItemInventory(accountTag),
+        getActiveMagicEffects(accountTag),
+      ]);
       setQuantities(
         Object.fromEntries(
           inventory.map((entry) => [entry.itemId, entry.quantity]),

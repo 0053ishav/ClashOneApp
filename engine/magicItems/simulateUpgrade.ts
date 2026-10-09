@@ -123,7 +123,7 @@ export function simulateUpgrade(
       itemId,
       village,
       target,
-      hasActiveUpgrade: hasActiveUpgrade || true,
+      hasActiveUpgrade,
       hasNextLevel: true,
       freeBuilderAvailable,
     });
@@ -146,6 +146,16 @@ export function simulateUpgrade(
     appliedItemIds.push(itemId);
   }
 
+  if (instantResult && timedItemIds.length > 0) {
+    rejectedItems.push({
+      itemId: instantResult.itemId,
+      reason: "cannot-combine-instant-and-timed-items",
+    });
+    const index = appliedItemIds.indexOf(instantResult.itemId);
+    if (index >= 0) appliedItemIds.splice(index, 1);
+    instantResult = undefined;
+  }
+
   if (instantResult) {
     const isHammer = instantResult.kind === "instant-upgrade";
     return {
@@ -163,8 +173,6 @@ export function simulateUpgrade(
     };
   }
 
-  // A valid instant item cannot be combined with a timed item. If the timed
-  // selection appeared first, remove any instant selection rejected above.
   const startValues = applyHammerJamToUpgradeStart({
     baseDurationMinutes,
     baseCost,

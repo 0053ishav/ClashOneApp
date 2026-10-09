@@ -8,12 +8,12 @@ import {
 import type { MagicItem, MagicItemTarget } from "@/types/magicItem";
 import type { Village } from "@/types/entity";
 import { useAccountStore } from "@/stores/accountStore";
+import { MagicItemDialog } from "@/components/magicItems/MagicItemDialog";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -50,6 +50,14 @@ export function MagicItemsQuickModal({
   const [activeEffectIds, setActiveEffectIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [activatingItemId, setActivatingItemId] = useState<string | null>(null);
+  const [dialog, setDialog] = useState<{
+    title: string;
+    message: string;
+    item?: MagicItem;
+    tone?: "confirm" | "success" | "error" | "info";
+    confirmLabel?: string;
+    onConfirm?: () => Promise<void>;
+  } | null>(null);
 
   const accountName = accounts.find((account) => account.tag === accountTag)?.name;
 
@@ -77,7 +85,7 @@ export function MagicItemsQuickModal({
         ),
       );
     } catch {
-      Alert.alert("Couldn't load Magic Items", "Please close and try again.");
+      setDialog({ title: "Inventory unavailable", message: "Could not load Magic Items. Please close and try again.", tone: "error" });
     } finally {
       setIsLoading(false);
     }
@@ -97,10 +105,10 @@ export function MagicItemsQuickModal({
     [village],
   );
 
-  const activate = async (item: MagicItem) => {
+  const activateNow = async (item: MagicItem) => {
     if (!accountTag || activatingItemId) return;
     if ((quantities[item.id] ?? 0) <= 0) {
-      Alert.alert("No items available", `Add ${item.name} to your tracked inventory first.`);
+      setDialog({ title: "No items available", message: `Add ${item.name} to your tracked inventory first.`, item, tone: "info" });
       return;
     }
 
@@ -118,13 +126,13 @@ export function MagicItemsQuickModal({
           effectId,
         });
         if (!result.activated) {
-          Alert.alert("Couldn't activate item", result.reason);
+          setDialog({ title: "Could not activate item", message: result.reason.replaceAll("-", " "), item, tone: "error" });
           return;
         }
       } else {
         const target = SPEED_TARGETS[item.id];
         if (!target) {
-          Alert.alert("Unavailable", "This item doesn't have an activation target yet.");
+          setDialog({ title: "Unavailable", message: "This item does not have an activation target yet.", item, tone: "info" });
           return;
         }
         const result = await activateTimedMagicItem({
@@ -143,16 +151,35 @@ export function MagicItemsQuickModal({
 
       await loadItems();
       await onActivated();
-      Alert.alert("Magic Item activated", `${item.name} is now active.`);
+      setDialog({ title: "Magic Item activated", message: `${item.name} is now active.`, item, tone: "success" });
     } catch (error) {
       const message =
         error instanceof Error && error.message === "MAGIC_ITEM_NOT_IN_INVENTORY"
           ? "Your inventory quantity changed. Refresh and try again."
           : "Please try again.";
-      Alert.alert("Couldn't activate item", message);
+      setDialog({ title: "Could not activate item", message, item, tone: "error" });
     } finally {
       setActivatingItemId(null);
     }
+  };
+
+  const activate = (item: MagicItem) => {
+    if (!accountTag || activatingItemId) return;
+    if ((quantities[item.id] ?? 0) <= 0) {
+      setDialog({ title: "No items available", message: `Add ${item.name} to your tracked inventory first.`, item, tone: "info" });
+      return;
+    }
+    setDialog({
+      title: `Use ${item.name}?`,
+      message: "This consumes one item from your tracked inventory and activates its effect for this village.",
+      item,
+      tone: "confirm",
+      confirmLabel: "Use item",
+      onConfirm: async () => {
+        setDialog(null);
+        await activateNow(item);
+      },
+    });
   };
 
   return (
@@ -248,6 +275,16 @@ export function MagicItemsQuickModal({
         </View>
       </View>
     </Modal>
+    <MagicItemDialog
+      visible={dialog !== null}
+      title={dialog?.title ?? ""}
+      message={dialog?.message ?? ""}
+      item={dialog?.item}
+      tone={dialog?.tone}
+      confirmLabel={dialog?.confirmLabel}
+      onConfirm={dialog?.onConfirm ? () => void dialog.onConfirm?.() : undefined}
+      onClose={() => setDialog(null)}
+    />
   );
 }
 

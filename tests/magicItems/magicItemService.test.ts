@@ -74,9 +74,9 @@ describe("magicItemService", () => {
   });
 
   it("adds inventory with one atomic upsert", async () => {
-    db.getFirstAsync.mockResolvedValue({ quantity: 4 });
+    db.getFirstAsync.mockResolvedValue({ quantity: 6 });
 
-    await expect(addMagicItem("#ACCOUNT", "builder-potion", 2)).resolves.toBe(4);
+    await expect(addMagicItem("#ACCOUNT", "builder-potion", 2)).resolves.toBe(6);
 
     expect(db.runAsync).toHaveBeenCalledWith(
       expect.stringContaining("magic_item_inventory.quantity + excluded.quantity"),

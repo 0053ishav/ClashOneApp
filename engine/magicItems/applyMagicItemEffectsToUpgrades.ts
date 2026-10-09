@@ -32,6 +32,7 @@ export function applyMagicItemEffectsToUpgrades(
       return upgrade;
     }
 
+    const baselineEndTime = upgrade.endTime;
     const endTime = resolveUpgradeCompletionTime({
       baseDurationMs,
       startedAt: upgrade.startTime,
@@ -39,7 +40,15 @@ export function applyMagicItemEffectsToUpgrades(
       target,
       village: upgrade.village,
     });
+    const magicItemTimeSavedMs = Math.max(0, baselineEndTime - endTime);
 
-    return endTime === upgrade.endTime ? upgrade : { ...upgrade, endTime };
+    if (
+      endTime === upgrade.endTime &&
+      magicItemTimeSavedMs === upgrade.magicItemTimeSavedMs
+    ) {
+      return upgrade;
+    }
+
+    return { ...upgrade, endTime, magicItemTimeSavedMs };
   });
 }

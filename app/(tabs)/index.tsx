@@ -1,6 +1,6 @@
 import GoblinEventBanner from "@/components/GoblinEventBanner";
 import { MagicItemsQuickModal } from "@/components/home/MagicItemsQuickModal";
-import { MagicItemActivitySummary } from "@/components/home/MagicItemActivitySummary";
+import { MagicItemActivitySummary, MagicItemTimeSaved } from "@/components/home/MagicItemActivitySummary";
 import { MagicItemDialog, type MagicItemDialogChoice } from "@/components/magicItems/MagicItemDialog";
 import { LabSection } from "@/components/home/LabSection";
 import { PetSection } from "@/components/home/PetSection";
@@ -1185,6 +1185,7 @@ export default function HomeScreen() {
                             </Text>
                             <Text style={styles.totalTimeText}>
                               of {formatCountdown(totalMs)}
+                            <MagicItemTimeSaved milliseconds={u.magicItemTimeSavedMs} />
                             </Text>
                           </View>
                         </View>

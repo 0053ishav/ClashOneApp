@@ -30,6 +30,7 @@ describe("applyMagicItemEffectsToUpgrades", () => {
     const result = applyMagicItemEffectsToUpgrades([baseUpgrade], [builderPotion]);
 
     expect(result[0].endTime).toBe(startedAt + 11 * 60 * 60 * 1000);
+    expect(result[0].magicItemTimeSavedMs).toBe(9 * 60 * 60 * 1000);
     expect(baseUpgrade.endTime).toBe(startedAt + 20 * 60 * 60 * 1000);
   });
 
@@ -80,6 +81,10 @@ describe("applyMagicItemEffectsToUpgrades", () => {
     expect(result.map((upgrade) => upgrade.endTime)).toEqual([
       startedAt + 25 * 60 * 60 * 1000,
       startedAt + 25 * 60 * 60 * 1000,
+    ]);
+    expect(result.map((upgrade) => upgrade.magicItemTimeSavedMs)).toEqual([
+      23 * 60 * 60 * 1000,
+      23 * 60 * 60 * 1000,
     ]);
   });
 

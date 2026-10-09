@@ -134,9 +134,7 @@ describe("resolveUpgradeCompletionTime", () => {
       ],
     });
 
-    expect(result).toBe(
-      startedAt + 10 * 60 * 60 * 1000,
-    );
+    expect(result).toBe(startedAt + 10 * 60 * 60 * 1000);
   });
 
   it("allows a potion to begin after the upgrade starts", () => {
@@ -183,8 +181,67 @@ describe("resolveUpgradeCompletionTime", () => {
       ],
     });
 
-    // 30m at 11x = 5.5h of work, then 30m at 10x = 5h of work,
-    // leaving 9.5h of normal work.
     expect(result).toBe(startedAt + 10.5 * 60 * 60 * 1000);
+  });
+
+  it("applies Clock Tower Potion at 10x speed to Builder Base construction", () => {
+    const result = resolveUpgradeCompletionTime({
+      baseDurationMs: 20 * 60 * 60 * 1000,
+      startedAt,
+      target: "builders",
+      village: "builderBase",
+      effects: [
+        {
+          id: "clock-tower-1",
+          itemId: "clock-tower-potion",
+          startedAt,
+          expiresAt: startedAt + 30 * 60 * 1000,
+          village: "builderBase",
+        },
+      ],
+    });
+
+    // 30 minutes at 10x completes 5 hours of work; 15 hours remain.
+    expect(result).toBe(startedAt + 15.5 * 60 * 60 * 1000);
+  });
+
+  it("applies Clock Tower Potion to Builder Base research", () => {
+    const result = resolveUpgradeCompletionTime({
+      baseDurationMs: 12 * 60 * 60 * 1000,
+      startedAt,
+      target: "research",
+      village: "builderBase",
+      effects: [
+        {
+          id: "clock-tower-1",
+          itemId: "clock-tower-potion",
+          startedAt,
+          expiresAt: startedAt + 30 * 60 * 1000,
+          village: "builderBase",
+        },
+      ],
+    });
+
+    expect(result).toBe(startedAt + 7.5 * 60 * 60 * 1000);
+  });
+
+  it("does not apply Clock Tower Potion to Home Village upgrades", () => {
+    const result = resolveUpgradeCompletionTime({
+      baseDurationMs: 20 * 60 * 60 * 1000,
+      startedAt,
+      target: "builders",
+      village: "home",
+      effects: [
+        {
+          id: "clock-tower-1",
+          itemId: "clock-tower-potion",
+          startedAt,
+          expiresAt: startedAt + 30 * 60 * 1000,
+          village: "builderBase",
+        },
+      ],
+    });
+
+    expect(result).toBe(startedAt + 20 * 60 * 60 * 1000);
   });
 });

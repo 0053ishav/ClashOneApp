@@ -1,6 +1,6 @@
 import { getMagicItem } from "@/config/magicItems";
 import { resolveUpgradeCompletionTime } from "@/engine/magicItems/resolveUpgradeCompletionTime";
-import type { ActiveMagicEffect } from "@/types/magicItem";
+import type { ActiveMagicEffect, MagicItem } from "@/types/magicItem";
 import type { Upgrade } from "@/types/upgrade";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -43,7 +43,7 @@ export function MagicItemActivitySummary({
     return effects
       .filter((effect) => effect.expiresAt == null || effect.expiresAt > now)
       .map((effect) => getMagicItem(effect.itemId))
-      .filter((item) => {
+      .filter((item): item is MagicItem => {
         if (!item || (item.itemType !== "potion" && item.itemType !== "snack")) return false;
         if (seen.has(item.id)) return false;
         seen.add(item.id);

@@ -105,6 +105,7 @@ function PercentageDropdown({
   saving,
   onToggle,
   onSelect,
+  openUpwards = false,
 }: {
   label: string;
   selected: GoldPassBoostPercent | null;
@@ -112,9 +113,15 @@ function PercentageDropdown({
   saving: boolean;
   onToggle: () => void;
   onSelect: (percent: GoldPassBoostPercent) => void;
+  openUpwards?: boolean;
 }) {
   return (
-    <View style={styles.dropdownContainer}>
+    <View
+      style={[
+        styles.dropdownContainer,
+        expanded && styles.dropdownContainerExpanded,
+      ]}
+    >
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${label}: ${selected == null ? "not matching" : `${selected}% selected`}`}
@@ -145,7 +152,12 @@ function PercentageDropdown({
       </Pressable>
 
       {expanded && (
-        <View style={styles.dropdownMenu}>
+        <View
+          style={[
+            styles.dropdownMenu,
+            openUpwards ? styles.dropdownMenuAbove : styles.dropdownMenuBelow,
+          ]}
+        >
           {PERCENTAGES.map((percent) => {
             const selectedOption = selected === percent;
             return (
@@ -202,27 +214,33 @@ function BoostSelector({
   onSelect: (percent: GoldPassBoostPercent) => void;
 }) {
   return (
-    <View style={styles.boostRow}>
-      <Image
-        source={{ uri: `${ENV.CDN_BASE}/v2/home/other/${icon}.png` }}
-        style={styles.boostIcon}
-        contentFit="contain"
-        cachePolicy="memory-disk"
-      />
-      <View style={styles.boostContent}>
-        <View style={styles.boostHeader}>
+    <View
+      style={[
+        styles.boostColumn,
+        expanded && styles.dropdownLayerTop,
+      ]}
+    >
+      <View style={styles.boostHeader}>
+        <Image
+          source={{ uri: `${ENV.CDN_BASE}/v2/home/other/${icon}.png` }}
+          style={styles.boostIcon}
+          contentFit="contain"
+          cachePolicy="memory-disk"
+        />
+        <View style={styles.boostHeaderText}>
           <Text style={styles.boostLabel}>{label}</Text>
           <Text style={styles.boostHelper}>{helper}</Text>
         </View>
-        <PercentageDropdown
-          label={label}
-          selected={selected}
-          expanded={expanded}
-          saving={saving}
-          onToggle={onToggle}
-          onSelect={onSelect}
-        />
       </View>
+      <PercentageDropdown
+        label={label}
+        selected={selected}
+        expanded={expanded}
+        saving={saving}
+        onToggle={onToggle}
+        onSelect={onSelect}
+        openUpwards={icon === "research-boost"}
+      />
     </View>
   );
 }
@@ -350,7 +368,12 @@ export function GoldPassBoostQuickPanel({
               </View>
             ) : (
               <>
-                <View style={styles.setBothCard}>
+                <View
+                  style={[
+                    styles.setBothCard,
+                    expandedDropdown === "both" && styles.dropdownLayerTop,
+                  ]}
+                >
                   <View style={styles.setBothText}>
                     <Text style={styles.setBothTitle}>Set both boosts</Text>
                     <Text style={styles.setBothSubtitle}>
@@ -374,37 +397,39 @@ export function GoldPassBoostQuickPanel({
 
                 <View style={styles.sectionDivider} />
 
-                <BoostSelector
-                  icon="builder-boost"
-                  label="Builder Boost"
-                  helper="Buildings"
-                  selected={settings.builderBoostPercent}
-                  expanded={expandedDropdown === "builder"}
-                  saving={saving}
-                  onToggle={() =>
-                    setExpandedDropdown((current) =>
-                      current === "builder" ? null : "builder",
-                    )
-                  }
-                  onSelect={(percent) => select("builder", percent)}
-                />
+                <View style={styles.boostSelectorsRow}>
+                  <BoostSelector
+                    icon="builder-boost"
+                    label="Builder Boost"
+                    helper="Buildings"
+                    selected={settings.builderBoostPercent}
+                    expanded={expandedDropdown === "builder"}
+                    saving={saving}
+                    onToggle={() =>
+                      setExpandedDropdown((current) =>
+                        current === "builder" ? null : "builder",
+                      )
+                    }
+                    onSelect={(percent) => select("builder", percent)}
+                  />
 
-                <View style={styles.sectionDivider} />
+                  <View style={styles.boostColumnDivider} />
 
-                <BoostSelector
-                  icon="research-boost"
-                  label="Research Boost"
-                  helper="Laboratory & pets"
-                  selected={settings.researchBoostPercent}
-                  expanded={expandedDropdown === "research"}
-                  saving={saving}
-                  onToggle={() =>
-                    setExpandedDropdown((current) =>
-                      current === "research" ? null : "research",
-                    )
-                  }
-                  onSelect={(percent) => select("research", percent)}
-                />
+                  <BoostSelector
+                    icon="research-boost"
+                    label="Research Boost"
+                    helper="Laboratory"
+                    selected={settings.researchBoostPercent}
+                    expanded={expandedDropdown === "research"}
+                    saving={saving}
+                    onToggle={() =>
+                      setExpandedDropdown((current) =>
+                        current === "research" ? null : "research",
+                      )
+                    }
+                    onSelect={(percent) => select("research", percent)}
+                  />
+                </View>
               </>
             )}
 
@@ -500,22 +525,38 @@ const styles = StyleSheet.create({
     borderColor: "#334155",
     gap: 10,
   },
+  dropdownLayerTop: {
+    zIndex: 30,
+    elevation: 30,
+  },
   setBothText: { gap: 3 },
   setBothTitle: { color: "#f1f5f9", fontSize: 13, fontWeight: "800" },
   setBothSubtitle: { color: "#94a3b8", fontSize: 10, lineHeight: 14 },
   sectionDivider: { height: StyleSheet.hairlineWidth, backgroundColor: "#27364d" },
-  boostRow: { flexDirection: "row", alignItems: "center", gap: 11 },
-  boostIcon: { width: 42, height: 42 },
-  boostContent: { flex: 1, gap: 8 },
-  boostHeader: {
+  boostSelectorsRow: {
     flexDirection: "row",
-    alignItems: "baseline",
-    justifyContent: "space-between",
-    gap: 6,
+    alignItems: "stretch",
+    gap: 12,
+    zIndex: 1,
   },
-  boostLabel: { color: "#e2e8f0", fontSize: 12, fontWeight: "800" },
-  boostHelper: { color: "#64748b", fontSize: 10 },
-  dropdownContainer: { gap: 5 },
+  boostColumn: {
+    flex: 1,
+    minWidth: 0,
+    gap: 10,
+    paddingVertical: 4,
+  },
+  boostColumnDivider: {
+    width: StyleSheet.hairlineWidth,
+    backgroundColor: "#27364d",
+    marginVertical: 3,
+  },
+  boostIcon: { width: 34, height: 34 },
+  boostHeader: { flexDirection: "row", alignItems: "center", gap: 8, minHeight: 38 },
+  boostHeaderText: { flex: 1, minWidth: 0, gap: 3 },
+  boostLabel: { color: "#e2e8f0", fontSize: 11, fontWeight: "800" },
+  boostHelper: { color: "#64748b", fontSize: 9 },
+  dropdownContainer: { gap: 5, position: "relative" },
+  dropdownContainerExpanded: { zIndex: 40, elevation: 40 },
   dropdownTrigger: {
     minHeight: 43,
     flexDirection: "row",
@@ -536,12 +577,29 @@ const styles = StyleSheet.create({
   dropdownValue: { color: "#f8fafc", fontSize: 13, fontWeight: "800" },
   dropdownPlaceholder: { color: "#94a3b8", fontSize: 11 },
   dropdownMenu: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    zIndex: 50,
+    elevation: 50,
     padding: 4,
     borderRadius: 10,
     backgroundColor: "#0b1425",
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: "#475569",
     gap: 3,
+    shadowColor: "#000",
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+  },
+  dropdownMenuBelow: {
+    top: "100%",
+    marginTop: 5,
+  },
+  dropdownMenuAbove: {
+    bottom: "100%",
+    marginBottom: 5,
   },
   dropdownOption: {
     minHeight: 37,

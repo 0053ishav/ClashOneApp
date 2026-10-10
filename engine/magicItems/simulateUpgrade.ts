@@ -125,7 +125,8 @@ export function simulateUpgrade(
     goldPassBoost?.target === "builder"
       ? workTarget === "builders"
       : goldPassBoost?.target === "research"
-        ? workTarget === "research"
+        ? workTarget === "research" ||
+          (goldPassEntityType === "pet" && workTarget === "pet")
         : false;
   const goldPassModifier =
     goldPassBoost &&

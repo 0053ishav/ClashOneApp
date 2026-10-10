@@ -19,7 +19,7 @@ export type UpgradeSimulationInput = {
   village: Village;
   startsAt: number;
   hammerJam: HammerJamManifest;
-  /** Optional manually selected Gold Pass time discount for this simulated upgrade. */
+  /** Optional manually selected Gold Pass cost and time discount for this simulated upgrade. */
   goldPassBoost?: GoldPassBoostSelection;
   selectedItemIds?: readonly string[];
   /** Needed when previewing a Book on work that is already in progress. */

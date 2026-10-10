@@ -26,7 +26,7 @@ import { ENV } from "@/config/env";
 import { MAGIC_ITEMS } from "@/config/magicItems";
 import { useCraftedResolver } from "@/engine/crafted/craftedResolver";
 import type { ProgressionApplicationResult } from "@/engine/progression/models";
-import type { GoldPassBoostPercent, GoldPassBoostSettings } from "@/types/goldPass";
+import type { GoldPassBoostSettings } from "@/types/goldPass";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { useRemoteConfig } from "@/provider/remoteConfigProvider";
 import { getAccountState } from "@/services/accountStateService";
@@ -858,6 +858,7 @@ export default function HomeScreen() {
               <GoldPassBoostButton
                 settings={activeGoldPassSettings}
                 compact
+                expanded={showGoldPassPopover}
                 disabled={!activeTag}
                 onPress={() => setShowGoldPassPopover((visible) => !visible)}
               />

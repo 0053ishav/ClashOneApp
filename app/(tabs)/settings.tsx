@@ -638,6 +638,7 @@ export default function SettingsScreen() {
                 <View style={styles.activeVillageActions}>
                   <GoldPassBoostButton
                     settings={activeGoldPassSettings}
+                    expanded={showGoldPassPopover}
                     onPress={() => setShowGoldPassPopover((visible) => !visible)}
                   />
                   <IconButton

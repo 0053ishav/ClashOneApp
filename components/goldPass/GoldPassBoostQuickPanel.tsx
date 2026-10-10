@@ -12,6 +12,7 @@ type GoldPassBoostButtonProps = {
   onPress: () => void;
   disabled?: boolean;
   compact?: boolean;
+  expanded?: boolean;
 };
 
 function getPassIconUri(settings: GoldPassBoostSettings | null): string {
@@ -37,13 +38,14 @@ export function GoldPassBoostButton({
   onPress,
   disabled = false,
   compact = false,
+  expanded = false,
 }: GoldPassBoostButtonProps) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={getPassAccessibilityLabel(settings)}
       accessibilityHint="Choose Builder and Research upgrade-time discounts"
-      accessibilityState={{ disabled, expanded: undefined }}
+      accessibilityState={{ disabled, expanded }}
       disabled={disabled}
       hitSlop={8}
       onPress={onPress}

@@ -15,6 +15,7 @@ import type {
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import * as Crypto from "expo-crypto";
+import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -49,6 +50,7 @@ export function MagicItemsQuickModal({
   onClose,
   onActivated,
 }: MagicItemsQuickModalProps) {
+  const router = useRouter();
   const accounts = useAccountStore((state) => state.accounts);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [activeEffectIds, setActiveEffectIds] = useState<Set<string>>(
@@ -68,6 +70,11 @@ export function MagicItemsQuickModal({
   const accountName = accounts.find(
     (account) => account.tag === accountTag,
   )?.name;
+
+  const openInventory = () => {
+    onClose();
+    router.push("/magic-items");
+  };
 
   const loadItems = useCallback(async () => {
     if (!accountTag) {
@@ -265,6 +272,18 @@ export function MagicItemsQuickModal({
               </View>
               <Pressable
                 accessibilityRole="button"
+                accessibilityLabel="Open Magic Item inventory"
+                onPress={openInventory}
+                style={({ pressed }) => [
+                  styles.inventoryButton,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Ionicons name="albums-outline" size={14} color="#fbbf24" />
+                <Text style={styles.inventoryButtonText}>Inventory</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Close Magic Items"
                 onPress={onClose}
                 style={styles.closeButton}
@@ -288,6 +307,24 @@ export function MagicItemsQuickModal({
               </View>
             ) : (
               <ScrollView contentContainerStyle={styles.content}>
+                {!items.some((item) => (quantities[item.id] ?? 0) > 0) && (
+                  <View style={styles.emptyInventoryHint}>
+                    <Ionicons
+                      name="information-circle-outline"
+                      size={20}
+                      color="#93c5fd"
+                    />
+                    <View style={styles.emptyInventoryText}>
+                      <Text style={styles.emptyInventoryTitle}>
+                        No Potions or Snacks available
+                      </Text>
+                      <Text style={styles.emptyInventoryBody}>
+                        Open Inventory to add the quantities you have. Items
+                        with nothing recorded will show 0 available.
+                      </Text>
+                    </View>
+                  </View>
+                )}
                 {items.map((item) => {
                   const quantity = quantities[item.id] ?? 0;
                   const active = activeEffectIds.has(item.id);
@@ -409,6 +446,20 @@ const styles = StyleSheet.create({
   headerText: { flex: 1 },
   title: { color: "#f8fafc", fontSize: 17, fontWeight: "800" },
   subtitle: { marginTop: 3, color: "#94a3b8", fontSize: 11 },
+  inventoryButton: {
+    minHeight: 32,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+    paddingHorizontal: 9,
+    marginRight: 8,
+    borderRadius: 9,
+    backgroundColor: "#1e293b",
+    borderWidth: 1,
+    borderColor: "#475569",
+  },
+  inventoryButtonText: { color: "#fbbf24", fontSize: 10, fontWeight: "800" },
   closeButton: {
     width: 34,
     height: 34,
@@ -418,6 +469,24 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   content: { padding: 16, gap: 10 },
+  emptyInventoryHint: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 9,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: "#172033",
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  emptyInventoryText: { flex: 1 },
+  emptyInventoryTitle: { color: "#e2e8f0", fontSize: 12, fontWeight: "800" },
+  emptyInventoryBody: {
+    marginTop: 4,
+    color: "#94a3b8",
+    fontSize: 11,
+    lineHeight: 15,
+  },
   itemCard: {
     flexDirection: "row",
     alignItems: "center",

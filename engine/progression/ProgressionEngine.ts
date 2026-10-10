@@ -240,7 +240,12 @@ export class ProgressionEngine {
           ...nextStatsResult.appliedModifierIds,
         ]),
       ],
-      remainingCost: remaining.remainingCost,
+      remainingCost:
+        goldPassModifier.appliedModifierIds.length > 0
+          ? Math.round(
+              remaining.remainingCost * goldPassModifier.costMultiplier,
+            )
+          : remaining.remainingCost,
       remainingUpgradeTime:
         goldPassModifier.appliedModifierIds.length > 0
           ? Math.round(

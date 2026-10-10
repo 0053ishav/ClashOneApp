@@ -410,7 +410,7 @@ describe("ProgressionEngine modifiers", () => {
     });
   });
 
-  it("does not apply Research Boost to pets", () => {
+  it("applies Research Boost to Home Village pet upgrades", () => {
     const result = resolve({
       entity: {
         id: 101,
@@ -424,14 +424,16 @@ describe("ProgressionEngine modifiers", () => {
 
     expect(result).toMatchObject({
       baseNextCost: 1_000,
-      nextCost: 1_000,
+      nextCost: 800,
+      remainingCost: 2_400,
       baseNextUpgradeTime: 120,
-      nextUpgradeTime: 120,
-      appliedModifierIds: [],
+      nextUpgradeTime: 96,
+      remainingUpgradeTime: 288,
+      appliedModifierIds: ["gold-pass-research-boost"],
     });
   });
 
-  it("does not apply Builder Boost to traps", () => {
+  it("applies Builder Boost to Home Village traps", () => {
     const result = resolve({
       entity: {
         id: 101,
@@ -445,12 +447,38 @@ describe("ProgressionEngine modifiers", () => {
 
     expect(result).toMatchObject({
       baseNextCost: 1_000,
-      nextCost: 1_000,
+      nextCost: 800,
+      remainingCost: 2_400,
       baseNextUpgradeTime: 120,
-      nextUpgradeTime: 120,
-      appliedModifierIds: [],
+      nextUpgradeTime: 96,
+      remainingUpgradeTime: 288,
+      appliedModifierIds: ["gold-pass-builder-boost"],
     });
   });
+
+  it.each(["crafted", "townhall", "builderhall", "guardian"] as const)(
+    "applies Builder Boost to Home Village %s upgrades",
+    (entityType) => {
+      const result = resolve({
+        entity: {
+          id: 101,
+          slug: entityType,
+          category: entityType,
+          village: "home",
+          maxLevel: 3,
+        },
+        goldPassBoost: { target: "builder", percent: 15 },
+      });
+
+      expect(result).toMatchObject({
+        nextCost: 850,
+        nextUpgradeTime: 102,
+        remainingCost: 2_550,
+        remainingUpgradeTime: 306,
+        appliedModifierIds: ["gold-pass-builder-boost"],
+      });
+    },
+  );
 
   it("rejects an unsupported Gold Pass percentage at the engine boundary", () => {
     expect(() =>

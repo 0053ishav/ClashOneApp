@@ -7,41 +7,32 @@ import type {
   OverallProgressionResult,
   ProgressionApplicationResult,
   ProgressionInput,
-  ProgressionOverviewResult
+  ProgressionOverviewResult,
+  ProgressionUpgradeStartContext,
 } from "@/engine/progression/models";
 
 import type { Upgrade } from "@/types/upgrade";
 
 import { useAccountStore } from "@/stores/accountStore";
-import { useHammerJamStore } from "@/stores/hammerJamStore";
 import { CraftedDefenseProgressionApplicationService } from "./craftedDefenseProgressionApplicationService";
 import { PlayerLevelResolver } from "./playerLevelResolver";
 import { ProgressionQueries } from "./progressionQueries";
 
 import { ProgressionAggregation } from "@/engine/progression/operations/progressionAggregation";
 
-function getProspectiveUpgradeStartAt(
-  upgrade: Pick<Upgrade, "isCompleted" | "endTime">,
-  now: number,
-): number {
-  if (!Number.isFinite(now)) {
-    throw new Error("INVALID_UPGRADE_START_TIMESTAMP");
-  }
-
-  if (upgrade.isCompleted) return now;
-
-  if (!Number.isFinite(upgrade.endTime)) {
-    throw new Error("INVALID_UPGRADE_START_TIMESTAMP");
-  }
-
-  // A following upgrade cannot begin before the tracked upgrade completes.
-  // Clamp stale end times to now, without rewriting the stored upgrade timer.
-  return Math.max(now, upgrade.endTime);
+export interface ResolveUpgradeOptions {
+  /**
+   * Pass event context only when the caller knows the timestamp at which the
+   * represented upgrade starts. Existing imported/active upgrades deliberately
+   * omit this to avoid retroactively applying the current event configuration.
+   */
+  upgradeStartContext?: ProgressionUpgradeStartContext;
 }
 
 export class ProgressionApplicationService {
   static resolveUpgrade(
     upgrade: Upgrade,
+    options: ResolveUpgradeOptions = {},
   ): ProgressionApplicationResult | null {
 
     /**
@@ -104,17 +95,14 @@ export class ProgressionApplicationService {
         progression,
       );
 
-    const now = Date.now();
-    const hammerJam = useHammerJamStore.getState().manifest;
     const input: ProgressionInput = {
       entity: progressionEntity,
       progression,
       currentLevel,
       currentHallLevel,
-      upgradeStartContext: {
-        startsAt: getProspectiveUpgradeStartAt(upgrade, now),
-        hammerJam,
-      },
+      ...(options.upgradeStartContext
+        ? { upgradeStartContext: options.upgradeStartContext }
+        : {}),
     };
 
     return ProgressionService.resolve(

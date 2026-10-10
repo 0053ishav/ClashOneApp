@@ -9,7 +9,7 @@ export type ResolvedGoldPassBoostModifier = {
   appliedModifierIds: string[];
 };
 
-/** Resolve a manually selected Gold Pass time discount deterministically. */
+/** Resolve manually selected Gold Pass cost and time discounts deterministically. */
 export function resolveGoldPassBoostModifier(
   selection: GoldPassBoostSelection,
 ): ResolvedGoldPassBoostModifier {

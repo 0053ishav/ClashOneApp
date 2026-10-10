@@ -916,9 +916,6 @@ export async function importVillageJson(
       },
     );
 
-    const upgradeType =
-      resolveUpgradeType(entity.type);
-
     const normalizedType =
       normalizeEntityType(entity.type);
 

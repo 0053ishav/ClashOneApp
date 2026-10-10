@@ -302,4 +302,79 @@ describe("ProgressionEngine Hammer Jam modifiers", () => {
       }),
     ).toThrow("INVALID_UPGRADE_START_TIMESTAMP");
   });
+  it("applies a manually selected Builder Gold Pass discount to the next and remaining upgrade time", () => {
+    const result = resolve({
+      upgradeStartContext: {
+        startsAt: EVENT_START - 1,
+        hammerJam: activeHammerJam,
+        goldPassBoost: { target: "builder", percent: 20 },
+      },
+    });
+
+    expect(result).toMatchObject({
+      baseNextUpgradeTime: 120,
+      nextUpgradeTime: 96,
+      remainingUpgradeTime: 288,
+      appliedModifierIds: ["gold-pass-builder-boost"],
+    });
+  });
+
+  it("compounds Gold Pass with Hammer Jam without intermediate duration rounding", () => {
+    const result = resolve({
+      upgradeStartContext: {
+        startsAt: EVENT_START,
+        hammerJam: activeHammerJam,
+        goldPassBoost: { target: "builder", percent: 20 },
+      },
+    });
+
+    expect(result).toMatchObject({
+      baseNextUpgradeTime: 120,
+      nextUpgradeTime: 48,
+      nextCost: 500,
+      remainingUpgradeTime: 288,
+      appliedModifierIds: ["hammer-jam", "gold-pass-builder-boost"],
+    });
+  });
+
+  it("uses the explicitly selected Research Gold Pass percentage", () => {
+    const result = resolve({
+      entity: {
+        id: 101,
+        slug: "archer",
+        category: "troop",
+        village: "home",
+        maxLevel: 3,
+      },
+      upgradeStartContext: {
+        startsAt: EVENT_START - 1,
+        hammerJam: activeHammerJam,
+        goldPassBoost: { target: "research", percent: 15 },
+      },
+    });
+
+    expect(result).toMatchObject({
+      baseNextUpgradeTime: 120,
+      nextUpgradeTime: 102,
+      remainingUpgradeTime: 306,
+      appliedModifierIds: ["gold-pass-research-boost"],
+    });
+  });
+
+  it("rejects an unsupported Gold Pass percentage at the engine boundary", () => {
+    expect(() =>
+      resolve({
+        upgradeStartContext: {
+          startsAt: EVENT_START,
+          hammerJam: activeHammerJam,
+          goldPassBoost: {
+            target: "builder",
+            percent: 12 as 0 | 10 | 15 | 20,
+          },
+        },
+      }),
+    ).toThrow("INVALID_GOLD_PASS_BOOST_PERCENT");
+  });
+
+
 });

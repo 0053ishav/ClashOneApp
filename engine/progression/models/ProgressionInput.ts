@@ -1,4 +1,5 @@
 import type { HammerJamManifest } from "@/engine/magicItems/hammerJam";
+import type { GoldPassBoostSelection } from "@/types/goldPass";
 import type {
   ProgressionData,
 } from "@/types/progression";
@@ -14,6 +15,8 @@ import type {
 export interface ProgressionUpgradeStartContext {
   startsAt: number;
   hammerJam: HammerJamManifest;
+  /** Manually selected Gold Pass discount for the next upgrade only. */
+  goldPassBoost?: GoldPassBoostSelection;
 }
 
 /**

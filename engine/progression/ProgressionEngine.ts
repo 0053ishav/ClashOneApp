@@ -15,6 +15,7 @@ import {
 import {
   applyHammerJamToUpgradeStart,
 } from "@/engine/magicItems/applyHammerJamToUpgradeStart";
+import { resolveGoldPassBoostModifier } from "./resolveGoldPassBoost";
 import {
   resolveHammerJamResourceProduction,
 } from "@/engine/magicItems/resolveHammerJamResourceProduction";
@@ -133,11 +134,17 @@ export class ProgressionEngine {
 
     const upgradeStartContext = progression.upgradeStartContext;
     const hammerJamTarget = toHammerJamTarget(progression.entity.category);
+    const goldPassModifier = upgradeStartContext?.goldPassBoost
+      ? resolveGoldPassBoostModifier(upgradeStartContext.goldPassBoost)
+      : { timeMultiplier: 1, appliedModifierIds: [] };
 
     if (!isMaxLevel && next && upgradeStartContext) {
       if (!Number.isFinite(upgradeStartContext.startsAt)) {
         throw new Error("INVALID_UPGRADE_START_TIMESTAMP");
       }
+
+      let hammerJamTimeMultiplier = 1;
+      let shouldAdjustDuration = false;
 
       if (hammerJamTarget) {
         const effectiveStartValues = applyHammerJamToUpgradeStart({
@@ -150,11 +157,29 @@ export class ProgressionEngine {
         });
 
         nextCost = effectiveStartValues.cost ?? baseNextCost;
-        nextUpgradeTime = baseNextUpgradeTime == null
-          ? undefined
-          : effectiveStartValues.durationMinutes;
+        hammerJamTimeMultiplier = effectiveStartValues.timeMultiplier;
         appliedModifierIds = effectiveStartValues.appliedModifierIds;
+        shouldAdjustDuration = true;
       }
+
+      if (goldPassModifier.appliedModifierIds.length > 0) {
+        shouldAdjustDuration = true;
+      }
+
+      // Apply both factors to the base duration, then round once. This avoids
+      // introducing rounding drift by rounding the Hammer Jam result first.
+      if (baseNextUpgradeTime != null && shouldAdjustDuration) {
+        nextUpgradeTime = Math.round(
+          baseNextUpgradeTime *
+            hammerJamTimeMultiplier *
+            goldPassModifier.timeMultiplier,
+        );
+      }
+
+      appliedModifierIds = [
+        ...appliedModifierIds,
+        ...goldPassModifier.appliedModifierIds,
+      ];
     }
 
     const baseCurrentStats = progression.current?.stats ?? {};
@@ -194,7 +219,13 @@ export class ProgressionEngine {
         ]),
       ],
       remainingCost: remaining.remainingCost,
-      remainingUpgradeTime: remaining.remainingUpgradeTime,
+      remainingUpgradeTime:
+        goldPassModifier.appliedModifierIds.length > 0
+          ? Math.round(
+              remaining.remainingUpgradeTime *
+                goldPassModifier.timeMultiplier,
+            )
+          : remaining.remainingUpgradeTime,
       currentHallLevel: progression.currentHallLevel,
       requiredHallLevel: getHallRequirement(progression),
       currentXp: progression.current?.xp,

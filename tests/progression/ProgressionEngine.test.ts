@@ -3,13 +3,14 @@ import { ProgressionEngine } from "@/engine/progression/ProgressionEngine";
 import { ProgressionResolver } from "@/engine/progression/ProgressionResolver";
 import type { ProgressionInput } from "@/engine/progression/models";
 import type { ProgressionData } from "@/types/progression";
+import { ResourceType } from "@/types/resource";
 
 const EVENT_START = Date.parse("2026-11-01T00:00:00+05:30");
 const EVENT_END = Date.parse("2026-11-17T00:00:00+05:30");
 
 const progressionData: ProgressionData = {
   id: 101,
-  resource: "gold",
+  resource: ResourceType.GOLD,
   maxLevel: 3,
   maxHallLevel: 16,
   levels: {

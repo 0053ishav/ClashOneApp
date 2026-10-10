@@ -830,7 +830,11 @@ export async function importVillageJson(
 
     const upgradeType = resolveUpgradeType(entity.type);
     const goldPassBoost = resolveGoldPassBoostForImport(
-      upgradeType,
+      {
+        upgradeType,
+        entityType: entity.type,
+        village: item.village,
+      },
       goldPassSettings,
     );
     const progressionResult =
@@ -1006,7 +1010,14 @@ export async function importVillageJson(
       continue;
     }
 
-    const goldPassBoost = resolveGoldPassBoostForImport("LAB", goldPassSettings);
+    const goldPassBoost = resolveGoldPassBoostForImport(
+      {
+        upgradeType: "LAB",
+        entityType: entity.type,
+        village: lab.village,
+      },
+      goldPassSettings,
+    );
     const progressionResult =
       ProgressionApplicationService.resolveUpgrade({
         id: randomUUID(),

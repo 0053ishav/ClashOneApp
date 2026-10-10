@@ -5,7 +5,6 @@ import type {
 } from "@/types/goldPass";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -89,7 +88,6 @@ type GoldPassBoostQuickPanelProps = {
 };
 
 const PERCENTAGES: readonly GoldPassBoostPercent[] = [0, 10, 15, 20];
-type DropdownId = "both" | "builder" | "research";
 
 function getPassName(settings: GoldPassBoostSettings | null): string {
   return (settings?.builderBoostPercent ?? 0) > 0 ||
@@ -98,98 +96,47 @@ function getPassName(settings: GoldPassBoostSettings | null): string {
     : "Silver Pass";
 }
 
-function PercentageDropdown({
+function PercentageChoices({
   label,
   selected,
-  expanded,
   saving,
-  onToggle,
   onSelect,
-  openUpwards = false,
 }: {
   label: string;
   selected: GoldPassBoostPercent | null;
-  expanded: boolean;
   saving: boolean;
-  onToggle: () => void;
   onSelect: (percent: GoldPassBoostPercent) => void;
-  openUpwards?: boolean;
 }) {
   return (
-    <View
-      style={[
-        styles.dropdownContainer,
-        expanded && styles.dropdownContainerExpanded,
-      ]}
-    >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${label}: ${selected == null ? "not matching" : `${selected}% selected`}`}
-        accessibilityHint="Open percentage choices"
-        accessibilityState={{ expanded, disabled: saving }}
-        disabled={saving}
-        onPress={onToggle}
-        style={({ pressed }) => [
-          styles.dropdownTrigger,
-          expanded && styles.dropdownTriggerExpanded,
-          saving && styles.dropdownDisabled,
-          pressed && !saving && styles.pressed,
-        ]}
-      >
-        <Text
-          style={[
-            styles.dropdownValue,
-            selected == null && styles.dropdownPlaceholder,
-          ]}
-        >
-          {selected == null ? "Choose…" : `${selected}%`}
-        </Text>
-        <Ionicons
-          name={expanded ? "chevron-up" : "chevron-down"}
-          size={16}
-          color={expanded ? "#fbbf24" : "#94a3b8"}
-        />
-      </Pressable>
-
-      {expanded && (
-        <View
-          style={[
-            styles.dropdownMenu,
-            openUpwards ? styles.dropdownMenuAbove : styles.dropdownMenuBelow,
-          ]}
-        >
-          {PERCENTAGES.map((percent) => {
-            const selectedOption = selected === percent;
-            return (
-              <Pressable
-                key={percent}
-                accessibilityRole="button"
-                accessibilityLabel={`Set ${label} to ${percent}%`}
-                accessibilityState={{ selected: selectedOption, disabled: saving }}
-                disabled={saving}
-                onPress={() => onSelect(percent)}
-                style={({ pressed }) => [
-                  styles.dropdownOption,
-                  selectedOption && styles.dropdownOptionSelected,
-                  pressed && !saving && styles.pressed,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.dropdownOptionText,
-                    selectedOption && styles.dropdownOptionTextSelected,
-                  ]}
-                >
-                  {percent}%
-                </Text>
-                {selectedOption && (
-                  <Ionicons name="checkmark" size={15} color="#0f172a" />
-                )}
-              </Pressable>
-            );
-          })}
-        </View>
-      )}
+    <View style={styles.percentageChoices}>
+      {PERCENTAGES.map((percent) => {
+        const selectedOption = selected === percent;
+        return (
+          <Pressable
+            key={percent}
+            accessibilityRole="button"
+            accessibilityLabel={`Set ${label} to ${percent}%`}
+            accessibilityState={{ selected: selectedOption, disabled: saving }}
+            disabled={saving}
+            onPress={() => onSelect(percent)}
+            style={({ pressed }) => [
+              styles.percentageChoice,
+              selectedOption && styles.percentageChoiceSelected,
+              saving && styles.choiceDisabled,
+              pressed && !saving && styles.pressed,
+            ]}
+          >
+            <Text
+              style={[
+                styles.percentageChoiceText,
+                selectedOption && styles.percentageChoiceTextSelected,
+              ]}
+            >
+              {percent}%
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -199,27 +146,18 @@ function BoostSelector({
   label,
   helper,
   selected,
-  expanded,
   saving,
-  onToggle,
   onSelect,
 }: {
   icon: "builder-boost" | "research-boost";
   label: string;
   helper: string;
   selected: GoldPassBoostPercent;
-  expanded: boolean;
   saving: boolean;
-  onToggle: () => void;
   onSelect: (percent: GoldPassBoostPercent) => void;
 }) {
   return (
-    <View
-      style={[
-        styles.boostColumn,
-        expanded && styles.dropdownLayerTop,
-      ]}
-    >
+    <View style={styles.boostColumn}>
       <View style={styles.boostHeader}>
         <Image
           source={{ uri: `${ENV.CDN_BASE}/v2/home/other/${icon}.png` }}
@@ -232,14 +170,11 @@ function BoostSelector({
           <Text style={styles.boostHelper}>{helper}</Text>
         </View>
       </View>
-      <PercentageDropdown
+      <PercentageChoices
         label={label}
         selected={selected}
-        expanded={expanded}
         saving={saving}
-        onToggle={onToggle}
         onSelect={onSelect}
-        openUpwards={icon === "research-boost"}
       />
     </View>
   );
@@ -258,33 +193,12 @@ export function GoldPassBoostQuickPanel({
   onSetBuilder,
   onSetResearch,
 }: GoldPassBoostQuickPanelProps) {
-  const [expandedDropdown, setExpandedDropdown] = useState<DropdownId | null>(
-    null,
-  );
-
   const builder = settings?.builderBoostPercent ?? 0;
   const research = settings?.researchBoostPercent ?? 0;
   const selectedForBoth: GoldPassBoostPercent | null =
     builder === research ? builder : null;
 
-  const close = () => {
-    setExpandedDropdown(null);
-    onClose();
-  };
-
-  const select = (
-    dropdown: DropdownId,
-    percent: GoldPassBoostPercent,
-  ) => {
-    setExpandedDropdown(null);
-    if (dropdown === "both") {
-      onSetBoth(percent);
-    } else if (dropdown === "builder") {
-      onSetBuilder(percent);
-    } else {
-      onSetResearch(percent);
-    }
-  };
+  const close = onClose;
 
   return (
     <Modal
@@ -368,30 +282,21 @@ export function GoldPassBoostQuickPanel({
               </View>
             ) : (
               <>
-                <View
-                  style={[
-                    styles.setBothCard,
-                    expandedDropdown === "both" && styles.dropdownLayerTop,
-                  ]}
-                >
-                  <View style={styles.setBothText}>
-                    <Text style={styles.setBothTitle}>Set both boosts</Text>
-                    <Text style={styles.setBothSubtitle}>
-                      Apply one percentage to Builder and Research.
-                    </Text>
+                <View style={styles.setBothCard}>
+                  <View style={styles.setBothHeader}>
+                    <View style={styles.setBothText}>
+                      <Text style={styles.setBothTitle}>Set both boosts</Text>
+                      <Text style={styles.setBothSubtitle}>
+                        Apply one percentage to Builder and Research.
+                      </Text>
+                    </View>
+                    {saving && <ActivityIndicator size="small" color="#fbbf24" />}
                   </View>
-                  {saving && <ActivityIndicator size="small" color="#fbbf24" />}
-                  <PercentageDropdown
+                  <PercentageChoices
                     label="both boosts"
                     selected={selectedForBoth}
-                    expanded={expandedDropdown === "both"}
                     saving={saving}
-                    onToggle={() =>
-                      setExpandedDropdown((current) =>
-                        current === "both" ? null : "both",
-                      )
-                    }
-                    onSelect={(percent) => select("both", percent)}
+                    onSelect={onSetBoth}
                   />
                 </View>
 
@@ -403,14 +308,8 @@ export function GoldPassBoostQuickPanel({
                     label="Builder Boost"
                     helper="Buildings"
                     selected={settings.builderBoostPercent}
-                    expanded={expandedDropdown === "builder"}
                     saving={saving}
-                    onToggle={() =>
-                      setExpandedDropdown((current) =>
-                        current === "builder" ? null : "builder",
-                      )
-                    }
-                    onSelect={(percent) => select("builder", percent)}
+                    onSelect={onSetBuilder}
                   />
 
                   <View style={styles.boostColumnDivider} />
@@ -420,14 +319,8 @@ export function GoldPassBoostQuickPanel({
                     label="Research Boost"
                     helper="Laboratory"
                     selected={settings.researchBoostPercent}
-                    expanded={expandedDropdown === "research"}
                     saving={saving}
-                    onToggle={() =>
-                      setExpandedDropdown((current) =>
-                        current === "research" ? null : "research",
-                      )
-                    }
-                    onSelect={(percent) => select("research", percent)}
+                    onSelect={onSetResearch}
                   />
                 </View>
               </>
@@ -525,18 +418,20 @@ const styles = StyleSheet.create({
     borderColor: "#334155",
     gap: 10,
   },
-  dropdownLayerTop: {
-    zIndex: 30,
-    elevation: 30,
+  setBothHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
   },
-  setBothText: { gap: 3 },
+  setBothText: { flex: 1, minWidth: 0, gap: 3 },
   setBothTitle: { color: "#f1f5f9", fontSize: 13, fontWeight: "800" },
   setBothSubtitle: { color: "#94a3b8", fontSize: 10, lineHeight: 14 },
   sectionDivider: { height: StyleSheet.hairlineWidth, backgroundColor: "#27364d" },
   boostSelectorsRow: {
     flexDirection: "row",
     alignItems: "stretch",
-    gap: 12,
+    gap: 10,
     zIndex: 1,
   },
   boostColumn: {
@@ -551,67 +446,42 @@ const styles = StyleSheet.create({
     marginVertical: 3,
   },
   boostIcon: { width: 34, height: 34 },
-  boostHeader: { flexDirection: "row", alignItems: "center", gap: 8, minHeight: 38 },
+  boostHeader: { flexDirection: "row", alignItems: "center", gap: 7, minHeight: 38 },
   boostHeaderText: { flex: 1, minWidth: 0, gap: 3 },
   boostLabel: { color: "#e2e8f0", fontSize: 11, fontWeight: "800" },
   boostHelper: { color: "#64748b", fontSize: 9 },
-  dropdownContainer: { gap: 5, position: "relative" },
-  dropdownContainerExpanded: { zIndex: 40, elevation: 40 },
-  dropdownTrigger: {
-    minHeight: 43,
+  percentageChoices: {
     flexDirection: "row",
+    alignItems: "stretch",
+    gap: 3,
+    width: "100%",
+  },
+  percentageChoice: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 34,
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: "#111c2e",
+    justifyContent: "center",
+    paddingHorizontal: 1,
+    borderRadius: 7,
+    backgroundColor: "#0b1425",
     borderWidth: 1,
     borderColor: "#334155",
   },
-  dropdownTriggerExpanded: {
+  percentageChoiceSelected: {
+    backgroundColor: "#fbbf24",
     borderColor: "#fbbf24",
-    backgroundColor: "#172238",
   },
-  dropdownDisabled: { opacity: 0.55 },
-  dropdownValue: { color: "#f8fafc", fontSize: 13, fontWeight: "800" },
-  dropdownPlaceholder: { color: "#94a3b8", fontSize: 11 },
-  dropdownMenu: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    zIndex: 50,
-    elevation: 50,
-    padding: 4,
-    borderRadius: 10,
-    backgroundColor: "#0b1425",
-    borderWidth: 1,
-    borderColor: "#475569",
-    gap: 3,
-    shadowColor: "#000",
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
+  choiceDisabled: { opacity: 0.55 },
+  percentageChoiceText: {
+    color: "#cbd5e1",
+    fontSize: 9,
+    fontWeight: "800",
   },
-  dropdownMenuBelow: {
-    top: "100%",
-    marginTop: 5,
+  percentageChoiceTextSelected: {
+    color: "#0f172a",
+    fontWeight: "900",
   },
-  dropdownMenuAbove: {
-    bottom: "100%",
-    marginBottom: 5,
-  },
-  dropdownOption: {
-    minHeight: 37,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 11,
-    borderRadius: 7,
-  },
-  dropdownOptionSelected: { backgroundColor: "#fbbf24" },
-  dropdownOptionText: { color: "#cbd5e1", fontSize: 12, fontWeight: "700" },
-  dropdownOptionTextSelected: { color: "#0f172a", fontWeight: "900" },
   stateRow: {
     flexDirection: "row",
     alignItems: "center",

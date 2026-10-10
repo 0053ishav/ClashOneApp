@@ -48,8 +48,8 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import * as Notifications from "expo-notifications";
-import { useRouter } from "expo-router";
-import { Children, useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { Children, useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Linking,
@@ -371,36 +371,38 @@ export default function SettingsScreen() {
     setLocalBuilderCount(acc.builderCount);
   }, [accounts, activeTag]);
 
-  useEffect(() => {
-    let cancelled = false;
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
 
-    if (!activeTag) {
-      setGoldPassSettings(null);
-      setIsLoadingGoldPassSettings(false);
+      if (!activeTag) {
+        setGoldPassSettings(null);
+        setIsLoadingGoldPassSettings(false);
+        setGoldPassSettingsLoadFailed(false);
+        return () => {
+          cancelled = true;
+        };
+      }
+
+      setIsLoadingGoldPassSettings(true);
       setGoldPassSettingsLoadFailed(false);
+
+      void getGoldPassBoostSettings(activeTag)
+        .then((settings) => {
+          if (!cancelled) setGoldPassSettings(settings);
+        })
+        .catch(() => {
+          if (!cancelled) setGoldPassSettingsLoadFailed(true);
+        })
+        .finally(() => {
+          if (!cancelled) setIsLoadingGoldPassSettings(false);
+        });
+
       return () => {
         cancelled = true;
       };
-    }
-
-    setIsLoadingGoldPassSettings(true);
-    setGoldPassSettingsLoadFailed(false);
-
-    void getGoldPassBoostSettings(activeTag)
-      .then((settings) => {
-        if (!cancelled) setGoldPassSettings(settings);
-      })
-      .catch(() => {
-        if (!cancelled) setGoldPassSettingsLoadFailed(true);
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoadingGoldPassSettings(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [activeTag, goldPassReloadKey]);
+    }, [activeTag, goldPassReloadKey]),
+  );
 
   useEffect(() => {
     setLocalNotificationsEnabled(getNotificationsEnabled());

@@ -635,7 +635,7 @@ export default function SettingsScreen() {
               title="Select a village first"
               subtitle="Gold Pass settings are saved separately for each account."
             />
-          ) : isLoadingGoldPassSettings ? (
+          ) : (isLoadingGoldPassSettings || (!goldPassSettingsLoadFailed && !activeGoldPassSettings)) ? (
             <Row
               icon="time-outline"
               iconColor="#64748b"

@@ -16,6 +16,7 @@ import {
   applyHammerJamToUpgradeStart,
 } from "@/engine/magicItems/applyHammerJamToUpgradeStart";
 import { resolveGoldPassBoostModifier } from "./resolveGoldPassBoost";
+import { isGoldPassBoostApplicable } from "./isGoldPassBoostApplicable";
 import {
   resolveHammerJamResourceProduction,
 } from "@/engine/magicItems/resolveHammerJamResourceProduction";
@@ -134,9 +135,25 @@ export class ProgressionEngine {
 
     const upgradeStartContext = progression.upgradeStartContext;
     const hammerJamTarget = toHammerJamTarget(progression.entity.category);
-    const goldPassModifier = progression.goldPassBoost
+    const noGoldPassModifier = {
+      costMultiplier: 1,
+      timeMultiplier: 1,
+      appliedModifierIds: [] as string[],
+    };
+    // Resolve first so invalid percentages are rejected even when the target
+    // entity is ineligible for the selected boost.
+    const requestedGoldPassModifier = progression.goldPassBoost
       ? resolveGoldPassBoostModifier(progression.goldPassBoost)
-      : { timeMultiplier: 1, appliedModifierIds: [] };
+      : noGoldPassModifier;
+    const goldPassModifier =
+      progression.goldPassBoost &&
+      isGoldPassBoostApplicable({
+        village: progression.entity.village,
+        entityType: progression.entity.category,
+        target: progression.goldPassBoost.target,
+      })
+        ? requestedGoldPassModifier
+        : noGoldPassModifier;
 
     if (!isMaxLevel && next) {
       let hammerJamTimeMultiplier = 1;
@@ -164,8 +181,15 @@ export class ProgressionEngine {
         }
       }
 
-      // Apply both factors to the base duration, then round once. This avoids
-      // introducing rounding drift by rounding the Hammer Jam result first.
+      // Gold Pass and Hammer Jam compound multiplicatively for both cost and
+      // time. Apply the Gold Pass cost factor to the already event-adjusted
+      // cost, while duration factors are multiplied from the base and rounded once.
+      if (nextCost != null && goldPassModifier.costMultiplier !== 1) {
+        nextCost = Math.round(
+          nextCost * goldPassModifier.costMultiplier,
+        );
+      }
+
       if (baseNextUpgradeTime != null && shouldAdjustDuration) {
         nextUpgradeTime = Math.round(
           baseNextUpgradeTime *

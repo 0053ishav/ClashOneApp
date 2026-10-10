@@ -30,6 +30,7 @@ export function resolveGoldPassBoostForUpgradeType(
         percent: settings.builderBoostPercent,
       };
     case "LAB":
+    case "PET":
       if (
         !isGoldPassBoostApplicable({
           village: upgrade.village,
@@ -43,8 +44,6 @@ export function resolveGoldPassBoostForUpgradeType(
         target: "research",
         percent: settings.researchBoostPercent,
       };
-    case "PET":
-      return undefined;
     default: {
       const exhaustive: never = upgrade.upgradeType;
       throw new Error(`UNSUPPORTED_GOLD_PASS_UPGRADE_TYPE:${exhaustive}`);

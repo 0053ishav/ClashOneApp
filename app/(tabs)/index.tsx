@@ -1,4 +1,8 @@
 import GoblinEventBanner from "@/components/GoblinEventBanner";
+import {
+  GoldPassBoostButton,
+  GoldPassBoostQuickPanel,
+} from "@/components/goldPass/GoldPassBoostQuickPanel";
 import { HammerJamBanner } from "@/components/HammerJamBanner";
 import { LabSection } from "@/components/home/LabSection";
 import {
@@ -22,7 +26,7 @@ import { ENV } from "@/config/env";
 import { MAGIC_ITEMS } from "@/config/magicItems";
 import { useCraftedResolver } from "@/engine/crafted/craftedResolver";
 import type { ProgressionApplicationResult } from "@/engine/progression/models";
-import type { GoldPassBoostSettings } from "@/types/goldPass";
+import type { GoldPassBoostPercent, GoldPassBoostSettings } from "@/types/goldPass";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { useRemoteConfig } from "@/provider/remoteConfigProvider";
 import { getAccountState } from "@/services/accountStateService";
@@ -32,7 +36,10 @@ import {
 } from "@/services/magicItemService";
 import { ProgressionApplicationService } from "@/services/progression";
 import { resolveGoldPassBoostForUpgradeType } from "@/engine/progression/resolveGoldPassBoostForUpgradeType";
-import { getGoldPassBoostSettings } from "@/services/goldPassBoostService";
+import {
+  getGoldPassBoostSettings,
+  saveGoldPassBoostSettings as persistGoldPassBoostSettings,
+} from "@/services/goldPassBoostService";
 import { buildSupportInfo } from "@/services/supportDebugInfo";
 import { deleteUpgrade } from "@/services/upgradeService";
 import { applyBookToActiveUpgrade } from "@/services/useBookOnActiveUpgrade";
@@ -74,6 +81,7 @@ import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
   LayoutAnimation,
   Pressable,
   RefreshControl,
@@ -128,6 +136,11 @@ export default function HomeScreen() {
     useState<ProgressionApplicationResult | null>(null);
   const [goldPassSettings, setGoldPassSettings] =
     useState<GoldPassBoostSettings | null>(null);
+  const [showGoldPassPopover, setShowGoldPassPopover] = useState(false);
+  const [isLoadingGoldPassSettings, setIsLoadingGoldPassSettings] = useState(false);
+  const [goldPassSettingsLoadFailed, setGoldPassSettingsLoadFailed] = useState(false);
+  const [isSavingGoldPassSettings, setIsSavingGoldPassSettings] = useState(false);
+  const [goldPassReloadKey, setGoldPassReloadKey] = useState(0);
   const goldPassProgressionRequestRef = useRef(0);
   const [refreshing, setRefreshing] = useState(false);
   const [completedId, setCompletedId] = useState<string | null>(null);
@@ -143,6 +156,8 @@ export default function HomeScreen() {
   const lastSync = activeTag ? lastJsonSyncMap[activeTag] : null;
   const accounts = useAccountStore((s) => s.accounts);
   const activeAccount = accounts.find((a) => a.tag === activeTag);
+  const activeGoldPassSettings =
+    goldPassSettings?.accountTag === activeTag ? goldPassSettings : null;
 
   const builderCount = activeAccount?.builderCount ?? 1;
   const townHall = profile?.townHallLevel ?? 1;
@@ -365,23 +380,32 @@ export default function HomeScreen() {
 
       if (!activeTag) {
         setGoldPassSettings(null);
+        setIsLoadingGoldPassSettings(false);
+        setGoldPassSettingsLoadFailed(false);
+        setShowGoldPassPopover(false);
         return () => {
           cancelled = true;
         };
       }
+
+      setIsLoadingGoldPassSettings(true);
+      setGoldPassSettingsLoadFailed(false);
 
       void getGoldPassBoostSettings(activeTag)
         .then((settings) => {
           if (!cancelled) setGoldPassSettings(settings);
         })
         .catch(() => {
-          if (!cancelled) setGoldPassSettings(null);
+          if (!cancelled) setGoldPassSettingsLoadFailed(true);
+        })
+        .finally(() => {
+          if (!cancelled) setIsLoadingGoldPassSettings(false);
         });
 
       return () => {
         cancelled = true;
       };
-    }, [activeTag]),
+    }, [activeTag, goldPassReloadKey]),
   );
 
   useEffect(() => {
@@ -624,6 +648,45 @@ export default function HomeScreen() {
       builderBaseNextBuilderLabel = "Builder";
     }
   }
+  const saveGoldPassUpdates = async (
+    updates: Partial<Pick<GoldPassBoostSettings, "builderBoostPercent" | "researchBoostPercent">>,
+  ) => {
+    const accountTag = activeTag;
+    if (!accountTag || !activeGoldPassSettings || isSavingGoldPassSettings) {
+      return;
+    }
+
+    const nextSettings: GoldPassBoostSettings = {
+      accountTag,
+      builderBoostPercent:
+        updates.builderBoostPercent ?? activeGoldPassSettings.builderBoostPercent,
+      researchBoostPercent:
+        updates.researchBoostPercent ?? activeGoldPassSettings.researchBoostPercent,
+    };
+
+    if (
+      nextSettings.builderBoostPercent === activeGoldPassSettings.builderBoostPercent &&
+      nextSettings.researchBoostPercent === activeGoldPassSettings.researchBoostPercent
+    ) {
+      return;
+    }
+
+    setIsSavingGoldPassSettings(true);
+    try {
+      await persistGoldPassBoostSettings(nextSettings);
+      if (useAccountStore.getState().activeTag === accountTag) {
+        setGoldPassSettings(nextSettings);
+      }
+    } catch {
+      Alert.alert(
+        "Couldn't save pass boosts",
+        "Your saved percentages haven't changed. Please try again.",
+      );
+    } finally {
+      setIsSavingGoldPassSettings(false);
+    }
+  };
+
   const handleRowPress = (upgrade: Upgrade) => {
     const requestId = ++goldPassProgressionRequestRef.current;
     setSelectedUpgrade(upgrade);
@@ -640,8 +703,8 @@ export default function HomeScreen() {
     };
 
     const cachedSettings =
-      goldPassSettings?.accountTag === upgrade.accountTag
-        ? goldPassSettings
+      activeGoldPassSettings?.accountTag === upgrade.accountTag
+        ? activeGoldPassSettings
         : null;
 
     if (cachedSettings) {
@@ -792,6 +855,12 @@ export default function HomeScreen() {
                   color="#94a3b8"
                 />
               </Pressable>
+              <GoldPassBoostButton
+                settings={activeGoldPassSettings}
+                compact
+                disabled={!activeTag}
+                onPress={() => setShowGoldPassPopover((visible) => !visible)}
+              />
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Sync village data"
@@ -975,6 +1044,28 @@ export default function HomeScreen() {
             </Pressable>
           </View>
         </View>
+        {showGoldPassPopover && activeTag && (
+          <GoldPassBoostQuickPanel
+            settings={activeGoldPassSettings}
+            loading={isLoadingGoldPassSettings}
+            loadFailed={goldPassSettingsLoadFailed}
+            saving={isSavingGoldPassSettings}
+            onClose={() => setShowGoldPassPopover(false)}
+            onRetry={() => setGoldPassReloadKey((current) => current + 1)}
+            onSetBoth={(percent) =>
+              void saveGoldPassUpdates({
+                builderBoostPercent: percent,
+                researchBoostPercent: percent,
+              })
+            }
+            onSetBuilder={(percent) =>
+              void saveGoldPassUpdates({ builderBoostPercent: percent })
+            }
+            onSetResearch={(percent) =>
+              void saveGoldPassUpdates({ researchBoostPercent: percent })
+            }
+          />
+        )}
       </View>
 
       {/* ── Scrollable content ── */}

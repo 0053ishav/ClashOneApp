@@ -304,10 +304,10 @@ describe("ProgressionEngine Hammer Jam modifiers", () => {
   });
   it("applies a manually selected Builder Gold Pass discount to the next and remaining upgrade time", () => {
     const result = resolve({
+      goldPassBoost: { target: "builder", percent: 20 },
       upgradeStartContext: {
         startsAt: EVENT_START - 1,
         hammerJam: activeHammerJam,
-        goldPassBoost: { target: "builder", percent: 20 },
       },
     });
 
@@ -321,10 +321,10 @@ describe("ProgressionEngine Hammer Jam modifiers", () => {
 
   it("compounds Gold Pass with Hammer Jam without intermediate duration rounding", () => {
     const result = resolve({
+      goldPassBoost: { target: "builder", percent: 20 },
       upgradeStartContext: {
         startsAt: EVENT_START,
         hammerJam: activeHammerJam,
-        goldPassBoost: { target: "builder", percent: 20 },
       },
     });
 
@@ -346,10 +346,10 @@ describe("ProgressionEngine Hammer Jam modifiers", () => {
         village: "home",
         maxLevel: 3,
       },
+      goldPassBoost: { target: "research", percent: 15 },
       upgradeStartContext: {
         startsAt: EVENT_START - 1,
         hammerJam: activeHammerJam,
-        goldPassBoost: { target: "research", percent: 15 },
       },
     });
 
@@ -364,13 +364,13 @@ describe("ProgressionEngine Hammer Jam modifiers", () => {
   it("rejects an unsupported Gold Pass percentage at the engine boundary", () => {
     expect(() =>
       resolve({
+        goldPassBoost: {
+          target: "builder",
+          percent: 12 as unknown as 0 | 10 | 15 | 20,
+        },
         upgradeStartContext: {
           startsAt: EVENT_START,
           hammerJam: activeHammerJam,
-          goldPassBoost: {
-            target: "builder",
-            percent: 12 as 0 | 10 | 15 | 20,
-          },
         },
       }),
     ).toThrow("INVALID_GOLD_PASS_BOOST_PERCENT");

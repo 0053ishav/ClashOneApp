@@ -134,36 +134,34 @@ export class ProgressionEngine {
 
     const upgradeStartContext = progression.upgradeStartContext;
     const hammerJamTarget = toHammerJamTarget(progression.entity.category);
-    const goldPassModifier = upgradeStartContext?.goldPassBoost
-      ? resolveGoldPassBoostModifier(upgradeStartContext.goldPassBoost)
+    const goldPassModifier = progression.goldPassBoost
+      ? resolveGoldPassBoostModifier(progression.goldPassBoost)
       : { timeMultiplier: 1, appliedModifierIds: [] };
 
-    if (!isMaxLevel && next && upgradeStartContext) {
-      if (!Number.isFinite(upgradeStartContext.startsAt)) {
-        throw new Error("INVALID_UPGRADE_START_TIMESTAMP");
-      }
-
+    if (!isMaxLevel && next) {
       let hammerJamTimeMultiplier = 1;
-      let shouldAdjustDuration = false;
+      let shouldAdjustDuration = goldPassModifier.appliedModifierIds.length > 0;
 
-      if (hammerJamTarget) {
-        const effectiveStartValues = applyHammerJamToUpgradeStart({
-          ...(baseNextCost == null ? {} : { baseCost: baseNextCost }),
-          baseDurationMinutes: baseNextUpgradeTime ?? 0,
-          target: hammerJamTarget,
-          village: progression.entity.village,
-          startsAt: upgradeStartContext.startsAt,
-          manifest: upgradeStartContext.hammerJam,
-        });
+      if (upgradeStartContext) {
+        if (!Number.isFinite(upgradeStartContext.startsAt)) {
+          throw new Error("INVALID_UPGRADE_START_TIMESTAMP");
+        }
 
-        nextCost = effectiveStartValues.cost ?? baseNextCost;
-        hammerJamTimeMultiplier = effectiveStartValues.timeMultiplier;
-        appliedModifierIds = effectiveStartValues.appliedModifierIds;
-        shouldAdjustDuration = true;
-      }
+        if (hammerJamTarget) {
+          const effectiveStartValues = applyHammerJamToUpgradeStart({
+            ...(baseNextCost == null ? {} : { baseCost: baseNextCost }),
+            baseDurationMinutes: baseNextUpgradeTime ?? 0,
+            target: hammerJamTarget,
+            village: progression.entity.village,
+            startsAt: upgradeStartContext.startsAt,
+            manifest: upgradeStartContext.hammerJam,
+          });
 
-      if (goldPassModifier.appliedModifierIds.length > 0) {
-        shouldAdjustDuration = true;
+          nextCost = effectiveStartValues.cost ?? baseNextCost;
+          hammerJamTimeMultiplier = effectiveStartValues.timeMultiplier;
+          appliedModifierIds = effectiveStartValues.appliedModifierIds;
+          shouldAdjustDuration = true;
+        }
       }
 
       // Apply both factors to the base duration, then round once. This avoids

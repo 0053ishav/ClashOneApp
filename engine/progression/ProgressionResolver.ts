@@ -43,6 +43,7 @@ export class ProgressionResolver {
       ...(input.resourceProductionContext
         ? { resourceProductionContext: input.resourceProductionContext }
         : {}),
+      ...(input.goldPassBoost ? { goldPassBoost: input.goldPassBoost } : {}),
     };
   }
 

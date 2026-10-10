@@ -14,6 +14,7 @@ import type {
 import type { Upgrade } from "@/types/upgrade";
 
 import { useAccountStore } from "@/stores/accountStore";
+import { useHammerJamStore } from "@/stores/hammerJamStore";
 import { CraftedDefenseProgressionApplicationService } from "./craftedDefenseProgressionApplicationService";
 import { PlayerLevelResolver } from "./playerLevelResolver";
 import { ProgressionQueries } from "./progressionQueries";
@@ -95,11 +96,17 @@ export class ProgressionApplicationService {
         progression,
       );
 
+    const now = Date.now();
+    const hammerJam = useHammerJamStore.getState().manifest;
     const input: ProgressionInput = {
       entity: progressionEntity,
       progression,
       currentLevel,
       currentHallLevel,
+      resourceProductionContext: {
+        at: now,
+        hammerJam,
+      },
       ...(options.upgradeStartContext
         ? { upgradeStartContext: options.upgradeStartContext }
         : {}),

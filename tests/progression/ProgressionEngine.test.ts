@@ -45,6 +45,7 @@ const activeHammerJam = {
   enabled: true,
   startsAt: new Date(EVENT_START).toISOString(),
   endsAt: new Date(EVENT_END).toISOString(),
+  resourceMultiplier: 2,
 };
 
 describe("ProgressionEngine Hammer Jam modifiers", () => {
@@ -197,6 +198,97 @@ describe("ProgressionEngine Hammer Jam modifiers", () => {
     expect(result.baseNextUpgradeTime).toBe(120);
     expect(result.nextUpgradeTime).toBe(60);
     expect(result.appliedModifierIds).toEqual(["hammer-jam"]);
+  });
+
+  it("applies the configured resource multiplier to production stats and preserves base stats", () => {
+    const productionData: ProgressionData = {
+      ...progressionData,
+      levels: {
+        ...progressionData.levels,
+        1: {
+          hallLevel: 1,
+          cost: 100,
+          upgradeTime: 30,
+          stats: { production: 100, hitpoints: 500 },
+        },
+        2: {
+          hallLevel: 1,
+          cost: 1_000,
+          upgradeTime: 120,
+          stats: { production: 150, hitpoints: 600 },
+        },
+      },
+    };
+
+    const result = resolve({
+      progression: productionData,
+      resourceProductionContext: {
+        at: EVENT_START,
+        hammerJam: activeHammerJam,
+      },
+    });
+
+    expect(result.baseCurrentStats).toEqual({ production: 100, hitpoints: 500 });
+    expect(result.baseNextStats).toEqual({ production: 150, hitpoints: 600 });
+    expect(result.currentStats).toEqual({ production: 200, hitpoints: 500 });
+    expect(result.nextStats).toEqual({ production: 300, hitpoints: 600 });
+    expect(result.appliedResourceModifierIds).toEqual([
+      "hammer-jam-resource-production",
+    ]);
+  });
+
+  it("does not apply resource production modifiers to unsupported categories or villages", () => {
+    const productionData: ProgressionData = {
+      ...progressionData,
+      levels: {
+        ...progressionData.levels,
+        1: { hallLevel: 1, cost: 100, upgradeTime: 30, stats: { production: 100 } },
+        2: { hallLevel: 1, cost: 1_000, upgradeTime: 120, stats: { production: 150 } },
+      },
+    };
+    const context = {
+      at: EVENT_START,
+      hammerJam: activeHammerJam,
+    };
+
+    const trap = resolve({
+      progression: productionData,
+      entity: {
+        id: 101,
+        slug: "spring-trap",
+        category: "trap",
+        village: "home",
+        maxLevel: 3,
+      },
+      resourceProductionContext: context,
+    });
+    const builderBase = resolve({
+      progression: productionData,
+      entity: {
+        id: 101,
+        slug: "builder-hall-building",
+        category: "building",
+        village: "builderBase",
+        maxLevel: 3,
+      },
+      resourceProductionContext: context,
+    });
+
+    expect(trap.currentStats.production).toBe(100);
+    expect(trap.nextStats.production).toBe(150);
+    expect(builderBase.currentStats.production).toBe(100);
+    expect(builderBase.nextStats.production).toBe(150);
+    expect(trap.appliedResourceModifierIds).toEqual([]);
+    expect(builderBase.appliedResourceModifierIds).toEqual([]);
+  });
+
+  it("rejects invalid resource production timestamps", () => {
+    expect(() => resolve({
+      resourceProductionContext: {
+        at: Number.NaN,
+        hammerJam: activeHammerJam,
+      },
+    })).toThrow("INVALID_RESOURCE_PRODUCTION_TIMESTAMP");
   });
 
   it("rejects invalid start timestamps instead of silently using the base values", () => {

@@ -40,6 +40,9 @@ export class ProgressionResolver {
       ...(input.upgradeStartContext
         ? { upgradeStartContext: input.upgradeStartContext }
         : {}),
+      ...(input.resourceProductionContext
+        ? { resourceProductionContext: input.resourceProductionContext }
+        : {}),
     };
   }
 

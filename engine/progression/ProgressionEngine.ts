@@ -15,6 +15,9 @@ import {
 import {
   applyHammerJamToUpgradeStart,
 } from "@/engine/magicItems/applyHammerJamToUpgradeStart";
+import {
+  resolveHammerJamResourceProduction,
+} from "@/engine/magicItems/resolveHammerJamResourceProduction";
 import type {
   HammerJamTarget,
 } from "@/engine/magicItems/hammerJam";
@@ -32,6 +35,44 @@ function toHammerJamTarget(
     default:
       return null;
   }
+}
+
+function applyResourceProductionModifier(
+  stats: Record<string, number>,
+  progression: ResolvedProgression,
+): {
+  stats: Record<string, number>;
+  appliedModifierIds: string[];
+} {
+  const context = progression.resourceProductionContext;
+  const production = stats.production;
+
+  if (
+    progression.entity.category !== "building" ||
+    context == null ||
+    production == null
+  ) {
+    return { stats, appliedModifierIds: [] };
+  }
+
+  if (!Number.isFinite(context.at)) {
+    throw new Error("INVALID_RESOURCE_PRODUCTION_TIMESTAMP");
+  }
+
+  const result = resolveHammerJamResourceProduction({
+    baseProduction: production,
+    village: progression.entity.village,
+    at: context.at,
+    manifest: context.hammerJam,
+  });
+
+  return {
+    stats: {
+      ...stats,
+      production: result.production,
+    },
+    appliedModifierIds: result.appliedModifierIds,
+  };
 }
 
 export class ProgressionEngine {
@@ -111,6 +152,17 @@ export class ProgressionEngine {
       }
     }
 
+    const baseCurrentStats = progression.current?.stats ?? {};
+    const baseNextStats = progression.next?.stats ?? {};
+    const currentStatsResult = applyResourceProductionModifier(
+      baseCurrentStats,
+      progression,
+    );
+    const nextStatsResult = applyResourceProductionModifier(
+      baseNextStats,
+      progression,
+    );
+
     return {
       dataId: progression.entity.id,
       currentLevel,
@@ -126,14 +178,22 @@ export class ProgressionEngine {
       resource: progression.progression.resource,
       nextUpgradeTime,
       appliedModifierIds,
+      baseCurrentStats,
+      baseNextStats,
+      currentStats: currentStatsResult.stats,
+      nextStats: nextStatsResult.stats,
+      appliedResourceModifierIds: [
+        ...new Set([
+          ...currentStatsResult.appliedModifierIds,
+          ...nextStatsResult.appliedModifierIds,
+        ]),
+      ],
       remainingCost: remaining.remainingCost,
       remainingUpgradeTime: remaining.remainingUpgradeTime,
       currentHallLevel: progression.currentHallLevel,
       requiredHallLevel: getHallRequirement(progression),
       currentXp: progression.current?.xp,
       nextXp: progression.next?.xp,
-      currentStats: progression.current?.stats ?? {},
-      nextStats: progression.next?.stats ?? {},
       progressPercent,
       achievableLevel,
     };

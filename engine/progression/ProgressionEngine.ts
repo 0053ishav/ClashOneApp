@@ -55,10 +55,6 @@ function applyResourceProductionModifier(
     return { stats, appliedModifierIds: [] };
   }
 
-  if (!Number.isFinite(context.at)) {
-    throw new Error("INVALID_RESOURCE_PRODUCTION_TIMESTAMP");
-  }
-
   const result = resolveHammerJamResourceProduction({
     baseProduction: production,
     village: progression.entity.village,
@@ -79,6 +75,15 @@ export class ProgressionEngine {
   static resolve(
     progression: ResolvedProgression,
   ): ProgressionResult {
+    // Validate caller-supplied context before entity/stat eligibility checks so
+    // malformed timestamps cannot be silently ignored for non-producing levels.
+    if (
+      progression.resourceProductionContext != null &&
+      !Number.isFinite(progression.resourceProductionContext.at)
+    ) {
+      throw new Error("INVALID_RESOURCE_PRODUCTION_TIMESTAMP");
+    }
+
     const {
       currentLevel,
       currentHallLevel,

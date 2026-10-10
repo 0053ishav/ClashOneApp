@@ -181,7 +181,8 @@ describe("ProgressionEngine Hammer Jam modifiers", () => {
       ...progressionData,
       levels: {
         ...progressionData.levels,
-        2: { hallLevel: 1, upgradeTime: 120 },
+        // Simulate a malformed remote payload that violates the ProgressionLevel contract.
+        2: { hallLevel: 1, upgradeTime: 120 } as unknown as ProgressionData["levels"][number],
       },
     };
 

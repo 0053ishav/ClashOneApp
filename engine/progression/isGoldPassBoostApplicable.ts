@@ -10,9 +10,10 @@ export type GoldPassBoostApplicabilityInput = {
 /**
  * Gold Pass eligibility rules for upgrade projections.
  *
- * Builder Boost covers Home Village buildings and heroes. Research Boost
- * covers Home Village Laboratory troops, spells, and siege machines only.
- * Pets and all Builder Base upgrades are explicitly excluded.
+ * Builder Boost covers Home Village buildings (including walls), heroes,
+ * traps, crafted defenses, halls, and guardians. Research Boost covers Home
+ * Village Laboratory troops, spells, siege machines, and pets.
+ * Every Builder Base upgrade is excluded.
  */
 export function isGoldPassBoostApplicable({
   village,
@@ -23,12 +24,21 @@ export function isGoldPassBoostApplicable({
 
   switch (target) {
     case "builder":
-      return entityType === "building" || entityType === "hero";
+      return (
+        entityType === "building" ||
+        entityType === "hero" ||
+        entityType === "trap" ||
+        entityType === "crafted" ||
+        entityType === "townhall" ||
+        entityType === "builderhall" ||
+        entityType === "guardian"
+      );
     case "research":
       return (
         entityType === "troop" ||
         entityType === "spell" ||
-        entityType === "siege"
+        entityType === "siege" ||
+        entityType === "pet"
       );
     default:
       return false;

@@ -13,11 +13,13 @@ import { projectHelperTimer } from "@/utils/helpers/projectHelperTimer";
 import { resyncNotifications } from "@/utils/notificationSync";
 import * as Sentry from "@sentry/react-native";
 import { randomUUID } from "expo-crypto";
+import { clearActiveMagicEffects, replaceImportedBoostSnapshot } from "@/services/magicItemService";
 
 
 type RawExport = {
   tag: string;
   timestamp: number;
+  boosts?: { builder_boost?: number; lab_boost?: number; clocktower_boost?: number };
 
   buildings?: {
     data: number;
@@ -229,8 +231,15 @@ function validateJson(data: any) {
     throw new Error("INVALID_STRUCTURE");
   }
 
-  if (typeof data.timestamp !== "number") {
+  if (typeof data.timestamp !== "number" || !Number.isFinite(data.timestamp) || data.timestamp < 0) {
     throw new Error("INVALID_STRUCTURE");
+  }
+  if (data.boosts != null) {
+    if (typeof data.boosts !== "object" || Array.isArray(data.boosts)) throw new Error("INVALID_BOOSTS");
+    for (const key of ["builder_boost", "lab_boost", "clocktower_boost"] as const) {
+      const value = data.boosts[key];
+      if (value != null && (!Number.isSafeInteger(value) || value < 0)) throw new Error("INVALID_BOOSTS");
+    }
   }
 
   if (
@@ -764,11 +773,15 @@ export async function importVillageJson(
     validUpgrades.length === 0 &&
     validLabTasks.length === 0
   ) {
-    await importJsonData(
-      parsed.tag,
-      [],
-      entities,
-    );
+    await importJsonData(parsed.tag, [], entities);
+    await clearActiveMagicEffects(parsed.tag);
+    await replaceImportedBoostSnapshot({
+      accountTag: parsed.tag,
+      builderBoostSeconds: parsed.boosts?.builder_boost ?? 0,
+      labBoostSeconds: parsed.boosts?.lab_boost ?? 0,
+      clocktowerBoostSeconds: parsed.boosts?.clocktower_boost ?? 0,
+      exportedAt: exportTimestampMs,
+    });
 
     setLastSync(parsed.tag, now);
     setLastJsonSync(parsed.tag, now);
@@ -1133,6 +1146,15 @@ export async function importVillageJson(
 
   try {
     await importJsonData(parsed.tag, newUpgrades, entities);
+    // Imported timers are authoritative; app-side simulated potion effects must not re-project them.
+    await clearActiveMagicEffects(parsed.tag);
+    await replaceImportedBoostSnapshot({
+      accountTag: parsed.tag,
+      builderBoostSeconds: parsed.boosts?.builder_boost ?? 0,
+      labBoostSeconds: parsed.boosts?.lab_boost ?? 0,
+      clocktowerBoostSeconds: parsed.boosts?.clocktower_boost ?? 0,
+      exportedAt: exportTimestampMs,
+    });
     track("json_pipeline", {
       step: "import",
       status: "sucesss",

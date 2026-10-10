@@ -334,3 +334,50 @@ export async function replaceMagicItemInventory(
     throw error;
   }
 }
+
+
+/** Clear simulated potion effects after a JSON snapshot replaces progression. */
+export async function clearActiveMagicEffects(accountTag: string): Promise<void> {
+  assertNonEmpty(accountTag, "account_tag");
+  const db = await getDB();
+  await db.runAsync("DELETE FROM active_magic_effects WHERE account_player_tag = ?", [accountTag]);
+}
+
+export type ImportedBoostSnapshot = {
+  accountTag: string;
+  builderBoostSeconds: number;
+  labBoostSeconds: number;
+  clocktowerBoostSeconds: number;
+  exportedAt: number;
+};
+
+function assertRemainingSeconds(value: number, field: string): void {
+  if (!Number.isSafeInteger(value) || value < 0) throw new Error(`INVALID_${field.toUpperCase()}`);
+}
+
+/** Persist export boost timers separately from simulated Magic Item effects. */
+export async function replaceImportedBoostSnapshot(snapshot: ImportedBoostSnapshot): Promise<void> {
+  assertNonEmpty(snapshot.accountTag, "account_tag");
+  assertRemainingSeconds(snapshot.builderBoostSeconds, "builder_boost_seconds");
+  assertRemainingSeconds(snapshot.labBoostSeconds, "lab_boost_seconds");
+  assertRemainingSeconds(snapshot.clocktowerBoostSeconds, "clocktower_boost_seconds");
+  if (!Number.isSafeInteger(snapshot.exportedAt) || snapshot.exportedAt < 0) throw new Error("INVALID_EXPORTED_AT");
+  const db = await getDB();
+  await db.runAsync(`INSERT INTO imported_boosts
+    (account_player_tag, builder_boost_seconds, lab_boost_seconds, clocktower_boost_seconds, exported_at)
+    VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(account_player_tag) DO UPDATE SET
+      builder_boost_seconds = excluded.builder_boost_seconds,
+      lab_boost_seconds = excluded.lab_boost_seconds,
+      clocktower_boost_seconds = excluded.clocktower_boost_seconds,
+      exported_at = excluded.exported_at`, [snapshot.accountTag, snapshot.builderBoostSeconds, snapshot.labBoostSeconds, snapshot.clocktowerBoostSeconds, snapshot.exportedAt]);
+}
+
+export async function getImportedBoostSnapshot(accountTag: string): Promise<ImportedBoostSnapshot | null> {
+  assertNonEmpty(accountTag, "account_tag");
+  const db = await getDB();
+  const row = await db.getFirstAsync<{ account_player_tag: string; builder_boost_seconds: number; lab_boost_seconds: number; clocktower_boost_seconds: number; exported_at: number }>(
+    "SELECT account_player_tag, builder_boost_seconds, lab_boost_seconds, clocktower_boost_seconds, exported_at FROM imported_boosts WHERE account_player_tag = ?", [accountTag]);
+  if (!row) return null;
+  return { accountTag: row.account_player_tag, builderBoostSeconds: Number(row.builder_boost_seconds), labBoostSeconds: Number(row.lab_boost_seconds), clocktowerBoostSeconds: Number(row.clocktower_boost_seconds), exportedAt: Number(row.exported_at) };
+}

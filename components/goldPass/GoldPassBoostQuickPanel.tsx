@@ -250,8 +250,9 @@ export function GoldPassBoostQuickPanel({
             </View>
 
             <Text style={styles.description}>
-              Set your current perks manually. They&apos;re not included in village JSON;
-              imported remaining timers stay unchanged.
+              Set your active Home Village perks manually and update them when they change or expire.
+              Builder Boost applies to buildings and heroes. Research Boost applies to Laboratory troops, spells, and siege machines, not pets.
+              Perks aren&apos;t included in village JSON, and imported remaining timers stay unchanged.
             </Text>
 
             {loading ? (

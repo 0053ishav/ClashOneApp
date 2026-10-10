@@ -251,7 +251,7 @@ export function GoldPassBoostQuickPanel({
 
             <Text style={styles.description}>
               Set your active Home Village perks manually and update them when they change or expire.
-              Builder Boost applies to buildings and heroes. Research Boost applies to Laboratory troops, spells, and siege machines, not pets.
+              Builder Boost applies to Home Village buildings, heroes, traps, walls, crafted defenses, halls, and guardians. Research Boost applies to Laboratory troops, spells, siege machines, and pets.
               Gold Pass perk percentages aren&apos;t in Clash of Clans API player data or village JSON, and imported remaining timers stay unchanged.
             </Text>
 

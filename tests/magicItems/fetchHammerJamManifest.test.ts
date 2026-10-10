@@ -31,11 +31,11 @@ const validPayload = {
 };
 
 describe("fetchHammerJamManifest", () => {
-  const originalFetch = global.fetch;
+  const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    global.fetch = jest.fn();
+    globalThis.fetch = jest.fn() as unknown as typeof fetch;
     mockedFetchManifest.mockResolvedValue({
       version: 6,
       metadataVersion: 6,
@@ -48,11 +48,11 @@ describe("fetchHammerJamManifest", () => {
   });
 
   afterAll(() => {
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
   });
 
   it("loads the event endpoint after reading the global manifest", async () => {
-    (global.fetch as jest.Mock).mockResolvedValue({
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => validPayload,
     });
@@ -62,7 +62,7 @@ describe("fetchHammerJamManifest", () => {
     );
 
     expect(mockedFetchManifest).toHaveBeenCalledTimes(1);
-    expect(global.fetch).toHaveBeenCalledWith(
+    expect(globalThis.fetch).toHaveBeenCalledWith(
       `${ENV.BACKEND}/v2/events/hammer-jam`,
     );
   });
@@ -81,11 +81,11 @@ describe("fetchHammerJamManifest", () => {
     await expect(fetchHammerJamManifest()).resolves.toEqual(
       DEFAULT_HAMMER_JAM_MANIFEST,
     );
-    expect(global.fetch).not.toHaveBeenCalled();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
   it("rejects a configuration whose version differs from the global manifest", async () => {
-    (global.fetch as jest.Mock).mockResolvedValue({
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => ({ ...validPayload, version: 2 }),
     });
@@ -96,7 +96,7 @@ describe("fetchHammerJamManifest", () => {
   });
 
   it("rejects unknown targets instead of asserting an unsafe array type", async () => {
-    (global.fetch as jest.Mock).mockResolvedValue({
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => ({
         ...validPayload,
@@ -113,7 +113,7 @@ describe("fetchHammerJamManifest", () => {
   });
 
   it("preserves the resource production multiplier from the server", async () => {
-    (global.fetch as jest.Mock).mockResolvedValue({
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => validPayload,
     });
@@ -124,7 +124,7 @@ describe("fetchHammerJamManifest", () => {
   });
 
   it("returns the safe default when the event endpoint fails", async () => {
-    (global.fetch as jest.Mock).mockResolvedValue({ ok: false });
+    (globalThis.fetch as jest.Mock).mockResolvedValue({ ok: false });
 
     await expect(fetchHammerJamManifest()).resolves.toEqual(
       DEFAULT_HAMMER_JAM_MANIFEST,

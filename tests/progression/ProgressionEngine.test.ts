@@ -368,6 +368,27 @@ describe("ProgressionEngine modifiers", () => {
     });
   });
 
+  it("applies Builder Boost to Home Village heroes", () => {
+    const result = resolve({
+      entity: {
+        id: 101,
+        slug: "barbarian-king",
+        category: "hero",
+        village: "home",
+        maxLevel: 3,
+      },
+      goldPassBoost: { target: "builder", percent: 15 },
+    });
+
+    expect(result).toMatchObject({
+      nextCost: 850,
+      nextUpgradeTime: 102,
+      remainingCost: 2_550,
+      remainingUpgradeTime: 306,
+      appliedModifierIds: ["gold-pass-builder-boost"],
+    });
+  });
+
   it("does not apply Builder Boost to Builder Base buildings", () => {
     const result = resolve({
       entity: {

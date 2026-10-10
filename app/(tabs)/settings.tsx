@@ -6,6 +6,10 @@ import {
   updateBuilderCount,
 } from "@/services/accountService";
 import { getAccountState } from "@/services/accountStateService";
+import {
+  getGoldPassBoostSettings,
+  saveGoldPassBoostSettings as persistGoldPassBoostSettings,
+} from "@/services/goldPassBoostService";
 import { resetLastJsonSync } from "@/storage/jsonSyncStorage";
 import {
   getNotificationsEnabled,
@@ -16,6 +20,11 @@ import {
   updateLocalBuilderCount,
 } from "@/storage/playerProfile";
 import { useAccountStore } from "@/stores/accountStore";
+import {
+  GOLD_PASS_BOOST_PERCENTAGES,
+  type GoldPassBoostPercent,
+  type GoldPassBoostSettings,
+} from "@/types/goldPass";
 import { track } from "@/utils/analytics/analytics";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
 import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
@@ -63,6 +72,11 @@ const GOLD = "#fbbf24";
 const RED = "#ef4444";
 const MIN_BUILDERS = 1;
 const MAX_BUILDERS = 6;
+
+type GoldPassBoostField = "builderBoostPercent" | "researchBoostPercent";
+type GoldPassBoostUpdates = Partial<
+  Pick<GoldPassBoostSettings, GoldPassBoostField>
+>;
 
 const ACCOUNT_COLORS = [
   "#fbbf24", // amber
@@ -249,6 +263,51 @@ function Row({
   );
 }
 
+function GoldPassPercentageOptions({
+  label,
+  selectedPercent,
+  disabled,
+  onSelect,
+}: {
+  label: string;
+  selectedPercent: GoldPassBoostPercent | null;
+  disabled: boolean;
+  onSelect: (percent: GoldPassBoostPercent) => void;
+}) {
+  return (
+    <View style={styles.goldPassOptions}>
+      {GOLD_PASS_BOOST_PERCENTAGES.map((percent) => {
+        const selected = selectedPercent === percent;
+        return (
+          <Pressable
+            key={percent}
+            accessibilityRole="button"
+            accessibilityLabel={`Set ${label} to ${percent}%`}
+            accessibilityState={{ selected, disabled }}
+            disabled={disabled}
+            onPress={() => onSelect(percent)}
+            style={({ pressed }) => [
+              styles.goldPassOption,
+              selected && styles.goldPassOptionSelected,
+              disabled && styles.goldPassOptionDisabled,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text
+              style={[
+                styles.goldPassOptionText,
+                selected && styles.goldPassOptionTextSelected,
+              ]}
+            >
+              {percent}%
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 function IconButton({
   icon,
   color = "#64748b",
@@ -295,6 +354,19 @@ export default function SettingsScreen() {
   const widgetPrefs = useAccountStore((s) => s.widgetPrefs);
   const setWidgetAccount = useAccountStore((s) => s.setWidgetAccount);
   const activeTag = useAccountStore((s) => s.activeTag);
+
+  const [goldPassSettings, setGoldPassSettings] =
+    useState<GoldPassBoostSettings | null>(null);
+  const [isLoadingGoldPassSettings, setIsLoadingGoldPassSettings] =
+    useState(false);
+  const [goldPassSettingsLoadFailed, setGoldPassSettingsLoadFailed] =
+    useState(false);
+  const [isSavingGoldPassSettings, setIsSavingGoldPassSettings] =
+    useState(false);
+  const [goldPassReloadKey, setGoldPassReloadKey] = useState(0);
+
+  const activeGoldPassSettings =
+    goldPassSettings?.accountTag === activeTag ? goldPassSettings : null;
 
   const { profile } = usePlayerProfile();
   const activeAccount = accounts.find((a) => a.tag === activeTag);
@@ -344,8 +416,79 @@ export default function SettingsScreen() {
   }, [accounts, activeTag]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    if (!activeTag) {
+      setGoldPassSettings(null);
+      setIsLoadingGoldPassSettings(false);
+      setGoldPassSettingsLoadFailed(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setIsLoadingGoldPassSettings(true);
+    setGoldPassSettingsLoadFailed(false);
+
+    void getGoldPassBoostSettings(activeTag)
+      .then((settings) => {
+        if (!cancelled) setGoldPassSettings(settings);
+      })
+      .catch(() => {
+        if (!cancelled) setGoldPassSettingsLoadFailed(true);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingGoldPassSettings(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTag, goldPassReloadKey]);
+
+  useEffect(() => {
     setLocalNotificationsEnabled(getNotificationsEnabled());
   }, []);
+
+  const saveGoldPassUpdates = async (updates: GoldPassBoostUpdates) => {
+    if (!activeTag || !activeGoldPassSettings || isSavingGoldPassSettings) {
+      return;
+    }
+
+    const nextSettings: GoldPassBoostSettings = {
+      accountTag: activeTag,
+      builderBoostPercent:
+        updates.builderBoostPercent ??
+        activeGoldPassSettings.builderBoostPercent,
+      researchBoostPercent:
+        updates.researchBoostPercent ??
+        activeGoldPassSettings.researchBoostPercent,
+    };
+
+    if (
+      nextSettings.builderBoostPercent ===
+        activeGoldPassSettings.builderBoostPercent &&
+      nextSettings.researchBoostPercent ===
+        activeGoldPassSettings.researchBoostPercent
+    ) {
+      return;
+    }
+
+    setIsSavingGoldPassSettings(true);
+    try {
+      await persistGoldPassBoostSettings(nextSettings);
+      if (useAccountStore.getState().activeTag === activeTag) {
+        setGoldPassSettings(nextSettings);
+      }
+    } catch {
+      Alert.alert(
+        "Couldn't save Gold Pass settings",
+        "Your saved percentages haven't changed. Please try again.",
+      );
+    } finally {
+      setIsSavingGoldPassSettings(false);
+    }
+  };
 
   const handleBuilderSelect = async (count: number) => {
     if (!activeTag || !activeAccount) return;
@@ -479,6 +622,132 @@ export default function SettingsScreen() {
             chevron
             onPress={() => router.push("/magic-items")}
           />
+        </Section>
+
+        <Section
+          title="Gold Pass boosts"
+          footer="Gold Pass perks are not included in village JSON. Set these manually and update them whenever your perks change or expire."
+        >
+          {!activeTag ? (
+            <Row
+              icon="people-outline"
+              iconColor="#64748b"
+              title="Select a village first"
+              subtitle="Gold Pass settings are saved separately for each account."
+            />
+          ) : isLoadingGoldPassSettings ? (
+            <Row
+              icon="time-outline"
+              iconColor="#64748b"
+              title="Loading Gold Pass settings"
+            />
+          ) : goldPassSettingsLoadFailed || !activeGoldPassSettings ? (
+            <View style={styles.goldPassErrorRow}>
+              <View style={styles.rowText}>
+                <Text style={styles.goldPassErrorTitle}>
+                  {goldPassSettingsLoadFailed
+                    ? "Couldn't load Gold Pass settings"
+                    : "Gold Pass settings are unavailable"}
+                </Text>
+                <Text style={styles.rowSubtitle}>
+                  Try loading the saved settings again.
+                </Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Retry loading Gold Pass settings"
+                onPress={() => setGoldPassReloadKey((current) => current + 1)}
+                style={({ pressed }) => [
+                  styles.goldPassRetryButton,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text style={styles.goldPassRetryText}>Retry</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <>
+              <View style={styles.goldPassSetting}>
+                <View style={styles.goldPassSettingHeader}>
+                  <View style={styles.rowText}>
+                    <Text style={styles.goldPassSettingTitle}>
+                      Set both boosts
+                    </Text>
+                    <Text style={styles.rowSubtitle}>
+                      Apply the same discount to Builder and Research.
+                    </Text>
+                  </View>
+                  {isSavingGoldPassSettings && (
+                    <Text style={styles.goldPassSavingText}>Saving…</Text>
+                  )}
+                </View>
+                <GoldPassPercentageOptions
+                  label="both Gold Pass boosts"
+                  selectedPercent={
+                    activeGoldPassSettings.builderBoostPercent ===
+                    activeGoldPassSettings.researchBoostPercent
+                      ? activeGoldPassSettings.builderBoostPercent
+                      : null
+                  }
+                  disabled={isSavingGoldPassSettings}
+                  onSelect={(percent) =>
+                    void saveGoldPassUpdates({
+                      builderBoostPercent: percent,
+                      researchBoostPercent: percent,
+                    })
+                  }
+                />
+              </View>
+
+              <View style={styles.goldPassSetting}>
+                <View style={styles.goldPassSettingHeader}>
+                  <View style={styles.rowText}>
+                    <Text style={styles.goldPassSettingTitle}>
+                      Builder Boost
+                    </Text>
+                    <Text style={styles.rowSubtitle}>
+                      Discount for eligible building upgrade times.
+                    </Text>
+                  </View>
+                  <Text style={styles.goldPassCurrentValue}>
+                    {activeGoldPassSettings.builderBoostPercent}%
+                  </Text>
+                </View>
+                <GoldPassPercentageOptions
+                  label="Builder Boost"
+                  selectedPercent={activeGoldPassSettings.builderBoostPercent}
+                  disabled={isSavingGoldPassSettings}
+                  onSelect={(percent) =>
+                    void saveGoldPassUpdates({ builderBoostPercent: percent })
+                  }
+                />
+              </View>
+
+              <View style={styles.goldPassSetting}>
+                <View style={styles.goldPassSettingHeader}>
+                  <View style={styles.rowText}>
+                    <Text style={styles.goldPassSettingTitle}>
+                      Research Boost
+                    </Text>
+                    <Text style={styles.rowSubtitle}>
+                      Discount for eligible research upgrade times.
+                    </Text>
+                  </View>
+                  <Text style={styles.goldPassCurrentValue}>
+                    {activeGoldPassSettings.researchBoostPercent}%
+                  </Text>
+                </View>
+                <GoldPassPercentageOptions
+                  label="Research Boost"
+                  selectedPercent={activeGoldPassSettings.researchBoostPercent}
+                  disabled={isSavingGoldPassSettings}
+                  onSelect={(percent) =>
+                    void saveGoldPassUpdates({ researchBoostPercent: percent })
+                  }
+                />
+              </View>
+            </>
+          )}
         </Section>
 
         {/* ── Active village ── */}
@@ -1109,6 +1378,88 @@ const styles = StyleSheet.create({
 
   rowPressed: {
     backgroundColor: "rgba(255, 255, 255, 0.04)",
+  },
+
+  goldPassSetting: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  goldPassSettingHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  goldPassSettingTitle: {
+    color: "#f1f5f9",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  goldPassCurrentValue: {
+    color: GOLD,
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  goldPassSavingText: {
+    color: "#94a3b8",
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  goldPassOptions: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  goldPassOption: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 34,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+    borderRadius: 8,
+    backgroundColor: "#0f172a",
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  goldPassOptionSelected: {
+    backgroundColor: GOLD,
+    borderColor: GOLD,
+  },
+  goldPassOptionDisabled: {
+    opacity: 0.55,
+  },
+  goldPassOptionText: {
+    color: "#cbd5e1",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  goldPassOptionTextSelected: {
+    color: "#0f172a",
+  },
+  goldPassErrorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  goldPassErrorTitle: {
+    color: "#fca5a5",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  goldPassRetryButton: {
+    minHeight: 32,
+    paddingHorizontal: 11,
+    borderRadius: 8,
+    backgroundColor: "#0f172a",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  goldPassRetryText: {
+    color: GOLD,
+    fontSize: 11,
+    fontWeight: "800",
   },
 
   iconChip: {

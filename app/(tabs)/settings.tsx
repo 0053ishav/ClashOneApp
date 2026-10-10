@@ -1,4 +1,8 @@
 import { ConfirmModal } from "@/components/ConfirmModal";
+import {
+  GoldPassBoostButton,
+  GoldPassBoostQuickPanel,
+} from "@/components/goldPass/GoldPassBoostQuickPanel";
 import { getDB } from "@/db/database";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import {
@@ -6,6 +10,10 @@ import {
   updateBuilderCount,
 } from "@/services/accountService";
 import { getAccountState } from "@/services/accountStateService";
+import {
+  getGoldPassBoostSettings,
+  saveGoldPassBoostSettings as persistGoldPassBoostSettings,
+} from "@/services/goldPassBoostService";
 import { resetLastJsonSync } from "@/storage/jsonSyncStorage";
 import {
   getNotificationsEnabled,
@@ -16,6 +24,7 @@ import {
   updateLocalBuilderCount,
 } from "@/storage/playerProfile";
 import { useAccountStore } from "@/stores/accountStore";
+import type { GoldPassBoostSettings } from "@/types/goldPass";
 import { track } from "@/utils/analytics/analytics";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
 import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
@@ -39,8 +48,8 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import * as Notifications from "expo-notifications";
-import { useRouter } from "expo-router";
-import { Children, useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { Children, useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Linking,
@@ -63,6 +72,11 @@ const GOLD = "#fbbf24";
 const RED = "#ef4444";
 const MIN_BUILDERS = 1;
 const MAX_BUILDERS = 6;
+
+type GoldPassBoostField = "builderBoostPercent" | "researchBoostPercent";
+type GoldPassBoostUpdates = Partial<
+  Pick<GoldPassBoostSettings, GoldPassBoostField>
+>;
 
 const ACCOUNT_COLORS = [
   "#fbbf24", // amber
@@ -296,6 +310,20 @@ export default function SettingsScreen() {
   const setWidgetAccount = useAccountStore((s) => s.setWidgetAccount);
   const activeTag = useAccountStore((s) => s.activeTag);
 
+  const [goldPassSettings, setGoldPassSettings] =
+    useState<GoldPassBoostSettings | null>(null);
+  const [isLoadingGoldPassSettings, setIsLoadingGoldPassSettings] =
+    useState(false);
+  const [goldPassSettingsLoadFailed, setGoldPassSettingsLoadFailed] =
+    useState(false);
+  const [isSavingGoldPassSettings, setIsSavingGoldPassSettings] =
+    useState(false);
+  const goldPassLoadRequestRef = useRef(0);
+  const [showGoldPassPopover, setShowGoldPassPopover] = useState(false);
+
+  const activeGoldPassSettings =
+    goldPassSettings?.accountTag === activeTag ? goldPassSettings : null;
+
   const { profile } = usePlayerProfile();
   const activeAccount = accounts.find((a) => a.tag === activeTag);
   const isPremium = usePremiumStore((s) => s.isPremium);
@@ -343,9 +371,92 @@ export default function SettingsScreen() {
     setLocalBuilderCount(acc.builderCount);
   }, [accounts, activeTag]);
 
+  const loadGoldPassSettings = useCallback(
+    async (isCurrent: () => boolean = () => true) => {
+      const requestId = ++goldPassLoadRequestRef.current;
+
+      if (!activeTag) {
+        setGoldPassSettings(null);
+        setIsLoadingGoldPassSettings(false);
+        setGoldPassSettingsLoadFailed(false);
+        return;
+      }
+
+      const requestIsCurrent = () =>
+        isCurrent() &&
+        goldPassLoadRequestRef.current === requestId &&
+        useAccountStore.getState().activeTag === activeTag;
+
+      setIsLoadingGoldPassSettings(true);
+      setGoldPassSettingsLoadFailed(false);
+
+      try {
+        const settings = await getGoldPassBoostSettings(activeTag);
+        if (requestIsCurrent()) setGoldPassSettings(settings);
+      } catch {
+        if (requestIsCurrent()) setGoldPassSettingsLoadFailed(true);
+      } finally {
+        if (requestIsCurrent()) setIsLoadingGoldPassSettings(false);
+      }
+    },
+    [activeTag],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      void loadGoldPassSettings(() => !cancelled);
+
+      return () => {
+        cancelled = true;
+        goldPassLoadRequestRef.current += 1;
+      };
+    }, [loadGoldPassSettings]),
+  );
+
   useEffect(() => {
     setLocalNotificationsEnabled(getNotificationsEnabled());
   }, []);
+
+  const saveGoldPassUpdates = async (updates: GoldPassBoostUpdates) => {
+    if (!activeTag || !activeGoldPassSettings || isSavingGoldPassSettings) {
+      return;
+    }
+
+    const nextSettings: GoldPassBoostSettings = {
+      accountTag: activeTag,
+      builderBoostPercent:
+        updates.builderBoostPercent ??
+        activeGoldPassSettings.builderBoostPercent,
+      researchBoostPercent:
+        updates.researchBoostPercent ??
+        activeGoldPassSettings.researchBoostPercent,
+    };
+
+    if (
+      nextSettings.builderBoostPercent ===
+        activeGoldPassSettings.builderBoostPercent &&
+      nextSettings.researchBoostPercent ===
+        activeGoldPassSettings.researchBoostPercent
+    ) {
+      return;
+    }
+
+    setIsSavingGoldPassSettings(true);
+    try {
+      await persistGoldPassBoostSettings(nextSettings);
+      if (useAccountStore.getState().activeTag === activeTag) {
+        setGoldPassSettings(nextSettings);
+      }
+    } catch {
+      Alert.alert(
+        "Couldn't save Gold Pass settings",
+        "Your saved percentages haven't changed. Please try again.",
+      );
+    } finally {
+      setIsSavingGoldPassSettings(false);
+    }
+  };
 
   const handleBuilderSelect = async (count: number) => {
     if (!activeTag || !activeAccount) return;
@@ -536,12 +647,19 @@ export default function SettingsScreen() {
                 </View>
               }
               right={
-                <IconButton
-                  icon={copied ? "checkmark" : "copy-outline"}
-                  color={copied ? "#22c55e" : "#94a3b8"}
-                  label={copied ? "Tag copied" : "Copy player tag"}
-                  onPress={copyTag}
-                />
+                <View style={styles.activeVillageActions}>
+                  <GoldPassBoostButton
+                    settings={activeGoldPassSettings}
+                    expanded={showGoldPassPopover}
+                    onPress={() => setShowGoldPassPopover((visible) => !visible)}
+                  />
+                  <IconButton
+                    icon={copied ? "checkmark" : "copy-outline"}
+                    color={copied ? "#22c55e" : "#94a3b8"}
+                    label={copied ? "Tag copied" : "Copy player tag"}
+                    onPress={copyTag}
+                  />
+                </View>
               }
             />
           ) : (
@@ -561,6 +679,30 @@ export default function SettingsScreen() {
                 >
                   <Text style={styles.connectButtonText}>Connect</Text>
                 </Pressable>
+              }
+            />
+          )}
+
+          {!!profile?.playerTag && showGoldPassPopover && (
+            <GoldPassBoostQuickPanel
+              visible={showGoldPassPopover}
+              settings={activeGoldPassSettings}
+              loading={isLoadingGoldPassSettings}
+              loadFailed={goldPassSettingsLoadFailed}
+              saving={isSavingGoldPassSettings}
+              onClose={() => setShowGoldPassPopover(false)}
+              onRetry={() => void loadGoldPassSettings()}
+              onSetBoth={(percent) =>
+                void saveGoldPassUpdates({
+                  builderBoostPercent: percent,
+                  researchBoostPercent: percent,
+                })
+              }
+              onSetBuilder={(percent) =>
+                void saveGoldPassUpdates({ builderBoostPercent: percent })
+              }
+              onSetResearch={(percent) =>
+                void saveGoldPassUpdates({ researchBoostPercent: percent })
               }
             />
           )}
@@ -1109,6 +1251,11 @@ const styles = StyleSheet.create({
 
   rowPressed: {
     backgroundColor: "rgba(255, 255, 255, 0.04)",
+  },
+  activeVillageActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
   },
 
   iconChip: {

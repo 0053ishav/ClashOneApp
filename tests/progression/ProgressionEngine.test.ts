@@ -48,7 +48,7 @@ const activeHammerJam = {
   resourceMultiplier: 2,
 };
 
-describe("ProgressionEngine Hammer Jam modifiers", () => {
+describe("ProgressionEngine modifiers", () => {
   it("preserves base values when no upgrade start context is supplied", () => {
     const result = resolve();
 
@@ -301,5 +301,197 @@ describe("ProgressionEngine Hammer Jam modifiers", () => {
         },
       }),
     ).toThrow("INVALID_UPGRADE_START_TIMESTAMP");
+  });
+  it.each([
+    { percent: 0, cost: 1_000, duration: 120, remainingCost: 3_000, remaining: 360, ids: [] },
+    { percent: 10, cost: 900, duration: 108, remainingCost: 2_700, remaining: 324, ids: ["gold-pass-builder-boost"] },
+    { percent: 15, cost: 850, duration: 102, remainingCost: 2_550, remaining: 306, ids: ["gold-pass-builder-boost"] },
+    { percent: 20, cost: 800, duration: 96, remainingCost: 2_400, remaining: 288, ids: ["gold-pass-builder-boost"] },
+  ] as const)(
+    "applies the Builder Boost percentage $percent to cost and time",
+    ({ percent, cost, duration, remainingCost, remaining, ids }) => {
+      const result = resolve({
+        goldPassBoost: { target: "builder", percent },
+      });
+
+      expect(result).toMatchObject({
+        baseNextCost: 1_000,
+        nextCost: cost,
+        baseNextUpgradeTime: 120,
+        nextUpgradeTime: duration,
+        remainingCost,
+        remainingUpgradeTime: remaining,
+        appliedModifierIds: ids,
+      });
+    },
+  );
+
+  it("compounds Gold Pass with Hammer Jam without intermediate duration rounding", () => {
+    const result = resolve({
+      goldPassBoost: { target: "builder", percent: 20 },
+      upgradeStartContext: {
+        startsAt: EVENT_START,
+        hammerJam: activeHammerJam,
+      },
+    });
+
+    expect(result).toMatchObject({
+      baseNextUpgradeTime: 120,
+      nextUpgradeTime: 48,
+      nextCost: 400,
+      remainingCost: 2_400,
+      remainingUpgradeTime: 288,
+      appliedModifierIds: ["hammer-jam", "gold-pass-builder-boost"],
+    });
+  });
+
+  it("uses the explicitly selected Research Gold Pass percentage", () => {
+    const result = resolve({
+      entity: {
+        id: 101,
+        slug: "archer",
+        category: "troop",
+        village: "home",
+        maxLevel: 3,
+      },
+      goldPassBoost: { target: "research", percent: 15 },
+    });
+
+    expect(result).toMatchObject({
+      baseNextCost: 1_000,
+      nextCost: 850,
+      remainingCost: 2_550,
+      baseNextUpgradeTime: 120,
+      nextUpgradeTime: 102,
+      remainingUpgradeTime: 306,
+      appliedModifierIds: ["gold-pass-research-boost"],
+    });
+  });
+
+  it("applies Builder Boost to Home Village heroes", () => {
+    const result = resolve({
+      entity: {
+        id: 101,
+        slug: "barbarian-king",
+        category: "hero",
+        village: "home",
+        maxLevel: 3,
+      },
+      goldPassBoost: { target: "builder", percent: 15 },
+    });
+
+    expect(result).toMatchObject({
+      nextCost: 850,
+      nextUpgradeTime: 102,
+      remainingCost: 2_550,
+      remainingUpgradeTime: 306,
+      appliedModifierIds: ["gold-pass-builder-boost"],
+    });
+  });
+
+  it("does not apply Builder Boost to Builder Base buildings", () => {
+    const result = resolve({
+      entity: {
+        id: 101,
+        slug: "builder-hall-building",
+        category: "building",
+        village: "builderBase",
+        maxLevel: 3,
+      },
+      goldPassBoost: { target: "builder", percent: 20 },
+    });
+
+    expect(result).toMatchObject({
+      baseNextCost: 1_000,
+      nextCost: 1_000,
+      baseNextUpgradeTime: 120,
+      nextUpgradeTime: 120,
+      appliedModifierIds: [],
+    });
+  });
+
+  it("applies Research Boost to Home Village pet upgrades", () => {
+    const result = resolve({
+      entity: {
+        id: 101,
+        slug: "pet",
+        category: "pet",
+        village: "home",
+        maxLevel: 3,
+      },
+      goldPassBoost: { target: "research", percent: 20 },
+    });
+
+    expect(result).toMatchObject({
+      baseNextCost: 1_000,
+      nextCost: 800,
+      remainingCost: 2_400,
+      baseNextUpgradeTime: 120,
+      nextUpgradeTime: 96,
+      remainingUpgradeTime: 288,
+      appliedModifierIds: ["gold-pass-research-boost"],
+    });
+  });
+
+  it("applies Builder Boost to Home Village traps", () => {
+    const result = resolve({
+      entity: {
+        id: 101,
+        slug: "spring-trap",
+        category: "trap",
+        village: "home",
+        maxLevel: 3,
+      },
+      goldPassBoost: { target: "builder", percent: 20 },
+    });
+
+    expect(result).toMatchObject({
+      baseNextCost: 1_000,
+      nextCost: 800,
+      remainingCost: 2_400,
+      baseNextUpgradeTime: 120,
+      nextUpgradeTime: 96,
+      remainingUpgradeTime: 288,
+      appliedModifierIds: ["gold-pass-builder-boost"],
+    });
+  });
+
+  it.each(["crafted", "townhall", "builderhall", "guardian"] as const)(
+    "applies Builder Boost to Home Village %s upgrades",
+    (entityType) => {
+      const result = resolve({
+        entity: {
+          id: 101,
+          slug: entityType,
+          category: entityType,
+          village: "home",
+          maxLevel: 3,
+        },
+        goldPassBoost: { target: "builder", percent: 15 },
+      });
+
+      expect(result).toMatchObject({
+        nextCost: 850,
+        nextUpgradeTime: 102,
+        remainingCost: 2_550,
+        remainingUpgradeTime: 306,
+        appliedModifierIds: ["gold-pass-builder-boost"],
+      });
+    },
+  );
+
+  it("rejects an unsupported Gold Pass percentage at the engine boundary", () => {
+    expect(() =>
+      resolve({
+        goldPassBoost: {
+          target: "builder",
+          percent: 12 as unknown as 0 | 10 | 15 | 20,
+        },
+        upgradeStartContext: {
+          startsAt: EVENT_START,
+          hammerJam: activeHammerJam,
+        },
+      }),
+    ).toThrow("INVALID_GOLD_PASS_BOOST_PERCENT");
   });
 });

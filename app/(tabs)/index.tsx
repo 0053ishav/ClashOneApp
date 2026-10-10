@@ -1,4 +1,8 @@
 import GoblinEventBanner from "@/components/GoblinEventBanner";
+import {
+  GoldPassBoostButton,
+  GoldPassBoostQuickPanel,
+} from "@/components/goldPass/GoldPassBoostQuickPanel";
 import { HammerJamBanner } from "@/components/HammerJamBanner";
 import { LabSection } from "@/components/home/LabSection";
 import {
@@ -22,6 +26,7 @@ import { ENV } from "@/config/env";
 import { MAGIC_ITEMS } from "@/config/magicItems";
 import { useCraftedResolver } from "@/engine/crafted/craftedResolver";
 import type { ProgressionApplicationResult } from "@/engine/progression/models";
+import type { GoldPassBoostSettings } from "@/types/goldPass";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { useRemoteConfig } from "@/provider/remoteConfigProvider";
 import { getAccountState } from "@/services/accountStateService";
@@ -30,6 +35,11 @@ import {
   getMagicItemInventory,
 } from "@/services/magicItemService";
 import { ProgressionApplicationService } from "@/services/progression";
+import { resolveGoldPassBoostForUpgradeType } from "@/engine/progression/resolveGoldPassBoostForUpgradeType";
+import {
+  getGoldPassBoostSettings,
+  saveGoldPassBoostSettings as persistGoldPassBoostSettings,
+} from "@/services/goldPassBoostService";
 import { buildSupportInfo } from "@/services/supportDebugInfo";
 import { deleteUpgrade } from "@/services/upgradeService";
 import { applyBookToActiveUpgrade } from "@/services/useBookOnActiveUpgrade";
@@ -71,6 +81,7 @@ import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
   LayoutAnimation,
   Pressable,
   RefreshControl,
@@ -123,6 +134,14 @@ export default function HomeScreen() {
   } | null>(null);
   const [selectedProgression, setSelectedProgression] =
     useState<ProgressionApplicationResult | null>(null);
+  const [goldPassSettings, setGoldPassSettings] =
+    useState<GoldPassBoostSettings | null>(null);
+  const [showGoldPassPopover, setShowGoldPassPopover] = useState(false);
+  const [isLoadingGoldPassSettings, setIsLoadingGoldPassSettings] = useState(false);
+  const [goldPassSettingsLoadFailed, setGoldPassSettingsLoadFailed] = useState(false);
+  const [isSavingGoldPassSettings, setIsSavingGoldPassSettings] = useState(false);
+  const goldPassLoadRequestRef = useRef(0);
+  const goldPassProgressionRequestRef = useRef(0);
   const [refreshing, setRefreshing] = useState(false);
   const [completedId, setCompletedId] = useState<string | null>(null);
   const profileSheetRef = useRef<ProfileDropdownSheetRef>(null);
@@ -137,6 +156,8 @@ export default function HomeScreen() {
   const lastSync = activeTag ? lastJsonSyncMap[activeTag] : null;
   const accounts = useAccountStore((s) => s.accounts);
   const activeAccount = accounts.find((a) => a.tag === activeTag);
+  const activeGoldPassSettings =
+    goldPassSettings?.accountTag === activeTag ? goldPassSettings : null;
 
   const builderCount = activeAccount?.builderCount ?? 1;
   const townHall = profile?.townHallLevel ?? 1;
@@ -351,6 +372,50 @@ export default function HomeScreen() {
     useCallback(() => {
       refreshState();
     }, [refreshState]),
+  );
+
+  const loadGoldPassSettings = useCallback(
+    async (isCurrent: () => boolean = () => true) => {
+      const requestId = ++goldPassLoadRequestRef.current;
+
+      if (!activeTag) {
+        setGoldPassSettings(null);
+        setIsLoadingGoldPassSettings(false);
+        setGoldPassSettingsLoadFailed(false);
+        setShowGoldPassPopover(false);
+        return;
+      }
+
+      const requestIsCurrent = () =>
+        isCurrent() &&
+        goldPassLoadRequestRef.current === requestId &&
+        useAccountStore.getState().activeTag === activeTag;
+
+      setIsLoadingGoldPassSettings(true);
+      setGoldPassSettingsLoadFailed(false);
+
+      try {
+        const settings = await getGoldPassBoostSettings(activeTag);
+        if (requestIsCurrent()) setGoldPassSettings(settings);
+      } catch {
+        if (requestIsCurrent()) setGoldPassSettingsLoadFailed(true);
+      } finally {
+        if (requestIsCurrent()) setIsLoadingGoldPassSettings(false);
+      }
+    },
+    [activeTag],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      void loadGoldPassSettings(() => !cancelled);
+
+      return () => {
+        cancelled = true;
+        goldPassLoadRequestRef.current += 1;
+      };
+    }, [loadGoldPassSettings]),
   );
 
   useEffect(() => {
@@ -593,12 +658,96 @@ export default function HomeScreen() {
       builderBaseNextBuilderLabel = "Builder";
     }
   }
-  const handleRowPress = (upgrade: Upgrade) => {
-    const progression = ProgressionApplicationService.resolveUpgrade(upgrade);
+  const saveGoldPassUpdates = async (
+    updates: Partial<Pick<GoldPassBoostSettings, "builderBoostPercent" | "researchBoostPercent">>,
+  ) => {
+    const accountTag = activeTag;
+    if (!accountTag || !activeGoldPassSettings || isSavingGoldPassSettings) {
+      return;
+    }
 
+    const nextSettings: GoldPassBoostSettings = {
+      accountTag,
+      builderBoostPercent:
+        updates.builderBoostPercent ?? activeGoldPassSettings.builderBoostPercent,
+      researchBoostPercent:
+        updates.researchBoostPercent ?? activeGoldPassSettings.researchBoostPercent,
+    };
+
+    if (
+      nextSettings.builderBoostPercent === activeGoldPassSettings.builderBoostPercent &&
+      nextSettings.researchBoostPercent === activeGoldPassSettings.researchBoostPercent
+    ) {
+      return;
+    }
+
+    setIsSavingGoldPassSettings(true);
+    try {
+      await persistGoldPassBoostSettings(nextSettings);
+      if (useAccountStore.getState().activeTag === accountTag) {
+        setGoldPassSettings(nextSettings);
+      }
+    } catch {
+      Alert.alert(
+        "Couldn't save pass boosts",
+        "Your saved percentages haven't changed. Please try again.",
+      );
+    } finally {
+      setIsSavingGoldPassSettings(false);
+    }
+  };
+
+  const handleRowPress = (upgrade: Upgrade) => {
+    const requestId = ++goldPassProgressionRequestRef.current;
     setSelectedUpgrade(upgrade);
-    setSelectedProgression(progression);
     setActionModalVisible(true);
+
+    const resolveWithSettings = (settings: GoldPassBoostSettings) => {
+      const entityType = upgrade.isCrafted
+        ? "building"
+        : upgrade.dataId == null
+          ? undefined
+          : getEntity(upgrade.dataId)?.type;
+      const goldPassBoost = entityType
+        ? resolveGoldPassBoostForUpgradeType(
+            {
+              upgradeType: upgrade.upgradeType,
+              entityType,
+              village: upgrade.village,
+            },
+            settings,
+          )
+        : undefined;
+
+      return ProgressionApplicationService.resolveUpgrade(upgrade, {
+        goldPassBoost,
+      });
+    };
+
+    const cachedSettings =
+      activeGoldPassSettings?.accountTag === upgrade.accountTag
+        ? activeGoldPassSettings
+        : null;
+
+    if (cachedSettings) {
+      setSelectedProgression(resolveWithSettings(cachedSettings));
+      return;
+    }
+
+    // Load the correct account's settings before presenting its progression.
+    setSelectedProgression(null);
+    void getGoldPassBoostSettings(upgrade.accountTag)
+      .then((settings) => {
+        if (goldPassProgressionRequestRef.current !== requestId) return;
+        setGoldPassSettings(settings);
+        setSelectedProgression(resolveWithSettings(settings));
+      })
+      .catch(() => {
+        if (goldPassProgressionRequestRef.current !== requestId) return;
+        setSelectedProgression(
+          ProgressionApplicationService.resolveUpgrade(upgrade),
+        );
+      });
   };
 
   let statusIcon = require("@/assets/images/builder/builder-idle.png");
@@ -909,8 +1058,38 @@ export default function HomeScreen() {
                 {magicItemInventoryCount}
               </Text>
             </Pressable>
+            <GoldPassBoostButton
+              settings={activeGoldPassSettings}
+              compact
+              expanded={showGoldPassPopover}
+              disabled={!activeTag}
+              onPress={() => setShowGoldPassPopover((visible) => !visible)}
+            />
           </View>
         </View>
+        {showGoldPassPopover && activeTag && (
+          <GoldPassBoostQuickPanel
+            visible={showGoldPassPopover}
+            settings={activeGoldPassSettings}
+            loading={isLoadingGoldPassSettings}
+            loadFailed={goldPassSettingsLoadFailed}
+            saving={isSavingGoldPassSettings}
+            onClose={() => setShowGoldPassPopover(false)}
+            onRetry={() => void loadGoldPassSettings()}
+            onSetBoth={(percent) =>
+              void saveGoldPassUpdates({
+                builderBoostPercent: percent,
+                researchBoostPercent: percent,
+              })
+            }
+            onSetBuilder={(percent) =>
+              void saveGoldPassUpdates({ builderBoostPercent: percent })
+            }
+            onSetResearch={(percent) =>
+              void saveGoldPassUpdates({ researchBoostPercent: percent })
+            }
+          />
+        )}
       </View>
 
       {/* ── Scrollable content ── */}

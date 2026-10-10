@@ -15,6 +15,8 @@ import {
 import {
   applyHammerJamToUpgradeStart,
 } from "@/engine/magicItems/applyHammerJamToUpgradeStart";
+import { resolveGoldPassBoostModifier } from "./resolveGoldPassBoost";
+import { isGoldPassBoostApplicable } from "./isGoldPassBoostApplicable";
 import {
   resolveHammerJamResourceProduction,
 } from "@/engine/magicItems/resolveHammerJamResourceProduction";
@@ -133,28 +135,73 @@ export class ProgressionEngine {
 
     const upgradeStartContext = progression.upgradeStartContext;
     const hammerJamTarget = toHammerJamTarget(progression.entity.category);
+    const noGoldPassModifier = {
+      costMultiplier: 1,
+      timeMultiplier: 1,
+      appliedModifierIds: [] as string[],
+    };
+    // Resolve first so invalid percentages are rejected even when the target
+    // entity is ineligible for the selected boost.
+    const requestedGoldPassModifier = progression.goldPassBoost
+      ? resolveGoldPassBoostModifier(progression.goldPassBoost)
+      : noGoldPassModifier;
+    const goldPassModifier =
+      progression.goldPassBoost &&
+      isGoldPassBoostApplicable({
+        village: progression.entity.village,
+        entityType: progression.entity.category,
+        target: progression.goldPassBoost.target,
+      })
+        ? requestedGoldPassModifier
+        : noGoldPassModifier;
 
-    if (!isMaxLevel && next && upgradeStartContext) {
-      if (!Number.isFinite(upgradeStartContext.startsAt)) {
-        throw new Error("INVALID_UPGRADE_START_TIMESTAMP");
+    if (!isMaxLevel && next) {
+      let hammerJamTimeMultiplier = 1;
+      let shouldAdjustDuration = goldPassModifier.appliedModifierIds.length > 0;
+
+      if (upgradeStartContext) {
+        if (!Number.isFinite(upgradeStartContext.startsAt)) {
+          throw new Error("INVALID_UPGRADE_START_TIMESTAMP");
+        }
+
+        if (hammerJamTarget) {
+          const effectiveStartValues = applyHammerJamToUpgradeStart({
+            ...(baseNextCost == null ? {} : { baseCost: baseNextCost }),
+            baseDurationMinutes: baseNextUpgradeTime ?? 0,
+            target: hammerJamTarget,
+            village: progression.entity.village,
+            startsAt: upgradeStartContext.startsAt,
+            manifest: upgradeStartContext.hammerJam,
+          });
+
+          nextCost = effectiveStartValues.cost ?? baseNextCost;
+          hammerJamTimeMultiplier = effectiveStartValues.timeMultiplier;
+          appliedModifierIds = effectiveStartValues.appliedModifierIds;
+          shouldAdjustDuration = true;
+        }
       }
 
-      if (hammerJamTarget) {
-        const effectiveStartValues = applyHammerJamToUpgradeStart({
-          ...(baseNextCost == null ? {} : { baseCost: baseNextCost }),
-          baseDurationMinutes: baseNextUpgradeTime ?? 0,
-          target: hammerJamTarget,
-          village: progression.entity.village,
-          startsAt: upgradeStartContext.startsAt,
-          manifest: upgradeStartContext.hammerJam,
-        });
-
-        nextCost = effectiveStartValues.cost ?? baseNextCost;
-        nextUpgradeTime = baseNextUpgradeTime == null
-          ? undefined
-          : effectiveStartValues.durationMinutes;
-        appliedModifierIds = effectiveStartValues.appliedModifierIds;
+      // Gold Pass and Hammer Jam compound multiplicatively for both cost and
+      // time. Apply the Gold Pass cost factor to the already event-adjusted
+      // cost, while duration factors are multiplied from the base and rounded once.
+      if (nextCost != null && goldPassModifier.costMultiplier !== 1) {
+        nextCost = Math.round(
+          nextCost * goldPassModifier.costMultiplier,
+        );
       }
+
+      if (baseNextUpgradeTime != null && shouldAdjustDuration) {
+        nextUpgradeTime = Math.round(
+          baseNextUpgradeTime *
+            hammerJamTimeMultiplier *
+            goldPassModifier.timeMultiplier,
+        );
+      }
+
+      appliedModifierIds = [
+        ...appliedModifierIds,
+        ...goldPassModifier.appliedModifierIds,
+      ];
     }
 
     const baseCurrentStats = progression.current?.stats ?? {};
@@ -193,8 +240,19 @@ export class ProgressionEngine {
           ...nextStatsResult.appliedModifierIds,
         ]),
       ],
-      remainingCost: remaining.remainingCost,
-      remainingUpgradeTime: remaining.remainingUpgradeTime,
+      remainingCost:
+        goldPassModifier.appliedModifierIds.length > 0
+          ? Math.round(
+              remaining.remainingCost * goldPassModifier.costMultiplier,
+            )
+          : remaining.remainingCost,
+      remainingUpgradeTime:
+        goldPassModifier.appliedModifierIds.length > 0
+          ? Math.round(
+              remaining.remainingUpgradeTime *
+                goldPassModifier.timeMultiplier,
+            )
+          : remaining.remainingUpgradeTime,
       currentHallLevel: progression.currentHallLevel,
       requiredHallLevel: getHallRequirement(progression),
       currentXp: progression.current?.xp,

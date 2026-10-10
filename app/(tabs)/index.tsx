@@ -703,10 +703,22 @@ export default function HomeScreen() {
     setActionModalVisible(true);
 
     const resolveWithSettings = (settings: GoldPassBoostSettings) => {
-      const goldPassBoost = resolveGoldPassBoostForUpgradeType(
-        upgrade.upgradeType,
-        settings,
-      );
+      const entityType = upgrade.isCrafted
+        ? "building"
+        : upgrade.dataId == null
+          ? undefined
+          : getEntity(upgrade.dataId)?.type;
+      const goldPassBoost = entityType
+        ? resolveGoldPassBoostForUpgradeType(
+            {
+              upgradeType: upgrade.upgradeType,
+              entityType,
+              village: upgrade.village,
+            },
+            settings,
+          )
+        : undefined;
+
       return ProgressionApplicationService.resolveUpgrade(upgrade, {
         goldPassBoost,
       });

@@ -1,6 +1,5 @@
 import type { HammerJamManifest } from "@/engine/magicItems/hammerJam";
 import type { GoldPassBoostSelection } from "@/types/goldPass";
-import type { GoldPassBoostSelection } from "@/types/goldPass";
 import type {
   ProgressionData,
 } from "@/types/progression";

@@ -302,18 +302,28 @@ describe("ProgressionEngine modifiers", () => {
       }),
     ).toThrow("INVALID_UPGRADE_START_TIMESTAMP");
   });
-  it("applies a manually selected Builder Gold Pass discount to the next and remaining upgrade time", () => {
-    const result = resolve({
-      goldPassBoost: { target: "builder", percent: 20 },
-    });
+  it.each([
+    { percent: 0, cost: 1_000, duration: 120, remaining: 360, ids: [] },
+    { percent: 10, cost: 900, duration: 108, remaining: 324, ids: ["gold-pass-builder-boost"] },
+    { percent: 15, cost: 850, duration: 102, remaining: 306, ids: ["gold-pass-builder-boost"] },
+    { percent: 20, cost: 800, duration: 96, remaining: 288, ids: ["gold-pass-builder-boost"] },
+  ] as const)(
+    "applies the Builder Boost percentage $percent to cost and time",
+    ({ percent, cost, duration, remaining, ids }) => {
+      const result = resolve({
+        goldPassBoost: { target: "builder", percent },
+      });
 
-    expect(result).toMatchObject({
-      baseNextUpgradeTime: 120,
-      nextUpgradeTime: 96,
-      remainingUpgradeTime: 288,
-      appliedModifierIds: ["gold-pass-builder-boost"],
-    });
-  });
+      expect(result).toMatchObject({
+        baseNextCost: 1_000,
+        nextCost: cost,
+        baseNextUpgradeTime: 120,
+        nextUpgradeTime: duration,
+        remainingUpgradeTime: remaining,
+        appliedModifierIds: ids,
+      });
+    },
+  );
 
   it("compounds Gold Pass with Hammer Jam without intermediate duration rounding", () => {
     const result = resolve({
@@ -327,7 +337,7 @@ describe("ProgressionEngine modifiers", () => {
     expect(result).toMatchObject({
       baseNextUpgradeTime: 120,
       nextUpgradeTime: 48,
-      nextCost: 500,
+      nextCost: 400,
       remainingUpgradeTime: 288,
       appliedModifierIds: ["hammer-jam", "gold-pass-builder-boost"],
     });
@@ -346,10 +356,75 @@ describe("ProgressionEngine modifiers", () => {
     });
 
     expect(result).toMatchObject({
+      baseNextCost: 1_000,
+      nextCost: 850,
       baseNextUpgradeTime: 120,
       nextUpgradeTime: 102,
       remainingUpgradeTime: 306,
       appliedModifierIds: ["gold-pass-research-boost"],
+    });
+  });
+
+  it("does not apply Builder Boost to Builder Base buildings", () => {
+    const result = resolve({
+      entity: {
+        id: 101,
+        slug: "builder-hall-building",
+        category: "building",
+        village: "builderBase",
+        maxLevel: 3,
+      },
+      goldPassBoost: { target: "builder", percent: 20 },
+    });
+
+    expect(result).toMatchObject({
+      baseNextCost: 1_000,
+      nextCost: 1_000,
+      baseNextUpgradeTime: 120,
+      nextUpgradeTime: 120,
+      appliedModifierIds: [],
+    });
+  });
+
+  it("does not apply Research Boost to pets", () => {
+    const result = resolve({
+      entity: {
+        id: 101,
+        slug: "pet",
+        category: "pet",
+        village: "home",
+        maxLevel: 3,
+      },
+      goldPassBoost: { target: "research", percent: 20 },
+    });
+
+    expect(result).toMatchObject({
+      baseNextCost: 1_000,
+      nextCost: 1_000,
+      baseNextUpgradeTime: 120,
+      nextUpgradeTime: 120,
+      appliedModifierIds: [],
+    });
+  });
+
+  it("does not apply Builder Boost to traps", () => {
+    const result = resolve({
+      entity: {
+        id: 101,
+        slug: "spring-trap",
+        category: "trap",
+        village: "home",
+        maxLevel: 3,
+      },
+      goldPassBoost: { target: "builder", percent: 20 },
+    });
+
+    expect(result).toMatchObject({
+      baseNextCost: 1_000,
+      nextCost: 1_000,
+      baseNextUpgradeTime: 120,
+      nextUpgradeTime: 120,
+      appliedModifierIds: [],
     });
   });
 

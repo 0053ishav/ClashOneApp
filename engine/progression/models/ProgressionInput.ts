@@ -33,6 +33,6 @@ export interface ProgressionInput {
   currentHallLevel: number;
   upgradeStartContext?: ProgressionUpgradeStartContext;
   resourceProductionContext?: ResourceProductionContext;
-  /** Manually selected Gold Pass discount for duration projections. */
+  /** Manually selected Gold Pass discount for cost and time projections. */
   goldPassBoost?: GoldPassBoostSelection;
 }

@@ -5,6 +5,9 @@ jest.mock("@/db/database", () => ({
 import { getDB } from "@/db/database";
 import {
   addMagicItem,
+  clearActiveMagicEffects,
+  getImportedBoostSnapshot,
+  replaceImportedBoostSnapshot,
   consumeMagicItem,
   consumeMagicItemQuantity,
   getActiveMagicEffects,
@@ -211,4 +214,47 @@ describe("magicItemService", () => {
       ["#ACCOUNT", 500],
     );
   });
+  it("clears only the requested account's simulated effects", async () => {
+    await clearActiveMagicEffects("#ACCOUNT");
+    expect(db.runAsync).toHaveBeenCalledWith(
+      "DELETE FROM active_magic_effects WHERE account_player_tag = ?",
+      ["#ACCOUNT"],
+    );
+  });
+
+  it("persists and reads imported boost durations as a separate snapshot", async () => {
+    const snapshot = {
+      accountTag: "#ACCOUNT",
+      builderBoostSeconds: 3595,
+      labBoostSeconds: 3598,
+      clocktowerBoostSeconds: 60652,
+      exportedAt: 1_700_000_000_000,
+    };
+    await replaceImportedBoostSnapshot(snapshot);
+    expect(db.runAsync).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO imported_boosts"),
+      ["#ACCOUNT", 3595, 3598, 60652, 1_700_000_000_000],
+    );
+
+    db.getFirstAsync.mockResolvedValue({
+      account_player_tag: "#ACCOUNT",
+      builder_boost_seconds: 3595,
+      lab_boost_seconds: 3598,
+      clocktower_boost_seconds: 60652,
+      exported_at: 1_700_000_000_000,
+    });
+    await expect(getImportedBoostSnapshot("#ACCOUNT")).resolves.toEqual(snapshot);
+  });
+
+  it("rejects negative imported boost durations before writing", async () => {
+    await expect(replaceImportedBoostSnapshot({
+      accountTag: "#ACCOUNT",
+      builderBoostSeconds: -1,
+      labBoostSeconds: 0,
+      clocktowerBoostSeconds: 0,
+      exportedAt: 1_700_000_000_000,
+    })).rejects.toThrow("INVALID_BUILDER_BOOST_SECONDS");
+    expect(db.runAsync).not.toHaveBeenCalled();
+  });
+
 });

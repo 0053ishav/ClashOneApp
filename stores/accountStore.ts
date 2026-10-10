@@ -351,6 +351,7 @@ export const useAccountStore = create<AccountState>((set) => ({
       );
     } catch (e) {
       console.error("importJsonData error:", e);
+      throw e;
     } finally {
       set({ isSyncing: false });
     }

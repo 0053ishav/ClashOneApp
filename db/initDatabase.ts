@@ -225,6 +225,22 @@ export async function initDatabase() {
     version = 4;
   }
 
+  // V5 - imported in-game boost snapshot, separate from simulated Magic Items
+  if (version < 5) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS imported_boosts (
+        account_player_tag TEXT PRIMARY KEY,
+        builder_boost_seconds INTEGER NOT NULL DEFAULT 0,
+        lab_boost_seconds INTEGER NOT NULL DEFAULT 0,
+        clocktower_boost_seconds INTEGER NOT NULL DEFAULT 0,
+        exported_at INTEGER NOT NULL,
+        FOREIGN KEY(account_player_tag) REFERENCES accounts(player_tag) ON DELETE CASCADE
+      );
+    `);
+    await setSchemaVersion(db, 5);
+    version = 5;
+  }
+
   // log("✅ Database ready. Version:", version);
 
   // Debug only

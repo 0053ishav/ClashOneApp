@@ -240,6 +240,4 @@ describe("simulateUpgrade", () => {
     expect(result.durationSavedMinutes).toBe(18 * 60);
     expect(result.appliedModifierIds).toEqual(["gold-pass-research-boost"]);
   });
-
-
 });

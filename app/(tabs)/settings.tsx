@@ -626,7 +626,7 @@ export default function SettingsScreen() {
 
         <Section
           title="Gold Pass boosts"
-          footer="Gold Pass perks are not included in village JSON. Set these manually and update them whenever your perks change or expire."
+          footer="Gold Pass perks are not included in village JSON. Set these before importing so full-duration progress can be estimated correctly. Exported remaining timers stay unchanged; update these values when perks change or expire."
         >
           {!activeTag ? (
             <Row

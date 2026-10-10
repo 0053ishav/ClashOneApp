@@ -48,7 +48,7 @@ const activeHammerJam = {
   resourceMultiplier: 2,
 };
 
-describe("ProgressionEngine Hammer Jam modifiers", () => {
+describe("ProgressionEngine modifiers", () => {
   it("preserves base values when no upgrade start context is supplied", () => {
     const result = resolve();
 
@@ -305,10 +305,6 @@ describe("ProgressionEngine Hammer Jam modifiers", () => {
   it("applies a manually selected Builder Gold Pass discount to the next and remaining upgrade time", () => {
     const result = resolve({
       goldPassBoost: { target: "builder", percent: 20 },
-      upgradeStartContext: {
-        startsAt: EVENT_START - 1,
-        hammerJam: activeHammerJam,
-      },
     });
 
     expect(result).toMatchObject({
@@ -347,10 +343,6 @@ describe("ProgressionEngine Hammer Jam modifiers", () => {
         maxLevel: 3,
       },
       goldPassBoost: { target: "research", percent: 15 },
-      upgradeStartContext: {
-        startsAt: EVENT_START - 1,
-        hammerJam: activeHammerJam,
-      },
     });
 
     expect(result).toMatchObject({
@@ -375,6 +367,4 @@ describe("ProgressionEngine Hammer Jam modifiers", () => {
       }),
     ).toThrow("INVALID_GOLD_PASS_BOOST_PERCENT");
   });
-
-
 });

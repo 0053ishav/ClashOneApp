@@ -250,7 +250,7 @@ export function GoldPassBoostQuickPanel({
             </View>
 
             <Text style={styles.description}>
-              Set your current perks manually. They're not included in village JSON;
+              Set your current perks manually. They&apos;re not included in village JSON;
               imported remaining timers stay unchanged.
             </Text>
 

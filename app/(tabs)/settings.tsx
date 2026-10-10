@@ -49,7 +49,7 @@ import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import * as Notifications from "expo-notifications";
 import { useFocusEffect, useRouter } from "expo-router";
-import { Children, useCallback, useEffect, useState } from "react";
+import { Children, useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Linking,
@@ -318,7 +318,7 @@ export default function SettingsScreen() {
     useState(false);
   const [isSavingGoldPassSettings, setIsSavingGoldPassSettings] =
     useState(false);
-  const [goldPassReloadKey, setGoldPassReloadKey] = useState(0);
+  const goldPassLoadRequestRef = useRef(0);
   const [showGoldPassPopover, setShowGoldPassPopover] = useState(false);
 
   const activeGoldPassSettings =
@@ -371,37 +371,47 @@ export default function SettingsScreen() {
     setLocalBuilderCount(acc.builderCount);
   }, [accounts, activeTag]);
 
-  useFocusEffect(
-    useCallback(() => {
-      let cancelled = false;
+  const loadGoldPassSettings = useCallback(
+    async (isCurrent: () => boolean = () => true) => {
+      const requestId = ++goldPassLoadRequestRef.current;
 
       if (!activeTag) {
         setGoldPassSettings(null);
         setIsLoadingGoldPassSettings(false);
         setGoldPassSettingsLoadFailed(false);
-        return () => {
-          cancelled = true;
-        };
+        return;
       }
+
+      const requestIsCurrent = () =>
+        isCurrent() &&
+        goldPassLoadRequestRef.current === requestId &&
+        useAccountStore.getState().activeTag === activeTag;
 
       setIsLoadingGoldPassSettings(true);
       setGoldPassSettingsLoadFailed(false);
 
-      void getGoldPassBoostSettings(activeTag)
-        .then((settings) => {
-          if (!cancelled) setGoldPassSettings(settings);
-        })
-        .catch(() => {
-          if (!cancelled) setGoldPassSettingsLoadFailed(true);
-        })
-        .finally(() => {
-          if (!cancelled) setIsLoadingGoldPassSettings(false);
-        });
+      try {
+        const settings = await getGoldPassBoostSettings(activeTag);
+        if (requestIsCurrent()) setGoldPassSettings(settings);
+      } catch {
+        if (requestIsCurrent()) setGoldPassSettingsLoadFailed(true);
+      } finally {
+        if (requestIsCurrent()) setIsLoadingGoldPassSettings(false);
+      }
+    },
+    [activeTag],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      void loadGoldPassSettings(() => !cancelled);
 
       return () => {
         cancelled = true;
+        goldPassLoadRequestRef.current += 1;
       };
-    }, [activeTag, goldPassReloadKey]),
+    }, [loadGoldPassSettings]),
   );
 
   useEffect(() => {
@@ -681,7 +691,7 @@ export default function SettingsScreen() {
               loadFailed={goldPassSettingsLoadFailed}
               saving={isSavingGoldPassSettings}
               onClose={() => setShowGoldPassPopover(false)}
-              onRetry={() => setGoldPassReloadKey((current) => current + 1)}
+              onRetry={() => void loadGoldPassSettings()}
               onSetBoth={(percent) =>
                 void saveGoldPassUpdates({
                   builderBoostPercent: percent,

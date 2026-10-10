@@ -140,7 +140,7 @@ export default function HomeScreen() {
   const [isLoadingGoldPassSettings, setIsLoadingGoldPassSettings] = useState(false);
   const [goldPassSettingsLoadFailed, setGoldPassSettingsLoadFailed] = useState(false);
   const [isSavingGoldPassSettings, setIsSavingGoldPassSettings] = useState(false);
-  const [goldPassReloadKey, setGoldPassReloadKey] = useState(0);
+  const goldPassLoadRequestRef = useRef(0);
   const goldPassProgressionRequestRef = useRef(0);
   const [refreshing, setRefreshing] = useState(false);
   const [completedId, setCompletedId] = useState<string | null>(null);
@@ -374,38 +374,48 @@ export default function HomeScreen() {
     }, [refreshState]),
   );
 
-  useFocusEffect(
-    useCallback(() => {
-      let cancelled = false;
+  const loadGoldPassSettings = useCallback(
+    async (isCurrent: () => boolean = () => true) => {
+      const requestId = ++goldPassLoadRequestRef.current;
 
       if (!activeTag) {
         setGoldPassSettings(null);
         setIsLoadingGoldPassSettings(false);
         setGoldPassSettingsLoadFailed(false);
         setShowGoldPassPopover(false);
-        return () => {
-          cancelled = true;
-        };
+        return;
       }
+
+      const requestIsCurrent = () =>
+        isCurrent() &&
+        goldPassLoadRequestRef.current === requestId &&
+        useAccountStore.getState().activeTag === activeTag;
 
       setIsLoadingGoldPassSettings(true);
       setGoldPassSettingsLoadFailed(false);
 
-      void getGoldPassBoostSettings(activeTag)
-        .then((settings) => {
-          if (!cancelled) setGoldPassSettings(settings);
-        })
-        .catch(() => {
-          if (!cancelled) setGoldPassSettingsLoadFailed(true);
-        })
-        .finally(() => {
-          if (!cancelled) setIsLoadingGoldPassSettings(false);
-        });
+      try {
+        const settings = await getGoldPassBoostSettings(activeTag);
+        if (requestIsCurrent()) setGoldPassSettings(settings);
+      } catch {
+        if (requestIsCurrent()) setGoldPassSettingsLoadFailed(true);
+      } finally {
+        if (requestIsCurrent()) setIsLoadingGoldPassSettings(false);
+      }
+    },
+    [activeTag],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      void loadGoldPassSettings(() => !cancelled);
 
       return () => {
         cancelled = true;
+        goldPassLoadRequestRef.current += 1;
       };
-    }, [activeTag, goldPassReloadKey]),
+    }, [loadGoldPassSettings]),
   );
 
   useEffect(() => {
@@ -1053,7 +1063,7 @@ export default function HomeScreen() {
             loadFailed={goldPassSettingsLoadFailed}
             saving={isSavingGoldPassSettings}
             onClose={() => setShowGoldPassPopover(false)}
-            onRetry={() => setGoldPassReloadKey((current) => current + 1)}
+            onRetry={() => void loadGoldPassSettings()}
             onSetBoth={(percent) =>
               void saveGoldPassUpdates({
                 builderBoostPercent: percent,

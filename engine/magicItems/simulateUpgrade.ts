@@ -5,6 +5,8 @@ import { resolveInstantMagicItem } from "@/engine/magicItems/resolveInstantMagic
 import type { HammerJamManifest } from "@/engine/magicItems/hammerJam";
 import type { Village } from "@/types/entity";
 import type { ActiveMagicEffect, MagicItemTarget } from "@/types/magicItem";
+import { resolveGoldPassBoostModifier } from "@/engine/progression/resolveGoldPassBoost";
+import type { GoldPassBoostSelection } from "@/types/goldPass";
 
 export type UpgradeSimulationInput = {
   /** Base values come from the selected entity's next progression level. */
@@ -16,6 +18,8 @@ export type UpgradeSimulationInput = {
   village: Village;
   startsAt: number;
   hammerJam: HammerJamManifest;
+  /** Optional manually selected Gold Pass time discount for this simulated upgrade. */
+  goldPassBoost?: GoldPassBoostSelection;
   selectedItemIds?: readonly string[];
   /** Needed when previewing a Book on work that is already in progress. */
   hasActiveUpgrade?: boolean;
@@ -84,6 +88,7 @@ export function simulateUpgrade(
     village,
     startsAt,
     hammerJam,
+    goldPassBoost,
     selectedItemIds = [],
     hasActiveUpgrade = false,
     freeBuilderAvailable = false,
@@ -199,6 +204,17 @@ export function simulateUpgrade(
     startsAt,
     manifest: hammerJam,
   });
+  const goldPassModifier = goldPassBoost
+    ? resolveGoldPassBoostModifier(goldPassBoost)
+    : { timeMultiplier: 1, appliedModifierIds: [] };
+  const effectiveStartDurationMinutes =
+    goldPassModifier.appliedModifierIds.length > 0
+      ? Math.round(
+          baseDurationMinutes *
+            startValues.timeMultiplier *
+            goldPassModifier.timeMultiplier,
+        )
+      : startValues.durationMinutes;
 
   const activeEffects: ActiveMagicEffect[] = timedItemIds.flatMap((itemId) => {
     const item = getMagicItem(itemId);
@@ -214,7 +230,7 @@ export function simulateUpgrade(
   });
 
   const estimatedCompletionAt = resolveUpgradeCompletionTime({
-    baseDurationMs: startValues.durationMinutes * MINUTE_MS,
+    baseDurationMs: effectiveStartDurationMinutes * MINUTE_MS,
     startedAt: startsAt,
     effects: activeEffects,
     target: workTarget,
@@ -235,7 +251,10 @@ export function simulateUpgrade(
     costSaved: Math.max(0, baseCost - (startValues.cost ?? baseCost)),
     estimatedCompletionAt,
     completionMode: "timed",
-    appliedModifierIds: startValues.appliedModifierIds,
+    appliedModifierIds: [
+      ...startValues.appliedModifierIds,
+      ...goldPassModifier.appliedModifierIds,
+    ],
     appliedItemIds,
     rejectedItems,
   };

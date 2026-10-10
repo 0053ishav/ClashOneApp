@@ -204,4 +204,42 @@ describe("simulateUpgrade", () => {
       "INVALID_UPGRADE_START_TIMESTAMP",
     );
   });
+  it("applies a Gold Pass Builder Boost to a planned upgrade", () => {
+    const result = simulate({
+      goldPassBoost: { target: "builder", percent: 20 },
+    });
+
+    expect(result.effectiveDurationMinutes).toBe(96 * 60);
+    expect(result.durationSavedMinutes).toBe(24 * 60);
+    expect(result.appliedModifierIds).toEqual(["gold-pass-builder-boost"]);
+  });
+
+  it("compounds Gold Pass with Hammer Jam before resolving potion speed", () => {
+    const result = simulate({
+      hammerJam: activeHammerJam,
+      goldPassBoost: { target: "builder", percent: 20 },
+    });
+
+    // 120h × 0.5 Hammer Jam × 0.8 Gold Pass = 48h.
+    expect(result.effectiveDurationMinutes).toBe(48 * 60);
+    expect(result.durationSavedMinutes).toBe(72 * 60);
+    expect(result.appliedModifierIds).toEqual([
+      "hammer-jam",
+      "gold-pass-builder-boost",
+    ]);
+  });
+
+  it("applies Research Gold Pass Boost to planned research work", () => {
+    const result = simulate({
+      target: "troop",
+      workTarget: "research",
+      goldPassBoost: { target: "research", percent: 15 },
+    });
+
+    expect(result.effectiveDurationMinutes).toBe(102 * 60);
+    expect(result.durationSavedMinutes).toBe(18 * 60);
+    expect(result.appliedModifierIds).toEqual(["gold-pass-research-boost"]);
+  });
+
+
 });

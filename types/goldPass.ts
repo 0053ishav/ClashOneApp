@@ -1,5 +1,5 @@
 /**
- * Manually configured Gold Pass upgrade-time discounts.
+ * Manually configured Gold Pass resource-cost and upgrade-time discounts.
  *
  * These values are not supplied by the in-game village JSON export and must
  * be maintained by the player for each account.

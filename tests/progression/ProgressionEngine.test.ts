@@ -303,13 +303,13 @@ describe("ProgressionEngine modifiers", () => {
     ).toThrow("INVALID_UPGRADE_START_TIMESTAMP");
   });
   it.each([
-    { percent: 0, cost: 1_000, duration: 120, remaining: 360, ids: [] },
-    { percent: 10, cost: 900, duration: 108, remaining: 324, ids: ["gold-pass-builder-boost"] },
-    { percent: 15, cost: 850, duration: 102, remaining: 306, ids: ["gold-pass-builder-boost"] },
-    { percent: 20, cost: 800, duration: 96, remaining: 288, ids: ["gold-pass-builder-boost"] },
+    { percent: 0, cost: 1_000, duration: 120, remainingCost: 3_000, remaining: 360, ids: [] },
+    { percent: 10, cost: 900, duration: 108, remainingCost: 2_700, remaining: 324, ids: ["gold-pass-builder-boost"] },
+    { percent: 15, cost: 850, duration: 102, remainingCost: 2_550, remaining: 306, ids: ["gold-pass-builder-boost"] },
+    { percent: 20, cost: 800, duration: 96, remainingCost: 2_400, remaining: 288, ids: ["gold-pass-builder-boost"] },
   ] as const)(
     "applies the Builder Boost percentage $percent to cost and time",
-    ({ percent, cost, duration, remaining, ids }) => {
+    ({ percent, cost, duration, remainingCost, remaining, ids }) => {
       const result = resolve({
         goldPassBoost: { target: "builder", percent },
       });
@@ -319,6 +319,7 @@ describe("ProgressionEngine modifiers", () => {
         nextCost: cost,
         baseNextUpgradeTime: 120,
         nextUpgradeTime: duration,
+        remainingCost,
         remainingUpgradeTime: remaining,
         appliedModifierIds: ids,
       });
@@ -338,6 +339,7 @@ describe("ProgressionEngine modifiers", () => {
       baseNextUpgradeTime: 120,
       nextUpgradeTime: 48,
       nextCost: 400,
+      remainingCost: 2_400,
       remainingUpgradeTime: 288,
       appliedModifierIds: ["hammer-jam", "gold-pass-builder-boost"],
     });
@@ -358,6 +360,7 @@ describe("ProgressionEngine modifiers", () => {
     expect(result).toMatchObject({
       baseNextCost: 1_000,
       nextCost: 850,
+      remainingCost: 2_550,
       baseNextUpgradeTime: 120,
       nextUpgradeTime: 102,
       remainingUpgradeTime: 306,

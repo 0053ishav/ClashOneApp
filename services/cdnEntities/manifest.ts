@@ -1,18 +1,16 @@
-import { Manifest } from "@/types/progression";
-
-const API =
-  `${process.env.EXPO_PUBLIC_BACKEND_URL}/v2`;
+import { ENV } from "@/config/env";
+import type { Manifest } from "@/types/progression";
 
 export async function fetchManifest(): Promise<Manifest> {
-  const res = await fetch(
-    `${API}/manifest`,
-  );
-
-  if (!res.ok) {
-    throw new Error(
-      "Failed to fetch manifest",
-    );
+  if (!ENV.BACKEND) {
+    throw new Error("Backend URL is not configured");
   }
 
-  return (await res.json()) as Manifest;
+  const response = await fetch(`${ENV.BACKEND}/v2/manifest`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch manifest: HTTP ${response.status}`);
+  }
+
+  return (await response.json()) as Manifest;
 }

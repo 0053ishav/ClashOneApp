@@ -24,7 +24,9 @@ export interface Manifest {
 
   progression: Record<string, number>;
 
-  events: Record<string, number>;
+  events: Record<string, number> & {
+    hammerJam?: number;
+  };
 }
 
 /**

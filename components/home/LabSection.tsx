@@ -1,3 +1,4 @@
+import { MagicItemTimeSaved } from "@/components/home/MagicItemActivitySummary";
 import { ENV } from "@/config/env";
 import { Village } from "@/types/entity";
 import { Upgrade } from "@/types/upgrade";
@@ -209,7 +210,7 @@ function LabCard({
                       cachePolicy="memory-disk"
                     />
 
-                    {(lab.helperAppliedSeconds ?? 0) && (
+                    {(lab.helperAppliedSeconds ?? 0) > 0 && (
                       <Text style={styles.helperSaved}>
                         -
                         {formatCountdown(
@@ -242,6 +243,7 @@ function LabCard({
             </Text>
 
             <Text style={styles.totalTime}>of {formatCountdown(totalMs)}</Text>
+            <MagicItemTimeSaved milliseconds={lab.magicItemTimeSavedMs} />
           </View>
         </View>
 

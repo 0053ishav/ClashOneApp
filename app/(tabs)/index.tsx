@@ -1,35 +1,55 @@
 import GoblinEventBanner from "@/components/GoblinEventBanner";
+import { HammerJamBanner } from "@/components/HammerJamBanner";
 import { LabSection } from "@/components/home/LabSection";
+import {
+  formatSavedDuration,
+  MagicItemActivityPopup,
+  MagicItemTimeSaved,
+} from "@/components/home/MagicItemActivitySummary";
+import { MagicItemsQuickModal } from "@/components/home/MagicItemsQuickModal";
 import { PetSection } from "@/components/home/PetSection";
 import { UpgradeActionModal } from "@/components/home/UpgradeActionModal";
+import {
+  MagicItemDialog,
+  type MagicItemDialogChoice,
+} from "@/components/magicItems/MagicItemDialog";
 import ProfileDropdownSheet, {
   ProfileDropdownSheetRef,
 } from "@/components/ProfileSheet/ProfileDropdownSheet";
 import { SupportModal } from "@/components/SupportModal";
 import { XPBadge } from "@/components/XPBadge";
 import { ENV } from "@/config/env";
+import { MAGIC_ITEMS } from "@/config/magicItems";
 import { useCraftedResolver } from "@/engine/crafted/craftedResolver";
 import type { ProgressionApplicationResult } from "@/engine/progression/models";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { useRemoteConfig } from "@/provider/remoteConfigProvider";
 import { getAccountState } from "@/services/accountStateService";
+import {
+  getActiveMagicEffects,
+  getMagicItemInventory,
+} from "@/services/magicItemService";
 import { ProgressionApplicationService } from "@/services/progression";
 import { buildSupportInfo } from "@/services/supportDebugInfo";
 import { deleteUpgrade } from "@/services/upgradeService";
+import { applyBookToActiveUpgrade } from "@/services/useBookOnActiveUpgrade";
 import { setOnboardingIncomplete } from "@/storage/appConfig";
 import {
   setGoblinBannerDismissedUntil,
   shouldShowGoblinBanner,
 } from "@/storage/goblinStorage";
 import { useAccountStore } from "@/stores/accountStore";
+import { useHammerJamStore } from "@/stores/hammerJamStore";
 import { usePremiumStore } from "@/stores/premiumStore";
 import { Village } from "@/types/entity";
+import type { MagicItem } from "@/types/magicItem";
 import { Upgrade } from "@/types/upgrade";
 import { setSessionSource, track } from "@/utils/analytics/analytics";
 import { calculateProgress } from "@/utils/calculateProgress";
 import { formatBuildingName } from "@/utils/formatBuildingName";
 import { formatCountdown } from "@/utils/formatCountdown";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
+import { getEntity } from "@/utils/getEntity";
 import {
   canUseGoblinBuilder,
   getCurrentWorkForHireEventEnd,
@@ -57,8 +77,8 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  View,
   useWindowDimensions,
+  View,
 } from "react-native";
 
 import { ActiveUpgradesSkeleton } from "@/components/home/ActiveUpgradesSkeleton";
@@ -78,11 +98,29 @@ import { scheduleOnRN } from "react-native-worklets";
 export default function HomeScreen() {
   const router = useRouter();
   const isPremium = usePremiumStore((s) => s.isPremium);
+  const hammerJamManifest = useHammerJamStore((s) => s.manifest);
   type AccountState = Awaited<ReturnType<typeof getAccountState>>;
   const [accountState, setAccountState] = useState<AccountState | null>(null);
   const [isLoadingAccountState, setIsLoadingAccountState] = useState(true);
   const [selectedUpgrade, setSelectedUpgrade] = useState<Upgrade | null>(null);
   const [actionModalVisible, setActionModalVisible] = useState(false);
+  const [magicItemsVisible, setMagicItemsVisible] = useState(false);
+  const [magicItemActivity, setMagicItemActivity] = useState<{
+    village: Village;
+    totalSavedMs: number;
+    items: MagicItem[];
+    error?: string;
+  } | null>(null);
+  const [magicItemInventoryCount, setMagicItemInventoryCount] = useState(0);
+  const [magicItemDialog, setMagicItemDialog] = useState<{
+    title: string;
+    message: string;
+    item?: MagicItem;
+    choices?: MagicItemDialogChoice[];
+    tone?: "confirm" | "success" | "error" | "info";
+    confirmLabel?: string;
+    onConfirm?: (item?: MagicItem) => void | Promise<void>;
+  } | null>(null);
   const [selectedProgression, setSelectedProgression] =
     useState<ProgressionApplicationResult | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -119,9 +157,23 @@ export default function HomeScreen() {
         setIsLoadingAccountState(true);
       }
 
-      const state = await getAccountState(activeTag);
-
+      const [state, inventory] = await Promise.all([
+        getAccountState(activeTag),
+        getMagicItemInventory(activeTag),
+      ]);
       setAccountState(state);
+      const trackedPotionCount = inventory.reduce((total, entry) => {
+        const item = MAGIC_ITEMS.find(
+          (candidate) => candidate.id === entry.itemId,
+        );
+        return (
+          total +
+          (item && (item.itemType === "potion" || item.itemType === "snack")
+            ? entry.quantity
+            : 0)
+        );
+      }, 0);
+      setMagicItemInventoryCount(trackedPotionCount);
       hasLoadedAccountState.current = true;
     } catch (error) {
       console.error("[HOME] Failed to refresh account state:", error);
@@ -191,6 +243,92 @@ export default function HomeScreen() {
     startSmartWidgetScheduler();
     await resyncNotifications();
   }, [refreshState]);
+
+  const handleUseBook = useCallback(
+    async (upgrade: Upgrade) => {
+      if (!activeTag) return;
+
+      const village = upgrade.village ?? "home";
+      const target =
+        upgrade.dataId != null
+          ? getEntity(Number(upgrade.dataId)).type
+          : "unknown";
+      const inventory = await getMagicItemInventory(activeTag);
+      const quantities = new Map(
+        inventory.map((entry) => [entry.itemId, entry.quantity]),
+      );
+      const compatibleBooks = MAGIC_ITEMS.filter((item) => {
+        if (item.itemType !== "book" || !item.villages.includes(village))
+          return false;
+        const targets = item.effect.appliesTo ?? [];
+        const compatible =
+          targets.includes("any") ||
+          targets.includes(target as (typeof targets)[number]) ||
+          (targets.includes("heroes-and-pets") &&
+            (target === "hero" || target === "pet"));
+        return compatible && (quantities.get(item.id) ?? 0) > 0;
+      });
+
+      if (compatibleBooks.length === 0) {
+        setMagicItemDialog({
+          title: "No compatible Books",
+          message:
+            "You do not have a compatible Book in this account’s tracked inventory.",
+          tone: "info",
+        });
+        return;
+      }
+
+      setMagicItemDialog({
+        title: "Use a Book",
+        message: `Choose a Book to complete ${upgrade.entity}.`,
+        choices: compatibleBooks.map((item) => ({
+          item,
+          quantity: quantities.get(item.id) ?? 0,
+        })),
+        tone: "confirm",
+        confirmLabel: "Use Book",
+        onConfirm: (selectedItem) => {
+          if (!selectedItem) return;
+          setMagicItemDialog(null);
+          void (async () => {
+            const result = await applyBookToActiveUpgrade({
+              accountTag: activeTag,
+              itemId: selectedItem.id,
+              upgradeId: upgrade.id,
+            });
+            if (!result.used) {
+              setMagicItemDialog({
+                title: "Could not use Book",
+                message: result.reason.replaceAll("-", " "),
+                item: selectedItem,
+                tone: "error",
+              });
+              return;
+            }
+            setActionModalVisible(false);
+            setSelectedUpgrade(null);
+            setSelectedProgression(null);
+            await performSync();
+            setMagicItemDialog({
+              title: "Book used",
+              message: `${selectedItem.name} completed the tracked upgrade.`,
+              item: selectedItem,
+              tone: "success",
+            });
+          })().catch(() =>
+            setMagicItemDialog({
+              title: "Could not use Book",
+              message: "Please try again.",
+              item: selectedItem,
+              tone: "error",
+            }),
+          );
+        },
+      });
+    },
+    [activeTag, performSync],
+  );
 
   useEffect(() => {
     if (!completedId) return;
@@ -264,6 +402,59 @@ export default function HomeScreen() {
         scheduleOnRN(changeVillage, "home");
       }
     });
+
+  const showMagicItemActivity = useCallback(async () => {
+    const totalSavedMs = (accountState?.activeUpgrades ?? [])
+      .filter((upgrade) => upgrade.village === selectedVillage)
+      .reduce(
+        (total, upgrade) => total + (upgrade.magicItemTimeSavedMs ?? 0),
+        0,
+      );
+
+    if (!activeTag) {
+      setMagicItemActivity({
+        village: selectedVillage,
+        totalSavedMs,
+        items: [],
+        error: "Connect a village to view tracked effects.",
+      });
+      return;
+    }
+
+    try {
+      const effects = await getActiveMagicEffects(activeTag);
+      const activeItems = Array.from(
+        new Set(
+          effects
+            .filter(
+              (effect) =>
+                effect.village === selectedVillage &&
+                (effect.expiresAt == null || effect.expiresAt > Date.now()),
+            )
+            .map((effect) => effect.itemId),
+        ),
+      )
+        .map((itemId) => MAGIC_ITEMS.find((item) => item.id === itemId))
+        .filter(
+          (item): item is (typeof MAGIC_ITEMS)[number] =>
+            item !== undefined &&
+            (item.itemType === "potion" || item.itemType === "snack"),
+        );
+
+      setMagicItemActivity({
+        village: selectedVillage,
+        totalSavedMs,
+        items: activeItems,
+      });
+    } catch {
+      setMagicItemActivity({
+        village: selectedVillage,
+        totalSavedMs,
+        items: [],
+        error: "Could not load active effects. Please try again.",
+      });
+    }
+  }, [accountState?.activeUpgrades, activeTag, selectedVillage]);
 
   if (isLoadingProfile) {
     return (
@@ -573,109 +764,153 @@ export default function HomeScreen() {
           />
         )}
 
-        {/* Profile row */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Open profile for ${
-            profile.playerTag ? profile.playerName : "Unsnced account"
-          }`}
-          accessibilityHint="Open profile and account actions"
-          onPress={() => {
-            console.log("🔥 [HOME] PROFILE ROW PRESSED");
-            profileSheetRef.current?.present();
-          }}
-          style={({ pressed }) => [
-            styles.profileRow,
-            pressed && styles.profileRowPressed,
-          ]}
-        >
-          {/* Avatar circle */}
-          <View style={[styles.avatar, { borderColor: activeAccount?.color }]}>
-            <Text style={[styles.avatarText, { color: activeAccount?.color }]}>
-              {playerInitials}
-            </Text>
-          </View>
-          <View style={styles.profileInfo}>
-            <View style={styles.profileNameRow}>
-              <Text style={styles.profileName} numberOfLines={1}>
-                {profile.playerTag ? profile.playerName : "No Profile Synced"}
-              </Text>
-              {profile.leagueTierIconUrl && (
-                <Image
-                  source={{ uri: profile.leagueTierIconUrl }}
-                  style={styles.leagueIcon}
-                  contentFit="contain"
-                  cachePolicy="memory-disk"
-                />
-              )}
-              {isPremium && (
-                <View style={styles.chiefBadge}>
-                  <Text style={styles.chiefBadgeText}>Chief</Text>
-                </View>
-              )}
-            </View>
+        <HammerJamBanner manifest={hammerJamManifest} />
 
-            {profile.playerTag && (
-              <View style={styles.profileMeta}>
-                {typeof profile.expLevel === "number" && (
-                  <XPBadge level={profile.expLevel} />
+        {/* Profile row and compact Magic Item shortcuts */}
+        <View style={styles.profileActionsRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Open profile for ${
+              profile.playerTag ? profile.playerName : "Unsnced account"
+            }`}
+            accessibilityHint="Open profile and account actions"
+            onPress={() => {
+              console.log("🔥 [HOME] PROFILE ROW PRESSED");
+              profileSheetRef.current?.present();
+            }}
+            style={({ pressed }) => [
+              styles.profileRow,
+              pressed && styles.profileRowPressed,
+            ]}
+          >
+            {/* Avatar circle */}
+            <View
+              style={[styles.avatar, { borderColor: activeAccount?.color }]}
+            >
+              <Text
+                style={[styles.avatarText, { color: activeAccount?.color }]}
+              >
+                {playerInitials}
+              </Text>
+            </View>
+            <View style={styles.profileInfo}>
+              <View style={styles.profileNameRow}>
+                <Text style={styles.profileName} numberOfLines={1}>
+                  {profile.playerTag ? profile.playerName : "No Profile Synced"}
+                </Text>
+                {profile.leagueTierIconUrl && (
+                  <Image
+                    source={{ uri: profile.leagueTierIconUrl }}
+                    style={styles.leagueIcon}
+                    contentFit="contain"
+                    cachePolicy="memory-disk"
+                  />
                 )}
-                <Image
-                  source={{
-                    uri: resolveEntityIcon(1000001, {
-                      village: "home",
-                      level: profile.townHallLevel,
-                    }),
-                  }}
-                  style={styles.hallIcon}
-                  contentFit="contain"
-                  cachePolicy="memory-disk"
-                />
-                {typeof profile.trophies === "number" && (
-                  <View style={styles.trophyRow}>
-                    <Image
-                      source={{
-                        uri: `${ENV.CDN_BASE}/entities/other/trophy.png`,
-                      }}
-                      style={styles.trophyIcon}
-                      contentFit="contain"
-                    />
-                    <Text style={styles.profileSub}>{profile.trophies}</Text>
-                  </View>
-                )}
-                <View style={styles.metaDot} />
-                <Image
-                  source={{
-                    uri: resolveEntityIcon(1000034, {
-                      village: "builderBase",
-                      level: profile.builderHallLevel,
-                    }),
-                  }}
-                  style={styles.hallIcon}
-                  contentFit="contain"
-                  cachePolicy="memory-disk"
-                />
-                {typeof profile.builderBaseTrophies === "number" && (
-                  <View style={styles.trophyRow}>
-                    <Image
-                      source={{
-                        uri: `${ENV.CDN_BASE}/entities/other/trophy.png`,
-                      }}
-                      style={styles.trophyIcon}
-                      contentFit="contain"
-                    />
-                    <Text style={styles.profileSub}>
-                      {profile.builderBaseTrophies}
-                    </Text>
+                {isPremium && (
+                  <View style={styles.chiefBadge}>
+                    <Text style={styles.chiefBadgeText}>Chief</Text>
                   </View>
                 )}
               </View>
-            )}
+
+              {profile.playerTag && (
+                <View style={styles.profileMeta}>
+                  {typeof profile.expLevel === "number" && (
+                    <XPBadge level={profile.expLevel} />
+                  )}
+                  <Image
+                    source={{
+                      uri: resolveEntityIcon(1000001, {
+                        village: "home",
+                        level: profile.townHallLevel,
+                      }),
+                    }}
+                    style={styles.hallIcon}
+                    contentFit="contain"
+                    cachePolicy="memory-disk"
+                  />
+                  {typeof profile.trophies === "number" && (
+                    <View style={styles.trophyRow}>
+                      <Image
+                        source={{
+                          uri: `${ENV.CDN_BASE}/entities/other/trophy.png`,
+                        }}
+                        style={styles.trophyIcon}
+                        contentFit="contain"
+                      />
+                      <Text style={styles.profileSub}>{profile.trophies}</Text>
+                    </View>
+                  )}
+                  <View style={styles.metaDot} />
+                  <Image
+                    source={{
+                      uri: resolveEntityIcon(1000034, {
+                        village: "builderBase",
+                        level: profile.builderHallLevel,
+                      }),
+                    }}
+                    style={styles.hallIcon}
+                    contentFit="contain"
+                    cachePolicy="memory-disk"
+                  />
+                  {typeof profile.builderBaseTrophies === "number" && (
+                    <View style={styles.trophyRow}>
+                      <Image
+                        source={{
+                          uri: `${ENV.CDN_BASE}/entities/other/trophy.png`,
+                        }}
+                        style={styles.trophyIcon}
+                        contentFit="contain"
+                      />
+                      <Text style={styles.profileSub}>
+                        {profile.builderBaseTrophies}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+            <View style={styles.chevronButton}>
+              <Ionicons name="chevron-down" size={14} color="#94a3b8" />
+            </View>
+          </Pressable>
+          <View style={styles.profileMagicActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="View Potion and Snack effects and time saved"
+              onPress={() => void showMagicItemActivity()}
+              style={({ pressed }) => [
+                styles.profileSavedBadge,
+                pressed && styles.magicItemsButtonPressed,
+              ]}
+            >
+              <Ionicons name="flash" size={11} color="#34d399" />
+              <Text style={styles.profileSavedText}>
+                {formatSavedDuration(
+                  (accountState?.activeUpgrades ?? []).reduce(
+                    (total, upgrade) =>
+                      total + (upgrade.magicItemTimeSavedMs ?? 0),
+                    0,
+                  ),
+                )}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Open Potion and Snack inventory, ${magicItemInventoryCount} available`}
+              onPress={() => setMagicItemsVisible(true)}
+              style={({ pressed }) => [
+                styles.profileInventoryButton,
+                pressed && styles.magicItemsButtonPressed,
+              ]}
+            >
+              <Ionicons name="flask" size={13} color="#fbbf24" />
+              <Text style={styles.profileInventoryText}>
+                {magicItemInventoryCount}
+              </Text>
+            </Pressable>
           </View>
-          <View style={styles.chevronButton}>
-            <Ionicons name="chevron-down" size={14} color="#94a3b8" />
-          </View>
-        </Pressable>
+        </View>
       </View>
 
       {/* ── Scrollable content ── */}
@@ -693,6 +928,115 @@ export default function HomeScreen() {
           />
         }
       >
+        <View style={styles.villageTabsTopSpacer} />
+        {/* Village tabs */}
+        <View style={styles.villageTabs}>
+          <Animated.View
+            style={[
+              styles.villageIndicator,
+              { width: TAB_WIDTH },
+              indicatorStyle,
+            ]}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Home village"
+            accessibilityState={{ selected: selectedVillage === "home" }}
+            onPress={() => changeVillage("home")}
+            style={styles.villageTab}
+          >
+            <Image
+              source={{
+                uri: resolveEntityIcon(1000001, {
+                  village: "home",
+                  level: profile.townHallLevel,
+                }),
+              }}
+              style={[
+                styles.villageIcon,
+                selectedVillage !== "home" && styles.villageIconInactive,
+              ]}
+              contentFit="contain"
+              cachePolicy="memory-disk"
+            />
+            <Text
+              style={[
+                styles.villageTabLabel,
+                selectedVillage === "home" && styles.villageTabLabelActive,
+              ]}
+            >
+              Home
+            </Text>
+            <View
+              style={[
+                styles.villageHallBadge,
+                selectedVillage === "home" && styles.villageHallBadgeActive,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.villageHallBadgeText,
+                  selectedVillage === "home" &&
+                    styles.villageHallBadgeTextActive,
+                ]}
+              >
+                TH{profile.townHallLevel}
+              </Text>
+            </View>
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Builder base village"
+            accessibilityState={{
+              selected: selectedVillage === "builderBase",
+            }}
+            onPress={() => changeVillage("builderBase")}
+            style={styles.villageTab}
+          >
+            <Image
+              source={{
+                uri: resolveEntityIcon(1000034, {
+                  village: "builderBase",
+                  level: profile.builderHallLevel,
+                }),
+              }}
+              style={[
+                styles.villageIcon,
+                selectedVillage !== "builderBase" && styles.villageIconInactive,
+              ]}
+              contentFit="contain"
+              cachePolicy="memory-disk"
+            />
+            <Text
+              style={[
+                styles.villageTabLabel,
+                selectedVillage === "builderBase" &&
+                  styles.villageTabLabelActive,
+              ]}
+            >
+              Builder
+            </Text>
+            <View
+              style={[
+                styles.villageHallBadge,
+                selectedVillage === "builderBase" &&
+                  styles.villageHallBadgeActive,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.villageHallBadgeText,
+                  selectedVillage === "builderBase" &&
+                    styles.villageHallBadgeTextActive,
+                ]}
+              >
+                BH{profile.builderHallLevel}
+              </Text>
+            </View>
+          </Pressable>
+        </View>
+
         {/* ── Status Card (dimensions preserved) ── */}
         <View style={styles.statusCard}>
           <View style={styles.statusCardTop}>
@@ -781,114 +1125,6 @@ export default function HomeScreen() {
                 })()}
             </View>
           </View>
-        </View>
-
-        {/* Village tabs */}
-        <View style={styles.villageTabs}>
-          <Animated.View
-            style={[
-              styles.villageIndicator,
-              { width: TAB_WIDTH },
-              indicatorStyle,
-            ]}
-          />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Home village"
-            accessibilityState={{ selected: selectedVillage === "home" }}
-            onPress={() => changeVillage("home")}
-            style={styles.villageTab}
-          >
-            <Image
-              source={{
-                uri: resolveEntityIcon(1000001, {
-                  village: "home",
-                  level: profile.townHallLevel,
-                }),
-              }}
-              style={[
-                styles.villageIcon,
-                selectedVillage !== "home" && styles.villageIconInactive,
-              ]}
-              contentFit="contain"
-              cachePolicy="memory-disk"
-            />
-            <Text
-              style={[
-                styles.villageTabLabel,
-                selectedVillage === "home" && styles.villageTabLabelActive,
-              ]}
-            >
-              Home
-            </Text>
-            <View
-              style={[
-                styles.villageHallBadge,
-                selectedVillage === "home" && styles.villageHallBadgeActive,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.villageHallBadgeText,
-                  selectedVillage === "home" &&
-                    styles.villageHallBadgeTextActive,
-                ]}
-              >
-                TH{profile.townHallLevel}
-              </Text>
-            </View>
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Builder base village"
-            accessibilityState={{
-              selected: selectedVillage === "builderBase",
-            }}
-            onPress={() => changeVillage("builderBase")}
-            style={styles.villageTab}
-          >
-            <Image
-              source={{
-                uri: resolveEntityIcon(1000034, {
-                  village: "builderBase",
-                  level: profile.townHallLevel,
-                }),
-              }}
-              style={[
-                styles.villageIcon,
-                selectedVillage !== "builderBase" && styles.villageIconInactive,
-              ]}
-              contentFit="contain"
-              cachePolicy="memory-disk"
-            />
-            <Text
-              style={[
-                styles.villageTabLabel,
-                selectedVillage === "builderBase" &&
-                  styles.villageTabLabelActive,
-              ]}
-            >
-              Builder
-            </Text>
-            <View
-              style={[
-                styles.villageHallBadge,
-                selectedVillage === "builderBase" &&
-                  styles.villageHallBadgeActive,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.villageHallBadgeText,
-                  selectedVillage === "builderBase" &&
-                    styles.villageHallBadgeTextActive,
-                ]}
-              >
-                BH{profile.builderHallLevel}
-              </Text>
-            </View>
-          </Pressable>
         </View>
 
         <GestureDetector gesture={swipeGesture}>
@@ -1070,6 +1306,9 @@ export default function HomeScreen() {
                             <Text style={styles.totalTimeText}>
                               of {formatCountdown(totalMs)}
                             </Text>
+                            <MagicItemTimeSaved
+                              milliseconds={u.magicItemTimeSavedMs}
+                            />
                           </View>
                         </View>
 
@@ -1172,10 +1411,41 @@ export default function HomeScreen() {
         )}
       </ScrollView>
       {/* Action Modal */}
+      <MagicItemDialog
+        visible={magicItemDialog !== null}
+        title={magicItemDialog?.title ?? ""}
+        message={magicItemDialog?.message ?? ""}
+        item={magicItemDialog?.item}
+        choices={magicItemDialog?.choices}
+        tone={magicItemDialog?.tone}
+        confirmLabel={magicItemDialog?.confirmLabel}
+        onConfirm={
+          magicItemDialog?.onConfirm
+            ? (item) => void magicItemDialog.onConfirm?.(item)
+            : undefined
+        }
+        onClose={() => setMagicItemDialog(null)}
+      />
+      <MagicItemActivityPopup
+        visible={magicItemActivity !== null}
+        village={magicItemActivity?.village ?? selectedVillage}
+        totalSavedMs={magicItemActivity?.totalSavedMs ?? 0}
+        items={magicItemActivity?.items ?? []}
+        error={magicItemActivity?.error}
+        onClose={() => setMagicItemActivity(null)}
+      />
+      <MagicItemsQuickModal
+        visible={magicItemsVisible}
+        village={selectedVillage}
+        accountTag={activeTag}
+        onClose={() => setMagicItemsVisible(false)}
+        onActivated={performSync}
+      />
       <UpgradeActionModal
         visible={actionModalVisible}
         upgrade={selectedUpgrade}
         progression={selectedProgression}
+        onUseBook={handleUseBook}
         onClose={() => {
           setActionModalVisible(false);
           setSelectedUpgrade(null);
@@ -1368,12 +1638,47 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 
-  profileRow: {
+  profileActionsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    paddingHorizontal: 12,
+    gap: 6,
+  },
+  profileMagicActions: { flexDirection: "row", alignItems: "center", gap: 5 },
+  profileSavedBadge: {
+    minHeight: 27,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
+    paddingHorizontal: 6,
+    borderRadius: 8,
+    backgroundColor: "rgba(52,211,153,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(52,211,153,0.22)",
+  },
+  profileSavedText: { color: "#34d399", fontSize: 9, fontWeight: "900" },
+  profileInventoryButton: {
+    minWidth: 34,
+    minHeight: 27,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
+    paddingHorizontal: 6,
+    borderRadius: 8,
+    backgroundColor: "rgba(251,191,36,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(251,191,36,0.22)",
+  },
+  profileInventoryText: { color: "#fbbf24", fontSize: 9, fontWeight: "900" },
+  profileRow: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
     marginTop: 10,
-    alignSelf: "flex-start",
   },
 
   avatar: {
@@ -1600,7 +1905,28 @@ const styles = StyleSheet.create({
     borderColor: "rgba(34,197,94,0.25)",
   },
 
+  villageTabsTopSpacer: { height: 12 },
   // ── Village tabs ──
+  magicItemsActionRow: {
+    paddingHorizontal: 14,
+    alignItems: "flex-end",
+    marginTop: -8,
+    marginBottom: 8,
+  },
+  magicItemsButton: {
+    minHeight: 29,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingHorizontal: 11,
+    borderRadius: 10,
+    backgroundColor: "rgba(251, 191, 36, 0.09)",
+    borderWidth: 1,
+    borderColor: "rgba(251, 191, 36, 0.25)",
+  },
+  magicItemsButtonPressed: { opacity: 0.65 },
+  magicItemsButtonText: { color: "#fbbf24", fontSize: 10, fontWeight: "800" },
+
   villageTabs: {
     flexDirection: "row",
     backgroundColor: "#111c2e",

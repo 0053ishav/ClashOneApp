@@ -37,6 +37,12 @@ export class ProgressionResolver {
       ),
       maxLevel:
         input.progression.maxLevel,
+      ...(input.upgradeStartContext
+        ? { upgradeStartContext: input.upgradeStartContext }
+        : {}),
+      ...(input.resourceProductionContext
+        ? { resourceProductionContext: input.resourceProductionContext }
+        : {}),
     };
   }
 
@@ -54,6 +60,5 @@ export class ProgressionResolver {
         data.laboratoryLevel ??
         data.labLevel,
     };
-  };
-
+  }
 }

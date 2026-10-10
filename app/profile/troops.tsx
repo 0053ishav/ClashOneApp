@@ -6,7 +6,7 @@ import { track } from "@/utils/analytics/analytics";
 import { parseArmy } from "@/utils/profile/parseArmy";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -59,7 +59,7 @@ export default function TroopsScreen() {
     });
   }, []);
 
-  const load = async (silent = false) => {
+  const load = useCallback(async (silent = false) => {
     try {
       if (!silent) {
         setLoading(true);
@@ -95,11 +95,11 @@ export default function TroopsScreen() {
         setLoading(false);
       }
     }
-  };
+  }, [profile?.playerTag]);
 
   useEffect(() => {
     load();
-  }, [profile?.playerTag]);
+  }, [load]);
 
   const onRefresh = async () => {
     try {

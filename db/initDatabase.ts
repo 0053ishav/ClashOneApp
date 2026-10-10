@@ -189,6 +189,42 @@ export async function initDatabase() {
     version = 3;
   }
 
+  //
+  // V4 - Magic Items
+  //
+  if (version < 4) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS magic_item_inventory (
+        account_player_tag TEXT NOT NULL,
+        item_id TEXT NOT NULL,
+        quantity INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY(account_player_tag, item_id),
+        FOREIGN KEY(account_player_tag)
+        REFERENCES accounts(player_tag)
+        ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS active_magic_effects (
+        id TEXT PRIMARY KEY,
+        account_player_tag TEXT NOT NULL,
+        item_id TEXT NOT NULL,
+        started_at INTEGER NOT NULL,
+        expires_at INTEGER,
+        village TEXT,
+        FOREIGN KEY(account_player_tag)
+        REFERENCES accounts(player_tag)
+        ON DELETE CASCADE,
+        UNIQUE(account_player_tag, id)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_magic_effects_account_expiry
+      ON active_magic_effects(account_player_tag, expires_at);
+    `);
+
+    await setSchemaVersion(db, 4);
+    version = 4;
+  }
+
   // log("✅ Database ready. Version:", version);
 
   // Debug only

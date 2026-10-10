@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "hammerJam": {
+    "enabled": false,
+    "startsAt": null,
+    "endsAt": null,
+    "timeMultiplier": 0.5,
+    "costMultiplier": 0.5,
+    "appliesTo": [
+      "building",
+      "troop",
+      "spell",
+      "hero",
+      "pet"
+    ],
+    "villages": [
+      "home"
+    ]
+  }
+}

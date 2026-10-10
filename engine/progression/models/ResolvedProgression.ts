@@ -1,9 +1,12 @@
-import { ProgressionData } from "@/types/progression";
+import type { ProgressionData } from "@/types/progression";
 import type {
   ProgressionLevel,
 } from "./ProgressionLevel";
-import { ResolvedEntity } from "./ResolvedEntity";
-
+import type { ResolvedEntity } from "./ResolvedEntity";
+import type {
+  ProgressionUpgradeStartContext,
+  ResourceProductionContext,
+} from "./ProgressionInput";
 
 export interface ResolvedProgression {
   entity: ResolvedEntity;
@@ -13,4 +16,6 @@ export interface ResolvedProgression {
   current?: ProgressionLevel;
   next?: ProgressionLevel;
   maxLevel: number;
+  upgradeStartContext?: ProgressionUpgradeStartContext;
+  resourceProductionContext?: ResourceProductionContext;
 }

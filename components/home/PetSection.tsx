@@ -1,3 +1,4 @@
+import { MagicItemTimeSaved } from "@/components/home/MagicItemActivitySummary";
 import { ENV } from "@/config/env";
 import { Upgrade } from "@/types/upgrade";
 import { calculateProgress } from "@/utils/calculateProgress";
@@ -132,6 +133,7 @@ export function PetSection({
                 <Text style={styles.totalTime}>
                   of {formatCountdown(totalMs)}
                 </Text>
+                <MagicItemTimeSaved milliseconds={activePet.magicItemTimeSavedMs} />
               </View>
             </View>
 

@@ -7,21 +7,33 @@ import type {
   OverallProgressionResult,
   ProgressionApplicationResult,
   ProgressionInput,
-  ProgressionOverviewResult
+  ProgressionOverviewResult,
+  ProgressionUpgradeStartContext,
 } from "@/engine/progression/models";
 
 import type { Upgrade } from "@/types/upgrade";
 
 import { useAccountStore } from "@/stores/accountStore";
+import { useHammerJamStore } from "@/stores/hammerJamStore";
 import { CraftedDefenseProgressionApplicationService } from "./craftedDefenseProgressionApplicationService";
 import { PlayerLevelResolver } from "./playerLevelResolver";
 import { ProgressionQueries } from "./progressionQueries";
 
 import { ProgressionAggregation } from "@/engine/progression/operations/progressionAggregation";
 
+export interface ResolveUpgradeOptions {
+  /**
+   * Pass event context only when the caller knows the timestamp at which the
+   * represented upgrade starts. Existing imported/active upgrades deliberately
+   * omit this to avoid retroactively applying the current event configuration.
+   */
+  upgradeStartContext?: ProgressionUpgradeStartContext;
+}
+
 export class ProgressionApplicationService {
   static resolveUpgrade(
     upgrade: Upgrade,
+    options: ResolveUpgradeOptions = {},
   ): ProgressionApplicationResult | null {
 
     /**
@@ -40,7 +52,6 @@ export class ProgressionApplicationService {
     if (upgrade.dataId == null) {
       return null;
     }
-
 
     const entity =
       ProgressionQueries.getEntity(
@@ -85,11 +96,20 @@ export class ProgressionApplicationService {
         progression,
       );
 
+    const now = Date.now();
+    const hammerJam = useHammerJamStore.getState().manifest;
     const input: ProgressionInput = {
       entity: progressionEntity,
       progression,
       currentLevel,
       currentHallLevel,
+      resourceProductionContext: {
+        at: now,
+        hammerJam,
+      },
+      ...(options.upgradeStartContext
+        ? { upgradeStartContext: options.upgradeStartContext }
+        : {}),
     };
 
     return ProgressionService.resolve(
@@ -134,13 +154,3 @@ export class ProgressionApplicationService {
     };
   }
 }
-
-/**
- * 
- * Later, without changing the engine, you can add:
- * resolvePlayerTroop(...)
- * resolvePlayerHero(...)
- * resolvePlayerBuilding(...)
- * resolvePlannedUpgrade(...)
- * resolveSimulation(...)
- */

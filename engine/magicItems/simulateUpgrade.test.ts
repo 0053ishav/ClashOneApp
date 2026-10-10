@@ -244,16 +244,18 @@ describe("simulateUpgrade", () => {
     expect(result.appliedModifierIds).toEqual([]);
   });
 
-  it("does not apply Research Boost to pets", () => {
+  it("applies Research Boost to Home Village pet upgrades", () => {
     const result = simulate({
       target: "pet",
       workTarget: "pet",
       goldPassBoost: { target: "research", percent: 20 },
     });
 
-    expect(result.effectiveCost).toBe(1_000_000);
-    expect(result.effectiveDurationMinutes).toBe(7_200);
-    expect(result.appliedModifierIds).toEqual([]);
+    expect(result.effectiveCost).toBe(800_000);
+    expect(result.costSaved).toBe(200_000);
+    expect(result.effectiveDurationMinutes).toBe(96 * 60);
+    expect(result.durationSavedMinutes).toBe(24 * 60);
+    expect(result.appliedModifierIds).toEqual(["gold-pass-research-boost"]);
   });
 
   it("applies Research Gold Pass Boost to planned research work", () => {

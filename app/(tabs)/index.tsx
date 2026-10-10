@@ -855,13 +855,6 @@ export default function HomeScreen() {
                   color="#94a3b8"
                 />
               </Pressable>
-              <GoldPassBoostButton
-                settings={activeGoldPassSettings}
-                compact
-                expanded={showGoldPassPopover}
-                disabled={!activeTag}
-                onPress={() => setShowGoldPassPopover((visible) => !visible)}
-              />
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Sync village data"
@@ -1043,10 +1036,18 @@ export default function HomeScreen() {
                 {magicItemInventoryCount}
               </Text>
             </Pressable>
+            <GoldPassBoostButton
+              settings={activeGoldPassSettings}
+              compact
+              expanded={showGoldPassPopover}
+              disabled={!activeTag}
+              onPress={() => setShowGoldPassPopover((visible) => !visible)}
+            />
           </View>
         </View>
         {showGoldPassPopover && activeTag && (
           <GoldPassBoostQuickPanel
+            visible={showGoldPassPopover}
             settings={activeGoldPassSettings}
             loading={isLoadingGoldPassSettings}
             loadFailed={goldPassSettingsLoadFailed}

@@ -673,6 +673,7 @@ export default function SettingsScreen() {
 
           {!!profile?.playerTag && showGoldPassPopover && (
             <GoldPassBoostQuickPanel
+              visible={showGoldPassPopover}
               settings={activeGoldPassSettings}
               loading={isLoadingGoldPassSettings}
               loadFailed={goldPassSettingsLoadFailed}

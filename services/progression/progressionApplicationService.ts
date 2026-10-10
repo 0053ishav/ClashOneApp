@@ -29,7 +29,7 @@ export interface ResolveUpgradeOptions {
    * omit this to avoid retroactively applying the current event configuration.
    */
   upgradeStartContext?: ProgressionUpgradeStartContext;
-  /** Apply a manually configured Gold Pass discount to calculated durations. */
+  /** Apply manually configured Gold Pass discounts to calculated costs and durations. */
   goldPassBoost?: GoldPassBoostSelection;
 }
 

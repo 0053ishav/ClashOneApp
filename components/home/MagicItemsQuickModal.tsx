@@ -14,6 +14,7 @@ import type {
 } from "@/types/magicItem";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import * as Crypto from "expo-crypto";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -136,7 +137,7 @@ export function MagicItemsQuickModal({
     setActivatingItemId(item.id);
     try {
       const now = Date.now();
-      const effectId = `${item.id}-${now}-${Math.random().toString(36).slice(2, 8)}`;
+      const effectId = `${item.id}-${Crypto.randomUUID()}`;
 
       if (item.effect.type === "CLOCK_TOWER_BOOST") {
         const result = await activateClockTowerPotion({

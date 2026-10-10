@@ -13,11 +13,31 @@ import type {
 import type { Upgrade } from "@/types/upgrade";
 
 import { useAccountStore } from "@/stores/accountStore";
+import { useHammerJamStore } from "@/stores/hammerJamStore";
 import { CraftedDefenseProgressionApplicationService } from "./craftedDefenseProgressionApplicationService";
 import { PlayerLevelResolver } from "./playerLevelResolver";
 import { ProgressionQueries } from "./progressionQueries";
 
 import { ProgressionAggregation } from "@/engine/progression/operations/progressionAggregation";
+
+function getProspectiveUpgradeStartAt(
+  upgrade: Pick<Upgrade, "isCompleted" | "endTime">,
+  now: number,
+): number {
+  if (!Number.isFinite(now)) {
+    throw new Error("INVALID_UPGRADE_START_TIMESTAMP");
+  }
+
+  if (upgrade.isCompleted) return now;
+
+  if (!Number.isFinite(upgrade.endTime)) {
+    throw new Error("INVALID_UPGRADE_START_TIMESTAMP");
+  }
+
+  // A following upgrade cannot begin before the tracked upgrade completes.
+  // Clamp stale end times to now, without rewriting the stored upgrade timer.
+  return Math.max(now, upgrade.endTime);
+}
 
 export class ProgressionApplicationService {
   static resolveUpgrade(
@@ -40,7 +60,6 @@ export class ProgressionApplicationService {
     if (upgrade.dataId == null) {
       return null;
     }
-
 
     const entity =
       ProgressionQueries.getEntity(
@@ -85,11 +104,17 @@ export class ProgressionApplicationService {
         progression,
       );
 
+    const now = Date.now();
+    const hammerJam = useHammerJamStore.getState().manifest;
     const input: ProgressionInput = {
       entity: progressionEntity,
       progression,
       currentLevel,
       currentHallLevel,
+      upgradeStartContext: {
+        startsAt: getProspectiveUpgradeStartAt(upgrade, now),
+        hammerJam,
+      },
     };
 
     return ProgressionService.resolve(
@@ -134,13 +159,3 @@ export class ProgressionApplicationService {
     };
   }
 }
-
-/**
- * 
- * Later, without changing the engine, you can add:
- * resolvePlayerTroop(...)
- * resolvePlayerHero(...)
- * resolvePlayerBuilding(...)
- * resolvePlannedUpgrade(...)
- * resolveSimulation(...)
- */

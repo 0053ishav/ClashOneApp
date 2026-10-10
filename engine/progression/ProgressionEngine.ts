@@ -104,7 +104,9 @@ export class ProgressionEngine {
         });
 
         nextCost = effectiveStartValues.cost ?? baseNextCost;
-        nextUpgradeTime = effectiveStartValues.durationMinutes;
+        nextUpgradeTime = baseNextUpgradeTime == null
+          ? undefined
+          : effectiveStartValues.durationMinutes;
         appliedModifierIds = effectiveStartValues.appliedModifierIds;
       }
     }

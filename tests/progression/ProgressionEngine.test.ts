@@ -151,6 +151,29 @@ describe("ProgressionEngine Hammer Jam modifiers", () => {
     expect(result.appliedModifierIds).toEqual([]);
   });
 
+  it("keeps missing duration data undefined while still applying an eligible cost modifier", () => {
+    const dataWithoutDuration: ProgressionData = {
+      ...progressionData,
+      levels: {
+        ...progressionData.levels,
+        2: { hallLevel: 1, cost: 1_000 },
+      },
+    };
+
+    const result = resolve({
+      progression: dataWithoutDuration,
+      upgradeStartContext: {
+        startsAt: EVENT_START,
+        hammerJam: activeHammerJam,
+      },
+    });
+
+    expect(result.nextCost).toBe(500);
+    expect(result.baseNextUpgradeTime).toBeUndefined();
+    expect(result.nextUpgradeTime).toBeUndefined();
+    expect(result.appliedModifierIds).toEqual(["hammer-jam"]);
+  });
+
   it("rejects invalid start timestamps instead of silently using the base values", () => {
     expect(() =>
       resolve({

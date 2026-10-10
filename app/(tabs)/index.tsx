@@ -22,6 +22,7 @@ import { ENV } from "@/config/env";
 import { MAGIC_ITEMS } from "@/config/magicItems";
 import { useCraftedResolver } from "@/engine/crafted/craftedResolver";
 import type { ProgressionApplicationResult } from "@/engine/progression/models";
+import type { GoldPassBoostSettings } from "@/types/goldPass";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { useRemoteConfig } from "@/provider/remoteConfigProvider";
 import { getAccountState } from "@/services/accountStateService";
@@ -30,6 +31,8 @@ import {
   getMagicItemInventory,
 } from "@/services/magicItemService";
 import { ProgressionApplicationService } from "@/services/progression";
+import { resolveGoldPassBoostForUpgradeType } from "@/engine/progression/resolveGoldPassBoostForUpgradeType";
+import { getGoldPassBoostSettings } from "@/services/goldPassBoostService";
 import { buildSupportInfo } from "@/services/supportDebugInfo";
 import { deleteUpgrade } from "@/services/upgradeService";
 import { applyBookToActiveUpgrade } from "@/services/useBookOnActiveUpgrade";
@@ -123,6 +126,9 @@ export default function HomeScreen() {
   } | null>(null);
   const [selectedProgression, setSelectedProgression] =
     useState<ProgressionApplicationResult | null>(null);
+  const [goldPassSettings, setGoldPassSettings] =
+    useState<GoldPassBoostSettings | null>(null);
+  const goldPassProgressionRequestRef = useRef(0);
   const [refreshing, setRefreshing] = useState(false);
   const [completedId, setCompletedId] = useState<string | null>(null);
   const profileSheetRef = useRef<ProfileDropdownSheetRef>(null);
@@ -351,6 +357,31 @@ export default function HomeScreen() {
     useCallback(() => {
       refreshState();
     }, [refreshState]),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+
+      if (!activeTag) {
+        setGoldPassSettings(null);
+        return () => {
+          cancelled = true;
+        };
+      }
+
+      void getGoldPassBoostSettings(activeTag)
+        .then((settings) => {
+          if (!cancelled) setGoldPassSettings(settings);
+        })
+        .catch(() => {
+          if (!cancelled) setGoldPassSettings(null);
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }, [activeTag]),
   );
 
   useEffect(() => {
@@ -594,11 +625,44 @@ export default function HomeScreen() {
     }
   }
   const handleRowPress = (upgrade: Upgrade) => {
-    const progression = ProgressionApplicationService.resolveUpgrade(upgrade);
-
+    const requestId = ++goldPassProgressionRequestRef.current;
     setSelectedUpgrade(upgrade);
-    setSelectedProgression(progression);
     setActionModalVisible(true);
+
+    const resolveWithSettings = (settings: GoldPassBoostSettings) => {
+      const goldPassBoost = resolveGoldPassBoostForUpgradeType(
+        upgrade.upgradeType,
+        settings,
+      );
+      return ProgressionApplicationService.resolveUpgrade(upgrade, {
+        goldPassBoost,
+      });
+    };
+
+    const cachedSettings =
+      goldPassSettings?.accountTag === upgrade.accountTag
+        ? goldPassSettings
+        : null;
+
+    if (cachedSettings) {
+      setSelectedProgression(resolveWithSettings(cachedSettings));
+      return;
+    }
+
+    // Load the correct account's settings before presenting its progression.
+    setSelectedProgression(null);
+    void getGoldPassBoostSettings(upgrade.accountTag)
+      .then((settings) => {
+        if (goldPassProgressionRequestRef.current !== requestId) return;
+        setGoldPassSettings(settings);
+        setSelectedProgression(resolveWithSettings(settings));
+      })
+      .catch(() => {
+        if (goldPassProgressionRequestRef.current !== requestId) return;
+        setSelectedProgression(
+          ProgressionApplicationService.resolveUpgrade(upgrade),
+        );
+      });
   };
 
   let statusIcon = require("@/assets/images/builder/builder-idle.png");

@@ -9,6 +9,7 @@ interface ConfirmModalProps {
   onConfirm: () => void;
   onCancel: () => void;
   destructive?: boolean;
+  variant?: "default" | "dark";
 }
 
 export function ConfirmModal({
@@ -20,18 +21,24 @@ export function ConfirmModal({
   onConfirm,
   onCancel,
   destructive = false,
+  variant = "default",
 }: ConfirmModalProps) {
   return (
     <Modal transparent visible={visible} animationType="fade">
-      <View style={styles.overlay}>
-        <View style={styles.modal}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.message}>{message}</Text>
+      <View style={[styles.overlay, variant === "dark" && styles.darkOverlay]}>
+        <View style={[styles.modal, variant === "dark" && styles.darkModal]}>
+          <Text style={[styles.title, variant === "dark" && styles.darkTitle]}>{title}</Text>
+          <Text style={[styles.message, variant === "dark" && styles.darkMessage]}>{message}</Text>
 
           <View style={styles.buttonRow}>
             {cancelText ? (
-              <Pressable style={styles.cancelButton} onPress={onCancel}>
-                <Text style={styles.cancelText}>{cancelText}</Text>
+              <Pressable
+                style={[styles.cancelButton, variant === "dark" && styles.darkCancelButton]}
+                onPress={onCancel}
+              >
+                <Text style={[styles.cancelText, variant === "dark" && styles.darkCancelText]}>
+                  {cancelText}
+                </Text>
               </Pressable>
             ) : null}
 
@@ -39,6 +46,8 @@ export function ConfirmModal({
               style={[
                 styles.confirmButton,
                 destructive && styles.destructiveButton,
+                variant === "dark" && styles.darkConfirmButton,
+                variant === "dark" && destructive && styles.darkDestructiveButton,
               ]}
               onPress={onConfirm}
             >
@@ -46,6 +55,8 @@ export function ConfirmModal({
                 style={[
                   styles.confirmText,
                   destructive && styles.destructiveText,
+                  variant === "dark" && styles.darkConfirmText,
+                  variant === "dark" && destructive && styles.darkDestructiveText,
                 ]}
               >
                 {confirmText}
@@ -74,6 +85,17 @@ const styles = StyleSheet.create({
     padding: 20,
   },
 
+  darkOverlay: {
+    backgroundColor: "rgba(2, 6, 23, 0.78)",
+  },
+
+  darkModal: {
+    backgroundColor: "#0f172a",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+
   title: {
     fontSize: 18,
     fontWeight: "700",
@@ -87,6 +109,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 
+  darkTitle: { color: "#f8fafc" },
+  darkMessage: { color: "#94a3b8", lineHeight: 20 },
+
   buttonRow: {
     flexDirection: "row",
     justifyContent: "flex-end",
@@ -98,10 +123,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
 
+  darkCancelButton: {
+    borderRadius: 12,
+    backgroundColor: "#1e293b",
+  },
+
   cancelText: {
     color: "#6b7280",
     fontWeight: "600",
   },
+
+  darkCancelText: { color: "#cbd5e1" },
 
   confirmButton: {
     paddingVertical: 10,
@@ -115,6 +147,11 @@ const styles = StyleSheet.create({
     color: "#000",
   },
 
+  darkConfirmButton: {
+    backgroundColor: "#fbbf24",
+  },
+  darkConfirmText: { color: "#0f172a" },
+
   destructiveButton: {
     backgroundColor: "#fee2e2",
   },
@@ -122,4 +159,11 @@ const styles = StyleSheet.create({
   destructiveText: {
     color: "#b91c1c",
   },
+
+  darkDestructiveButton: {
+    backgroundColor: "rgba(248, 113, 113, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(248, 113, 113, 0.35)",
+  },
+  darkDestructiveText: { color: "#f87171" },
 });

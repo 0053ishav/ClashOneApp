@@ -258,6 +258,56 @@ describe("simulateUpgrade", () => {
     expect(result.appliedModifierIds).toEqual(["gold-pass-research-boost"]);
   });
 
+  it("compounds Re-engagement with Gold Pass and Hammer Jam for Builder work", () => {
+    const result = simulate({
+      hammerJam: activeHammerJam,
+      goldPassBoost: { target: "builder", percent: 20 },
+      reEngagementBoost: { target: "builder", percent: 50 },
+    });
+
+    // 120h × 0.5 Hammer Jam × 0.8 Gold Pass × 0.5 Re-engagement = 24h.
+    expect(result.effectiveCost).toBe(200_000);
+    expect(result.costSaved).toBe(800_000);
+    expect(result.effectiveDurationMinutes).toBe(24 * 60);
+    expect(result.durationSavedMinutes).toBe(96 * 60);
+    expect(result.appliedModifierIds).toEqual([
+      "hammer-jam",
+      "gold-pass-builder-boost",
+      "re-engagement-builder-boost",
+    ]);
+  });
+
+  it("applies Research Re-engagement Boost to planned research and pet work", () => {
+    const troop = simulate({
+      target: "troop",
+      workTarget: "research",
+      reEngagementBoost: { target: "research", percent: 40 },
+    });
+    const pet = simulate({
+      target: "pet",
+      workTarget: "pet",
+      reEngagementBoost: { target: "research", percent: 40 },
+    });
+
+    expect(troop.effectiveCost).toBe(600_000);
+    expect(troop.effectiveDurationMinutes).toBe(72 * 60);
+    expect(troop.appliedModifierIds).toEqual(["re-engagement-research-boost"]);
+    expect(pet.effectiveCost).toBe(600_000);
+    expect(pet.effectiveDurationMinutes).toBe(72 * 60);
+    expect(pet.appliedModifierIds).toEqual(["re-engagement-research-boost"]);
+  });
+
+  it("does not apply Re-engagement Boost to Builder Base upgrades", () => {
+    const result = simulate({
+      village: "builderBase",
+      reEngagementBoost: { target: "builder", percent: 50 },
+    });
+
+    expect(result.effectiveCost).toBe(1_000_000);
+    expect(result.effectiveDurationMinutes).toBe(7_200);
+    expect(result.appliedModifierIds).toEqual([]);
+  });
+
   it("applies Research Gold Pass Boost to planned research work", () => {
     const result = simulate({
       target: "troop",

@@ -53,6 +53,9 @@ export class ProgressionApplicationService {
 
       return applyBoostsToCraftedProgressionResult(result, {
         village: upgrade.village,
+        ...(options.upgradeStartContext
+          ? { upgradeStartContext: options.upgradeStartContext }
+          : {}),
         ...(options.goldPassBoost
           ? { goldPassBoost: options.goldPassBoost }
           : {}),

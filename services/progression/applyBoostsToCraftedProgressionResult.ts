@@ -25,6 +25,9 @@ const NO_MODIFIER = {
  * Crafted upgrades bypass ProgressionEngine. Apply the same validated cost/time
  * modifiers at this service boundary so eligible crafted Home Village defenses
  * do not silently miss Gold Pass or return-to-game boosts.
+ *
+ * Re-engagement Builder Boost is a time-only modifier for crafted defenses;
+ * it must never discount their resource cost.
  */
 export function applyBoostsToCraftedProgressionResult(
   result: CraftedProgressionResult,
@@ -61,10 +64,12 @@ export function applyBoostsToCraftedProgressionResult(
       ? requestedReEngagement
       : NO_MODIFIER;
 
-  const costMultiplier =
-    applicableGoldPass.costMultiplier * applicableReEngagement.costMultiplier;
+  // Gold Pass discounts both crafted-defense cost and time. Re-engagement
+  // Builder Boost discounts crafted-defense time only, never resource cost.
+  const costMultiplier = applicableGoldPass.costMultiplier;
   const timeMultiplier =
-    applicableGoldPass.timeMultiplier * applicableReEngagement.timeMultiplier;
+    applicableGoldPass.timeMultiplier *
+    applicableReEngagement.timeMultiplier;
 
   // Match the regular progression engine: modifiers only affect an available
   // next-level upgrade, never a maxed entity.
@@ -84,10 +89,7 @@ export function applyBoostsToCraftedProgressionResult(
         })
       : null;
 
-  const nextCostBeforeBoosts =
-    hammerJamStart?.cost ?? result.nextCost;
-  const nextDurationBeforeBoosts =
-    hammerJamStart?.durationMinutes ?? result.nextUpgradeTime;
+  const nextCostBeforeBoosts = hammerJamStart?.cost ?? result.nextCost;
   const appliedModifierIds = [
     ...(hammerJamStart?.appliedModifierIds ?? []),
     ...applicableGoldPass.appliedModifierIds,
@@ -96,6 +98,10 @@ export function applyBoostsToCraftedProgressionResult(
 
   if (appliedModifierIds.length === 0) return result;
 
+  // Compose time multipliers before rounding so Hammer Jam, Gold Pass, and
+  // Re-engagement are sequential multipliers rather than additive discounts.
+  const hammerJamTimeMultiplier = hammerJamStart?.timeMultiplier ?? 1;
+
   return {
     ...result,
     nextCost:
@@ -103,9 +109,13 @@ export function applyBoostsToCraftedProgressionResult(
         ? nextCostBeforeBoosts
         : Math.round(nextCostBeforeBoosts * costMultiplier),
     nextUpgradeTime:
-      nextDurationBeforeBoosts == null
-        ? nextDurationBeforeBoosts
-        : Math.round(nextDurationBeforeBoosts * timeMultiplier),
+      result.nextUpgradeTime == null
+        ? result.nextUpgradeTime
+        : Math.round(
+            result.nextUpgradeTime *
+              hammerJamTimeMultiplier *
+              timeMultiplier,
+          ),
     remainingCost: Math.round(result.remainingCost * costMultiplier),
     remainingUpgradeTime: Math.round(
       result.remainingUpgradeTime * timeMultiplier,

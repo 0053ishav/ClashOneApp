@@ -38,26 +38,7 @@ const baseResult: CraftedProgressionResult = {
 };
 
 describe("applyBoostsToCraftedProgressionResult", () => {
-  it("does not apply Re-engagement Builder Boost to crafted-defense cost", () => {
-    const result = applyBoostsToCraftedProgressionResult(baseResult, {
-      village: "home",
-      goldPassBoost: { target: "builder", percent: 20 },
-      reEngagementBoost: { target: "builder", percent: 50 },
-    });
-
-    expect(result).toMatchObject({
-      nextCost: 800,
-      remainingCost: 2_400,
-      nextUpgradeTime: 48,
-      remainingUpgradeTime: 144,
-      appliedModifierIds: [
-        "gold-pass-builder-boost",
-        "re-engagement-builder-boost",
-      ],
-    });
-  });
-
-  it("compounds Hammer Jam, Gold Pass, and Re-engagement sequentially", () => {
+  it("does not apply Hammer Jam, Gold Pass, or Re-engagement to crafted defenses", () => {
     const result = applyBoostsToCraftedProgressionResult(baseResult, {
       village: "home",
       upgradeStartContext: {
@@ -68,18 +49,13 @@ describe("applyBoostsToCraftedProgressionResult", () => {
       reEngagementBoost: { target: "builder", percent: 50 },
     });
 
-    // 1,000 × 0.5 Hammer Jam × 0.8 Gold Pass = 400.
-    // 120 × 0.5 Hammer Jam × 0.8 Gold Pass × 0.5 Re-engagement = 24.
+    expect(result).toBe(baseResult);
     expect(result).toMatchObject({
-      nextCost: 400,
-      remainingCost: 2_400,
-      nextUpgradeTime: 24,
-      remainingUpgradeTime: 144,
-      appliedModifierIds: [
-        "hammer-jam",
-        "gold-pass-builder-boost",
-        "re-engagement-builder-boost",
-      ],
+      nextCost: 1_000,
+      nextUpgradeTime: 120,
+      remainingCost: 3_000,
+      remainingUpgradeTime: 360,
     });
+    expect(result.appliedModifierIds).toBeUndefined();
   });
 });

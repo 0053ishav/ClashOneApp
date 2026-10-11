@@ -56,6 +56,9 @@ export interface CraftedProgressionResult {
   remainingCost: number;
   remainingUpgradeTime: number;
 
+  /** Cost/time discounts applied at the progression application boundary. */
+  appliedModifierIds?: string[];
+
   currentHallLevel: number | undefined;
   requiredHallLevel: number | undefined;
 

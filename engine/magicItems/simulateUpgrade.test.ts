@@ -204,4 +204,71 @@ describe("simulateUpgrade", () => {
       "INVALID_UPGRADE_START_TIMESTAMP",
     );
   });
+  it("applies a Gold Pass Builder Boost to a planned upgrade", () => {
+    const result = simulate({
+      goldPassBoost: { target: "builder", percent: 20 },
+    });
+
+    expect(result.effectiveCost).toBe(800_000);
+    expect(result.costSaved).toBe(200_000);
+    expect(result.effectiveDurationMinutes).toBe(96 * 60);
+    expect(result.durationSavedMinutes).toBe(24 * 60);
+    expect(result.appliedModifierIds).toEqual(["gold-pass-builder-boost"]);
+  });
+
+  it("compounds Gold Pass with Hammer Jam before resolving potion speed", () => {
+    const result = simulate({
+      hammerJam: activeHammerJam,
+      goldPassBoost: { target: "builder", percent: 20 },
+    });
+
+    // 120h × 0.5 Hammer Jam × 0.8 Gold Pass = 48h.
+    expect(result.effectiveCost).toBe(400_000);
+    expect(result.costSaved).toBe(600_000);
+    expect(result.effectiveDurationMinutes).toBe(48 * 60);
+    expect(result.durationSavedMinutes).toBe(72 * 60);
+    expect(result.appliedModifierIds).toEqual([
+      "hammer-jam",
+      "gold-pass-builder-boost",
+    ]);
+  });
+
+  it("does not apply Gold Pass to Builder Base upgrades", () => {
+    const result = simulate({
+      village: "builderBase",
+      goldPassBoost: { target: "builder", percent: 20 },
+    });
+
+    expect(result.effectiveCost).toBe(1_000_000);
+    expect(result.effectiveDurationMinutes).toBe(7_200);
+    expect(result.appliedModifierIds).toEqual([]);
+  });
+
+  it("applies Research Boost to Home Village pet upgrades", () => {
+    const result = simulate({
+      target: "pet",
+      workTarget: "pet",
+      goldPassBoost: { target: "research", percent: 20 },
+    });
+
+    expect(result.effectiveCost).toBe(800_000);
+    expect(result.costSaved).toBe(200_000);
+    expect(result.effectiveDurationMinutes).toBe(96 * 60);
+    expect(result.durationSavedMinutes).toBe(24 * 60);
+    expect(result.appliedModifierIds).toEqual(["gold-pass-research-boost"]);
+  });
+
+  it("applies Research Gold Pass Boost to planned research work", () => {
+    const result = simulate({
+      target: "troop",
+      workTarget: "research",
+      goldPassBoost: { target: "research", percent: 15 },
+    });
+
+    expect(result.effectiveCost).toBe(850_000);
+    expect(result.costSaved).toBe(150_000);
+    expect(result.effectiveDurationMinutes).toBe(102 * 60);
+    expect(result.durationSavedMinutes).toBe(18 * 60);
+    expect(result.appliedModifierIds).toEqual(["gold-pass-research-boost"]);
+  });
 });

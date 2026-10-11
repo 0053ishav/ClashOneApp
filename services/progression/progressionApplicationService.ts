@@ -12,6 +12,7 @@ import type {
 } from "@/engine/progression/models";
 
 import type { Upgrade } from "@/types/upgrade";
+import type { GoldPassBoostSelection } from "@/types/goldPass";
 
 import { useAccountStore } from "@/stores/accountStore";
 import { useHammerJamStore } from "@/stores/hammerJamStore";
@@ -28,6 +29,8 @@ export interface ResolveUpgradeOptions {
    * omit this to avoid retroactively applying the current event configuration.
    */
   upgradeStartContext?: ProgressionUpgradeStartContext;
+  /** Apply manually configured Gold Pass discounts to calculated costs and durations. */
+  goldPassBoost?: GoldPassBoostSelection;
 }
 
 export class ProgressionApplicationService {
@@ -109,6 +112,9 @@ export class ProgressionApplicationService {
       },
       ...(options.upgradeStartContext
         ? { upgradeStartContext: options.upgradeStartContext }
+        : {}),
+      ...(options.goldPassBoost
+        ? { goldPassBoost: options.goldPassBoost }
         : {}),
     };
 

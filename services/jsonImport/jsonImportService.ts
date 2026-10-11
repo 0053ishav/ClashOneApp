@@ -2,6 +2,10 @@ import { addAccount, getAccountByTag, updateAccount } from "@/services/accountSe
 import { fetchPlayerFromApi } from "@/services/clashApi";
 import { ensureCraftedLoaded } from "@/services/craftedService";
 import { ProgressionApplicationService } from "@/services/progression";
+import { getGoldPassBoostSettings } from "@/services/goldPassBoostService";
+import { resolveGoldPassBoostForImport } from "@/services/jsonImport/resolveGoldPassBoostForImport";
+import { reconstructImportedUpgradeTiming } from "@/services/jsonImport/reconstructImportedUpgradeTiming";
+import type { GoldPassBoostSelection, GoldPassBoostSettings } from "@/types/goldPass";
 import { setLastJsonSync } from "@/storage/jsonSyncStorage";
 import { syncProfileFromApi } from "@/storage/playerProfile";
 import { useAccountStore } from "@/stores/accountStore";
@@ -308,6 +312,8 @@ export async function importVillageJson(
   validateJson(parsed);
 
   await ensureCraftedLoaded();
+  // Gold Pass perks are not in the export; use the player-maintained setting.
+  const goldPassSettings = await getGoldPassBoostSettings(parsed.tag);
 
   console.log("📥 Import JSON tag:", parsed.tag);
 
@@ -822,6 +828,15 @@ export async function importVillageJson(
       continue;
     }
 
+    const upgradeType = resolveUpgradeType(entity.type);
+    const goldPassBoost = resolveGoldPassBoostForImport(
+      {
+        upgradeType,
+        entityType: entity.type,
+        village: item.village,
+      },
+      goldPassSettings,
+    );
     const progressionResult =
       ProgressionApplicationService.resolveUpgrade({
         id: randomUUID(),
@@ -831,8 +846,7 @@ export async function importVillageJson(
         entity: entity.name.en,
 
         type: normalizeEntityType(entity.type),
-        upgradeType:
-          resolveUpgradeType(entity.type),
+        upgradeType,
 
         currentLevel: item.lvl,
 
@@ -845,7 +859,7 @@ export async function importVillageJson(
 
         isCompleted: false,
         source: "JSON",
-      });
+      }, { goldPassBoost });
 
     if (!progressionResult) {
       console.warn(
@@ -878,19 +892,12 @@ export async function importVillageJson(
       continue;
     }
 
-    const totalDurationMs =
-      nextUpgradeTime * 1000;
-
-    const endTime =
-      exportTimestampMs +
-      item.remainingMsAtExport;
-
-    const startTime =
-      endTime -
-      totalDurationMs;
-
-    const durationMinutes =
-      Math.ceil(totalDurationMs / 60000);
+    const timing = reconstructImportedUpgradeTiming({
+      totalDurationSeconds: nextUpgradeTime,
+      exportTimestampMs,
+      remainingMsAtExport: item.remainingMsAtExport,
+    });
+    const { totalDurationMs, endTime, startTime, durationMinutes } = timing;
 
     console.log(
       "[JSON Import] Progression timing:",
@@ -912,9 +919,6 @@ export async function importVillageJson(
           (endTime - startTime) / 1000,
       },
     );
-
-    const upgradeType =
-      resolveUpgradeType(entity.type);
 
     const normalizedType =
       normalizeEntityType(entity.type);
@@ -1006,6 +1010,14 @@ export async function importVillageJson(
       continue;
     }
 
+    const goldPassBoost = resolveGoldPassBoostForImport(
+      {
+        upgradeType: "LAB",
+        entityType: entity.type,
+        village: lab.village,
+      },
+      goldPassSettings,
+    );
     const progressionResult =
       ProgressionApplicationService.resolveUpgrade({
         id: randomUUID(),
@@ -1028,7 +1040,7 @@ export async function importVillageJson(
 
         isCompleted: false,
         source: "JSON",
-      });
+      }, { goldPassBoost });
 
     if (!progressionResult) {
       console.warn(
@@ -1059,19 +1071,12 @@ export async function importVillageJson(
       continue;
     }
 
-    const totalDurationMs =
-      nextUpgradeTime * 1000;
-
-    const endTime =
-      exportTimestampMs +
-      lab.remainingMsAtExport;
-
-    const startTime =
-      endTime -
-      totalDurationMs;
-
-    const durationMinutes =
-      Math.ceil(totalDurationMs / 60000);
+    const timing = reconstructImportedUpgradeTiming({
+      totalDurationSeconds: nextUpgradeTime,
+      exportTimestampMs,
+      remainingMsAtExport: lab.remainingMsAtExport,
+    });
+    const { totalDurationMs, endTime, startTime, durationMinutes } = timing;
 
     console.log(
       "[JSON Import] Lab progression timing:",

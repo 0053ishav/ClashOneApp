@@ -1,4 +1,5 @@
 import type { HammerJamManifest } from "@/engine/magicItems/hammerJam";
+import type { GoldPassBoostSelection } from "@/types/goldPass";
 import type {
   ProgressionData,
 } from "@/types/progression";
@@ -32,4 +33,6 @@ export interface ProgressionInput {
   currentHallLevel: number;
   upgradeStartContext?: ProgressionUpgradeStartContext;
   resourceProductionContext?: ResourceProductionContext;
+  /** Manually selected Gold Pass discount for cost and time projections. */
+  goldPassBoost?: GoldPassBoostSelection;
 }

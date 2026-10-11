@@ -241,6 +241,24 @@ export async function initDatabase() {
     version = 5;
   }
 
+  // V6 - Manually configured Gold Pass boost settings.
+  if (version < 6) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS gold_pass_settings (
+        account_player_tag TEXT PRIMARY KEY,
+        builder_boost_percent INTEGER NOT NULL DEFAULT 0
+          CHECK (builder_boost_percent IN (0, 10, 15, 20)),
+        research_boost_percent INTEGER NOT NULL DEFAULT 0
+          CHECK (research_boost_percent IN (0, 10, 15, 20)),
+        FOREIGN KEY(account_player_tag)
+        REFERENCES accounts(player_tag)
+        ON DELETE CASCADE
+      );
+    `);
+    await setSchemaVersion(db, 6);
+    version = 6;
+  }
+
   // log("✅ Database ready. Version:", version);
 
   // Debug only

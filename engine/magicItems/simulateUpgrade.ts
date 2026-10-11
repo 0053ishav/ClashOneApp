@@ -3,8 +3,11 @@ import { applyHammerJamToUpgradeStart } from "@/engine/magicItems/applyHammerJam
 import { resolveUpgradeCompletionTime } from "@/engine/magicItems/resolveUpgradeCompletionTime";
 import { resolveInstantMagicItem } from "@/engine/magicItems/resolveInstantMagicItem";
 import type { HammerJamManifest } from "@/engine/magicItems/hammerJam";
-import type { Village } from "@/types/entity";
+import type { EntityType, Village } from "@/types/entity";
 import type { ActiveMagicEffect, MagicItemTarget } from "@/types/magicItem";
+import { resolveGoldPassBoostModifier } from "@/engine/progression/resolveGoldPassBoost";
+import type { GoldPassBoostSelection } from "@/types/goldPass";
+import { isGoldPassBoostApplicable } from "@/engine/progression/isGoldPassBoostApplicable";
 
 export type UpgradeSimulationInput = {
   /** Base values come from the selected entity's next progression level. */
@@ -16,6 +19,8 @@ export type UpgradeSimulationInput = {
   village: Village;
   startsAt: number;
   hammerJam: HammerJamManifest;
+  /** Optional manually selected Gold Pass cost and time discount for this simulated upgrade. */
+  goldPassBoost?: GoldPassBoostSelection;
   selectedItemIds?: readonly string[];
   /** Needed when previewing a Book on work that is already in progress. */
   hasActiveUpgrade?: boolean;
@@ -40,6 +45,18 @@ export type UpgradeSimulationResult = {
 };
 
 const MINUTE_MS = 60_000;
+
+function toGoldPassEntityType(target: MagicItemTarget): EntityType | null {
+  switch (target) {
+    case "builders":
+    case "research":
+    case "heroes-and-pets":
+    case "any":
+      return null;
+    default:
+      return target;
+  }
+}
 
 function validateBaseValues(cost: number, durationMinutes: number): void {
   if (!Number.isFinite(cost) || cost < 0) {
@@ -84,6 +101,7 @@ export function simulateUpgrade(
     village,
     startsAt,
     hammerJam,
+    goldPassBoost,
     selectedItemIds = [],
     hasActiveUpgrade = false,
     freeBuilderAvailable = false,
@@ -93,6 +111,34 @@ export function simulateUpgrade(
   if (!Number.isFinite(startsAt)) {
     throw new Error("INVALID_UPGRADE_START_TIMESTAMP");
   }
+
+  const noGoldPassModifier = {
+    costMultiplier: 1,
+    timeMultiplier: 1,
+    appliedModifierIds: [] as string[],
+  };
+  const requestedGoldPassModifier = goldPassBoost
+    ? resolveGoldPassBoostModifier(goldPassBoost)
+    : noGoldPassModifier;
+  const goldPassEntityType = toGoldPassEntityType(target);
+  const goldPassWorkTargetMatches =
+    goldPassBoost?.target === "builder"
+      ? workTarget === "builders"
+      : goldPassBoost?.target === "research"
+        ? workTarget === "research" ||
+          (goldPassEntityType === "pet" && workTarget === "pet")
+        : false;
+  const goldPassModifier =
+    goldPassBoost &&
+    goldPassEntityType &&
+    goldPassWorkTargetMatches &&
+    isGoldPassBoostApplicable({
+      village,
+      entityType: goldPassEntityType,
+      target: goldPassBoost.target,
+    })
+      ? requestedGoldPassModifier
+      : noGoldPassModifier;
 
   // Sort and deduplicate selections so the same selection always resolves
   // to the same applied/rejected item order, independent of UI interaction order.
@@ -199,6 +245,14 @@ export function simulateUpgrade(
     startsAt,
     manifest: hammerJam,
   });
+  const effectiveStartDurationMinutes =
+    goldPassModifier.appliedModifierIds.length > 0
+      ? Math.round(
+          baseDurationMinutes *
+            startValues.timeMultiplier *
+            goldPassModifier.timeMultiplier,
+        )
+      : startValues.durationMinutes;
 
   const activeEffects: ActiveMagicEffect[] = timedItemIds.flatMap((itemId) => {
     const item = getMagicItem(itemId);
@@ -214,7 +268,7 @@ export function simulateUpgrade(
   });
 
   const estimatedCompletionAt = resolveUpgradeCompletionTime({
-    baseDurationMs: startValues.durationMinutes * MINUTE_MS,
+    baseDurationMs: effectiveStartDurationMinutes * MINUTE_MS,
     startedAt: startsAt,
     effects: activeEffects,
     target: workTarget,
@@ -226,16 +280,23 @@ export function simulateUpgrade(
     (estimatedCompletionAt - startsAt) / MINUTE_MS,
   );
 
+  const goldPassAdjustedCost = Math.round(
+    (startValues.cost ?? baseCost) * goldPassModifier.costMultiplier,
+  );
+
   return {
     baseCost,
-    effectiveCost: startValues.cost ?? baseCost,
+    effectiveCost: goldPassAdjustedCost,
     baseDurationMinutes,
     effectiveDurationMinutes,
     durationSavedMinutes: Math.max(0, baseDurationMinutes - effectiveDurationMinutes),
-    costSaved: Math.max(0, baseCost - (startValues.cost ?? baseCost)),
+    costSaved: Math.max(0, baseCost - goldPassAdjustedCost),
     estimatedCompletionAt,
     completionMode: "timed",
-    appliedModifierIds: startValues.appliedModifierIds,
+    appliedModifierIds: [
+      ...startValues.appliedModifierIds,
+      ...goldPassModifier.appliedModifierIds,
+    ],
     appliedItemIds,
     rejectedItems,
   };

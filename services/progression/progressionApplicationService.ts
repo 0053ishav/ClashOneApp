@@ -18,6 +18,7 @@ import type { ReEngagementBoostSelection } from "@/types/reEngagementBoost";
 import { useAccountStore } from "@/stores/accountStore";
 import { useHammerJamStore } from "@/stores/hammerJamStore";
 import { CraftedDefenseProgressionApplicationService } from "./craftedDefenseProgressionApplicationService";
+import { applyBoostsToCraftedProgressionResult } from "./applyBoostsToCraftedProgressionResult";
 import { PlayerLevelResolver } from "./playerLevelResolver";
 import { ProgressionQueries } from "./progressionQueries";
 
@@ -47,9 +48,18 @@ export class ProgressionApplicationService {
     * metadata, progression and engine.
     */
     if (upgrade.isCrafted) {
-      return CraftedDefenseProgressionApplicationService.resolve(
-        upgrade,
-      );
+      const result = CraftedDefenseProgressionApplicationService.resolve(upgrade);
+      if (!result) return null;
+
+      return applyBoostsToCraftedProgressionResult(result, {
+        village: upgrade.village,
+        ...(options.goldPassBoost
+          ? { goldPassBoost: options.goldPassBoost }
+          : {}),
+        ...(options.reEngagementBoost
+          ? { reEngagementBoost: options.reEngagementBoost }
+          : {}),
+      });
     }
 
     /**

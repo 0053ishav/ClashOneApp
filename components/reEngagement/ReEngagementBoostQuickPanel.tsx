@@ -333,7 +333,7 @@ export function ReEngagementBoostQuickPanel({
     builderDurationSeconds !== null &&
     researchDurationSeconds !== null;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (
       !isDraftValid ||
       parsedBuilderPercent === null ||

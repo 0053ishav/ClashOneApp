@@ -49,7 +49,7 @@ describe("applyBoostsToCraftedProgressionResult", () => {
       nextCost: 800,
       remainingCost: 2_400,
       nextUpgradeTime: 48,
-      remainingUpgradeTime: 180,
+      remainingUpgradeTime: 144,
       appliedModifierIds: [
         "gold-pass-builder-boost",
         "re-engagement-builder-boost",
@@ -74,7 +74,7 @@ describe("applyBoostsToCraftedProgressionResult", () => {
       nextCost: 400,
       remainingCost: 2_400,
       nextUpgradeTime: 24,
-      remainingUpgradeTime: 180,
+      remainingUpgradeTime: 144,
       appliedModifierIds: [
         "hammer-jam",
         "gold-pass-builder-boost",

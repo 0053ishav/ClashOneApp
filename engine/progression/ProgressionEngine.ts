@@ -16,6 +16,7 @@ import {
   applyHammerJamToUpgradeStart,
 } from "@/engine/magicItems/applyHammerJamToUpgradeStart";
 import { resolveGoldPassBoostModifier } from "./resolveGoldPassBoost";
+import { resolveReEngagementBoostModifier } from "./resolveReEngagementBoost";
 import { isGoldPassBoostApplicable } from "./isGoldPassBoostApplicable";
 import {
   resolveHammerJamResourceProduction,
@@ -140,8 +141,14 @@ export class ProgressionEngine {
       timeMultiplier: 1,
       appliedModifierIds: [] as string[],
     };
-    // Resolve first so invalid percentages are rejected even when the target
-    // entity is ineligible for the selected boost.
+    const noReEngagementModifier = {
+      costMultiplier: 1,
+      timeMultiplier: 1,
+      appliedModifierIds: [] as string[],
+    };
+
+    // Resolve first so invalid manually entered percentages are rejected
+    // even if a selected target is currently ineligible.
     const requestedGoldPassModifier = progression.goldPassBoost
       ? resolveGoldPassBoostModifier(progression.goldPassBoost)
       : noGoldPassModifier;
@@ -155,9 +162,32 @@ export class ProgressionEngine {
         ? requestedGoldPassModifier
         : noGoldPassModifier;
 
+    const requestedReEngagementModifier = progression.reEngagementBoost
+      ? resolveReEngagementBoostModifier(progression.reEngagementBoost)
+      : noReEngagementModifier;
+    const reEngagementModifier =
+      progression.reEngagementBoost &&
+      isGoldPassBoostApplicable({
+        village: progression.entity.village,
+        entityType: progression.entity.category,
+        target: progression.reEngagementBoost.target,
+      })
+        ? requestedReEngagementModifier
+        : noReEngagementModifier;
+
+    // Gold Pass and Re-engagement stack multiplicatively with each other and
+    // with Hammer Jam; no percentage is added linearly.
+    const combinedCostMultiplier =
+      goldPassModifier.costMultiplier * reEngagementModifier.costMultiplier;
+    const combinedTimeMultiplier =
+      goldPassModifier.timeMultiplier * reEngagementModifier.timeMultiplier;
+    const hasUpgradeDiscount =
+      goldPassModifier.appliedModifierIds.length > 0 ||
+      reEngagementModifier.appliedModifierIds.length > 0;
+
     if (!isMaxLevel && next) {
       let hammerJamTimeMultiplier = 1;
-      let shouldAdjustDuration = goldPassModifier.appliedModifierIds.length > 0;
+      let shouldAdjustDuration = hasUpgradeDiscount;
 
       if (upgradeStartContext) {
         if (!Number.isFinite(upgradeStartContext.startsAt)) {
@@ -181,26 +211,24 @@ export class ProgressionEngine {
         }
       }
 
-      // Gold Pass and Hammer Jam compound multiplicatively for both cost and
-      // time. Apply the Gold Pass cost factor to the already event-adjusted
-      // cost, while duration factors are multiplied from the base and rounded once.
-      if (nextCost != null && goldPassModifier.costMultiplier !== 1) {
-        nextCost = Math.round(
-          nextCost * goldPassModifier.costMultiplier,
-        );
+      // Every cost/time discount composes multiplicatively. Apply the combined
+      // discount to the event-adjusted cost, and round duration once at the end.
+      if (nextCost != null && combinedCostMultiplier !== 1) {
+        nextCost = Math.round(nextCost * combinedCostMultiplier);
       }
 
       if (baseNextUpgradeTime != null && shouldAdjustDuration) {
         nextUpgradeTime = Math.round(
           baseNextUpgradeTime *
             hammerJamTimeMultiplier *
-            goldPassModifier.timeMultiplier,
+            combinedTimeMultiplier,
         );
       }
 
       appliedModifierIds = [
         ...appliedModifierIds,
         ...goldPassModifier.appliedModifierIds,
+        ...reEngagementModifier.appliedModifierIds,
       ];
     }
 
@@ -241,17 +269,12 @@ export class ProgressionEngine {
         ]),
       ],
       remainingCost:
-        goldPassModifier.appliedModifierIds.length > 0
-          ? Math.round(
-              remaining.remainingCost * goldPassModifier.costMultiplier,
-            )
+        hasUpgradeDiscount
+          ? Math.round(remaining.remainingCost * combinedCostMultiplier)
           : remaining.remainingCost,
       remainingUpgradeTime:
-        goldPassModifier.appliedModifierIds.length > 0
-          ? Math.round(
-              remaining.remainingUpgradeTime *
-                goldPassModifier.timeMultiplier,
-            )
+        hasUpgradeDiscount
+          ? Math.round(remaining.remainingUpgradeTime * combinedTimeMultiplier)
           : remaining.remainingUpgradeTime,
       currentHallLevel: progression.currentHallLevel,
       requiredHallLevel: getHallRequirement(progression),

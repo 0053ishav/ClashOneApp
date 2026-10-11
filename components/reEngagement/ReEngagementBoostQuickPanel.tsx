@@ -174,7 +174,6 @@ function BoostEditor({
   duration,
   onDurationChange,
   remainingSeconds,
-  saving,
 }: {
   title: string;
   description: string;
@@ -184,7 +183,6 @@ function BoostEditor({
   duration: DurationParts;
   onDurationChange: (next: DurationParts) => void;
   remainingSeconds: number;
-  saving: boolean;
 }) {
   return (
     <View style={styles.boostCard}>
@@ -422,7 +420,6 @@ export function ReEngagementBoostQuickPanel({
                   duration={builderDuration}
                   onDurationChange={setBuilderDuration}
                   remainingSeconds={builderSeconds}
-                  saving={saving}
                 />
                 <BoostEditor
                   title="Research Boost"
@@ -433,7 +430,6 @@ export function ReEngagementBoostQuickPanel({
                   duration={researchDuration}
                   onDurationChange={setResearchDuration}
                   remainingSeconds={researchSeconds}
-                  saving={saving}
                 />
 
                 <Text style={styles.helperText}>

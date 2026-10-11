@@ -38,6 +38,7 @@ export interface CraftedDefenseModuleProgression {
 export interface CraftedDefenseImageRange {
   from: number;
   to: number;
+  normal: number;
 }
 
 export interface CraftedDefenseProgressionData {

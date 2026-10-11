@@ -169,7 +169,6 @@ function DurationEditor({
 
 function BoostEditor({
   title,
-  description,
   target,
   percent,
   onPercentChange,
@@ -178,7 +177,6 @@ function BoostEditor({
   remainingSeconds,
 }: {
   title: string;
-  description: string;
   target: "builder" | "research";
   percent: string;
   onPercentChange: (value: string) => void;
@@ -200,18 +198,11 @@ function BoostEditor({
         </View>
         <View style={styles.boostHeaderText}>
           <Text style={styles.boostTitle}>{title}</Text>
-          <Text style={styles.boostDescription}>{description}</Text>
-        </View>
-        <View style={[styles.statusPill, remainingSeconds > 0 && styles.statusPillActive]}>
-          <Text style={[styles.statusText, remainingSeconds > 0 && styles.statusTextActive]}>
-            {remainingSeconds > 0 ? "Active" : "Inactive"}
+          <Text style={styles.remainingText}>
+            {remainingSeconds > 0 ? formatRemaining(remainingSeconds) + " left" : "Inactive"}
           </Text>
         </View>
       </View>
-
-      <Text style={styles.remainingText}>
-        Remaining: {formatRemaining(remainingSeconds)}
-      </Text>
 
       <View style={styles.percentRow}>
         <Text style={styles.sectionLabel}>Boost percentage</Text>
@@ -230,11 +221,8 @@ function BoostEditor({
           <Text style={styles.percentSuffix}>%</Text>
         </View>
       </View>
-      <Text style={styles.helperText}>Enter any whole percentage from 0 to 100.</Text>
-
-      <Text style={styles.sectionLabel}>Duration to set</Text>
+      <Text style={styles.sectionLabel}>Duration</Text>
       <DurationEditor prefix={title} parts={duration} onChange={onDurationChange} />
-      <Text style={styles.helperText}>Set duration to 0 to deactivate this boost.</Text>
     </View>
   );
 }
@@ -385,7 +373,7 @@ export function ReEngagementBoostQuickPanel({
               </View>
               <View style={styles.headerText}>
                 <Text style={styles.modalTitle}>Re-engagement boosts</Text>
-                <Text style={styles.modalSubtitle}>Return-to-game upgrade discounts</Text>
+                <Text style={styles.modalSubtitle}>Configure boosts for this account</Text>
               </View>
               <Pressable
                 accessibilityRole="button"
@@ -397,12 +385,6 @@ export function ReEngagementBoostQuickPanel({
                 <Ionicons name="close" size={19} color="#94a3b8" />
               </Pressable>
             </View>
-
-            <Text style={styles.intro}>
-              Enter the perks shown in Clash of Clans when you return after being inactive.
-              These reduce eligible upgrade cost and duration, like Gold Pass, and are saved
-              separately for each account. Only Home Village upgrades qualify; pets use Research.
-            </Text>
 
             {loading ? (
               <View style={styles.stateRow}>
@@ -426,7 +408,6 @@ export function ReEngagementBoostQuickPanel({
               <>
                 <BoostEditor
                   title="Builder Boost"
-                  description="Home Village buildings, heroes, traps, crafted defenses, halls, and guardians."
                   target="builder"
                   percent={builderPercent}
                   onPercentChange={setBuilderPercent}
@@ -436,7 +417,6 @@ export function ReEngagementBoostQuickPanel({
                 />
                 <BoostEditor
                   title="Research Boost"
-                  description="Home Village troops, spells, siege machines, and pets."
                   target="research"
                   percent={researchPercent}
                   onPercentChange={setResearchPercent}
@@ -445,11 +425,6 @@ export function ReEngagementBoostQuickPanel({
                   remainingSeconds={researchSeconds}
                 />
 
-                <Text style={styles.helperText}>
-                  Expiry is stored as an absolute timestamp, so the remaining duration continues
-                  counting down while the app is closed. Re-engagement boosts stack multiplicatively
-                  with Gold Pass and Hammer Jam.
-                </Text>
 
                 <Pressable
                   accessibilityRole="button"
@@ -520,7 +495,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   scroll: { flexGrow: 0 },
-  modalContent: { padding: 18, gap: 14 },
+  modalContent: { padding: 16, gap: 12 },
   modalHeader: { flexDirection: "row", alignItems: "center", gap: 11 },
   modalHeaderIcon: {
     width: 42,
@@ -543,14 +518,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: "#1e293b",
   },
-  intro: { color: "#94a3b8", fontSize: 12, lineHeight: 18 },
   boostCard: {
-    padding: 13,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: "#263449",
-    backgroundColor: "#111c2e",
-    gap: 11,
+    paddingVertical: 10,
+    gap: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: "#263449",
   },
   boostHeader: { flexDirection: "row", alignItems: "center", gap: 9 },
   boostIcon: {
@@ -563,16 +535,6 @@ const styles = StyleSheet.create({
   },
   boostHeaderText: { flex: 1, gap: 2 },
   boostTitle: { color: "#f1f5f9", fontSize: 14, fontWeight: "800" },
-  boostDescription: { color: "#94a3b8", fontSize: 11, lineHeight: 15 },
-  statusPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 9,
-    backgroundColor: "#1e293b",
-  },
-  statusPillActive: { backgroundColor: "rgba(52,211,153,0.14)" },
-  statusText: { color: "#94a3b8", fontSize: 10, fontWeight: "800" },
-  statusTextActive: { color: "#34d399" },
   remainingText: { color: "#cbd5e1", fontSize: 12, fontWeight: "700" },
   percentRow: {
     flexDirection: "row",
@@ -599,7 +561,6 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
   percentSuffix: { color: "#94a3b8", fontSize: 14, fontWeight: "700", marginLeft: 4 },
-  helperText: { color: "#64748b", fontSize: 11, lineHeight: 16 },
   durationRow: { flexDirection: "row", gap: 7 },
   field: { flex: 1, gap: 5 },
   fieldLabel: { color: "#94a3b8", fontSize: 10, fontWeight: "700" },

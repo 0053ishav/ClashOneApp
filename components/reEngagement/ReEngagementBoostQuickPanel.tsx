@@ -1,10 +1,10 @@
 import type { ReEngagementBoostSettings } from "@/types/reEngagementBoost";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { ENV } from "@/config/env";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -276,6 +276,7 @@ export function ReEngagementBoostQuickPanel({
   onDelete,
 }: ReEngagementBoostQuickPanelProps) {
   const [now, setNow] = useState(Date.now());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [builderPercent, setBuilderPercent] = useState("0");
   const [researchPercent, setResearchPercent] = useState("0");
   const [builderDuration, setBuilderDuration] = useState<DurationParts>(() => splitDuration(0));
@@ -344,23 +345,14 @@ export function ReEngagementBoostQuickPanel({
     onClose();
   };
 
-  const confirmDelete = () => {
-    Alert.alert(
-      "Delete re-engagement boosts?",
-      "This removes both saved boosts for the current account. This cannot be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            void (async () => {
-              if (await onDelete()) onClose();
-            })();
-          },
-        },
-      ],
-    );
+  const confirmDelete = () => setShowDeleteConfirm(true);
+
+  const handleDelete = async () => {
+    const deleted = await onDelete();
+    if (deleted) {
+      setShowDeleteConfirm(false);
+      onClose();
+    }
   };
 
   return (
@@ -491,6 +483,16 @@ export function ReEngagementBoostQuickPanel({
         </View>
       </View>
     </Modal>
+      <ConfirmModal
+        visible={showDeleteConfirm}
+        title="Delete re-engagement boosts?"
+        message="This removes both saved boosts for the current account. This cannot be undone."
+        confirmText="Delete"
+        destructive
+        variant="dark"
+        onCancel={() => setShowDeleteConfirm(false)}
+        onConfirm={() => void handleDelete()}
+      />
   );
 }
 

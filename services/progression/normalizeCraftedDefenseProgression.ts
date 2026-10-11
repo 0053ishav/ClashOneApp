@@ -49,47 +49,54 @@ export function normalizeCraftedDefenseProgression(
   raw: RawCraftedDefenseProgressions,
 ): CraftedDefenseProgressionData[] {
   return raw.map((defense) => {
-    const modules: Record<
-      number,
-      CraftedDefenseModuleProgression
-    > = {};
-
-    for (const [moduleId, module] of Object.entries(defense.modules)) {
-      const levels: Record<
+      const modules: Record<
         number,
-        CraftedDefenseProgressionLevel
+        CraftedDefenseModuleProgression
       > = {};
 
-      for (const [level, data] of Object.entries(module.levels)) {
-        levels[Number(level)] = {
-          level: Number(level),
-          hallLevel: data.hallLevel,
-          stats: data.stats,
-          cost: data.cost,
-          upgradeTime: data.upgradeTime,
-          xp: data.xp,
-          sparkyStones: data.sparkyStones,
-          extras: data.extras,
+      for (const [
+        moduleId,
+        module,
+      ] of Object.entries(defense.modules)) {
+        const levels: Record<
+          number,
+          CraftedDefenseProgressionLevel
+        > = {};
+
+        for (const [
+          level,
+          data,
+        ] of Object.entries(module.levels)) {
+          levels[Number(level)] = {
+            level: Number(level),
+            hallLevel: data.hallLevel,
+            stats: data.stats,
+            cost: data.cost,
+            upgradeTime: data.upgradeTime,
+            xp: data.xp,
+            sparkyStones: data.sparkyStones,
+            extras: data.extras,
+          };
+        }
+
+        modules[Number(moduleId)] = {
+          id: Number(moduleId),
+          name: module.name,
+          controls: module.controls,
+          resource: module.resource,
+          maxLevel: module.maxLevel,
+          levels,
         };
       }
 
-      modules[Number(moduleId)] = {
-        id: Number(moduleId),
-        name: module.name,
-        controls: module.controls,
-        resource: module.resource,
-        maxLevel: module.maxLevel,
-        levels,
+      return {
+        id: defense.id,
+        craftingPhase: defense.craftingPhase,
+        targetType: defense.targetType,
+        maxHallLevel: defense.maxHallLevel,
+        modules,
+        images: defense.images,
       };
-    }
-
-    return {
-      id: defense.id,
-      craftingPhase: defense.craftingPhase,
-      targetType: defense.targetType,
-      maxHallLevel: defense.maxHallLevel,
-      modules,
-      images: defense.images,
-    };
-  });
+    },
+  );
 }

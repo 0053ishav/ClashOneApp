@@ -1,5 +1,7 @@
 import type { ReEngagementBoostSettings } from "@/types/reEngagementBoost";
+import { ENV } from "@/config/env";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import {
   ActivityIndicator,
   Modal,
@@ -34,7 +36,7 @@ type ReEngagementBoostQuickPanelProps = {
   saving: boolean;
   onClose: () => void;
   onRetry: () => void;
-  onSave: (draft: ReEngagementBoostDraft) => void;
+  onSave: (draft: ReEngagementBoostDraft) => void | Promise<void>;
 };
 
 const SECOND = 1;
@@ -142,7 +144,7 @@ function DurationEditor({
   parts: DurationParts;
   onChange: (next: DurationParts) => void;
 }) {
-  const fields: Array<{ key: keyof DurationParts; label: string; maxLength: number }> = [
+  const fields: { key: keyof DurationParts; label: string; maxLength: number }[] = [
     { key: "days", label: "Days", maxLength: 7 },
     { key: "hours", label: "Hours", maxLength: 2 },
     { key: "minutes", label: "Minutes", maxLength: 2 },
@@ -188,10 +190,12 @@ function BoostEditor({
     <View style={styles.boostCard}>
       <View style={styles.boostHeader}>
         <View style={styles.boostIcon}>
-          <Ionicons
-            name={target === "builder" ? "construct-outline" : "flask-outline"}
-            size={19}
-            color="#fbbf24"
+          <Image
+            source={{
+              uri: `${ENV.CDN_BASE}/v2/home/other/${target === "builder" ? "builder-head.png" : "research.png"}`,
+            }}
+            contentFit="contain"
+            style={styles.boostIconImage}
           />
         </View>
         <View style={styles.boostHeaderText}>
@@ -261,7 +265,11 @@ export function ReEngagementBoostButton({
         pressed && !disabled && styles.pressed,
       ]}
     >
-      <Ionicons name="return-up-back-outline" size={20} color="#fbbf24" />
+      <Image
+        source={{ uri: `${ENV.CDN_BASE}/v2/home/other/villager-intro.png` }}
+        contentFit="contain"
+        style={styles.triggerIconImage}
+      />
     </Pressable>
   );
 }
@@ -336,12 +344,13 @@ export function ReEngagementBoostQuickPanel({
       return;
     }
 
-    onSave({
+    await onSave({
       builderBoostPercent: parsedBuilderPercent,
       builderDurationSeconds,
       researchBoostPercent: parsedResearchPercent,
       researchDurationSeconds,
     });
+    onClose();
   };
 
   return (
@@ -368,7 +377,11 @@ export function ReEngagementBoostQuickPanel({
           >
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderIcon}>
-                <Ionicons name="return-up-back-outline" size={23} color="#fbbf24" />
+                <Image
+                  source={{ uri: `${ENV.CDN_BASE}/v2/home/other/villager-intro.png` }}
+                  contentFit="contain"
+                  style={styles.modalHeaderIconImage}
+                />
               </View>
               <View style={styles.headerText}>
                 <Text style={styles.modalTitle}>Re-engagement boosts</Text>
@@ -469,6 +482,9 @@ export function ReEngagementBoostQuickPanel({
 }
 
 const styles = StyleSheet.create({
+  triggerIconImage: { width: 28, height: 28 },
+  modalHeaderIconImage: { width: 32, height: 32 },
+  boostIconImage: { width: 28, height: 28 },
   trigger: {
     width: 40,
     height: 40,

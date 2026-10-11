@@ -356,6 +356,7 @@ export function ReEngagementBoostQuickPanel({
   };
 
   return (
+    <>
     <Modal
       visible={visible}
       transparent
@@ -493,6 +494,7 @@ export function ReEngagementBoostQuickPanel({
         onCancel={() => setShowDeleteConfirm(false)}
         onConfirm={() => void handleDelete()}
       />
+    </>
   );
 }
 

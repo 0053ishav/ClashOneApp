@@ -41,34 +41,29 @@ function makeCraftedResult(
 }
 
 describe("applyBoostsToCraftedProgressionResult", () => {
-  it("compounds Hammer Jam, Gold Pass, and Re-engagement for Home Village crafted defenses", () => {
-    const result = applyBoostsToCraftedProgressionResult(
-      makeCraftedResult(),
-      {
-        village: "home",
-        upgradeStartContext: {
-          startsAt,
-          hammerJam,
-        },
-        goldPassBoost: { target: "builder", percent: 20 },
-        reEngagementBoost: { target: "builder", percent: 50 },
+  it("does not apply Hammer Jam, Gold Pass, or Re-engagement to Home Village crafted defenses", () => {
+    const original = makeCraftedResult();
+    const result = applyBoostsToCraftedProgressionResult(original, {
+      village: "home",
+      upgradeStartContext: {
+        startsAt,
+        hammerJam,
       },
-    );
-
-    expect(result).toMatchObject({
-      nextCost: 400,
-      nextUpgradeTime: 24,
-      remainingCost: 2_400,
-      remainingUpgradeTime: 144,
-      appliedModifierIds: [
-        "hammer-jam",
-        "gold-pass-builder-boost",
-        "re-engagement-builder-boost",
-      ],
+      goldPassBoost: { target: "builder", percent: 20 },
+      reEngagementBoost: { target: "builder", percent: 50 },
     });
+
+    expect(result).toBe(original);
+    expect(result).toMatchObject({
+      nextCost: 1_000,
+      nextUpgradeTime: 120,
+      remainingCost: 3_000,
+      remainingUpgradeTime: 360,
+    });
+    expect(result.appliedModifierIds).toBeUndefined();
   });
 
-  it("does not apply Home Village boosts or Hammer Jam to Builder Base crafted defenses", () => {
+  it("does not apply Home Village boosts to Builder Base crafted defenses", () => {
     const original = makeCraftedResult();
     const result = applyBoostsToCraftedProgressionResult(original, {
       village: "builderBase",

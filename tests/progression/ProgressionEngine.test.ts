@@ -497,7 +497,7 @@ describe("ProgressionEngine modifiers", () => {
       baseNextUpgradeTime: 120,
       nextUpgradeTime: 24,
       remainingCost: 1_200,
-      remainingUpgradeTime: 72,
+      remainingUpgradeTime: 144,
       appliedModifierIds: [
         "hammer-jam",
         "gold-pass-builder-boost",

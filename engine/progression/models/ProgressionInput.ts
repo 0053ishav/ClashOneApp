@@ -1,5 +1,6 @@
 import type { HammerJamManifest } from "@/engine/magicItems/hammerJam";
 import type { GoldPassBoostSelection } from "@/types/goldPass";
+import type { ReEngagementBoostSelection } from "@/types/reEngagementBoost";
 import type {
   ProgressionData,
 } from "@/types/progression";
@@ -35,4 +36,6 @@ export interface ProgressionInput {
   resourceProductionContext?: ResourceProductionContext;
   /** Manually selected Gold Pass discount for cost and time projections. */
   goldPassBoost?: GoldPassBoostSelection;
+  /** Active, account-scoped return-to-game discount for cost and time projections. */
+  reEngagementBoost?: ReEngagementBoostSelection;
 }

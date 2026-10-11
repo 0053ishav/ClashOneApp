@@ -1,6 +1,8 @@
 import { ENV } from "@/config/env";
+import { useCraftedDefenseProgressionStore } from "@/stores/crafted";
 import { useEntityStore } from "@/stores/entityStore";
 import type { EntityType, Village } from "@/types/entity";
+import { resolveCraftedDefenseIconLevel } from "./resolveCraftedDefenseIconLevel";
 
 export const FALLBACK_ICON =
   "https://cdn.clashwidget.online/entities/fallbacks/fallback.png";
@@ -41,14 +43,24 @@ export function resolveEntityIcon(
   options?: ResolveEntityIconOptions,
 ) {
   /*
-   * Crafted defenses have their own
-   * icon namespace.
+   * Crafted defenses use their own icon namespace. Their JSON image
+   * ranges map progression levels to the normal PNG level to display.
    */
   if (
     options?.isCrafted &&
     options.level != null
   ) {
-    return `${ENV.CDN_BASE}/v2/crafted/${entityId}/${options.level}.png`;
+    const progression =
+      useCraftedDefenseProgressionStore
+        .getState()
+        .getProgression(entityId);
+
+    const iconLevel = resolveCraftedDefenseIconLevel(
+      options.level,
+      progression?.images,
+    );
+
+    return `${ENV.CDN_BASE}/v2/crafted/${entityId}/${iconLevel}.png`;
   }
 
   const entity =
@@ -76,8 +88,7 @@ export function resolveEntityIcon(
     options?.level;
 
   /*
-   * No level means use the
-   * metadata icon.
+   * No level means use the metadata icon.
    */
   if (level == null) {
     return (
@@ -123,15 +134,15 @@ export function resolveEntityIcon(
     return `${ENV.CDN_BASE}/v2/builder/builderhalls/${level}.png`;
   }
 
-  /**
- * Home Heroes
- *
- * Heroes have a single icon per entity.
- * They do not have level-specific images.
- *
- * CDN:
- * /v2/home/heroes/{entityId}/icon.png
- */
+  /*
+   * Home Heroes
+   *
+   * Heroes have a single icon per entity.
+   * They do not have level-specific images.
+   *
+   * CDN:
+   * /v2/home/heroes/{entityId}/icon.png
+   */
   if (
     village === "home" &&
     type === "hero"
@@ -139,11 +150,12 @@ export function resolveEntityIcon(
     return `${ENV.CDN_BASE}/v2/home/heroes/${entityId}/icon.png`;
   }
 
-  /**
- * Builder Heroes
- * CDN:
- * /v2/builder/heroes/{entityId}/icon.png
- */
+  /*
+   * Builder Heroes
+   *
+   * CDN:
+   * /v2/builder/heroes/{entityId}/icon.png
+   */
   if (
     village === "builderBase" &&
     type === "hero"
@@ -151,15 +163,15 @@ export function resolveEntityIcon(
     return `${ENV.CDN_BASE}/v2/builder/heroes/${entityId}/icon.png`;
   }
 
-  /**
- * Home Pets & Guardians.
- *
- * Pets and Guardians have a single level-independent icon.
- * Their CDN image is always 1.png.
- *
- * CDN:
- * /v2/home/{category}/{entityId}/1.png
- */
+  /*
+   * Home Pets & Guardians.
+   *
+   * Pets and Guardians have a single level-independent icon.
+   * Their CDN image is always 1.png.
+   *
+   * CDN:
+   * /v2/home/{category}/{entityId}/1.png
+   */
   if (
     village === "home" &&
     (type === "pet" || type === "guardian" || type === "spell")
@@ -195,6 +207,7 @@ export function resolveEntityIcon(
       return `${ENV.CDN_BASE}/v2/builder/${category}/${entityId}/${level}.png`;
     }
   }
+
   /*
    * Unknown category:
    * fall back to metadata icon.

@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -37,6 +38,7 @@ type ReEngagementBoostQuickPanelProps = {
   onClose: () => void;
   onRetry: () => void;
   onSave: (draft: ReEngagementBoostDraft) => void | Promise<void>;
+  onDelete: () => Promise<boolean>;
 };
 
 const SECOND = 1;
@@ -271,6 +273,7 @@ export function ReEngagementBoostQuickPanel({
   onClose,
   onRetry,
   onSave,
+  onDelete,
 }: ReEngagementBoostQuickPanelProps) {
   const [now, setNow] = useState(Date.now());
   const [builderPercent, setBuilderPercent] = useState("0");
@@ -339,6 +342,25 @@ export function ReEngagementBoostQuickPanel({
       researchDurationSeconds,
     });
     onClose();
+  };
+
+  const confirmDelete = () => {
+    Alert.alert(
+      "Delete re-engagement boosts?",
+      "This removes both saved boosts for the current account. This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            void (async () => {
+              if (await onDelete()) onClose();
+            })();
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -425,6 +447,22 @@ export function ReEngagementBoostQuickPanel({
                   remainingSeconds={researchSeconds}
                 />
 
+
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Delete saved re-engagement boosts"
+                  accessibilityState={{ disabled: saving }}
+                  disabled={saving}
+                  onPress={confirmDelete}
+                  style={({ pressed }) => [
+                    styles.deleteButton,
+                    saving && styles.saveButtonDisabled,
+                    pressed && !saving && styles.pressed,
+                  ]}
+                >
+                  <Ionicons name="trash-outline" size={16} color="#f87171" />
+                  <Text style={styles.deleteButtonText}>Delete boosts</Text>
+                </Pressable>
 
                 <Pressable
                   accessibilityRole="button"
@@ -586,6 +624,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#1e293b",
   },
   retryText: { color: "#fbbf24", fontWeight: "800", fontSize: 12 },
+  deleteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(248,113,113,0.35)",
+    backgroundColor: "rgba(248,113,113,0.08)",
+  },
+  deleteButtonText: { color: "#f87171", fontSize: 12, fontWeight: "800" },
   saveButton: {
     flexDirection: "row",
     alignItems: "center",

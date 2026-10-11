@@ -4,6 +4,7 @@ describe("resolveReEngagementBoostModifier", () => {
   it.each([
     [0, 1],
     [10, 0.9],
+    [12, 0.88],
     [25, 0.75],
     [50, 0.5],
     [100, 0],
@@ -29,7 +30,7 @@ describe("resolveReEngagementBoostModifier", () => {
     });
   });
 
-  it.each([-1, 101, 12, Number.NaN, Number.POSITIVE_INFINITY])(
+  it.each([-1, 101, 12.5, Number.NaN, Number.POSITIVE_INFINITY])(
     "rejects invalid percentages (%s)",
     (percent) => {
       expect(() => resolveReEngagementBoostModifier({

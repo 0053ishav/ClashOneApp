@@ -112,3 +112,16 @@ export async function saveReEngagementBoostSettings(
     ],
   );
 }
+
+/** Delete saved return-to-game boosts for one account. */
+export async function deleteReEngagementBoostSettings(
+  accountTag: string,
+): Promise<void> {
+  assertAccountTag(accountTag);
+
+  const db = await getDB();
+  await db.runAsync(
+    `DELETE FROM re_engagement_boost_settings WHERE account_player_tag = ?`,
+    [accountTag],
+  );
+}

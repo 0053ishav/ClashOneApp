@@ -259,6 +259,32 @@ export async function initDatabase() {
     version = 6;
   }
 
+  // V7 - Per-account return-to-game boost percentages and expiry timestamps.
+  if (version < 7) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS re_engagement_boost_settings (
+        account_player_tag TEXT PRIMARY KEY,
+        builder_boost_percent INTEGER NOT NULL DEFAULT 0
+          CHECK (builder_boost_percent BETWEEN 0 AND 100),
+        builder_boost_expires_at INTEGER,
+        research_boost_percent INTEGER NOT NULL DEFAULT 0
+          CHECK (research_boost_percent BETWEEN 0 AND 100),
+        research_boost_expires_at INTEGER,
+        FOREIGN KEY(account_player_tag)
+        REFERENCES accounts(player_tag)
+        ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_re_engagement_boost_expiry
+      ON re_engagement_boost_settings(
+        account_player_tag,
+        builder_boost_expires_at,
+        research_boost_expires_at
+      );
+    `);
+    await setSchemaVersion(db, 7);
+    version = 7;
+  }
+
   // log("✅ Database ready. Version:", version);
 
   // Debug only

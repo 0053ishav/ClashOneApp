@@ -13,10 +13,12 @@ import type {
 
 import type { Upgrade } from "@/types/upgrade";
 import type { GoldPassBoostSelection } from "@/types/goldPass";
+import type { ReEngagementBoostSelection } from "@/types/reEngagementBoost";
 
 import { useAccountStore } from "@/stores/accountStore";
 import { useHammerJamStore } from "@/stores/hammerJamStore";
 import { CraftedDefenseProgressionApplicationService } from "./craftedDefenseProgressionApplicationService";
+import { applyBoostsToCraftedProgressionResult } from "./applyBoostsToCraftedProgressionResult";
 import { PlayerLevelResolver } from "./playerLevelResolver";
 import { ProgressionQueries } from "./progressionQueries";
 
@@ -31,6 +33,8 @@ export interface ResolveUpgradeOptions {
   upgradeStartContext?: ProgressionUpgradeStartContext;
   /** Apply manually configured Gold Pass discounts to calculated costs and durations. */
   goldPassBoost?: GoldPassBoostSelection;
+  /** Apply an active account-scoped return-to-game boost to calculated costs and durations. */
+  reEngagementBoost?: ReEngagementBoostSelection;
 }
 
 export class ProgressionApplicationService {
@@ -44,9 +48,21 @@ export class ProgressionApplicationService {
     * metadata, progression and engine.
     */
     if (upgrade.isCrafted) {
-      return CraftedDefenseProgressionApplicationService.resolve(
-        upgrade,
-      );
+      const result = CraftedDefenseProgressionApplicationService.resolve(upgrade);
+      if (!result) return null;
+
+      return applyBoostsToCraftedProgressionResult(result, {
+        village: upgrade.village,
+        ...(options.upgradeStartContext
+          ? { upgradeStartContext: options.upgradeStartContext }
+          : {}),
+        ...(options.goldPassBoost
+          ? { goldPassBoost: options.goldPassBoost }
+          : {}),
+        ...(options.reEngagementBoost
+          ? { reEngagementBoost: options.reEngagementBoost }
+          : {}),
+      });
     }
 
     /**
@@ -115,6 +131,9 @@ export class ProgressionApplicationService {
         : {}),
       ...(options.goldPassBoost
         ? { goldPassBoost: options.goldPassBoost }
+        : {}),
+      ...(options.reEngagementBoost
+        ? { reEngagementBoost: options.reEngagementBoost }
         : {}),
     };
 

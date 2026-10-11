@@ -7,6 +7,7 @@ import { ProgressionApplicationService } from "@/services/progression";
 import { useAccountStore } from "@/stores/accountStore";
 import { getAccountByTag } from "@/services/accountService";
 import { fetchPlayerFromApi } from "@/services/clashApi";
+import { saveReEngagementBoostSettings } from "@/services/reEngagementBoostService";
 import type { Upgrade } from "@/types/upgrade";
 import type { GoldPassBoostSettings } from "@/types/goldPass";
 
@@ -33,6 +34,11 @@ jest.mock("@/services/progression", () => ({
 jest.mock("@/services/goldPassBoostService", () => ({
   getGoldPassBoostSettings: jest.fn(),
   saveGoldPassBoostSettings: jest.fn(),
+}));
+
+jest.mock("@/services/reEngagementBoostService", () => ({
+  getReEngagementBoostSettings: jest.fn(),
+  saveReEngagementBoostSettings: jest.fn(),
 }));
 
 jest.mock("@/storage/jsonSyncStorage", () => ({
@@ -174,6 +180,12 @@ describe("importVillageJson Gold Pass regression coverage", () => {
     expect(saveGoldPassBoostSettings).not.toHaveBeenCalled();
     expect(persistedSettings.get(accountTag)).toEqual(originalSettings);
     expect(persistedSettings.get(otherAccountTag)).toEqual(otherAccountSettings);
+  });
+
+  it("does not overwrite account-scoped re-engagement settings during import", async () => {
+    await importVillageJson(makeExport());
+
+    expect(saveReEngagementBoostSettings).not.toHaveBeenCalled();
   });
 
   it("re-importing the same export does not discount its remaining timer a second time", async () => {

@@ -480,6 +480,74 @@ describe("ProgressionEngine modifiers", () => {
     },
   );
 
+  it("compounds Re-engagement with Gold Pass and Hammer Jam multiplicatively", () => {
+    const result = resolve({
+      goldPassBoost: { target: "builder", percent: 20 },
+      reEngagementBoost: { target: "builder", percent: 50 },
+      upgradeStartContext: {
+        startsAt: EVENT_START,
+        hammerJam: activeHammerJam,
+      },
+    });
+
+    // 120 × 0.5 Hammer Jam × 0.8 Gold Pass × 0.5 Re-engagement = 24.
+    expect(result).toMatchObject({
+      baseNextCost: 1_000,
+      nextCost: 200,
+      baseNextUpgradeTime: 120,
+      nextUpgradeTime: 24,
+      remainingCost: 1_200,
+      remainingUpgradeTime: 144,
+      appliedModifierIds: [
+        "hammer-jam",
+        "gold-pass-builder-boost",
+        "re-engagement-builder-boost",
+      ],
+    });
+  });
+
+  it("applies active Research Re-engagement Boost to Home Village pets", () => {
+    const result = resolve({
+      entity: {
+        id: 101,
+        slug: "pet",
+        category: "pet",
+        village: "home",
+        maxLevel: 3,
+      },
+      reEngagementBoost: { target: "research", percent: 40 },
+    });
+
+    expect(result).toMatchObject({
+      nextCost: 600,
+      nextUpgradeTime: 72,
+      remainingCost: 1_800,
+      remainingUpgradeTime: 216,
+      appliedModifierIds: ["re-engagement-research-boost"],
+    });
+  });
+
+  it("does not apply Re-engagement Boost to Builder Base entities", () => {
+    const result = resolve({
+      entity: {
+        id: 101,
+        slug: "builder-base-building",
+        category: "building",
+        village: "builderBase",
+        maxLevel: 3,
+      },
+      reEngagementBoost: { target: "builder", percent: 50 },
+    });
+
+    expect(result).toMatchObject({
+      baseNextCost: 1_000,
+      nextCost: 1_000,
+      baseNextUpgradeTime: 120,
+      nextUpgradeTime: 120,
+      appliedModifierIds: [],
+    });
+  });
+
   it("rejects an unsupported Gold Pass percentage at the engine boundary", () => {
     expect(() =>
       resolve({

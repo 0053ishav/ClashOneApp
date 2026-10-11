@@ -27,6 +27,7 @@ import { MAGIC_ITEMS } from "@/config/magicItems";
 import { useCraftedResolver } from "@/engine/crafted/craftedResolver";
 import type { ProgressionApplicationResult } from "@/engine/progression/models";
 import type { GoldPassBoostSettings } from "@/types/goldPass";
+import type { ReEngagementBoostSettings } from "@/types/reEngagementBoost";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { useRemoteConfig } from "@/provider/remoteConfigProvider";
 import { getAccountState } from "@/services/accountStateService";
@@ -36,10 +37,12 @@ import {
 } from "@/services/magicItemService";
 import { ProgressionApplicationService } from "@/services/progression";
 import { resolveGoldPassBoostForUpgradeType } from "@/engine/progression/resolveGoldPassBoostForUpgradeType";
+import { resolveReEngagementBoostForUpgradeType } from "@/engine/progression/resolveReEngagementBoostForUpgradeType";
 import {
   getGoldPassBoostSettings,
   saveGoldPassBoostSettings as persistGoldPassBoostSettings,
 } from "@/services/goldPassBoostService";
+import { getReEngagementBoostSettings } from "@/services/reEngagementBoostService";
 import { buildSupportInfo } from "@/services/supportDebugInfo";
 import { deleteUpgrade } from "@/services/upgradeService";
 import { applyBookToActiveUpgrade } from "@/services/useBookOnActiveUpgrade";
@@ -136,11 +139,14 @@ export default function HomeScreen() {
     useState<ProgressionApplicationResult | null>(null);
   const [goldPassSettings, setGoldPassSettings] =
     useState<GoldPassBoostSettings | null>(null);
+  const [reEngagementSettings, setReEngagementSettings] =
+    useState<ReEngagementBoostSettings | null>(null);
   const [showGoldPassPopover, setShowGoldPassPopover] = useState(false);
   const [isLoadingGoldPassSettings, setIsLoadingGoldPassSettings] = useState(false);
   const [goldPassSettingsLoadFailed, setGoldPassSettingsLoadFailed] = useState(false);
   const [isSavingGoldPassSettings, setIsSavingGoldPassSettings] = useState(false);
   const goldPassLoadRequestRef = useRef(0);
+  const reEngagementLoadRequestRef = useRef(0);
   const goldPassProgressionRequestRef = useRef(0);
   const [refreshing, setRefreshing] = useState(false);
   const [completedId, setCompletedId] = useState<string | null>(null);
@@ -158,6 +164,8 @@ export default function HomeScreen() {
   const activeAccount = accounts.find((a) => a.tag === activeTag);
   const activeGoldPassSettings =
     goldPassSettings?.accountTag === activeTag ? goldPassSettings : null;
+  const activeReEngagementSettings =
+    reEngagementSettings?.accountTag === activeTag ? reEngagementSettings : null;
 
   const builderCount = activeAccount?.builderCount ?? 1;
   const townHall = profile?.townHallLevel ?? 1;
@@ -406,16 +414,42 @@ export default function HomeScreen() {
     [activeTag],
   );
 
+  const loadReEngagementSettings = useCallback(
+    async (isCurrent: () => boolean = () => true) => {
+      const requestId = ++reEngagementLoadRequestRef.current;
+
+      if (!activeTag) {
+        setReEngagementSettings(null);
+        return;
+      }
+
+      const requestIsCurrent = () =>
+        isCurrent() &&
+        reEngagementLoadRequestRef.current === requestId &&
+        useAccountStore.getState().activeTag === activeTag;
+
+      try {
+        const settings = await getReEngagementBoostSettings(activeTag);
+        if (requestIsCurrent()) setReEngagementSettings(settings);
+      } catch {
+        if (requestIsCurrent()) setReEngagementSettings(null);
+      }
+    },
+    [activeTag],
+  );
+
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
       void loadGoldPassSettings(() => !cancelled);
+      void loadReEngagementSettings(() => !cancelled);
 
       return () => {
         cancelled = true;
         goldPassLoadRequestRef.current += 1;
+        reEngagementLoadRequestRef.current += 1;
       };
-    }, [loadGoldPassSettings]),
+    }, [loadGoldPassSettings, loadReEngagementSettings]),
   );
 
   useEffect(() => {
@@ -702,25 +736,35 @@ export default function HomeScreen() {
     setSelectedUpgrade(upgrade);
     setActionModalVisible(true);
 
-    const resolveWithSettings = (settings: GoldPassBoostSettings) => {
+    const resolveWithSettings = (
+      settings: GoldPassBoostSettings,
+      reEngagement: ReEngagementBoostSettings,
+    ) => {
       const entityType = upgrade.isCrafted
         ? "building"
         : upgrade.dataId == null
           ? undefined
           : getEntity(upgrade.dataId)?.type;
-      const goldPassBoost = entityType
-        ? resolveGoldPassBoostForUpgradeType(
-            {
-              upgradeType: upgrade.upgradeType,
-              entityType,
-              village: upgrade.village,
-            },
-            settings,
+      const context = entityType
+        ? {
+            upgradeType: upgrade.upgradeType,
+            entityType,
+            village: upgrade.village,
+          }
+        : undefined;
+      const goldPassBoost = context
+        ? resolveGoldPassBoostForUpgradeType(context, settings)
+        : undefined;
+      const reEngagementBoost = context
+        ? resolveReEngagementBoostForUpgradeType(
+            context,
+            reEngagement,
           )
         : undefined;
 
       return ProgressionApplicationService.resolveUpgrade(upgrade, {
         goldPassBoost,
+        reEngagementBoost,
       });
     };
 
@@ -728,19 +772,30 @@ export default function HomeScreen() {
       activeGoldPassSettings?.accountTag === upgrade.accountTag
         ? activeGoldPassSettings
         : null;
+    const cachedReEngagementSettings =
+      activeReEngagementSettings?.accountTag === upgrade.accountTag
+        ? activeReEngagementSettings
+        : null;
 
-    if (cachedSettings) {
-      setSelectedProgression(resolveWithSettings(cachedSettings));
+    if (cachedSettings && cachedReEngagementSettings) {
+      setSelectedProgression(
+        resolveWithSettings(cachedSettings, cachedReEngagementSettings),
+      );
       return;
     }
 
-    // Load the correct account's settings before presenting its progression.
+    // Load both boost configurations for this upgrade's account before resolving it.
     setSelectedProgression(null);
-    void getGoldPassBoostSettings(upgrade.accountTag)
-      .then((settings) => {
+    void Promise.all([
+      cachedSettings ?? getGoldPassBoostSettings(upgrade.accountTag),
+      cachedReEngagementSettings ??
+        getReEngagementBoostSettings(upgrade.accountTag),
+    ])
+      .then(([settings, reEngagement]) => {
         if (goldPassProgressionRequestRef.current !== requestId) return;
         setGoldPassSettings(settings);
-        setSelectedProgression(resolveWithSettings(settings));
+        setReEngagementSettings(reEngagement);
+        setSelectedProgression(resolveWithSettings(settings, reEngagement));
       })
       .catch(() => {
         if (goldPassProgressionRequestRef.current !== requestId) return;

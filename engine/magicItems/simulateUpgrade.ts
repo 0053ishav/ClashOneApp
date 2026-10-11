@@ -8,6 +8,8 @@ import type { ActiveMagicEffect, MagicItemTarget } from "@/types/magicItem";
 import { resolveGoldPassBoostModifier } from "@/engine/progression/resolveGoldPassBoost";
 import type { GoldPassBoostSelection } from "@/types/goldPass";
 import { isGoldPassBoostApplicable } from "@/engine/progression/isGoldPassBoostApplicable";
+import { resolveReEngagementBoostModifier } from "@/engine/progression/resolveReEngagementBoost";
+import type { ReEngagementBoostSelection } from "@/types/reEngagementBoost";
 
 export type UpgradeSimulationInput = {
   /** Base values come from the selected entity's next progression level. */
@@ -21,6 +23,8 @@ export type UpgradeSimulationInput = {
   hammerJam: HammerJamManifest;
   /** Optional manually selected Gold Pass cost and time discount for this simulated upgrade. */
   goldPassBoost?: GoldPassBoostSelection;
+  /** Active return-to-game discount selected for this simulated upgrade. */
+  reEngagementBoost?: ReEngagementBoostSelection;
   selectedItemIds?: readonly string[];
   /** Needed when previewing a Book on work that is already in progress. */
   hasActiveUpgrade?: boolean;
@@ -102,6 +106,7 @@ export function simulateUpgrade(
     startsAt,
     hammerJam,
     goldPassBoost,
+    reEngagementBoost,
     selectedItemIds = [],
     hasActiveUpgrade = false,
     freeBuilderAvailable = false,
@@ -113,6 +118,11 @@ export function simulateUpgrade(
   }
 
   const noGoldPassModifier = {
+    costMultiplier: 1,
+    timeMultiplier: 1,
+    appliedModifierIds: [] as string[],
+  };
+  const noReEngagementModifier = {
     costMultiplier: 1,
     timeMultiplier: 1,
     appliedModifierIds: [] as string[],
@@ -139,6 +149,35 @@ export function simulateUpgrade(
     })
       ? requestedGoldPassModifier
       : noGoldPassModifier;
+
+  const requestedReEngagementModifier = reEngagementBoost
+    ? resolveReEngagementBoostModifier(reEngagementBoost)
+    : noReEngagementModifier;
+  const reEngagementTargetMatches =
+    reEngagementBoost?.target === "builder"
+      ? workTarget === "builders"
+      : reEngagementBoost?.target === "research"
+        ? workTarget === "research" ||
+          (goldPassEntityType === "pet" && workTarget === "pet")
+        : false;
+  const reEngagementModifier =
+    reEngagementBoost &&
+    goldPassEntityType &&
+    reEngagementTargetMatches &&
+    isGoldPassBoostApplicable({
+      village,
+      entityType: goldPassEntityType,
+      target: reEngagementBoost.target,
+    })
+      ? requestedReEngagementModifier
+      : noReEngagementModifier;
+  const combinedCostMultiplier =
+    goldPassModifier.costMultiplier * reEngagementModifier.costMultiplier;
+  const combinedTimeMultiplier =
+    goldPassModifier.timeMultiplier * reEngagementModifier.timeMultiplier;
+  const hasUpgradeDiscount =
+    goldPassModifier.appliedModifierIds.length > 0 ||
+    reEngagementModifier.appliedModifierIds.length > 0;
 
   // Sort and deduplicate selections so the same selection always resolves
   // to the same applied/rejected item order, independent of UI interaction order.
@@ -246,11 +285,11 @@ export function simulateUpgrade(
     manifest: hammerJam,
   });
   const effectiveStartDurationMinutes =
-    goldPassModifier.appliedModifierIds.length > 0
+    hasUpgradeDiscount
       ? Math.round(
           baseDurationMinutes *
             startValues.timeMultiplier *
-            goldPassModifier.timeMultiplier,
+            combinedTimeMultiplier,
         )
       : startValues.durationMinutes;
 
@@ -280,22 +319,23 @@ export function simulateUpgrade(
     (estimatedCompletionAt - startsAt) / MINUTE_MS,
   );
 
-  const goldPassAdjustedCost = Math.round(
-    (startValues.cost ?? baseCost) * goldPassModifier.costMultiplier,
+  const discountedCost = Math.round(
+    (startValues.cost ?? baseCost) * combinedCostMultiplier,
   );
 
   return {
     baseCost,
-    effectiveCost: goldPassAdjustedCost,
+    effectiveCost: discountedCost,
     baseDurationMinutes,
     effectiveDurationMinutes,
     durationSavedMinutes: Math.max(0, baseDurationMinutes - effectiveDurationMinutes),
-    costSaved: Math.max(0, baseCost - goldPassAdjustedCost),
+    costSaved: Math.max(0, baseCost - discountedCost),
     estimatedCompletionAt,
     completionMode: "timed",
     appliedModifierIds: [
       ...startValues.appliedModifierIds,
       ...goldPassModifier.appliedModifierIds,
+      ...reEngagementModifier.appliedModifierIds,
     ],
     appliedItemIds,
     rejectedItems,

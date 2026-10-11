@@ -3,6 +3,11 @@ import {
   GoldPassBoostButton,
   GoldPassBoostQuickPanel,
 } from "@/components/goldPass/GoldPassBoostQuickPanel";
+import {
+  ReEngagementBoostButton,
+  ReEngagementBoostQuickPanel,
+  type ReEngagementBoostDraft,
+} from "@/components/reEngagement/ReEngagementBoostQuickPanel";
 import { getDB } from "@/db/database";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import {
@@ -14,6 +19,10 @@ import {
   getGoldPassBoostSettings,
   saveGoldPassBoostSettings as persistGoldPassBoostSettings,
 } from "@/services/goldPassBoostService";
+import {
+  getReEngagementBoostSettings,
+  saveReEngagementBoostSettings,
+} from "@/services/reEngagementBoostService";
 import { resetLastJsonSync } from "@/storage/jsonSyncStorage";
 import {
   getNotificationsEnabled,
@@ -25,6 +34,7 @@ import {
 } from "@/storage/playerProfile";
 import { useAccountStore } from "@/stores/accountStore";
 import type { GoldPassBoostSettings } from "@/types/goldPass";
+import type { ReEngagementBoostSettings } from "@/types/reEngagementBoost";
 import { track } from "@/utils/analytics/analytics";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
 import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
@@ -321,8 +331,23 @@ export default function SettingsScreen() {
   const goldPassLoadRequestRef = useRef(0);
   const [showGoldPassPopover, setShowGoldPassPopover] = useState(false);
 
+  const [reEngagementSettings, setReEngagementSettings] =
+    useState<ReEngagementBoostSettings | null>(null);
+  const [isLoadingReEngagementSettings, setIsLoadingReEngagementSettings] =
+    useState(false);
+  const [reEngagementSettingsLoadFailed, setReEngagementSettingsLoadFailed] =
+    useState(false);
+  const [isSavingReEngagementSettings, setIsSavingReEngagementSettings] =
+    useState(false);
+  const reEngagementLoadRequestRef = useRef(0);
+  const [showReEngagementPopover, setShowReEngagementPopover] = useState(false);
+
   const activeGoldPassSettings =
     goldPassSettings?.accountTag === activeTag ? goldPassSettings : null;
+  const activeReEngagementSettings =
+    reEngagementSettings?.accountTag === activeTag
+      ? reEngagementSettings
+      : null;
 
   const { profile } = usePlayerProfile();
   const activeAccount = accounts.find((a) => a.tag === activeTag);
@@ -414,6 +439,49 @@ export default function SettingsScreen() {
     }, [loadGoldPassSettings]),
   );
 
+  const loadReEngagementSettings = useCallback(
+    async (isCurrent: () => boolean = () => true) => {
+      const requestId = ++reEngagementLoadRequestRef.current;
+
+      if (!activeTag) {
+        setReEngagementSettings(null);
+        setIsLoadingReEngagementSettings(false);
+        setReEngagementSettingsLoadFailed(false);
+        return;
+      }
+
+      const requestIsCurrent = () =>
+        isCurrent() &&
+        reEngagementLoadRequestRef.current === requestId &&
+        useAccountStore.getState().activeTag === activeTag;
+
+      setIsLoadingReEngagementSettings(true);
+      setReEngagementSettingsLoadFailed(false);
+
+      try {
+        const settings = await getReEngagementBoostSettings(activeTag);
+        if (requestIsCurrent()) setReEngagementSettings(settings);
+      } catch {
+        if (requestIsCurrent()) setReEngagementSettingsLoadFailed(true);
+      } finally {
+        if (requestIsCurrent()) setIsLoadingReEngagementSettings(false);
+      }
+    },
+    [activeTag],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      void loadReEngagementSettings(() => !cancelled);
+
+      return () => {
+        cancelled = true;
+        reEngagementLoadRequestRef.current += 1;
+      };
+    }, [loadReEngagementSettings]),
+  );
+
   useEffect(() => {
     setLocalNotificationsEnabled(getNotificationsEnabled());
   }, []);
@@ -455,6 +523,43 @@ export default function SettingsScreen() {
       );
     } finally {
       setIsSavingGoldPassSettings(false);
+    }
+  };
+
+  const saveReEngagementBoostDraft = async (draft: ReEngagementBoostDraft) => {
+    const accountTag = activeTag;
+    if (!accountTag || !activeReEngagementSettings || isSavingReEngagementSettings) {
+      return;
+    }
+
+    const now = Date.now();
+    const nextSettings: ReEngagementBoostSettings = {
+      accountTag,
+      builderBoostPercent: draft.builderBoostPercent,
+      builderBoostExpiresAt:
+        draft.builderBoostPercent > 0 && draft.builderDurationSeconds > 0
+          ? now + draft.builderDurationSeconds * 1_000
+          : null,
+      researchBoostPercent: draft.researchBoostPercent,
+      researchBoostExpiresAt:
+        draft.researchBoostPercent > 0 && draft.researchDurationSeconds > 0
+          ? now + draft.researchDurationSeconds * 1_000
+          : null,
+    };
+
+    setIsSavingReEngagementSettings(true);
+    try {
+      await saveReEngagementBoostSettings(nextSettings);
+      if (useAccountStore.getState().activeTag === accountTag) {
+        setReEngagementSettings(nextSettings);
+      }
+    } catch {
+      Alert.alert(
+        "Couldn't save re-engagement boosts",
+        "Your saved percentages and timers haven't changed. Please try again.",
+      );
+    } finally {
+      setIsSavingReEngagementSettings(false);
     }
   };
 
@@ -653,6 +758,13 @@ export default function SettingsScreen() {
                     expanded={showGoldPassPopover}
                     onPress={() => setShowGoldPassPopover((visible) => !visible)}
                   />
+                  <ReEngagementBoostButton
+                    expanded={showReEngagementPopover}
+                    disabled={!activeTag}
+                    onPress={() =>
+                      setShowReEngagementPopover((visible) => !visible)
+                    }
+                  />
                   <IconButton
                     icon={copied ? "checkmark" : "copy-outline"}
                     color={copied ? "#22c55e" : "#94a3b8"}
@@ -704,6 +816,19 @@ export default function SettingsScreen() {
               onSetResearch={(percent) =>
                 void saveGoldPassUpdates({ researchBoostPercent: percent })
               }
+            />
+          )}
+
+          {!!profile?.playerTag && showReEngagementPopover && (
+            <ReEngagementBoostQuickPanel
+              visible={showReEngagementPopover}
+              settings={activeReEngagementSettings}
+              loading={isLoadingReEngagementSettings}
+              loadFailed={reEngagementSettingsLoadFailed}
+              saving={isSavingReEngagementSettings}
+              onClose={() => setShowReEngagementPopover(false)}
+              onRetry={() => void loadReEngagementSettings()}
+              onSave={(draft) => void saveReEngagementBoostDraft(draft)}
             />
           )}
 

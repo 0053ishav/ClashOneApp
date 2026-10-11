@@ -20,6 +20,7 @@ import {
   saveGoldPassBoostSettings as persistGoldPassBoostSettings,
 } from "@/services/goldPassBoostService";
 import {
+  deleteReEngagementBoostSettings,
   getReEngagementBoostSettings,
   saveReEngagementBoostSettings,
 } from "@/services/reEngagementBoostService";
@@ -563,6 +564,36 @@ export default function SettingsScreen() {
     }
   };
 
+  const deleteReEngagementBoosts = async (): Promise<boolean> => {
+    const accountTag = activeTag;
+    if (!accountTag || !activeReEngagementSettings || isSavingReEngagementSettings) {
+      return false;
+    }
+
+    setIsSavingReEngagementSettings(true);
+    try {
+      await deleteReEngagementBoostSettings(accountTag);
+      if (useAccountStore.getState().activeTag === accountTag) {
+        setReEngagementSettings({
+          accountTag,
+          builderBoostPercent: 0,
+          builderBoostExpiresAt: null,
+          researchBoostPercent: 0,
+          researchBoostExpiresAt: null,
+        });
+      }
+      return true;
+    } catch {
+      Alert.alert(
+        "Couldn't delete re-engagement boosts",
+        "Your saved boosts haven't changed. Please try again.",
+      );
+      return false;
+    } finally {
+      setIsSavingReEngagementSettings(false);
+    }
+  };
+
   const handleBuilderSelect = async (count: number) => {
     if (!activeTag || !activeAccount) return;
 
@@ -829,6 +860,7 @@ export default function SettingsScreen() {
               onClose={() => setShowReEngagementPopover(false)}
               onRetry={() => void loadReEngagementSettings()}
               onSave={(draft) => void saveReEngagementBoostDraft(draft)}
+              onDelete={deleteReEngagementBoosts}
             />
           )}
 

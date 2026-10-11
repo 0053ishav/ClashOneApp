@@ -7,7 +7,7 @@ import { ProgressionApplicationService } from "@/services/progression";
 import { useAccountStore } from "@/stores/accountStore";
 import { getAccountByTag } from "@/services/accountService";
 import { fetchPlayerFromApi } from "@/services/clashApi";
-import { Upgrade } from "@/types/upgrade";
+import type { Upgrade } from "@/types/upgrade";
 import type { GoldPassBoostSettings } from "@/types/goldPass";
 
 jest.mock("@/services/accountService", () => ({

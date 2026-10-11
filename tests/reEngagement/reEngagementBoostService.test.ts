@@ -4,6 +4,7 @@ jest.mock("@/db/database", () => ({
 
 import { getDB } from "@/db/database";
 import {
+  deleteReEngagementBoostSettings,
   getReEngagementBoostSettings,
   saveReEngagementBoostSettings,
 } from "@/services/reEngagementBoostService";
@@ -110,4 +111,22 @@ describe("reEngagementBoostService", () => {
     await expect(getReEngagementBoostSettings("   ")).rejects.toThrow("INVALID_ACCOUNT_TAG");
     expect(getDB).not.toHaveBeenCalled();
   });
+
+  it("deletes saved boosts only for the requested account", async () => {
+    await deleteReEngagementBoostSettings("#ACCOUNT");
+
+    expect(db.runAsync).toHaveBeenCalledWith(
+      "DELETE FROM re_engagement_boost_settings WHERE account_player_tag = ?",
+      ["#ACCOUNT"],
+    );
+  });
+
+  it("rejects an empty account tag before deleting", async () => {
+    await expect(deleteReEngagementBoostSettings("  ")).rejects.toThrow(
+      "INVALID_ACCOUNT_TAG",
+    );
+    expect(getDB).not.toHaveBeenCalled();
+    expect(db.runAsync).not.toHaveBeenCalled();
+  });
+
 });

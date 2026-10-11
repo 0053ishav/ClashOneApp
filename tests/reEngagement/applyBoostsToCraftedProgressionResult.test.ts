@@ -56,9 +56,9 @@ describe("applyBoostsToCraftedProgressionResult", () => {
     );
 
     expect(result).toMatchObject({
-      nextCost: 200,
+      nextCost: 400,
       nextUpgradeTime: 24,
-      remainingCost: 1_200,
+      remainingCost: 2_400,
       remainingUpgradeTime: 144,
       appliedModifierIds: [
         "hammer-jam",

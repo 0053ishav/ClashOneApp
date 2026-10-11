@@ -13,6 +13,7 @@ import type {
 
 import type { Upgrade } from "@/types/upgrade";
 import type { GoldPassBoostSelection } from "@/types/goldPass";
+import type { ReEngagementBoostSelection } from "@/types/reEngagementBoost";
 
 import { useAccountStore } from "@/stores/accountStore";
 import { useHammerJamStore } from "@/stores/hammerJamStore";
@@ -31,6 +32,8 @@ export interface ResolveUpgradeOptions {
   upgradeStartContext?: ProgressionUpgradeStartContext;
   /** Apply manually configured Gold Pass discounts to calculated costs and durations. */
   goldPassBoost?: GoldPassBoostSelection;
+  /** Apply an active account-scoped return-to-game boost to calculated costs and durations. */
+  reEngagementBoost?: ReEngagementBoostSelection;
 }
 
 export class ProgressionApplicationService {
@@ -115,6 +118,9 @@ export class ProgressionApplicationService {
         : {}),
       ...(options.goldPassBoost
         ? { goldPassBoost: options.goldPassBoost }
+        : {}),
+      ...(options.reEngagementBoost
+        ? { reEngagementBoost: options.reEngagementBoost }
         : {}),
     };
 

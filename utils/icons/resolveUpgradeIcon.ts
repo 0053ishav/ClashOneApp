@@ -7,6 +7,9 @@ export function resolveUpgradeIcon(
   options?: {
     village?: Village;
     isCrafted?: boolean;
+    moduleId?: number;
+    craftedModuleLevels?: Record<number, number>;
+    craftedModuleLevelOverride?: number;
   },
 ) {
   return resolveEntityIcon(
@@ -15,6 +18,9 @@ export function resolveUpgradeIcon(
       village: options?.village,
       level,
       isCrafted: options?.isCrafted,
+      moduleId: options?.moduleId,
+      craftedModuleLevels: options?.craftedModuleLevels,
+      craftedModuleLevelOverride: options?.craftedModuleLevelOverride,
     },
   );
 }

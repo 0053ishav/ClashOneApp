@@ -4,6 +4,8 @@ export type WidgetCacheData = {
   subtitle: string;
   icon?: string;
   isCrafted?: boolean;
+  moduleId?: number;
+  craftedModuleLevels?: Record<number, number>;
   progress: number;
   currentLevel?: number;
   showProgress: boolean;

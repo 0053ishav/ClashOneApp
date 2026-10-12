@@ -285,6 +285,20 @@ export async function initDatabase() {
     version = 7;
   }
 
+  // V8 - Persist crafted-defense module levels for aggregate icon resolution.
+  if (version < 8) {
+    try {
+      await db.execAsync(`
+        ALTER TABLE upgrades
+        ADD COLUMN crafted_module_levels TEXT;
+      `);
+    } catch (e) {
+      log("⏭️ crafted_module_levels already exists", e);
+    }
+    await setSchemaVersion(db, 8);
+    version = 8;
+  }
+
   // log("✅ Database ready. Version:", version);
 
   // Debug only

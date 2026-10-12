@@ -9,8 +9,8 @@ async function getSchemaVersion(db: SQLite.SQLiteDatabase) {
     );
   `);
 
-  const row = await db.getFirstAsync<{ version: number }>(
-    `SELECT version FROM schema_version LIMIT 1`
+  const row = await db.getFirstAsync<{ version: number | null }>(
+    `SELECT MAX(version) AS version FROM schema_version`
   );
 
   return row?.version ?? 0;

@@ -4,16 +4,21 @@ import type { CraftedDefenseImageRange } from "@/types/craftedDefenseProgression
  * Maps a crafted defense's progression level to the normal PNG level
  * defined by its inclusive image range.
  *
- * If no range matches, preserve the supplied level for compatibility
- * with older progression data that has no image ranges.
+ * Returns undefined when no range matches. Crafted-defense icons must
+ * never use the aggregate level as a PNG level because only the "normal"
+ * value in the matching image range identifies a valid PNG.
  */
 export function resolveCraftedDefenseIconLevel(
   level: number,
   images?: CraftedDefenseImageRange[],
-): number {
-  const imageRange = images?.find(
+): number | undefined {
+  if (!images?.length) {
+    return undefined;
+  }
+
+  const imageRange = images.find(
     ({ from, to }) => level >= from && level <= to,
   );
 
-  return imageRange?.normal ?? level;
+  return imageRange?.normal;
 }

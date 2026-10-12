@@ -21,12 +21,12 @@ describe("resolveCraftedDefenseIconLevel", () => {
     expect(resolveCraftedDefenseIconLevel(level, images)).toBe(expected);
   });
 
-  it("preserves the supplied level when no image range matches", () => {
-    expect(resolveCraftedDefenseIconLevel(2, images)).toBe(2);
-    expect(resolveCraftedDefenseIconLevel(31, images)).toBe(31);
+  it("returns undefined when no image range matches", () => {
+    expect(resolveCraftedDefenseIconLevel(2, images)).toBeUndefined();
+    expect(resolveCraftedDefenseIconLevel(31, images)).toBeUndefined();
   });
 
-  it("preserves the supplied level when image ranges are absent", () => {
-    expect(resolveCraftedDefenseIconLevel(7)).toBe(7);
+  it("returns undefined when image ranges are absent", () => {
+    expect(resolveCraftedDefenseIconLevel(7)).toBeUndefined();
   });
 });

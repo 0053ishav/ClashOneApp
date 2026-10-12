@@ -56,6 +56,8 @@ export async function prefillAllWidgetCache() {
         icon: row.dataId
           ? ((await resolveWidgetEntityIcon(row.dataId, {
               isCrafted: row.isCrafted,
+              moduleId: row.moduleId,
+              craftedModuleLevels: row.craftedModuleLevels,
             })) ?? undefined)
           : undefined,
       })),

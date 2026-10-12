@@ -277,6 +277,9 @@ export function UpgradeActionModal({
       ? resolveUpgradeIcon(upgrade.dataId, headerLevel, {
           village: upgrade.village,
           isCrafted: upgrade.isCrafted,
+          moduleId: upgrade.moduleId,
+          craftedModuleLevels: upgrade.craftedModuleLevels,
+          craftedModuleLevelOverride: headerLevel,
         })
       : null;
 
@@ -285,6 +288,9 @@ export function UpgradeActionModal({
       ? resolveUpgradeIcon(upgrade.dataId, currentLevel, {
           village: upgrade.village,
           isCrafted: upgrade.isCrafted,
+          moduleId: upgrade.moduleId,
+          craftedModuleLevels: upgrade.craftedModuleLevels,
+          craftedModuleLevelOverride: currentLevel,
         })
       : null;
 
@@ -293,6 +299,9 @@ export function UpgradeActionModal({
       ? resolveUpgradeIcon(upgrade.dataId, nextLevel, {
           village: upgrade.village,
           isCrafted: upgrade.isCrafted,
+          moduleId: upgrade.moduleId,
+          craftedModuleLevels: upgrade.craftedModuleLevels,
+          craftedModuleLevelOverride: nextLevel,
         })
       : null;
 
@@ -337,6 +346,9 @@ export function UpgradeActionModal({
       ? resolveUpgradeIcon(upgrade.dataId, progression.achievableLevel, {
           village: upgrade.village,
           isCrafted: upgrade.isCrafted,
+          moduleId: upgrade.moduleId,
+          craftedModuleLevels: upgrade.craftedModuleLevels,
+          craftedModuleLevelOverride: progression.achievableLevel,
         })
       : undefined;
   /*

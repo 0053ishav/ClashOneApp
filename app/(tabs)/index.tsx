@@ -811,6 +811,8 @@ export default function HomeScreen() {
       village: "home",
       level: nextUpgrade.currentLevel,
       isCrafted: nextUpgrade.isCrafted,
+      moduleId: nextUpgrade.moduleId,
+      craftedModuleLevels: nextUpgrade.craftedModuleLevels,
     });
   }
 
@@ -1460,6 +1462,8 @@ export default function HomeScreen() {
                                         village: selectedVillage,
                                         level: u.currentLevel,
                                         isCrafted: u.isCrafted,
+                                        moduleId: u.moduleId,
+                                        craftedModuleLevels: u.craftedModuleLevels,
                                       })
                                     : FALLBACK_ICON,
                                 }}

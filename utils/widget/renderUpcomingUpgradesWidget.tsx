@@ -15,6 +15,8 @@ export async function renderUpcomingUpgradesWidget() {
               village: "home",
               level: row.currentLevel,
               isCrafted: row.isCrafted,
+              moduleId: row.moduleId,
+              craftedModuleLevels: row.craftedModuleLevels,
             })) ?? undefined)
           : undefined,
       })),

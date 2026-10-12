@@ -9,8 +9,8 @@ async function getSchemaVersion(db: SQLite.SQLiteDatabase) {
     );
   `);
 
-  const row = await db.getFirstAsync<{ version: number }>(
-    `SELECT version FROM schema_version LIMIT 1`
+  const row = await db.getFirstAsync<{ version: number | null }>(
+    `SELECT MAX(version) AS version FROM schema_version`
   );
 
   return row?.version ?? 0;
@@ -283,6 +283,20 @@ export async function initDatabase() {
     `);
     await setSchemaVersion(db, 7);
     version = 7;
+  }
+
+  // V8 - Persist crafted-defense module levels for aggregate icon resolution.
+  if (version < 8) {
+    try {
+      await db.execAsync(`
+        ALTER TABLE upgrades
+        ADD COLUMN crafted_module_levels TEXT;
+      `);
+    } catch (e) {
+      log("⏭️ crafted_module_levels already exists", e);
+    }
+    await setSchemaVersion(db, 8);
+    version = 8;
   }
 
   // log("✅ Database ready. Version:", version);

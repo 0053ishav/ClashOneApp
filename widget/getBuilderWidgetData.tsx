@@ -107,6 +107,8 @@ export async function getBuilderWidgetData(inputTag?: string) {
     title: title,
     subtitle: `${builderLabel} - ${formatCountdown(remainingMs)}`,
     isCrafted: currentUpgrade.isCrafted,
+    moduleId: currentUpgrade.moduleId,
+    craftedModuleLevels: currentUpgrade.craftedModuleLevels,
     progress,
     showProgress: !status.allFree,
     currentLevel: currentUpgrade.currentLevel,

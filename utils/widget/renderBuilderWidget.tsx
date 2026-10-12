@@ -90,6 +90,8 @@ export async function renderBuilderWidget() {
           village: "home",
           level: data.currentLevel,
           isCrafted: data.isCrafted,
+          moduleId: data.moduleId,
+          craftedModuleLevels: data.craftedModuleLevels,
         })) ?? undefined)
       : undefined;
 

@@ -14,6 +14,7 @@ export type UpcomingUpgradeRow = {
   moduleId?: number;
   currentLevel?: number;
   isCrafted?: boolean;
+  craftedModuleLevels?: Record<number, number>;
   icon?: string | number;
 };
 
@@ -56,6 +57,7 @@ export async function getUpcomingUpgradesWidgetData() {
         moduleId: upgrade.moduleId,
         isCrafted: upgrade.isCrafted,
         currentLevel: upgrade.currentLevel,
+        craftedModuleLevels: upgrade.craftedModuleLevels,
       });
     }
   }

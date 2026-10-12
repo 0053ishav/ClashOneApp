@@ -38,6 +38,7 @@ type RawCraftedDefenseProgression = {
   images?: {
     from: number;
     to: number;
+    normal: number;
   }[];
 };
 

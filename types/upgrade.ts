@@ -13,6 +13,8 @@ export type Upgrade = {
 
   moduleId?: number;
   isCrafted?: boolean;
+  /** Snapshot of every crafted-defense module level from the latest game export. */
+  craftedModuleLevels?: Record<number, number>;
 
   hasHelper?: boolean;
   recurrentHelper?: boolean;
@@ -60,6 +62,9 @@ export type BuilderWidgetData = {
   nextUpgradeText?: string;
   dataId?: number;
   type?: EntityType;
+  isCrafted?: boolean;
+  moduleId?: number;
+  craftedModuleLevels?: Record<number, number>;
   color?: string;
   accountInitials?: string;
 };

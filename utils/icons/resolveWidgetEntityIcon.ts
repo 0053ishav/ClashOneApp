@@ -7,6 +7,9 @@ import { resolveEntityIcon } from "./resolveEntityIcon";
       village?: "home" | "builderBase";
       level?: number;
       isCrafted?: boolean;
+      moduleId?: number;
+      craftedModuleLevels?: Record<number, number>;
+      craftedModuleLevelOverride?: number;
     },
   ) {
     const remoteIcon =

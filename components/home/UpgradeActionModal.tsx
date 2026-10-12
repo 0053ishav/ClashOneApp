@@ -277,6 +277,9 @@ export function UpgradeActionModal({
       ? resolveUpgradeIcon(upgrade.dataId, headerLevel, {
           village: upgrade.village,
           isCrafted: upgrade.isCrafted,
+          moduleId: upgrade.moduleId,
+          craftedModuleLevels: upgrade.craftedModuleLevels,
+          craftedModuleLevelOverride: headerLevel,
         })
       : null;
 
@@ -285,6 +288,9 @@ export function UpgradeActionModal({
       ? resolveUpgradeIcon(upgrade.dataId, currentLevel, {
           village: upgrade.village,
           isCrafted: upgrade.isCrafted,
+          moduleId: upgrade.moduleId,
+          craftedModuleLevels: upgrade.craftedModuleLevels,
+          craftedModuleLevelOverride: currentLevel,
         })
       : null;
 
@@ -293,6 +299,9 @@ export function UpgradeActionModal({
       ? resolveUpgradeIcon(upgrade.dataId, nextLevel, {
           village: upgrade.village,
           isCrafted: upgrade.isCrafted,
+          moduleId: upgrade.moduleId,
+          craftedModuleLevels: upgrade.craftedModuleLevels,
+          craftedModuleLevelOverride: nextLevel,
         })
       : null;
 
@@ -332,11 +341,25 @@ export function UpgradeActionModal({
       ? resolveHallIcon(upgrade.village, progression.requiredHallLevel)
       : undefined;
 
+  // A crafted module's current level is already achievable even if the
+  // hall-level calculation has no matching level and returns 0.
+  const achievableLevel = craftedProgression
+    ? Math.max(
+        craftedProgression.achievableLevel,
+        craftedProgression.currentLevel,
+      )
+    : progression?.achievableLevel;
+
   const achievableIcon =
-    progression && upgrade.dataId != null
-      ? resolveUpgradeIcon(upgrade.dataId, progression.achievableLevel, {
+    achievableLevel != null &&
+    upgrade.dataId != null &&
+    (craftedProgression == null || achievableLevel > 0)
+      ? resolveUpgradeIcon(upgrade.dataId, achievableLevel, {
           village: upgrade.village,
           isCrafted: upgrade.isCrafted,
+          moduleId: upgrade.moduleId,
+          craftedModuleLevels: upgrade.craftedModuleLevels,
+          craftedModuleLevelOverride: achievableLevel,
         })
       : undefined;
   /*
@@ -481,9 +504,6 @@ export function UpgradeActionModal({
                 {craftedProgression.moduleName}
               </Text>
 
-              <Text style={styles.craftedModuleId}>
-                ID {craftedProgression.moduleId}
-              </Text>
             </View>
 
             <View style={styles.craftedModuleLevel}>
@@ -638,13 +658,15 @@ export function UpgradeActionModal({
 
                 <Text style={styles.hallAvailabilityValue}>
                   {craftedProgression
-                    ? `${craftedProgression.moduleName} → Level ${craftedProgression.achievableLevel}`
-                    : `Level ${progression.achievableLevel}`}
+                    ? craftedProgression.isMaxLevel
+                      ? `${craftedProgression.moduleName} · MAX LEVEL`
+                      : `${craftedProgression.moduleName} → Level ${achievableLevel}`
+                    : `Level ${achievableLevel ?? "—"}`}
                 </Text>
 
                 <Text style={styles.hallAvailabilityHall}>
                   {craftedProgression
-                    ? `${craftedProgression.defenseName} · Module ${craftedProgression.moduleId}`
+                    ? craftedProgression.defenseName
                     : "Maximum available level"}
                 </Text>
               </View>
@@ -765,9 +787,6 @@ export function UpgradeActionModal({
                     {craftedProgression.moduleName}
                   </Text>
 
-                  <Text style={styles.moduleProgressId}>
-                    Module ID {craftedProgression.moduleId}
-                  </Text>
 
                   <Text style={styles.moduleProgressSubtext}>
                     {craftedProgression.currentLevel}
@@ -1147,12 +1166,6 @@ const styles = StyleSheet.create({
     color: "#e2e8f0",
   },
 
-  craftedModuleId: {
-    marginTop: 1,
-    fontSize: 7,
-    color: "#475569",
-  },
-
   craftedModuleLevel: {
     flexDirection: "row",
     alignItems: "baseline",
@@ -1491,12 +1504,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "700",
     color: "#e2e8f0",
-  },
-
-  moduleProgressId: {
-    marginTop: 1,
-    fontSize: 7,
-    color: "#475569",
   },
 
   moduleProgressSubtext: {

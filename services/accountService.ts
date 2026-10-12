@@ -188,9 +188,10 @@ export async function replaceUpgrades(tag: string, upgrades: Upgrade[]) {
     is_completed,
     source,
     is_crafted,
-    module_id
+    module_id,
+    crafted_module_levels
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           u.id,
           tag,
@@ -221,6 +222,7 @@ export async function replaceUpgrades(tag: string, upgrades: Upgrade[]) {
 
           u.isCrafted ? 1 : 0,
           u.moduleId ?? null,
+          u.craftedModuleLevels ? JSON.stringify(u.craftedModuleLevels) : null,
         ]
       );
     }

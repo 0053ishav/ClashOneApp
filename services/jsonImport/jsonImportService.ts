@@ -145,6 +145,7 @@ type ActiveTask = {
 
   isCrafted?: boolean;
   moduleId?: number;
+  craftedModuleLevels?: Record<number, number>;
 };
 
 function getBuilderCounts(
@@ -494,6 +495,11 @@ export async function importVillageJson(
     if (!building.types) continue;
 
     for (const type of building.types) {
+      const craftedModuleLevels: Record<number, number> = {};
+      for (const module of type.modules ?? []) {
+        craftedModuleLevels[module.data] = module.lvl ?? 1;
+      }
+
       for (const module of type.modules ?? []) {
         if (typeof module.timer === "number") {
           activeBuilderTasks.push({
@@ -503,6 +509,7 @@ export async function importVillageJson(
             village: HOME_VILLAGE,
             isCrafted: true,
             moduleId: module.data,
+            craftedModuleLevels,
 
             helper_timer: module.helper_timer,
             helper_recurrent: module.helper_recurrent,
@@ -588,6 +595,7 @@ export async function importVillageJson(
     helperAppliedSeconds?: number;
     isCrafted?: boolean;
     moduleId?: number;
+    craftedModuleLevels?: Record<number, number>;
   }[] = [];
 
   let skippedExpired = 0;
@@ -652,6 +660,7 @@ export async function importVillageJson(
       helperAppliedSeconds,
       isCrafted: item.isCrafted,
       moduleId: item.moduleId,
+      craftedModuleLevels: item.craftedModuleLevels,
     });
   }
 
@@ -996,6 +1005,7 @@ export async function importVillageJson(
 
       moduleId: item.moduleId,
       isCrafted: item.isCrafted,
+      craftedModuleLevels: item.craftedModuleLevels,
     });
   }
 

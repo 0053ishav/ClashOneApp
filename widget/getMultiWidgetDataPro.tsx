@@ -86,8 +86,8 @@ export async function getMultiWidgetDataPro(): Promise<MultiWidgetItem[]> {
       const icon = item.data.dataId
         ? ((await resolveWidgetEntityIcon(item.data.dataId, {
             isCrafted: item.data.isCrafted,
-              moduleId: item.data.moduleId,
-              craftedModuleLevels: item.data.craftedModuleLevels,
+            moduleId: item.data.moduleId,
+            craftedModuleLevels: item.data.craftedModuleLevels,
           })) ?? undefined)
         : undefined;
 

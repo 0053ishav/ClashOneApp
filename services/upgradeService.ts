@@ -4,6 +4,25 @@ import { deriveCompletionState } from "@/utils/deriveCompletionState";
 import { getActiveMagicEffects } from "@/services/magicItemService";
 import { applyMagicItemEffectsToUpgrades } from "@/engine/magicItems/applyMagicItemEffectsToUpgrades";
 
+function parseCraftedModuleLevels(value: unknown): Record<number, number> | undefined {
+  if (typeof value !== "string" || value.length === 0) return undefined;
+
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (parsed == null || typeof parsed !== "object" || Array.isArray(parsed)) return undefined;
+
+    const levels: Record<number, number> = {};
+    for (const [moduleId, level] of Object.entries(parsed)) {
+      if (/^\\d+$/.test(moduleId) && typeof level === "number" && Number.isFinite(level) && level >= 0) {
+        levels[Number(moduleId)] = level;
+      }
+    }
+    return Object.keys(levels).length > 0 ? levels : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 
 /**
  * Get all builder upgrades for an account
@@ -59,7 +78,8 @@ export async function getUpgrades(tag: string): Promise<Upgrade[]> {
     source: r.source,
 
     isCrafted: r.is_crafted === 1,
-    moduleId: r.module_id
+    moduleId: r.module_id,
+    craftedModuleLevels: parseCraftedModuleLevels(r.crafted_module_levels),
   }));
   const effects = await getActiveMagicEffects(tag);
   return deriveCompletionState(applyMagicItemEffectsToUpgrades(normalized, effects));
@@ -118,6 +138,7 @@ export async function getActiveUpgrades(tag: string): Promise<Upgrade[]> {
 
     isCrafted: r.is_crafted === 1,
     moduleId: r.module_id,
+    craftedModuleLevels: parseCraftedModuleLevels(r.crafted_module_levels),
 
     isCompleted: !!r.is_completed,
     source: r.source,
@@ -202,9 +223,10 @@ export async function addUpgrade(tag: string, upgrade: Upgrade) {
     is_completed,
     source,
     is_crafted,
-    module_id
+    module_id,
+    crafted_module_levels
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       upgrade.id,
       tag,
@@ -237,6 +259,7 @@ export async function addUpgrade(tag: string, upgrade: Upgrade) {
 
       upgrade.isCrafted ? 1 : 0,
       upgrade.moduleId ?? null,
+      upgrade.craftedModuleLevels ? JSON.stringify(upgrade.craftedModuleLevels) : null,
     ]
   );
 }

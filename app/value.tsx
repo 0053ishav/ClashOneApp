@@ -344,6 +344,8 @@ export default function ValueScreen() {
                         subType: nextUpgrade.subType,
                         village: "home",
                         level: profile.townHallLevel,
+                        moduleId: nextUpgrade.moduleId,
+                        craftedModuleLevels: nextUpgrade.craftedModuleLevels,
                       }),
                     }}
                     style={{
@@ -423,6 +425,8 @@ export default function ValueScreen() {
                       subType: builderBaseNextUpgrade.subType,
                       village: "builderBase",
                       level: profile.builderHallLevel,
+                      moduleId: builderBaseNextUpgrade.moduleId,
+                      craftedModuleLevels: builderBaseNextUpgrade.craftedModuleLevels,
                     }),
                   }}
                   style={{
@@ -503,6 +507,8 @@ export default function ValueScreen() {
                           subType: u.subType,
                           village: "home",
                           level: profile.townHallLevel,
+                          moduleId: u.moduleId,
+                          craftedModuleLevels: u.craftedModuleLevels,
                         }),
                       }}
                       style={styles.liveImg}

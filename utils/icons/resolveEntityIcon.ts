@@ -2,6 +2,7 @@ import { ENV } from "@/config/env";
 import { useCraftedDefenseProgressionStore } from "@/stores/crafted";
 import { useEntityStore } from "@/stores/entityStore";
 import type { EntityType, Village } from "@/types/entity";
+import { calculateCraftedDefenseTotalLevel } from "./calculateCraftedDefenseTotalLevel";
 import { resolveCraftedDefenseIconLevel } from "./resolveCraftedDefenseIconLevel";
 
 export const FALLBACK_ICON =
@@ -13,6 +14,9 @@ interface ResolveEntityIconOptions {
   subType?: string;
   level?: number;
   isCrafted?: boolean;
+  moduleId?: number;
+  craftedModuleLevels?: Record<number, number>;
+  craftedModuleLevelOverride?: number;
 }
 
 const HOME_ICON_CATEGORIES: Partial<
@@ -48,15 +52,28 @@ export function resolveEntityIcon(
    */
   if (
     options?.isCrafted &&
-    options.level != null
+    (options.level != null || options.craftedModuleLevels != null)
   ) {
     const progression =
       useCraftedDefenseProgressionStore
         .getState()
         .getProgression(entityId);
+    const moduleLevels = options.craftedModuleLevels;
+    const totalLevel =
+      moduleLevels && Object.keys(moduleLevels).length > 0
+        ? calculateCraftedDefenseTotalLevel(
+            moduleLevels,
+            options.moduleId,
+            options.craftedModuleLevelOverride,
+          )
+        : options.level;
+
+    if (totalLevel == null) {
+      return FALLBACK_ICON;
+    }
 
     const iconLevel = resolveCraftedDefenseIconLevel(
-      options.level,
+      totalLevel,
       progression?.images,
     );
 

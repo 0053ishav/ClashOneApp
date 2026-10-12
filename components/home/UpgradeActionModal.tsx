@@ -658,7 +658,9 @@ export function UpgradeActionModal({
 
                 <Text style={styles.hallAvailabilityValue}>
                   {craftedProgression
-                    ? `${craftedProgression.moduleName} → Level ${achievableLevel}`
+                    ? craftedProgression.isMaxLevel
+                      ? `${craftedProgression.moduleName} · MAX LEVEL`
+                      : `${craftedProgression.moduleName} → Level ${achievableLevel}`
                     : `Level ${achievableLevel ?? "—"}`}
                 </Text>
 

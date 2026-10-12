@@ -13,7 +13,7 @@ function parseCraftedModuleLevels(value: unknown): Record<number, number> | unde
 
     const levels: Record<number, number> = {};
     for (const [moduleId, level] of Object.entries(parsed)) {
-      if (/^\\d+$/.test(moduleId) && typeof level === "number" && Number.isFinite(level) && level >= 0) {
+      if (/^\d+$/.test(moduleId) && typeof level === "number" && Number.isFinite(level) && level >= 0) {
         levels[Number(moduleId)] = level;
       }
     }

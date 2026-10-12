@@ -77,6 +77,10 @@ export function resolveEntityIcon(
       progression?.images,
     );
 
+    if (iconLevel == null) {
+      return FALLBACK_ICON;
+    }
+
     return `${ENV.CDN_BASE}/v2/crafted/${entityId}/${iconLevel}.png`;
   }
 

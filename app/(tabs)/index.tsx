@@ -811,6 +811,8 @@ export default function HomeScreen() {
       village: "home",
       level: nextUpgrade.currentLevel,
       isCrafted: nextUpgrade.isCrafted,
+      moduleId: nextUpgrade.moduleId,
+      craftedModuleLevels: nextUpgrade.craftedModuleLevels,
     });
   }
 

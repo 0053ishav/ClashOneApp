@@ -1,5 +1,6 @@
 const STAT_LABELS: Record<string, string> = {
     hp: "Hitpoints",
+    hr: "Health recovery",
     dps: "Damage per second",
     dph: "Damage per hit",
 

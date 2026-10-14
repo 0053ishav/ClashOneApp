@@ -85,6 +85,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
+  type ImageSourcePropType,
   LayoutAnimation,
   Pressable,
   RefreshControl,
@@ -827,7 +828,9 @@ export default function HomeScreen() {
       });
   };
 
-  let statusIcon = require("@/assets/images/builder/builder-idle.png");
+  let statusIcon: ImageSourcePropType | string = {
+    uri: `${ENV.CDN_BASE}/v2/home/other/builder-head.png`,
+  };
   if (!status.allFree && nextUpgrade?.dataId) {
     statusIcon = resolveEntityIcon(nextUpgrade.dataId, {
       village: "home",
@@ -838,7 +841,9 @@ export default function HomeScreen() {
     });
   }
 
-  let builderBaseStatusIcon = require("@/assets/images/builder/builder-idle.png");
+  let builderBaseStatusIcon: ImageSourcePropType | string = {
+    uri: `${ENV.CDN_BASE}/v2/builder/other/bb-head.png`,
+  };
 
   if (!builderBaseStatus.allFree && builderBaseNextUpgrade?.dataId) {
     builderBaseStatusIcon = resolveEntityIcon(builderBaseNextUpgrade.dataId, {
@@ -1132,7 +1137,12 @@ export default function HomeScreen() {
                 pressed && styles.magicItemsButtonPressed,
               ]}
             >
-              <Ionicons name="flask" size={13} color="#fbbf24" />
+              <Image
+                source={{ uri: `${ENV.CDN_BASE}/v2/home/other/magic-inventory.png` }}
+                style={styles.profileInventoryIcon}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+              />
               <Text style={styles.profileInventoryText}>
                 {magicItemInventoryCount}
               </Text>
@@ -1931,6 +1941,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(251,191,36,0.22)",
   },
+  profileInventoryIcon: { width: 18, height: 18 },
   profileInventoryText: { color: "#fbbf24", fontSize: 9, fontWeight: "900" },
   profileRow: {
     flex: 1,

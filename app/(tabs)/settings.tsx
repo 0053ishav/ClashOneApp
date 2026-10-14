@@ -721,10 +721,18 @@ export default function SettingsScreen() {
 
         <Section title="Game tools">
           <Row
-            icon="sparkles"
-            iconColor="#fbbf24"
             title="Magic Items"
             subtitle="Track potions, snacks, books and hammers"
+            leading={
+              <View style={[styles.iconChip, { backgroundColor: "#fbbf2426" }]}>
+                <Image
+                  source={{ uri: `${ENV.CDN_BASE}/v2/home/other/magic-inventory.png` }}
+                  style={{ width: 24, height: 24 }}
+                  contentFit="contain"
+                  cachePolicy="memory-disk"
+                />
+              </View>
+            }
             chevron
             onPress={() => router.push("/magic-items")}
           />
@@ -868,9 +876,17 @@ export default function SettingsScreen() {
 
           {!!profile?.playerTag && (
             <Row
-              icon="construct"
-              iconColor="#f97316"
               title="Builders"
+              leading={
+                <View style={[styles.iconChip, { backgroundColor: "#f9731626" }]}>
+                  <Image
+                    source={{ uri: `${ENV.CDN_BASE}/v2/home/other/builder-head.png` }}
+                    style={{ width: 24, height: 24 }}
+                    contentFit="contain"
+                    cachePolicy="memory-disk"
+                  />
+                </View>
+              }
               right={
                 <View style={styles.stepper}>
                   <Pressable

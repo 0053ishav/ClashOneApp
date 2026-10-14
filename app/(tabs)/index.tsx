@@ -178,8 +178,13 @@ export default function HomeScreen() {
   const [debugInfo, setDebugInfo] = useState("");
 
   const hasLoadedAccountState = useRef(false);
+  const refreshRequestRef = useRef(0);
+
   const refreshState = useCallback(async () => {
-    if (!activeTag) return;
+    const tag = activeTag;
+    if (!tag) return;
+
+    const requestId = ++refreshRequestRef.current;
 
     try {
       if (!hasLoadedAccountState.current) {
@@ -187,9 +192,18 @@ export default function HomeScreen() {
       }
 
       const [state, inventory] = await Promise.all([
-        getAccountState(activeTag),
-        getMagicItemInventory(activeTag),
+        getAccountState(tag),
+        getMagicItemInventory(tag),
       ]);
+
+      // Ignore stale responses when a newer refresh or account switch wins.
+      if (
+        requestId !== refreshRequestRef.current ||
+        useAccountStore.getState().activeTag !== tag
+      ) {
+        return;
+      }
+
       setAccountState(state);
       const trackedPotionCount = inventory.reduce((total, entry) => {
         const item = MAGIC_ITEMS.find(
@@ -205,18 +219,26 @@ export default function HomeScreen() {
       setMagicItemInventoryCount(trackedPotionCount);
       hasLoadedAccountState.current = true;
     } catch (error) {
-      console.error("[HOME] Failed to refresh account state:", error);
+      if (requestId === refreshRequestRef.current) {
+        console.error("[HOME] Failed to refresh account state:", error);
+      }
     } finally {
-      setIsLoadingAccountState(false);
+      if (requestId === refreshRequestRef.current) {
+        setIsLoadingAccountState(false);
+      }
     }
   }, [activeTag]);
 
   useEffect(() => {
-    if (activeTag) {
-      hasLoadedAccountState.current = false;
-      refreshState();
-    }
-  }, [activeTag, refreshState]);
+    if (activeTag) return;
+
+    // Invalidate pending reads and clear data from the previously active village.
+    refreshRequestRef.current += 1;
+    hasLoadedAccountState.current = false;
+    setAccountState(null);
+    setMagicItemInventoryCount(0);
+    setIsLoadingAccountState(false);
+  }, [activeTag]);
 
   const { width } = useWindowDimensions();
 
@@ -369,9 +391,9 @@ export default function HomeScreen() {
           LayoutAnimation.Properties.opacity,
         ),
       );
-      deleteUpgrade(completedId);
-      await performSync();
+      await deleteUpgrade(completedId);
       setCompletedId(null);
+      await performSync();
     }, 800);
     return () => clearTimeout(timeout);
   }, [completedId, refreshState, performSync]);

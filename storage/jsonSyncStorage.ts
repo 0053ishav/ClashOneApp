@@ -41,3 +41,13 @@ export function resetLastJsonSync(tag: string) {
     console.warn("Failed to reset last JSON sync", error);
   }
 }
+
+/** Remove a village's last-sync timestamp from persistent storage. */
+export function deleteLastJsonSync(tag: string): void {
+  if (!tag) return;
+  try {
+    storage.remove(getKey(tag));
+  } catch (error) {
+    console.warn("Failed to delete last JSON sync", error);
+  }
+}

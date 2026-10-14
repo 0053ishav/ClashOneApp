@@ -11,6 +11,8 @@ import {
 import { getDB } from "@/db/database";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import {
+  clearTrackedUpgrades,
+  resetVillageData,
   updateAccountColor,
   updateBuilderCount,
 } from "@/services/accountService";
@@ -24,13 +26,12 @@ import {
   getReEngagementBoostSettings,
   saveReEngagementBoostSettings,
 } from "@/services/reEngagementBoostService";
-import { resetLastJsonSync } from "@/storage/jsonSyncStorage";
 import {
   getNotificationsEnabled,
   setNotificationsEnabled,
 } from "@/storage/notificationConfig";
 import {
-  savePlayerProfile,
+  resetPlayerProfile,
   updateLocalBuilderCount,
 } from "@/storage/playerProfile";
 import { useAccountStore } from "@/stores/accountStore";
@@ -372,6 +373,7 @@ export default function SettingsScreen() {
   const [showBuilderErrorModal, setShowBuilderErrorModal] = useState(false);
   const [requiredBuilders, setRequiredBuilders] = useState(0);
   const loadLastSync = useAccountStore((s) => s.loadLastSync);
+  const clearLastSync = useAccountStore((s) => s.clearLastSync);
   const lastJsonSyncMap = useAccountStore((s) => s.lastJsonSyncMap);
   const lastSync = activeTag ? lastJsonSyncMap[activeTag] : null;
 
@@ -1261,24 +1263,33 @@ export default function SettingsScreen() {
         destructive
         onCancel={() => setShowResetAccountModal(false)}
         onConfirm={async () => {
-          // await cancelAllNotifications();
-          if (profile) {
-            const resetProfile = {
-              ...profile,
-              playerTag: undefined,
-              playerApiConnected: false,
-              lastSyncedAt: undefined,
-            };
-            if (!activeTag) return;
-            savePlayerProfile(activeTag, resetProfile);
+          if (!activeTag) return;
+
+          try {
+            await resetVillageData(activeTag);
+            const resetProfile = resetPlayerProfile(activeTag, {
+              playerName: activeAccount?.name ?? profile?.playerName ?? "Chief",
+              townHallLevel: activeAccount?.townhall ?? 1,
+              normalBuilderCount:
+                profile?.normalBuilderCount ?? activeAccount?.builderCount ?? 1,
+              builderBaseBuilderCount:
+                profile?.builderBaseBuilderCount ??
+                activeAccount?.builderBaseBuilderCount ??
+                1,
+            });
             setProfile(activeTag, resetProfile);
+            clearLastSync(activeTag);
+            setShowResetAccountModal(false);
+            await resyncNotifications();
+            emitWidgetUpdate();
+            startSmartWidgetScheduler();
+          } catch (error) {
+            console.error("[SETTINGS] Failed to reset village:", error);
+            Alert.alert(
+              "Couldn't reset village",
+              "Your village data hasn't been fully reset. Please try again.",
+            );
           }
-          if (profile?.playerTag) {
-            resetLastJsonSync(profile.playerTag);
-          }
-          setShowResetAccountModal(false);
-          emitWidgetUpdate();
-          startSmartWidgetScheduler();
         }}
       />
 
@@ -1291,10 +1302,21 @@ export default function SettingsScreen() {
         destructive
         onCancel={() => setShowClearUpgradesModal(false)}
         onConfirm={async () => {
-          await resyncNotifications();
-          setShowClearUpgradesModal(false);
-          emitWidgetUpdate();
-          startSmartWidgetScheduler();
+          if (!activeTag) return;
+
+          try {
+            await clearTrackedUpgrades(activeTag);
+            setShowClearUpgradesModal(false);
+            await resyncNotifications();
+            emitWidgetUpdate();
+            startSmartWidgetScheduler();
+          } catch (error) {
+            console.error("[SETTINGS] Failed to clear tracked upgrades:", error);
+            Alert.alert(
+              "Couldn't clear upgrades",
+              "Your tracked upgrades haven't been cleared. Please try again.",
+            );
+          }
         }}
       />
 
@@ -1308,14 +1330,24 @@ export default function SettingsScreen() {
         onCancel={() => setAccountToDelete(null)}
         onConfirm={async () => {
           if (!accountToDelete) return;
-          await removeAccount(accountToDelete.tag);
-          track("account_removed", {
-            total_accounts_before: accounts.length - 1,
-          });
-          await resyncNotifications();
-          setAccountToDelete(null);
-          await loadAccounts();
-          emitWidgetUpdate();
+
+          try {
+            await removeAccount(accountToDelete.tag);
+            track("account_removed", {
+              total_accounts_before: accounts.length - 1,
+            });
+            await resyncNotifications();
+            setAccountToDelete(null);
+            await loadAccounts();
+            emitWidgetUpdate();
+            startSmartWidgetScheduler();
+          } catch (error) {
+            console.error("[SETTINGS] Failed to remove village:", error);
+            Alert.alert(
+              "Couldn't remove village",
+              "The village hasn't been fully removed. Please try again.",
+            );
+          }
         }}
       />
       <ConfirmModal

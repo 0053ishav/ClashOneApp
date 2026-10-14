@@ -9,3 +9,8 @@ export function setActiveAccount(tag: string) {
 export function getActiveAccount() {
   return storage.getString(STORAGE_KEYS.ACTIVE_KEY);
 }
+
+/** Clear the active tag when no saved village remains. */
+export function clearActiveAccount(): void {
+  storage.remove(STORAGE_KEYS.ACTIVE_KEY);
+}

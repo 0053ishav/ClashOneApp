@@ -27,6 +27,7 @@ type AccountState = {
   setWidgetAccount: (tag: string) => void;
   loadLastSync: () => void;
   setLastSync: (tag: string, time: number) => void;
+  clearLastSync: (tag: string) => void;
   loadAccounts: () => Promise<void>;
   loadActiveAccount: () => Promise<void>;
   switchAccount: (tag: string) => Promise<void>;
@@ -124,6 +125,15 @@ export const useAccountStore = create<AccountState>((set) => ({
         [tag]: time,
       },
     }));
+  },
+
+  clearLastSync: (tag) => {
+    deleteLastJsonSync(tag);
+    set((state) => {
+      const lastJsonSyncMap = { ...state.lastJsonSyncMap };
+      delete lastJsonSyncMap[tag];
+      return { lastJsonSyncMap };
+    });
   },
 
   loadAccounts: async () => {

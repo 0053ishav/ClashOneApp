@@ -261,7 +261,12 @@ export function MagicItemsQuickModal({
             <View style={styles.handle} />
             <View style={styles.header}>
               <View style={styles.headerIcon}>
-                <Ionicons name="sparkles" size={20} color="#fbbf24" />
+                <Image
+                  source={{ uri: `${process.env.EXPO_PUBLIC_CDN_BASE}/v2/home/other/magic-inventory.png` }}
+                  style={styles.headerIconImage}
+                  contentFit="contain"
+                  cachePolicy="memory-disk"
+                />
               </View>
               <View style={styles.headerText}>
                 <Text style={styles.title}>Potions & Snacks</Text>
@@ -443,6 +448,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#422006",
     marginRight: 11,
   },
+  headerIconImage: { width: 28, height: 28 },
   headerText: { flex: 1 },
   title: { color: "#f8fafc", fontSize: 17, fontWeight: "800" },
   subtitle: { marginTop: 3, color: "#94a3b8", fontSize: 11 },

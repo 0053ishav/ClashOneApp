@@ -85,6 +85,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
+  type ImageSourcePropType,
   LayoutAnimation,
   Pressable,
   RefreshControl,
@@ -827,7 +828,9 @@ export default function HomeScreen() {
       });
   };
 
-  let statusIcon = require("@/assets/images/builder/builder-idle.png");
+  let statusIcon: ImageSourcePropType = {
+    uri: `${ENV.CDN_BASE}/v2/home/other/builder-head.png`,
+  };
   if (!status.allFree && nextUpgrade?.dataId) {
     statusIcon = resolveEntityIcon(nextUpgrade.dataId, {
       village: "home",
@@ -838,7 +841,9 @@ export default function HomeScreen() {
     });
   }
 
-  let builderBaseStatusIcon = require("@/assets/images/builder/builder-idle.png");
+  let builderBaseStatusIcon: ImageSourcePropType = {
+    uri: `${ENV.CDN_BASE}/v2/builder/other/bb-head.png`,
+  };
 
   if (!builderBaseStatus.allFree && builderBaseNextUpgrade?.dataId) {
     builderBaseStatusIcon = resolveEntityIcon(builderBaseNextUpgrade.dataId, {

@@ -876,9 +876,17 @@ export default function SettingsScreen() {
 
           {!!profile?.playerTag && (
             <Row
-              icon="construct"
-              iconColor="#f97316"
               title="Builders"
+              leading={
+                <View style={[styles.iconChip, { backgroundColor: "#f9731626" }]}>
+                  <Image
+                    source={{ uri: `${ENV.CDN_BASE}/v2/home/other/builder-head.png` }}
+                    style={{ width: 24, height: 24 }}
+                    contentFit="contain"
+                    cachePolicy="memory-disk"
+                  />
+                </View>
+              }
               right={
                 <View style={styles.stepper}>
                   <Pressable

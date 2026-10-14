@@ -44,6 +44,27 @@ describe("getDB", () => {
     expect(database.execAsync).toHaveBeenCalledWith(
       expect.stringContaining("PRAGMA journal_mode=WAL"),
     );
+    expect(database.execAsync).toHaveBeenCalledWith(
+      expect.stringContaining("PRAGMA foreign_keys=ON"),
+    );
+  });
+
+  it("retries opening the database after openDatabaseAsync rejects", async () => {
+    const healthyDatabase: MockDatabase = {
+      execAsync: jest.fn().mockResolvedValue(undefined),
+    };
+    mockOpenDatabaseAsync
+      .mockRejectedValueOnce(new Error("database open failed"))
+      .mockResolvedValueOnce(healthyDatabase);
+
+    let getDB!: () => Promise<MockDatabase>;
+    jest.isolateModules(() => {
+      ({ getDB } = require("@/db/database"));
+    });
+
+    await expect(getDB()).rejects.toThrow("database open failed");
+    await expect(getDB()).resolves.toBe(healthyDatabase);
+    expect(mockOpenDatabaseAsync).toHaveBeenCalledTimes(2);
   });
 
   it("clears a rejected initialization so the next call can retry", async () => {

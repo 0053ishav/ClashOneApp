@@ -828,7 +828,7 @@ export default function HomeScreen() {
       });
   };
 
-  let statusIcon: ImageSourcePropType = {
+  let statusIcon: ImageSourcePropType | string = {
     uri: `${ENV.CDN_BASE}/v2/home/other/builder-head.png`,
   };
   if (!status.allFree && nextUpgrade?.dataId) {
@@ -841,7 +841,7 @@ export default function HomeScreen() {
     });
   }
 
-  let builderBaseStatusIcon: ImageSourcePropType = {
+  let builderBaseStatusIcon: ImageSourcePropType | string = {
     uri: `${ENV.CDN_BASE}/v2/builder/other/bb-head.png`,
   };
 

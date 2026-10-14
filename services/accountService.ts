@@ -108,6 +108,40 @@ export const deleteAccount = async (tag: string) => {
   );
 };
 
+/** Remove progression data while keeping the village/account itself. */
+export async function clearTrackedUpgrades(tag: string): Promise<void> {
+  if (!tag.trim()) throw new Error("INVALID_ACCOUNT_TAG");
+
+  const db = await getDB();
+  await db.runAsync(
+    "DELETE FROM upgrades WHERE account_player_tag = ?",
+    [tag],
+  );
+}
+
+/**
+ * Reset imported village state without deleting the saved account.
+ * User-configured per-account boost preferences are intentionally preserved.
+ */
+export async function resetVillageData(tag: string): Promise<void> {
+  if (!tag.trim()) throw new Error("INVALID_ACCOUNT_TAG");
+
+  const db = await getDB();
+  await db.execAsync("BEGIN TRANSACTION");
+
+  try {
+    await db.runAsync("DELETE FROM upgrades WHERE account_player_tag = ?", [tag]);
+    await db.runAsync("DELETE FROM entities WHERE account_player_tag = ?", [tag]);
+    await db.runAsync("DELETE FROM magic_item_inventory WHERE account_player_tag = ?", [tag]);
+    await db.runAsync("DELETE FROM active_magic_effects WHERE account_player_tag = ?", [tag]);
+    await db.runAsync("DELETE FROM imported_boosts WHERE account_player_tag = ?", [tag]);
+    await db.execAsync("COMMIT");
+  } catch (error) {
+    await db.execAsync("ROLLBACK");
+    throw error;
+  }
+}
+
 export const updateAccountColor = async (tag: string, color: string) => {
   const db = await getDB();
 

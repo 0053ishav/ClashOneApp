@@ -276,7 +276,8 @@ export const useAccountStore = create<AccountState>((set) => ({
     set({ isLoadingProfile: true });
 
     try {
-      const activeTagBeforeRemoval = useAccountStore.getState().activeTag;
+      const activeTagBeforeRemoval =
+        useAccountStore.getState().activeTag ?? getActiveAccount() ?? null;
       const removingActiveAccount = activeTagBeforeRemoval === tag;
 
       await deleteAccount(tag);

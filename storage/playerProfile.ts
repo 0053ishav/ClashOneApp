@@ -399,3 +399,17 @@ export function updateLocalBuilderBaseBuilderCount(
 export function deletePlayerProfile(tag: string): void {
   storage.remove(getProfileKey(tag));
 }
+
+
+/** Reset API-derived profile data while retaining local builder settings. */
+export function resetPlayerProfile(
+  tag: string,
+  overrides: Partial<Pick<PlayerProfile, "playerName" | "townHallLevel" | "normalBuilderCount" | "builderBaseBuilderCount">> = {},
+): PlayerProfile {
+  const profile: PlayerProfile = {
+    ...createDefaultProfile(),
+    ...overrides,
+  };
+  savePlayerProfile(tag, profile);
+  return profile;
+}

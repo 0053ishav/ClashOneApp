@@ -32,7 +32,7 @@ import * as Sentry from "@sentry/react-native";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
 import { Redirect, Stack, usePathname, useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 Sentry.init({
@@ -231,40 +231,59 @@ export default Sentry.wrap(function RootLayout() {
     ]);
   }, [loadLastSync]);
 
-  const runBootstrap = useCallback(async () => {
-    try {
-      setBootError(null);
+  const bootstrapInFlightRef = useRef<Promise<void> | null>(null);
 
-      await runCriticalBoot();
-
-      setBootStage(BootStage.Ready);
-
-      // Don't block UI
-      void runBackgroundBoot();
-    } catch (err) {
-      const boot =
-        err && typeof err === "object" && "code" in err && "stage" in err
-          ? (err as BootError)
-          : createBootError(BootErrorCode.UNKNOWN, BootStage.Fatal, err);
-      console.error("Bootstrap Failed", boot);
-
-      Sentry.captureException(boot.error, {
-        tags: {
-          bootStage: boot.stage,
-          bootCode: boot.code,
-        },
-      });
-
-      track("bootstrap_failed", {
-        code: boot.code,
-        stage: boot.stage,
-        message: boot.message,
-      });
-
-      setBootError(boot);
-
-      setBootStage(BootStage.Fatal);
+  const runBootstrap = useCallback((): Promise<void> => {
+    if (bootstrapInFlightRef.current) {
+      return bootstrapInFlightRef.current;
     }
+
+    const pending = (async () => {
+      try {
+        setBootError(null);
+
+        await runCriticalBoot();
+
+        setBootStage(BootStage.Ready);
+
+        // Don't block UI
+        void runBackgroundBoot();
+      } catch (err) {
+        const boot =
+          err && typeof err === "object" && "code" in err && "stage" in err
+            ? (err as BootError)
+            : createBootError(BootErrorCode.UNKNOWN, BootStage.Fatal, err);
+        console.error("Bootstrap Failed", boot);
+
+        Sentry.captureException(boot.error, {
+          tags: {
+            bootStage: boot.stage,
+            bootCode: boot.code,
+          },
+        });
+
+        track("bootstrap_failed", {
+          code: boot.code,
+          stage: boot.stage,
+          message: boot.message,
+        });
+
+        setBootError(boot);
+
+        setBootStage(BootStage.Fatal);
+      }
+    })();
+
+    bootstrapInFlightRef.current = pending;
+
+    const clearInFlight = () => {
+      if (bootstrapInFlightRef.current === pending) {
+        bootstrapInFlightRef.current = null;
+      }
+    };
+    void pending.then(clearInFlight, clearInFlight);
+
+    return pending;
   }, [runCriticalBoot, runBackgroundBoot]);
 
   useEffect(() => {

@@ -1,3 +1,4 @@
+import { initDatabase } from "@/db/initDatabase";
 import { getAccounts } from "@/services/accountService";
 import { hydrateEntities } from "@/services/cdnEntities";
 import { getActiveAccount } from "@/storage/activeAccount";
@@ -49,13 +50,16 @@ function getWidgetType(widgetName?: string): "builder" | "lab" | "pet" | null {
 
 export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
   try {
-    await hydrateEntities();
     if (
       props.widgetAction !== "WIDGET_ADDED" &&
       props.widgetAction !== "WIDGET_UPDATE"
     ) {
       return;
     }
+
+    // Widget tasks can run before the foreground app has initialized SQLite.
+    await initDatabase();
+    await hydrateEntities();
 
     const widgetName = props.widgetInfo?.widgetName;
 

@@ -1290,7 +1290,7 @@ export default function SettingsScreen() {
               "Your village data hasn't been fully reset. Please try again.",
             );
           }
-        }}}
+        }}
       />
 
       {/* Clear Upgrades Modal */}
@@ -1317,7 +1317,7 @@ export default function SettingsScreen() {
               "Your tracked upgrades haven't been cleared. Please try again.",
             );
           }
-        }}}
+        }}
       />
 
       {/* Delete Account Modal */}
@@ -1348,7 +1348,7 @@ export default function SettingsScreen() {
               "The village hasn't been fully removed. Please try again.",
             );
           }
-        }}}
+        }}
       />
       <ConfirmModal
         visible={showBuilderErrorModal}

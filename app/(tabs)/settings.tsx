@@ -9,9 +9,10 @@ import {
   type ReEngagementBoostDraft,
 } from "@/components/reEngagement/ReEngagementBoostQuickPanel";
 import { getDB } from "@/db/database";
-import { clearTrackedUpgrades, resetVillageData } from "@/services/accountService";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import {
+  clearTrackedUpgrades,
+  resetVillageData,
   updateAccountColor,
   updateBuilderCount,
 } from "@/services/accountService";
@@ -25,7 +26,6 @@ import {
   getReEngagementBoostSettings,
   saveReEngagementBoostSettings,
 } from "@/services/reEngagementBoostService";
-
 import {
   getNotificationsEnabled,
   setNotificationsEnabled,

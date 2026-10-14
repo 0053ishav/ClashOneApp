@@ -827,6 +827,27 @@ export default function HomeScreen() {
       });
   };
 
+  let statusIcon = require("@/assets/images/builder/builder-idle.png");
+  if (!status.allFree && nextUpgrade?.dataId) {
+    statusIcon = resolveEntityIcon(nextUpgrade.dataId, {
+      village: "home",
+      level: nextUpgrade.currentLevel,
+      isCrafted: nextUpgrade.isCrafted,
+      moduleId: nextUpgrade.moduleId,
+      craftedModuleLevels: nextUpgrade.craftedModuleLevels,
+    });
+  }
+
+  let builderBaseStatusIcon = require("@/assets/images/builder/builder-idle.png");
+
+  if (!builderBaseStatus.allFree && builderBaseNextUpgrade?.dataId) {
+    builderBaseStatusIcon = resolveEntityIcon(builderBaseNextUpgrade.dataId, {
+      village: "builderBase",
+      level: builderBaseNextUpgrade.currentLevel,
+      isCrafted: builderBaseNextUpgrade.isCrafted,
+    });
+  }
+
   const villageStatus = getVillageStatus({
     townHall,
     builders,
@@ -894,6 +915,9 @@ export default function HomeScreen() {
 
   const currentNextBuilderLabel =
     selectedVillage === "home" ? nextBuilderLabel : builderBaseNextBuilderLabel;
+
+  const currentStatusIcon =
+    selectedVillage === "home" ? statusIcon : builderBaseStatusIcon;
 
   const currentBuilderCount =
     selectedVillage === "home" ? builderCount : builderBaseBuilderCount;
@@ -1281,9 +1305,7 @@ export default function HomeScreen() {
           <View style={styles.statusCardTop}>
             <View style={styles.statusIconBox}>
               <Image
-                source={{
-                  uri: `${ENV.CDN_BASE}/v2/${selectedVillage === "home" ? "home/other/builder-head.png" : "builder/other/bb-head.png"}`,
-                }}
+                source={currentStatusIcon}
                 style={styles.statusCardIcon}
                 contentFit="contain"
                 cachePolicy="memory-disk"

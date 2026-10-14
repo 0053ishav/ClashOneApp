@@ -1,9 +1,10 @@
 import { Account, deleteAccount, getAccounts, replaceEntities, replaceUpgrades } from "@/services/accountService";
 import { switchAccountService } from "@/services/accountSwitchService";
-import { getActiveAccount } from "@/storage/activeAccount";
-import { getLastJsonSync, setLastJsonSync } from "@/storage/jsonSyncStorage";
-import { getPlayerProfile } from "@/storage/playerProfile";
+import { clearActiveAccount, getActiveAccount } from "@/storage/activeAccount";
+import { deleteLastJsonSync, getLastJsonSync, setLastJsonSync } from "@/storage/jsonSyncStorage";
+import { deletePlayerProfile, getPlayerProfile } from "@/storage/playerProfile";
 import { getWidgetPrefs, saveWidgetPrefs } from "@/storage/widgetPrefs";
+import { deleteWidgetCaches } from "@/utils/widget/widgetCache";
 import { PlayerProfile } from "@/types/player";
 import { EntityRecord, Upgrade } from "@/types/upgrade";
 import { create } from "zustand";
@@ -260,46 +261,58 @@ export const useAccountStore = create<AccountState>((set) => ({
   },
 
   removeAccount: async (tag: string) => {
+    if (!tag.trim()) throw new Error("INVALID_ACCOUNT_TAG");
+
     set({ isLoadingProfile: true });
 
     try {
+      const activeTagBeforeRemoval = useAccountStore.getState().activeTag;
+      const removingActiveAccount = activeTagBeforeRemoval === tag;
+
       await deleteAccount(tag);
 
+      // Clean account-scoped persistent state after the database delete succeeds.
+      deletePlayerProfile(tag);
+      deleteLastJsonSync(tag);
+      deleteWidgetCaches(tag);
+
       const list = await getAccounts();
+      const nextActiveTag = removingActiveAccount
+        ? (list[0]?.tag ?? null)
+        : activeTagBeforeRemoval;
 
-      let newActiveTag: string | null = null;
-
-      if (list.length > 0) {
-        newActiveTag = list[0].tag;
-
-        const { switchAccount } = useAccountStore.getState();
-        await switchAccount(newActiveTag);
+      if (removingActiveAccount && nextActiveTag) {
+        await switchAccountService(nextActiveTag);
+      } else if (removingActiveAccount) {
+        clearActiveAccount();
       }
 
       set((state) => {
-        let updatedPrefs = state.widgetPrefs;
-
-        if (state.widgetPrefs.selectedAccountTag === tag) {
-          updatedPrefs = { selectedAccountTag: null };
-          saveWidgetPrefs(updatedPrefs);
-        }
-
-        const updatedProfiles = {
-          ...state.profilesByTag,
-        };
-
+        const updatedProfiles = { ...state.profilesByTag };
         delete updatedProfiles[tag];
+
+        const updatedLastSyncMap = { ...state.lastJsonSyncMap };
+        delete updatedLastSyncMap[tag];
+
+        const selectedWidgetAccountRemoved =
+          state.widgetPrefs.selectedAccountTag === tag;
+        const updatedPrefs = selectedWidgetAccountRemoved
+          ? { selectedAccountTag: null }
+          : state.widgetPrefs;
+
+        if (selectedWidgetAccountRemoved) saveWidgetPrefs(updatedPrefs);
 
         return {
           accounts: list,
           widgetPrefs: updatedPrefs,
-          activeTag: newActiveTag,
+          activeTag: nextActiveTag,
           profilesByTag: updatedProfiles,
+          lastJsonSyncMap: updatedLastSyncMap,
         };
       });
-
-    } catch (e) {
-      console.error("deleteAccount error:", e);
+    } catch (error) {
+      console.error("deleteAccount error:", error);
+      throw error;
     } finally {
       set({ isLoadingProfile: false });
     }

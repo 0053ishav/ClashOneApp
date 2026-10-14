@@ -827,27 +827,6 @@ export default function HomeScreen() {
       });
   };
 
-  let statusIcon = require("@/assets/images/builder/builder-idle.png");
-  if (!status.allFree && nextUpgrade?.dataId) {
-    statusIcon = resolveEntityIcon(nextUpgrade.dataId, {
-      village: "home",
-      level: nextUpgrade.currentLevel,
-      isCrafted: nextUpgrade.isCrafted,
-      moduleId: nextUpgrade.moduleId,
-      craftedModuleLevels: nextUpgrade.craftedModuleLevels,
-    });
-  }
-
-  let builderBaseStatusIcon = require("@/assets/images/builder/builder-idle.png");
-
-  if (!builderBaseStatus.allFree && builderBaseNextUpgrade?.dataId) {
-    builderBaseStatusIcon = resolveEntityIcon(builderBaseNextUpgrade.dataId, {
-      village: "builderBase",
-      level: builderBaseNextUpgrade.currentLevel,
-      isCrafted: builderBaseNextUpgrade.isCrafted,
-    });
-  }
-
   const villageStatus = getVillageStatus({
     townHall,
     builders,
@@ -915,9 +894,6 @@ export default function HomeScreen() {
 
   const currentNextBuilderLabel =
     selectedVillage === "home" ? nextBuilderLabel : builderBaseNextBuilderLabel;
-
-  const currentStatusIcon =
-    selectedVillage === "home" ? statusIcon : builderBaseStatusIcon;
 
   const currentBuilderCount =
     selectedVillage === "home" ? builderCount : builderBaseBuilderCount;
@@ -1132,7 +1108,12 @@ export default function HomeScreen() {
                 pressed && styles.magicItemsButtonPressed,
               ]}
             >
-              <Ionicons name="flask" size={13} color="#fbbf24" />
+              <Image
+                source={{ uri: `${ENV.CDN_BASE}/v2/home/other/magic-inventory.png` }}
+                style={styles.profileInventoryIcon}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+              />
               <Text style={styles.profileInventoryText}>
                 {magicItemInventoryCount}
               </Text>
@@ -1300,7 +1281,9 @@ export default function HomeScreen() {
           <View style={styles.statusCardTop}>
             <View style={styles.statusIconBox}>
               <Image
-                source={currentStatusIcon}
+                source={{
+                  uri: `${ENV.CDN_BASE}/v2/${selectedVillage === "home" ? "home/other/builder-head.png" : "builder/other/bb-head.png"}`,
+                }}
                 style={styles.statusCardIcon}
                 contentFit="contain"
                 cachePolicy="memory-disk"
@@ -1931,6 +1914,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(251,191,36,0.22)",
   },
+  profileInventoryIcon: { width: 18, height: 18 },
   profileInventoryText: { color: "#fbbf24", fontSize: 9, fontWeight: "900" },
   profileRow: {
     flex: 1,

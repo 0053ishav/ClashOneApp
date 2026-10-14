@@ -394,3 +394,8 @@ export function updateLocalBuilderBaseBuilderCount(
       safeCount,
   });
 }
+
+/** Remove all persisted profile data for a village that was deleted. */
+export function deletePlayerProfile(tag: string): void {
+  storage.remove(getProfileKey(tag));
+}

@@ -240,14 +240,6 @@ export default function HomeScreen() {
     setIsLoadingAccountState(false);
   }, [activeTag]);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (activeTag) {
-        void refreshState();
-      }
-    }, [activeTag, refreshState]),
-  );
-
   const { width } = useWindowDimensions();
 
   const builders = useMemo(
@@ -402,7 +394,6 @@ export default function HomeScreen() {
       await deleteUpgrade(completedId);
       setCompletedId(null);
       await performSync();
-      setCompletedId(null);
     }, 800);
     return () => clearTimeout(timeout);
   }, [completedId, refreshState, performSync]);

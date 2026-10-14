@@ -1,3 +1,4 @@
+import { ENV } from "@/config/env";
 import { MagicItemDialog } from "@/components/magicItems/MagicItemDialog";
 import { MAGIC_ITEMS } from "@/config/magicItems";
 import { activateClockTowerPotion } from "@/services/activateClockTowerPotion";
@@ -262,7 +263,7 @@ export function MagicItemsQuickModal({
             <View style={styles.header}>
               <View style={styles.headerIcon}>
                 <Image
-                  source={{ uri: `${process.env.EXPO_PUBLIC_CDN_BASE}/v2/home/other/magic-inventory.png` }}
+                  source={{ uri: `${ENV.CDN_BASE}/v2/home/other/magic-inventory.png` }}
                   style={styles.headerIconImage}
                   contentFit="contain"
                   cachePolicy="memory-disk"

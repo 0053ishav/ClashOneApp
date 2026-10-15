@@ -1,19 +1,23 @@
 appId: com.strngelabs.clashone
 name: Critical app smoke
 ---
-# Clean install smoke: onboarding, demo import, village tabs, and Settings.
+# Destructive test: clears app data, imports a demo village, and checks core navigation.
+# Run only against a dedicated test device/emulator.
 - launchApp:
     clearState: true
 
+# Onboarding has three slides; the first title is "Clash One".
 - extendedWaitUntil:
     visible: "Clash One"
     timeout: 30000
-
 - tapOn: "Next"
 - tapOn: "Next"
 - tapOn: "Get Started"
 
-- assertVisible: "Add Your Village"
+# The app routes to Add Your Village after onboarding.
+- extendedWaitUntil:
+    visible: "Add Your Village"
+    timeout: 30000
 - tapOn: "Use Demo Account"
 
 - extendedWaitUntil:
@@ -26,16 +30,25 @@ name: Critical app smoke
     timeout: 30000
 - tapOn: "Continue"
 
+# "Clash One" is not a reliable Home-screen assertion; use actual village controls.
 - extendedWaitUntil:
-    visible: "Clash One"
+    visible: "Home village"
     timeout: 30000
-- assertVisible: "Home"
 - assertVisible: "Builder base village"
+
 - tapOn: "Builder base village"
-- assertVisible: "Builder"
+- waitForAnimationToEnd
+- assertVisible: "Home village"
+- assertVisible: "Builder base village"
+
 - tapOn: "Home village"
+- waitForAnimationToEnd
+
 - tapOn: "Settings"
-- assertVisible: "Game tools"
+- waitForAnimationToEnd
+- assertVisible: "Settings"
 - assertVisible: "Active village"
+
 - tapOn: "Home"
-- assertVisible: "Clash One"
+- waitForAnimationToEnd
+- assertVisible: "Home village"

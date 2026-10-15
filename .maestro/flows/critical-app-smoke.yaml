@@ -3,22 +3,20 @@ name: Critical app smoke
 ---
 # Destructive test: clears app data, opens the Expo development client, imports a demo village, and checks core navigation.
 # Run only against a dedicated test device/emulator with Metro running.
+# For a physical device, run "adb reverse tcp:8081 tcp:8081" before this flow.
 - launchApp:
     clearState: true
 
-# The dev client may first show its server list, then a developer-menu Continue screen.
+# SDK 54 dev-client legacy URL flags skip the onboarding screen. Opening the URL
+# should select the running Metro server directly instead of requiring manual taps.
 - openLink:
-    link: "exp+clash-one://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
-- waitForAnimationToEnd
-- tapOn: "http://localhost:8081"
-- waitForAnimationToEnd
-- tapOn: "Continue"
+    link: "exp+clash-one://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1"
 - waitForAnimationToEnd
 
 # Onboarding has three slides; the first title is "Clash One".
 - extendedWaitUntil:
     visible: "Clash One"
-    timeout: 30000
+    timeout: 45000
 - tapOn: "Next"
 - tapOn: "Next"
 - tapOn: "Get Started"
@@ -55,13 +53,13 @@ name: Critical app smoke
 - tapOn: "Home village"
 - waitForAnimationToEnd
 
-- tapOn: "Settings"
+- tapOn:
+    id: "settings-tab"
 - waitForAnimationToEnd
 - assertVisible: "Active village"
 
-# Disambiguate the app's Home tab from Android's system Home action.
+# Use the explicit app-tab test ID, never Android's system Home key/action.
 - tapOn:
-    text: "Home"
-    index: 0
+    id: "home-tab"
 - waitForAnimationToEnd
 - assertVisible: "Home village"

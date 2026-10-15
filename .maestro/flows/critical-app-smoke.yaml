@@ -31,6 +31,10 @@ name: Critical app smoke
 - extendedWaitUntil:
     visible: "All Set!"
     timeout: 30000
+- scrollUntilVisible:
+    element: "Continue"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Continue"
 
 # Use the village selector rather than assuming the app title appears on Home.

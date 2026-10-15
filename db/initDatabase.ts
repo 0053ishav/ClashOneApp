@@ -26,7 +26,7 @@ async function setSchemaVersion(
   );
 }
 
-export async function initDatabase() {
+async function migrateDatabase() {
   const db = await getDB();
 
   let version = await getSchemaVersion(db);
@@ -307,4 +307,27 @@ export async function initDatabase() {
   );
 
   // log("📋 upgrades columns:", cols);
+}
+
+let initializationPromise: Promise<void> | null = null;
+
+/**
+ * Serialize schema initialization within this JavaScript runtime.
+ * A failed migration clears the in-flight promise so the caller can retry.
+ */
+export function initDatabase(): Promise<void> {
+  if (initializationPromise) {
+    return initializationPromise;
+  }
+
+  const pending = migrateDatabase();
+  initializationPromise = pending;
+
+  void pending.catch(() => {
+    if (initializationPromise === pending) {
+      initializationPromise = null;
+    }
+  });
+
+  return pending;
 }

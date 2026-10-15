@@ -25,6 +25,13 @@ Record app version, Android version, device/emulator, build type, and result for
 - [ ] Add/switch between two test accounts; verify upgrades and profile data do not leak between accounts.
 - [ ] Delete/reset only a disposable test account and verify the remaining account is unchanged.
 
+## P1 — Clash of Clans API and remote-data resilience
+
+- [ ] With a valid player tag, verify API-backed profile data loads when the API/service is reachable.
+- [ ] With an invalid tag or unavailable service, verify a recoverable error; the app does not crash or expose credentials.
+- [ ] Simulate offline/timeout conditions and confirm locally stored account/upgrades remain accessible.
+- [ ] Confirm tests only expect fields the official Clash of Clans API exposes; imported village data and Clash One-derived progression are validated through their own data paths. API reference: https://developer.clashofclans.com/
+
 ## P1 — JSON import
 
 - [ ] Import a valid supported Clash of Clans village JSON export.

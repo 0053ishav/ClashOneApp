@@ -7,13 +7,16 @@ name: Critical app smoke
 - launchApp:
     clearState: true
 
-# SDK 54 dev-client legacy URL flags skip the onboarding screen. Opening the URL
-# should select the running Metro server directly instead of requiring manual taps.
+# SDK 54 may still show the development-client introduction. Close it with
+# the X button instead of pressing Continue, which only advances the intro.
 - openLink:
     link: "exp+clash-one://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1"
 - waitForAnimationToEnd
+- tapOn:
+    point: "90%, 76%"
+- waitForAnimationToEnd
 
-# Onboarding has three slides; the first title is "Clash One".
+# App onboarding has three slides; the first title is "Clash One".
 - extendedWaitUntil:
     visible: "Clash One"
     timeout: 45000

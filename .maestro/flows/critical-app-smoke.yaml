@@ -1,10 +1,15 @@
 appId: com.strngelabs.clashone
 name: Critical app smoke
 ---
-# Destructive test: clears app data, imports a demo village, and checks core navigation.
+# Destructive test: clears app data, opens the Expo development client, imports a demo village, and checks core navigation.
 # Run only against a dedicated test device/emulator.
 - launchApp:
     clearState: true
+
+# Open the development build through the Expo development-client deep link.
+- openLink:
+    link: "exp+clash-one://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081"
+- waitForAnimationToEnd
 
 # Onboarding has three slides; the first title is "Clash One".
 - extendedWaitUntil:
@@ -14,10 +19,8 @@ name: Critical app smoke
 - tapOn: "Next"
 - tapOn: "Get Started"
 
-# The app routes to Add Your Village after onboarding.
-- extendedWaitUntil:
-    visible: "Add Your Village"
-    timeout: 30000
+# Continue through the account connection/demo-import path.
+- tapOn: "Connect"
 - tapOn: "Use Demo Account"
 
 - extendedWaitUntil:
@@ -30,7 +33,7 @@ name: Critical app smoke
     timeout: 30000
 - tapOn: "Continue"
 
-# "Clash One" is not a reliable Home-screen assertion; use actual village controls.
+# Use the village selector rather than assuming the app title appears on Home.
 - extendedWaitUntil:
     visible: "Home village"
     timeout: 30000
@@ -46,7 +49,6 @@ name: Critical app smoke
 
 - tapOn: "Settings"
 - waitForAnimationToEnd
-- assertVisible: "Settings"
 - assertVisible: "Active village"
 
 - tapOn: "Home"

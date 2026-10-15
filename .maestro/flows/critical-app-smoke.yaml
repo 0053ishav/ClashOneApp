@@ -62,4 +62,4 @@ name: Critical app smoke
 - tapOn:
     id: "home-tab"
 - waitForAnimationToEnd
-- assertVisible: "Home village"
+- assertVisible: "Clash One"

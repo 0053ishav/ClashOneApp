@@ -1,12 +1,13 @@
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { JsonClipboardInput, type ClipboardPasteError } from "@/components/JsonClipboardInput";
 import { importVillageJson } from "@/services/jsonImport/jsonImportService";
 import { getSessionSource, track } from "@/utils/analytics/analytics";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { Ionicons } from "@expo/vector-icons";
-import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
   Linking,
   Pressable,
@@ -24,6 +25,7 @@ export default function UploadJsonScreen() {
   const [modalMessage, setModalMessage] = useState("");
   const [isImporting, setIsImporting] = useState(false);
   const [shouldReturnHome, setShouldReturnHome] = useState(false);
+  const [jsonText, setJsonText] = useState("");
 
   useEffect(() => {
     track("screen_view", { screen: "upload_json" });
@@ -47,8 +49,16 @@ export default function UploadJsonScreen() {
     }
   };
 
-  const handlePasteVillageData = async () => {
+  const handleImportVillageData = async () => {
     if (isImporting) return;
+
+    if (!jsonText.trim()) {
+      setModalTitle("JSON Missing");
+      setModalMessage("Paste your copied village JSON into the preview before syncing.");
+      setShouldReturnHome(false);
+      setModalVisible(true);
+      return;
+    }
 
     try {
       setIsImporting(true);
@@ -56,21 +66,10 @@ export default function UploadJsonScreen() {
         source: getSessionSource(),
         trigger: "upload-json",
       });
-      const clipboardText = await Clipboard.getStringAsync();
-
-      if (!clipboardText?.trim()) {
-        setModalTitle("Clipboard Empty");
-        setModalMessage(
-          "No village data found. Please copy data from the game's settings first.",
-        );
-        setModalVisible(true);
-        return;
-      }
-      const result = await importVillageJson(clipboardText);
+      const result = await importVillageJson(jsonText);
 
       if (result.status === "NO_ACTIVE_BUILDERS") {
         await refreshWidget();
-
         setModalTitle("Village Synced");
         setModalMessage(
           "No active builders found. All builders are currently free.",
@@ -82,40 +81,39 @@ export default function UploadJsonScreen() {
 
       if (result.status === "SUCCESS") {
         await refreshWidget();
-
         setModalTitle(
           result.skippedExpired > 0
             ? "Village Synced (Partial)"
             : "Village Synced",
         );
-
         setModalMessage(
           result.skippedExpired > 0
-            ? `${result.activeCount} upgrades synced.\n${result.skippedExpired} expired upgrades were ignored.`
-            : `${result.activeCount} upgrades synced.`,
+            ? result.activeCount + " upgrades synced.\n" + result.skippedExpired + " expired upgrades were ignored."
+            : result.activeCount + " upgrades synced.",
         );
         setShouldReturnHome(true);
         setModalVisible(true);
         return;
       }
+
       track("json_imported", {
         source: getSessionSource(),
         trigger: "upload-json",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("IMPORT ERROR:", error);
-
       track("json_import_failed", {
         source: getSessionSource(),
         trigger: "upload-json",
       });
 
-      if (error.message === "INVALID_JSON") {
+      const errorMessage = error instanceof Error ? error.message : "";
+      if (errorMessage === "INVALID_JSON") {
         setModalTitle("Invalid Format");
         setModalMessage(
-          "Clipboard content is not valid JSON. Make sure you copied the correct village export.",
+          "The pasted content is not valid JSON. Copy the correct village export and paste it again.",
         );
-      } else if (error.message === "INVALID_STRUCTURE") {
+      } else if (errorMessage === "INVALID_STRUCTURE") {
         setModalTitle("Invalid Village Data");
         setModalMessage(
           "This does not appear to be valid Clash of Clans export data.",
@@ -129,6 +127,19 @@ export default function UploadJsonScreen() {
     } finally {
       setIsImporting(false);
     }
+  };
+
+  const handlePasteError = (error: ClipboardPasteError) => {
+    setModalTitle(
+      error === "empty" ? "Clipboard Empty" : "Clipboard Unavailable",
+    );
+    setModalMessage(
+      error === "empty"
+        ? "No village data found. Copy the village export from the game first."
+        : "Could not read the clipboard. Copy the village export again and retry.",
+    );
+    setShouldReturnHome(false);
+    setModalVisible(true);
   };
 
   return (
@@ -206,6 +217,13 @@ export default function UploadJsonScreen() {
             </Pressable>
           </View>
 
+          <JsonClipboardInput
+            value={jsonText}
+            onChangeText={setJsonText}
+            disabled={isImporting}
+            onPasteError={handlePasteError}
+          />
+
           {/* Action Buttons */}
           <View style={styles.buttonGroup}>
             <Pressable
@@ -215,11 +233,15 @@ export default function UploadJsonScreen() {
                 pressed && styles.uploadButtonPressed,
                 { opacity: isImporting ? 0.6 : 1 },
               ]}
-              onPress={handlePasteVillageData}
+              onPress={handleImportVillageData}
             >
-              <Ionicons name="clipboard-outline" size={20} color="#0f172a" />
+              {isImporting ? (
+                <ActivityIndicator color="#0f172a" />
+              ) : (
+                <Ionicons name="cloud-upload-outline" size={20} color="#0f172a" />
+              )}
               <Text style={styles.uploadButtonText}>
-                {isImporting ? "Syncing..." : "Paste Village Data"}
+                {isImporting ? "Syncing..." : "Import Village Data"}
               </Text>
             </Pressable>
 

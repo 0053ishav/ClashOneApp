@@ -1,13 +1,15 @@
 "use no memo";
 
-import demoVillage from "@/assets/demo/demoVillage.json";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import {
+  JsonClipboardInput,
+  type ClipboardPasteError,
+} from "@/components/JsonClipboardInput";
 import { importVillageJson } from "@/services/jsonImport/jsonImportService";
 import { getNotificationsEnabled } from "@/storage/notificationConfig";
 import { getSessionSource, track } from "@/utils/analytics/analytics";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { Ionicons } from "@expo/vector-icons";
-import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -15,6 +17,7 @@ import {
   ActivityIndicator,
   Linking,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -25,6 +28,7 @@ export default function AddAccountScreen() {
   const router = useRouter();
   const [isImporting, setIsImporting] = useState(false);
   const [tag, setTag] = useState("");
+  const [jsonText, setJsonText] = useState("");
 
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -33,39 +37,6 @@ export default function AddAccountScreen() {
   const [shouldNavigate, setShouldNavigate] = useState(false);
   const refreshWidget = async () => {
     emitWidgetUpdate();
-  };
-
-  const handleDemoImport = async () => {
-    if (isImporting) return;
-
-    try {
-      setIsImporting(true);
-
-      track("demo_account_loaded");
-
-      const result = await importVillageJson(JSON.stringify(demoVillage));
-
-      await refreshWidget();
-
-      setShouldNavigate(true);
-      setTag(result.tag);
-
-      setModalTitle("Demo Village Loaded");
-      setModalMessage(
-        "A sample Clash of Clans village has been added for testing.",
-      );
-
-      setModalVisible(true);
-    } catch {
-      setShouldNavigate(false);
-
-      setModalTitle("Demo Import Failed");
-      setModalMessage("Unable to load the sample village.");
-
-      setModalVisible(true);
-    } finally {
-      setIsImporting(false);
-    }
   };
 
   const handleImport = async () => {
@@ -79,12 +50,12 @@ export default function AddAccountScreen() {
         trigger: "add-account",
       });
 
-      const clipboardText = await Clipboard.getStringAsync();
+      const clipboardText = jsonText;
 
-      if (!clipboardText?.trim()) {
-        setModalTitle("Clipboard Empty");
+      if (!clipboardText.trim()) {
+        setModalTitle("JSON Missing");
         setModalMessage(
-          "No village data found. Please copy data from the game's settings first.",
+          "Paste your copied village JSON into the preview before importing.",
         );
         setModalVisible(true);
         return;
@@ -142,7 +113,7 @@ export default function AddAccountScreen() {
       if (error.message === "INVALID_JSON") {
         setModalTitle("Invalid Format");
         setModalMessage(
-          "Clipboard content is not valid JSON. Make sure you copied the correct village export.",
+          "The pasted content is not valid JSON. Copy the correct village export and paste it again.",
         );
       } else if (error.message === "INVALID_STRUCTURE") {
         setModalTitle("Invalid Village Data");
@@ -175,7 +146,10 @@ export default function AddAccountScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
         {/* 🔹 Icon */}
         <View style={styles.iconWrapper}>
           <Image
@@ -210,6 +184,23 @@ export default function AddAccountScreen() {
           </Pressable>
         </View>
 
+        <JsonClipboardInput
+          value={jsonText}
+          onChangeText={setJsonText}
+          disabled={isImporting}
+          onPasteError={(error: ClipboardPasteError) => {
+            setModalTitle(
+              error === "empty" ? "Clipboard Empty" : "Clipboard Unavailable",
+            );
+            setModalMessage(
+              error === "empty"
+                ? "No village data found. Copy the village export from the game first."
+                : "Could not read the clipboard. Copy the village export again and retry.",
+            );
+            setModalVisible(true);
+          }}
+        />
+
         {/* 🔹 CTA */}
         <View style={styles.buttonGroup}>
           <Pressable
@@ -224,19 +215,6 @@ export default function AddAccountScreen() {
           </Pressable>
         </View>
 
-        <View style={styles.buttonGroup}>
-          <Pressable
-            onPress={handleDemoImport}
-            style={({ pressed }) => [
-              styles.demoButton,
-              pressed && { opacity: 0.85 },
-            ]}
-          >
-            <Ionicons name="flask-outline" size={18} color="#fbbf24" />
-
-            <Text style={styles.demoButtonText}>Use Demo Account</Text>
-          </Pressable>
-        </View>
         {/* 🔹 Trust */}
         <View style={styles.trustBox}>
           <Text style={styles.trustTitle}>How it works:</Text>
@@ -251,7 +229,7 @@ export default function AddAccountScreen() {
         {/* <Text style={styles.microTrust}>
           No login required • Data stays on device
         </Text> */}
-      </View>
+      </ScrollView>
       <ConfirmModal
         visible={modalVisible}
         title={modalTitle}
@@ -282,8 +260,9 @@ const styles = StyleSheet.create({
   },
 
   container: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: "center",
+    paddingVertical: 24,
     paddingHorizontal: 24,
   },
 
@@ -326,24 +305,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 8,
     gap: 10,
-  },
-
-  demoButton: {
-    height: 52,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#334155",
-    backgroundColor: "#111827",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-
-  demoButtonText: {
-    color: "#fbbf24",
-    fontSize: 15,
-    fontWeight: "700",
   },
 
   uploadButton: {

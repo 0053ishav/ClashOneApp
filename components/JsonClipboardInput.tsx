@@ -53,7 +53,7 @@ export function JsonClipboardInput({
         <View style={styles.headerText}>
           <Text style={styles.title}>Village JSON</Text>
           <Text style={styles.hint}>
-            Tap the box or paste button to load clipboard data. This preview is read-only.
+            Tap the clipboard icon to load your copied JSON. Preview is read-only.
           </Text>
         </View>
         <Pressable
@@ -75,46 +75,19 @@ export function JsonClipboardInput({
         </Pressable>
       </View>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Paste JSON into the read-only preview"
-        disabled={disabled || isPasting}
-        onPress={pasteFromClipboard}
-        style={styles.previewContainer}
-      >
+      <View style={styles.previewContainer}>
         <TextInput
           accessibilityLabel="Read-only village JSON preview"
           value={value}
           editable={false}
           showSoftInputOnFocus={false}
           multiline
-          numberOfLines={5}
-          pointerEvents="none"
+          scrollEnabled
           placeholder="Your copied village JSON will appear here..."
           placeholderTextColor="#64748b"
           style={styles.preview}
         />
-      </Pressable>
-
-      <Pressable
-        accessibilityRole="button"
-        disabled={disabled || isPasting}
-        onPress={pasteFromClipboard}
-        style={({ pressed }) => [
-          styles.pasteButton,
-          pressed && styles.pressed,
-          (disabled || isPasting) && styles.disabled,
-        ]}
-      >
-        {isPasting ? (
-          <ActivityIndicator color="#0f172a" />
-        ) : (
-          <Ionicons name="clipboard-outline" size={20} color="#0f172a" />
-        )}
-        <Text style={styles.pasteButtonText}>
-          {isPasting ? "Reading Clipboard..." : "Paste JSON"}
-        </Text>
-      </Pressable>
+      </View>
     </View>
   );
 }
@@ -164,26 +137,13 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   preview: {
+    height: 154,
     color: "#cbd5e1",
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 11,
     lineHeight: 16,
     textAlignVertical: "top",
-  },
-  pasteButton: {
-    minHeight: 46,
-    borderRadius: 12,
-    backgroundColor: "#334155",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  pasteButtonText: {
-    color: "#f8fafc",
-    fontSize: 14,
-    fontWeight: "700",
   },
   pressed: {
     opacity: 0.8,

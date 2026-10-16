@@ -11,7 +11,6 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Animated,
   Linking,
   Pressable,
   ScrollView,
@@ -149,77 +148,97 @@ export default function UploadJsonScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <View style={styles.root}>
-        <ScrollView
-          contentContainerStyle={styles.container}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <Pressable onPress={() => router.back()} style={styles.backButton}>
-              <Ionicons name="chevron-back" size={24} color="#fbbf24" />
-            </Pressable>
-            <View style={styles.headerContent}>
-              <Text style={styles.headerTitle}>Sync Village Data</Text>
-              <Text style={styles.headerSubtitle}>
-                Keep builder, lab, and pet progress up to date{" "}
-              </Text>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.topBar}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            onPress={() => router.back()}
+            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+          >
+            <Ionicons name="chevron-back" size={22} color="#f8fafc" />
+          </Pressable>
+          <View style={styles.topBarText}>
+            <Text style={styles.eyebrow}>VILLAGE DATA</Text>
+            <Text style={styles.topBarTitle}>Sync your progress</Text>
+          </View>
+          <View style={styles.headerIcon}>
+            <Ionicons name="sync-outline" size={22} color="#fbbf24" />
+          </View>
+        </View>
+
+        <View style={styles.intro}>
+          <Text style={styles.title}>Bring your village up to date.</Text>
+          <Text style={styles.description}>
+            Import a fresh game export to refresh your active builder, lab, and
+            pet upgrade timers.
+          </Text>
+        </View>
+
+        <View style={styles.privacyCard}>
+          <View style={styles.privacyIcon}>
+            <Ionicons name="shield-checkmark" size={20} color="#4ade80" />
+          </View>
+          <View style={styles.privacyContent}>
+            <Text style={styles.privacyTitle}>Private by design</Text>
+            <Text style={styles.privacyDescription}>
+              Your export is processed on your device and is not uploaded to our servers.
+            </Text>
+          </View>
+          <Ionicons name="checkmark-circle" size={18} color="#4ade80" />
+        </View>
+
+        <View style={styles.exportCard}>
+          <View style={styles.sectionHeading}>
+            <View style={styles.sectionIcon}>
+              <Ionicons name="document-text-outline" size={18} color="#fbbf24" />
+            </View>
+            <View style={styles.sectionHeadingText}>
+              <Text style={styles.sectionTitle}>First, copy your export</Text>
+              <Text style={styles.sectionSubtitle}>From inside Clash of Clans</Text>
             </View>
           </View>
 
-          {/* Security Info */}
-          <Animated.View style={[styles.card, styles.securityCard]}>
-            <View style={styles.securityContent}>
-              <View style={styles.securityIconBg}>
-                <Ionicons name="shield-checkmark" size={24} color="#22c55e" />
-              </View>
-              <View style={styles.securityText}>
-                <Text style={styles.securityTitle}>Your data is safe</Text>
-                <Text style={styles.securityDescription}>
-                  Player data stays on your device. Never uploaded or shared.
-                </Text>
-              </View>
+          <View style={styles.steps}>
+            <View style={styles.stepRow}>
+              <View style={styles.stepNumber}><Text style={styles.stepNumberText}>1</Text></View>
+              <Text style={styles.stepText}>Open Settings → More Settings</Text>
             </View>
-          </Animated.View>
-
-          {/* How to Export */}
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Ionicons name="book" size={20} color="#fbbf24" />
-              <Text style={styles.cardTitle}>How to Export</Text>
-            </View>
-
-            <View style={styles.steps}>
-              {[
-                "Open Clash of Clans",
-                "Go to Settings → More Settings",
-                'Scroll to Data Export and tap "Copy"',
-                "Return here and paste village data",
-              ].map((step, index) => (
-                <View key={index} style={styles.stepContainer}>
-                  <View style={styles.stepNumber}>
-                    <Text style={styles.stepNumberText}>{index + 1}</Text>
-                  </View>
-                  <Text style={styles.step}>{step}</Text>
-                </View>
-              ))}
+            <View style={styles.stepRow}>
+              <View style={styles.stepNumber}><Text style={styles.stepNumberText}>2</Text></View>
+              <Text style={styles.stepText}>Find Data Export and tap Copy</Text>
             </View>
           </View>
 
-          {/* Open Game Button */}
-          <View style={styles.buttonGroup}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.uploadButton,
-                pressed && styles.uploadButtonPressed,
-              ]}
-              onPress={openClashSettings}
-            >
-              <Ionicons name="open-outline" size={20} color="#0f172a" />
-              <Text style={styles.uploadButtonText}>
-                Open Game → Export Data
-              </Text>
-            </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            disabled={isImporting}
+            style={({ pressed }) => [
+              styles.openGameButton,
+              pressed && styles.pressed,
+              isImporting && styles.disabled,
+            ]}
+            onPress={openClashSettings}
+          >
+            <Ionicons name="game-controller-outline" size={18} color="#fbbf24" />
+            <Text style={styles.openGameButtonText}>Open Clash of Clans</Text>
+            <Ionicons name="arrow-up-right" size={16} color="#fbbf24" />
+          </Pressable>
+        </View>
+
+        <View style={styles.importSection}>
+          <View style={styles.sectionHeading}>
+            <View style={styles.sectionIcon}>
+              <Ionicons name="clipboard-outline" size={18} color="#fbbf24" />
+            </View>
+            <View style={styles.sectionHeadingText}>
+              <Text style={styles.sectionTitle}>Then paste your data</Text>
+              <Text style={styles.sectionSubtitle}>Review the JSON before syncing</Text>
+            </View>
           </View>
 
           <JsonClipboardInput
@@ -229,69 +248,59 @@ export default function UploadJsonScreen() {
             onPasteError={handlePasteError}
           />
 
-          {/* Action Buttons */}
-          <View style={styles.buttonGroup}>
-            <Pressable
-              disabled={isImporting}
-              style={({ pressed }) => [
-                styles.uploadButton,
-                pressed && styles.uploadButtonPressed,
-                { opacity: isImporting ? 0.6 : 1 },
-              ]}
-              onPress={handleImportVillageData}
-            >
-              {isImporting ? (
-                <ActivityIndicator color="#0f172a" />
-              ) : (
-                <Ionicons
-                name="cloud-upload-outline"
-                size={20}
-                color="#0f172a"
-              />
-              )}
-              <Text style={styles.uploadButtonText}>
-                {isImporting ? "Syncing..." : "Import Village Data"}
-              </Text>
-            </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            disabled={isImporting}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              pressed && styles.primaryButtonPressed,
+              isImporting && styles.disabled,
+            ]}
+            onPress={handleImportVillageData}
+          >
+            {isImporting ? (
+              <ActivityIndicator color="#172033" />
+            ) : (
+              <>
+                <Ionicons name="sync-outline" size={19} color="#172033" />
+                <Text style={styles.primaryButtonText}>Sync village data</Text>
+                <Ionicons name="arrow-forward" size={18} color="#172033" />
+              </>
+            )}
+          </Pressable>
 
-            <Pressable
-              style={({ pressed }) => [
-                styles.cancelButton,
-                pressed && styles.cancelButtonPressed,
-              ]}
-              onPress={() => router.back()}
-            >
-              <Text style={styles.cancelText}>Cancel</Text>
-            </Pressable>
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            disabled={isImporting}
+            style={({ pressed }) => [
+              styles.cancelButton,
+              pressed && styles.pressed,
+              isImporting && styles.disabled,
+            ]}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.cancelText}>Cancel</Text>
+          </Pressable>
+        </View>
 
-          {/* Disclaimer Section */}
-          <View style={styles.disclaimerSection}>
-            <Text style={styles.disclaimerTitle}>Disclaimer</Text>
-            <Text style={styles.disclaimerText}>
-              Clash One is an unofficial fan-made companion app and is not
-              affiliated with, endorsed, sponsored, or approved by Supercell.
-            </Text>
-            <Pressable
-              onPress={() =>
-                Linking.openURL("https://supercell.com/en/fan-content-policy/")
-              }
-            >
-              <Text
-                style={{
-                  color: "#fbbf24",
-                  marginTop: 8,
-                  fontSize: 13,
-                  fontWeight: "600",
-                }}
-              >
-                Fan Content Policy
-                <Ionicons name="open-outline" size={14} color="#fbbf24" />
-              </Text>
-            </Pressable>
-          </View>
-        </ScrollView>
-      </View>
+        <View style={styles.disclaimerSection}>
+          <Text style={styles.disclaimerTitle}>Fan-made companion app</Text>
+          <Text style={styles.disclaimerText}>
+            Clash One is not affiliated with, endorsed, sponsored, or approved by Supercell.
+          </Text>
+          <Pressable
+            accessibilityRole="link"
+            onPress={() =>
+              Linking.openURL("https://supercell.com/en/fan-content-policy/")
+            }
+            style={({ pressed }) => [styles.policyLink, pressed && styles.pressed]}
+          >
+            <Text style={styles.policyLinkText}>Read the Fan Content Policy</Text>
+            <Ionicons name="open-outline" size={14} color="#fbbf24" />
+          </Pressable>
+        </View>
+      </ScrollView>
+
       <ConfirmModal
         visible={modalVisible}
         title={modalTitle}
@@ -314,249 +323,254 @@ export default function UploadJsonScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#0f172a",
+    backgroundColor: "#0b1220",
   },
-
   container: {
-    paddingTop: 0,
-    paddingBottom: 60,
-  },
-
-  header: {
-    paddingTop: 20,
-    paddingBottom: 24,
+    paddingTop: 12,
+    paddingBottom: 36,
     paddingHorizontal: 20,
-    backgroundColor: "#1e293b",
-    borderBottomWidth: 1,
-    borderBottomColor: "#334155",
+    gap: 22,
+  },
+  topBar: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    marginBottom: 24,
   },
-
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "rgba(251, 191, 36, 0.1)",
-    justifyContent: "center",
+    width: 42,
+    height: 42,
+    borderRadius: 14,
     alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#172033",
+    borderWidth: 1,
+    borderColor: "#2b3850",
   },
-
-  headerContent: {
+  topBarText: {
     flex: 1,
-    gap: 4,
+    gap: 3,
   },
-
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "800",
+  eyebrow: {
     color: "#fbbf24",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1.4,
   },
-
-  headerSubtitle: {
-    fontSize: 12,
-    color: "#94a3b8",
-    fontWeight: "500",
+  topBarTitle: {
+    color: "#f8fafc",
+    fontSize: 20,
+    fontWeight: "800",
   },
-
-  card: {
-    marginHorizontal: 20,
-    backgroundColor: "#1e293b",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
-  },
-
-  securityCard: {
-    borderWidth: 1.5,
-    borderColor: "rgba(34, 197, 94, 0.2)",
-  },
-
-  securityContent: {
-    flexDirection: "row",
+  headerIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 15,
     alignItems: "center",
-    gap: 12,
-  },
-
-  securityIconBg: {
-    width: 50,
-    height: 50,
-    borderRadius: 12,
-    backgroundColor: "rgba(34, 197, 94, 0.15)",
     justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: "rgba(251,191,36,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(251,191,36,0.22)",
   },
-
-  securityText: {
-    flex: 1,
-    gap: 4,
+  intro: {
+    gap: 8,
   },
-
-  securityTitle: {
+  title: {
+    color: "#f8fafc",
+    fontSize: 25,
+    lineHeight: 31,
+    fontWeight: "800",
+    letterSpacing: -0.5,
+  },
+  description: {
+    color: "#9aa8bd",
     fontSize: 14,
-    fontWeight: "700",
-    color: "#f1f5f9",
+    lineHeight: 21,
   },
-
-  securityDescription: {
-    fontSize: 12,
-    color: "#94a3b8",
-    lineHeight: 18,
-  },
-
-  cardHeader: {
+  privacyCard: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    marginBottom: 16,
+    gap: 11,
+    padding: 13,
+    borderRadius: 16,
+    backgroundColor: "rgba(34,197,94,0.07)",
+    borderWidth: 1,
+    borderColor: "rgba(74,222,128,0.18)",
   },
-
-  cardTitle: {
+  privacyIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(74,222,128,0.1)",
+  },
+  privacyContent: {
+    flex: 1,
+    gap: 3,
+  },
+  privacyTitle: {
+    color: "#e2e8f0",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  privacyDescription: {
+    color: "#91a39d",
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  exportCard: {
+    padding: 16,
+    borderRadius: 20,
+    backgroundColor: "#131e30",
+    borderWidth: 1,
+    borderColor: "#26344a",
+    gap: 15,
+  },
+  sectionHeading: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+  },
+  sectionIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "rgba(251,191,36,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sectionHeadingText: {
+    flex: 1,
+    gap: 3,
+  },
+  sectionTitle: {
+    color: "#f8fafc",
     fontSize: 15,
     fontWeight: "700",
-    color: "#f1f5f9",
   },
-
+  sectionSubtitle: {
+    color: "#8493aa",
+    fontSize: 12,
+    lineHeight: 17,
+  },
   steps: {
     gap: 12,
   },
-
-  stepContainer: {
+  stepRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 11,
   },
-
   stepNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: "#fbbf24",
-    justifyContent: "center",
+    width: 25,
+    height: 25,
+    borderRadius: 9,
     alignItems: "center",
-    minWidth: 32,
+    justifyContent: "center",
+    backgroundColor: "#26344a",
   },
-
   stepNumberText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#0f172a",
-  },
-
-  step: {
-    fontSize: 14,
-    color: "#cbd5e1",
-    fontWeight: "500",
-    flex: 1,
-  },
-
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-
-  infoIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: "rgba(14, 165, 233, 0.15)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  infoContent: {
-    flex: 1,
-    gap: 2,
-  },
-
-  infoTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#f1f5f9",
-  },
-
-  infoDescription: {
-    fontSize: 12,
-    color: "#94a3b8",
-  },
-
-  buttonGroup: {
-    marginHorizontal: 20,
-    marginTop: 8,
-    gap: 10,
-  },
-
-  uploadButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: "#fbbf24",
-    shadowColor: "#fbbf24",
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
-  },
-
-  uploadButtonPressed: {
-    opacity: 0.85,
-  },
-
-  uploadButtonText: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#0f172a",
-  },
-
-  cancelButton: {
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: "center",
-    backgroundColor: "#334155",
-  },
-
-  cancelButtonPressed: {
-    opacity: 0.8,
-  },
-
-  cancelText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#cbd5e1",
-  },
-
-  disclaimerSection: {
-    marginHorizontal: 20,
-    marginTop: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: "#fbbf24",
-    backgroundColor: "rgba(251, 191, 36, 0.05)",
-    borderRadius: 8,
-  },
-
-  disclaimerTitle: {
-    fontSize: 13,
-    fontWeight: "700",
     color: "#fbbf24",
-    marginBottom: 6,
-  },
-
-  disclaimerText: {
     fontSize: 12,
+    fontWeight: "800",
+  },
+  stepText: {
+    flex: 1,
+    color: "#cbd5e1",
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  openGameButton: {
+    minHeight: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(251,191,36,0.35)",
+    backgroundColor: "rgba(251,191,36,0.07)",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 9,
+    paddingHorizontal: 14,
+    marginTop: 1,
+  },
+  openGameButtonText: {
+    color: "#fbbf24",
+    fontSize: 14,
+    fontWeight: "700",
+    flex: 1,
+  },
+  importSection: {
+    gap: 14,
+  },
+  primaryButton: {
+    minHeight: 54,
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    backgroundColor: "#fbbf24",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    shadowColor: "#fbbf24",
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 4,
+  },
+  primaryButtonPressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
+  },
+  primaryButtonText: {
+    color: "#172033",
+    fontSize: 15,
+    fontWeight: "800",
+    flex: 1,
+    textAlign: "center",
+  },
+  cancelButton: {
+    minHeight: 42,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelText: {
     color: "#94a3b8",
-    lineHeight: 18,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  disclaimerSection: {
+    paddingHorizontal: 2,
+    paddingTop: 2,
+    gap: 6,
+  },
+  disclaimerTitle: {
+    color: "#8493aa",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
+  disclaimerText: {
+    color: "#64748b",
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  policyLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    paddingVertical: 4,
+  },
+  policyLinkText: {
+    color: "#fbbf24",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  pressed: {
+    opacity: 0.82,
+  },
+  disabled: {
+    opacity: 0.5,
   },
 });

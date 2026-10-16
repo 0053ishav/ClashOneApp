@@ -1,7 +1,10 @@
 "use no memo";
 
 import { ConfirmModal } from "@/components/ConfirmModal";
-import { JsonClipboardInput, type ClipboardPasteError } from "@/components/JsonClipboardInput";
+import {
+  JsonClipboardInput,
+  type ClipboardPasteError,
+} from "@/components/JsonClipboardInput";
 import { importVillageJson } from "@/services/jsonImport/jsonImportService";
 import { getNotificationsEnabled } from "@/storage/notificationConfig";
 import { getSessionSource, track } from "@/utils/analytics/analytics";
@@ -51,7 +54,9 @@ export default function AddAccountScreen() {
 
       if (!clipboardText.trim()) {
         setModalTitle("JSON Missing");
-        setModalMessage("Paste your copied village JSON into the preview before importing.");
+        setModalMessage(
+          "Paste your copied village JSON into the preview before importing.",
+        );
         setModalVisible(true);
         return;
       }
@@ -108,7 +113,7 @@ export default function AddAccountScreen() {
       if (error.message === "INVALID_JSON") {
         setModalTitle("Invalid Format");
         setModalMessage(
-          "Clipboard content is not valid JSON. Make sure you copied the correct village export.",
+          "The pasted content is not valid JSON. Copy the correct village export and paste it again.",
         );
       } else if (error.message === "INVALID_STRUCTURE") {
         setModalTitle("Invalid Village Data");
@@ -141,7 +146,10 @@ export default function AddAccountScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
         {/* 🔹 Icon */}
         <View style={styles.iconWrapper}>
           <Image
@@ -181,7 +189,9 @@ export default function AddAccountScreen() {
           onChangeText={setJsonText}
           disabled={isImporting}
           onPasteError={(error: ClipboardPasteError) => {
-            setModalTitle(error === "empty" ? "Clipboard Empty" : "Clipboard Unavailable");
+            setModalTitle(
+              error === "empty" ? "Clipboard Empty" : "Clipboard Unavailable",
+            );
             setModalMessage(
               error === "empty"
                 ? "No village data found. Copy the village export from the game first."
@@ -296,7 +306,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     gap: 10,
   },
-
 
   uploadButton: {
     flexDirection: "row",

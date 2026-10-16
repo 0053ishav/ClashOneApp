@@ -1,0 +1,65 @@
+appId: com.strngelabs.clashone
+name: Critical app smoke
+---
+# Destructive test: clears app data, opens the Expo development client, imports a demo village, and checks core navigation.
+# Run only against a dedicated test device/emulator with Metro running.
+# For a physical device, run "adb reverse tcp:8081 tcp:8081" before this flow.
+- launchApp:
+    clearState: true
+
+# SDK 54 dev-client legacy URL flags skip the onboarding screen. Opening the URL
+# should select the running Metro server directly instead of requiring manual taps.
+- openLink:
+    link: "exp+clash-one://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableOnboarding=1&disableFab=1"
+- waitForAnimationToEnd
+
+# Onboarding has three slides; the first title is "Clash One".
+- extendedWaitUntil:
+    visible: "Clash One"
+    timeout: 45000
+- tapOn: "Next"
+- tapOn: "Next"
+- tapOn: "Get Started"
+
+# Continue through the account connection/demo-import path.
+- tapOn: "Connect"
+- tapOn: "Use Demo Account"
+
+- extendedWaitUntil:
+    visible: "Demo Village Loaded"
+    timeout: 30000
+- tapOn: "OK"
+
+- extendedWaitUntil:
+    visible: "All Set!"
+    timeout: 30000
+- scrollUntilVisible:
+    element: "Continue"
+    direction: DOWN
+    timeout: 15000
+- tapOn: "Continue"
+
+# Verify the village selector on the app Home screen.
+- extendedWaitUntil:
+    visible: "Home village"
+    timeout: 30000
+- assertVisible: "Builder base village"
+
+- tapOn: "Builder base village"
+- waitForAnimationToEnd
+- assertVisible: "Home village"
+- assertVisible: "Builder base village"
+
+- tapOn: "Home village"
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "settings-tab"
+- waitForAnimationToEnd
+- assertVisible: "Active village"
+
+# Use the explicit app-tab test ID, never Android's system Home key/action.
+- tapOn:
+    id: "home-tab"
+- waitForAnimationToEnd
+- assertVisible: "Clash One"

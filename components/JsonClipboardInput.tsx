@@ -39,13 +39,7 @@ export function JsonClipboardInput({
   disabled = false,
 }: JsonClipboardInputProps) {
   const [isPasting, setIsPasting] = useState(false);
-  const [hasEdited, setHasEdited] = useState(false);
   const status = getJsonInputStatus(value);
-
-  const updateText = (text: string) => {
-    setHasEdited(true);
-    onChangeText(text);
-  };
 
   const pasteFromClipboard = async () => {
     if (disabled || isPasting) return;
@@ -54,13 +48,12 @@ export function JsonClipboardInput({
       setIsPasting(true);
       const clipboardText = await Clipboard.getStringAsync();
 
-      // Don't erase valid existing input if the clipboard is empty.
+      // Don't erase existing input if the clipboard is empty.
       if (!clipboardText?.trim()) {
         onPasteError("empty");
         return;
       }
 
-      setHasEdited(true);
       onChangeText(clipboardText);
     } catch {
       onPasteError("unavailable");
@@ -72,7 +65,6 @@ export function JsonClipboardInput({
   const resetInput = () => {
     if (disabled || !value) return;
     onChangeText("");
-    setHasEdited(false);
   };
 
   return (
@@ -123,7 +115,7 @@ export function JsonClipboardInput({
         <TextInput
           accessibilityLabel="Village JSON input"
           value={value}
-          onChangeText={updateText}
+          onChangeText={onChangeText}
           editable={!disabled}
           multiline
           scrollEnabled
@@ -136,24 +128,28 @@ export function JsonClipboardInput({
         />
       </View>
 
-      {#if value.trim().length > 0}
-      <View style={styles.statusRow} accessibilityLiveRegion="polite">
-        <Ionicons
-          name={status === "valid" ? "checkmark-circle" : "alert-circle"}
-          size={15}
-          color={status === "valid" ? "#4ade80" : "#fbbf24"}
-        />
-        <Text style={status === "valid" ? styles.validStatus : styles.pendingStatus}>
-          {status === "valid"
-            ? "Valid JSON syntax"
-            : "JSON syntax needs checking"}
+      {value.trim().length > 0 ? (
+        <View style={styles.statusRow} accessibilityLiveRegion="polite">
+          <Ionicons
+            name={status === "valid" ? "checkmark-circle" : "alert-circle"}
+            size={15}
+            color={status === "valid" ? "#4ade80" : "#fbbf24"}
+          />
+          <Text
+            style={
+              status === "valid" ? styles.validStatus : styles.pendingStatus
+            }
+          >
+            {status === "valid"
+              ? "Valid JSON syntax"
+              : "JSON syntax needs checking"}
+          </Text>
+        </View>
+      ) : (
+        <Text style={styles.helperText}>
+          Your text stays here if import fails. Reset clears it so you can start over.
         </Text>
-      </View>
-      {:else}
-      <Text style={styles.helperText}>
-        Your text stays here if import fails. Reset clears it so you can start over.
-      </Text>
-      {/if}
+      )}
     </View>
   );
 }

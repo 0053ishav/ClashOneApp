@@ -19,6 +19,19 @@ interface JsonClipboardInputProps {
   disabled?: boolean;
 }
 
+type JsonInputStatus = "empty" | "valid" | "invalid";
+
+function getJsonInputStatus(value: string): JsonInputStatus {
+  if (!value.trim()) return "empty";
+
+  try {
+    JSON.parse(value);
+    return "valid";
+  } catch {
+    return "invalid";
+  }
+}
+
 export function JsonClipboardInput({
   value,
   onChangeText,
@@ -26,6 +39,13 @@ export function JsonClipboardInput({
   disabled = false,
 }: JsonClipboardInputProps) {
   const [isPasting, setIsPasting] = useState(false);
+  const [hasEdited, setHasEdited] = useState(false);
+  const status = getJsonInputStatus(value);
+
+  const updateText = (text: string) => {
+    setHasEdited(true);
+    onChangeText(text);
+  };
 
   const pasteFromClipboard = async () => {
     if (disabled || isPasting) return;
@@ -34,12 +54,13 @@ export function JsonClipboardInput({
       setIsPasting(true);
       const clipboardText = await Clipboard.getStringAsync();
 
-      // Keep any existing text if the clipboard is empty or unavailable.
+      // Don't erase valid existing input if the clipboard is empty.
       if (!clipboardText?.trim()) {
         onPasteError("empty");
         return;
       }
 
+      setHasEdited(true);
       onChangeText(clipboardText);
     } catch {
       onPasteError("unavailable");
@@ -48,39 +69,61 @@ export function JsonClipboardInput({
     }
   };
 
+  const resetInput = () => {
+    if (disabled || !value) return;
+    onChangeText("");
+    setHasEdited(false);
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerText}>
           <Text style={styles.title}>Village JSON</Text>
           <Text style={styles.hint}>
-            Tap the clipboard icon to paste, or tap the box to type or paste manually.
+            Paste with the clipboard icon, or tap the box to paste manually.
           </Text>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Paste JSON from clipboard"
-          disabled={disabled || isPasting}
-          onPress={pasteFromClipboard}
-          style={({ pressed }) => [
-            styles.iconButton,
-            pressed && styles.pressed,
-            (disabled || isPasting) && styles.disabled,
-          ]}
-        >
-          {isPasting ? (
-            <ActivityIndicator color="#fbbf24" size="small" />
-          ) : (
-            <Ionicons name="clipboard-outline" size={20} color="#fbbf24" />
-          )}
-        </Pressable>
+        <View style={styles.actions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Reset JSON input"
+            accessibilityHint="Clears the JSON textbox"
+            disabled={disabled || !value}
+            onPress={resetInput}
+            style={({ pressed }) => [
+              styles.iconButton,
+              pressed && styles.pressed,
+              (disabled || !value) && styles.disabled,
+            ]}
+          >
+            <Ionicons name="refresh-outline" size={19} color="#fca5a5" />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Paste JSON from clipboard"
+            disabled={disabled || isPasting}
+            onPress={pasteFromClipboard}
+            style={({ pressed }) => [
+              styles.iconButton,
+              pressed && styles.pressed,
+              (disabled || isPasting) && styles.disabled,
+            ]}
+          >
+            {isPasting ? (
+              <ActivityIndicator color="#fbbf24" size="small" />
+            ) : (
+              <Ionicons name="clipboard-outline" size={20} color="#fbbf24" />
+            )}
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.previewContainer}>
         <TextInput
           accessibilityLabel="Village JSON input"
           value={value}
-          onChangeText={onChangeText}
+          onChangeText={updateText}
           editable={!disabled}
           multiline
           scrollEnabled
@@ -92,6 +135,25 @@ export function JsonClipboardInput({
           style={styles.preview}
         />
       </View>
+
+      {#if value.trim().length > 0}
+      <View style={styles.statusRow} accessibilityLiveRegion="polite">
+        <Ionicons
+          name={status === "valid" ? "checkmark-circle" : "alert-circle"}
+          size={15}
+          color={status === "valid" ? "#4ade80" : "#fbbf24"}
+        />
+        <Text style={status === "valid" ? styles.validStatus : styles.pendingStatus}>
+          {status === "valid"
+            ? "Valid JSON syntax"
+            : "JSON syntax needs checking"}
+        </Text>
+      </View>
+      {:else}
+      <Text style={styles.helperText}>
+        Your text stays here if import fails. Reset clears it so you can start over.
+      </Text>
+      {/if}
     </View>
   );
 }
@@ -110,6 +172,11 @@ const styles = StyleSheet.create({
   headerText: {
     flex: 1,
     gap: 4,
+  },
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   title: {
     color: "#f1f5f9",
@@ -149,10 +216,28 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     textAlignVertical: "top",
   },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  validStatus: {
+    color: "#4ade80",
+    fontSize: 12,
+  },
+  pendingStatus: {
+    color: "#fbbf24",
+    fontSize: 12,
+  },
+  helperText: {
+    color: "#64748b",
+    fontSize: 12,
+    lineHeight: 17,
+  },
   pressed: {
     opacity: 0.8,
   },
   disabled: {
-    opacity: 0.55,
+    opacity: 0.4,
   },
 });

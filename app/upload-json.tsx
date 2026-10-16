@@ -1,5 +1,8 @@
 import { ConfirmModal } from "@/components/ConfirmModal";
-import { JsonClipboardInput, type ClipboardPasteError } from "@/components/JsonClipboardInput";
+import {
+  JsonClipboardInput,
+  type ClipboardPasteError,
+} from "@/components/JsonClipboardInput";
 import { importVillageJson } from "@/services/jsonImport/jsonImportService";
 import { getSessionSource, track } from "@/utils/analytics/analytics";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
@@ -54,7 +57,9 @@ export default function UploadJsonScreen() {
 
     if (!jsonText.trim()) {
       setModalTitle("JSON Missing");
-      setModalMessage("Paste your copied village JSON into the preview before syncing.");
+      setModalMessage(
+        "Paste your copied village JSON into the preview before syncing.",
+      );
       setShouldReturnHome(false);
       setModalVisible(true);
       return;
@@ -238,7 +243,11 @@ export default function UploadJsonScreen() {
               {isImporting ? (
                 <ActivityIndicator color="#0f172a" />
               ) : (
-                <Ionicons name="cloud-upload-outline" size={20} color="#0f172a" />
+                <Ionicons
+                name="cloud-upload-outline"
+                size={20}
+                color="#0f172a"
+              />
               )}
               <Text style={styles.uploadButtonText}>
                 {isImporting ? "Syncing..." : "Import Village Data"}

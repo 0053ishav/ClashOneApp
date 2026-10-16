@@ -75,18 +75,26 @@ export function JsonClipboardInput({
         </Pressable>
       </View>
 
-      <TextInput
-        accessibilityLabel="Read-only village JSON preview"
-        value={value}
-        editable={false}
-        showSoftInputOnFocus={false}
-        multiline
-        scrollEnabled
-        onPressIn={pasteFromClipboard}
-        placeholder="Your copied village JSON will appear here..."
-        placeholderTextColor="#64748b"
-        style={styles.preview}
-      />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Paste JSON into the read-only preview"
+        disabled={disabled || isPasting}
+        onPress={pasteFromClipboard}
+        style={styles.previewContainer}
+      >
+        <TextInput
+          accessibilityLabel="Read-only village JSON preview"
+          value={value}
+          editable={false}
+          showSoftInputOnFocus={false}
+          multiline
+          numberOfLines={5}
+          pointerEvents="none"
+          placeholder="Your copied village JSON will appear here..."
+          placeholderTextColor="#64748b"
+          style={styles.preview}
+        />
+      </Pressable>
 
       <Pressable
         accessibilityRole="button"
@@ -146,13 +154,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  preview: {
+  previewContainer: {
     minHeight: 104,
     maxHeight: 156,
     borderWidth: 1,
     borderColor: "#475569",
     borderRadius: 12,
     backgroundColor: "#111827",
+    overflow: "hidden",
+  },
+  preview: {
     color: "#cbd5e1",
     paddingHorizontal: 12,
     paddingVertical: 10,

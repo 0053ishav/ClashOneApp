@@ -84,12 +84,13 @@ export function JsonClipboardInput({
             disabled={disabled || !value}
             onPress={resetInput}
             style={({ pressed }) => [
-              styles.iconButton,
+              styles.resetButton,
               pressed && styles.pressed,
               (disabled || !value) && styles.disabled,
             ]}
           >
-            <Ionicons name="refresh-outline" size={19} color="#fca5a5" />
+            <Ionicons name="refresh-outline" size={16} color="#fca5a5" />
+            <Text style={styles.resetText}>Reset</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
@@ -193,6 +194,23 @@ const styles = StyleSheet.create({
     backgroundColor: "#1e293b",
     alignItems: "center",
     justifyContent: "center",
+  },
+  resetButton: {
+    minHeight: 42,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#475569",
+    backgroundColor: "#1e293b",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+  },
+  resetText: {
+    color: "#fca5a5",
+    fontSize: 12,
+    fontWeight: "600",
   },
   previewContainer: {
     minHeight: 104,

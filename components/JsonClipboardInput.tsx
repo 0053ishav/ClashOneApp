@@ -34,6 +34,7 @@ export function JsonClipboardInput({
       setIsPasting(true);
       const clipboardText = await Clipboard.getStringAsync();
 
+      // Keep any existing text if the clipboard is empty or unavailable.
       if (!clipboardText?.trim()) {
         onPasteError("empty");
         return;
@@ -53,7 +54,7 @@ export function JsonClipboardInput({
         <View style={styles.headerText}>
           <Text style={styles.title}>Village JSON</Text>
           <Text style={styles.hint}>
-            Tap the clipboard icon to load your copied JSON. Preview is read-only.
+            Tap the clipboard icon to paste, or tap the box to type or paste manually.
           </Text>
         </View>
         <Pressable
@@ -77,13 +78,16 @@ export function JsonClipboardInput({
 
       <View style={styles.previewContainer}>
         <TextInput
-          accessibilityLabel="Read-only village JSON preview"
+          accessibilityLabel="Village JSON input"
           value={value}
-          editable={false}
-          showSoftInputOnFocus={false}
+          onChangeText={onChangeText}
+          editable={!disabled}
           multiline
           scrollEnabled
-          placeholder="Your copied village JSON will appear here..."
+          autoCapitalize="none"
+          autoCorrect={false}
+          spellCheck={false}
+          placeholder="Paste or type your village JSON here..."
           placeholderTextColor="#64748b"
           style={styles.preview}
         />

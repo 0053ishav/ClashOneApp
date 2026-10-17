@@ -33,8 +33,6 @@ interface JsonImportScreenLayoutProps {
   onSync: () => void;
   onBack: () => void;
   onOpenGameError: () => void;
-  showPrivacyCard?: boolean;
-  showPrivacyFooter?: boolean;
   showCancel?: boolean;
   showDisclaimer?: boolean;
   footer?: ReactNode;
@@ -59,8 +57,6 @@ export function JsonImportScreenLayout({
   onSync,
   onBack,
   onOpenGameError,
-  showPrivacyCard = false,
-  showPrivacyFooter = false,
   showCancel = false,
   showDisclaimer = false,
   footer,
@@ -94,18 +90,7 @@ export function JsonImportScreenLayout({
           <Text style={styles.description}>{introDescription}</Text>
         </View>
 
-        {showPrivacyCard ? (
-          <View style={styles.privacyCard}>
-            <View style={styles.privacyIcon}><Ionicons name="shield-checkmark" size={20} color="#4ade80" /></View>
-            <View style={styles.privacyContent}>
-              <Text style={styles.privacyTitle}>Before you sync</Text>
-              <Text style={styles.privacyDescription}>Use a fresh game export to refresh your village progress.</Text>
-            </View>
-            <Ionicons name="checkmark-circle" size={18} color="#4ade80" />
-          </View>
-        ) : null}
-
-        <View style={styles.exportCard}>
+        <View style={styles.exportSection}>
           <View style={styles.sectionHeading}>
             <View style={styles.sectionIcon}><Ionicons name="document-text-outline" size={18} color="#fbbf24" /></View>
             <View style={styles.sectionHeadingText}>
@@ -113,6 +98,7 @@ export function JsonImportScreenLayout({
               <Text style={styles.sectionSubtitle}>{exportSubtitle}</Text>
             </View>
           </View>
+          <View style={styles.exportCard}>
           <View style={styles.steps}>
             {exportSteps.map((step, index) => (
               <View key={step} style={styles.stepRow}>
@@ -126,6 +112,7 @@ export function JsonImportScreenLayout({
             <Text style={styles.openGameButtonText}>Open Clash of Clans</Text>
             <Ionicons name="arrow-up-right-box" size={16} color="#fbbf24" />
           </Pressable>
+          </View>
         </View>
 
         <View style={styles.importSection}>
@@ -144,12 +131,11 @@ export function JsonImportScreenLayout({
               <Ionicons name="arrow-forward" size={18} color="#172033" />
             </>}
           </Pressable>
-          {showPrivacyFooter ? <View style={styles.privacyFooter}><Ionicons name="shield-checkmark-outline" size={15} color="#4ade80" /><Text style={styles.privacyFooterText}>Your export stays on your device</Text></View> : null}
           {showCancel ? <Pressable accessibilityRole="button" disabled={isImporting} style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed, isImporting && styles.disabled]} onPress={onBack}><Text style={styles.cancelText}>Cancel</Text></Pressable> : null}
         </View>
         {showDisclaimer ? (
           <View style={styles.disclaimerSection}>
-            <Text style={styles.disclaimerTitle}>Fan-made companion app</Text>
+            <Text style={styles.disclaimerTitle}>Disclaimer</Text>
             <Text style={styles.disclaimerText}>Clash One is not affiliated with, endorsed, sponsored, or approved by Supercell.</Text>
             <Pressable accessibilityRole="link" onPress={() => Linking.openURL("https://supercell.com/en/fan-content-policy/")} style={({ pressed }) => [styles.policyLink, pressed && styles.pressed]}>
               <Text style={styles.policyLinkText}>Read the Fan Content Policy</Text>
@@ -175,11 +161,7 @@ const styles = StyleSheet.create({
   intro: { gap: 8 },
   title: { color: "#f8fafc", fontSize: 25, lineHeight: 31, fontWeight: "800", letterSpacing: -0.5 },
   description: { color: "#9aa8bd", fontSize: 14, lineHeight: 21 },
-  privacyCard: { flexDirection: "row", alignItems: "center", gap: 11, padding: 13, borderRadius: 16, backgroundColor: "rgba(34,197,94,0.07)", borderWidth: 1, borderColor: "rgba(74,222,128,0.18)" },
-  privacyIcon: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(74,222,128,0.1)" },
-  privacyContent: { flex: 1, gap: 3 },
-  privacyTitle: { color: "#e2e8f0", fontSize: 13, fontWeight: "800" },
-  privacyDescription: { color: "#91a39d", fontSize: 11, lineHeight: 16 },
+  exportSection: { gap: 14 },
   exportCard: { padding: 16, borderRadius: 20, backgroundColor: "#131e30", borderWidth: 1, borderColor: "#26344a", gap: 15 },
   sectionHeading: { flexDirection: "row", alignItems: "center", gap: 11 },
   sectionIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: "rgba(251,191,36,0.12)", alignItems: "center", justifyContent: "center" },
@@ -197,8 +179,6 @@ const styles = StyleSheet.create({
   primaryButton: { minHeight: 54, borderRadius: 16, paddingHorizontal: 18, backgroundColor: "#fbbf24", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, shadowColor: "#fbbf24", shadowOpacity: 0.15, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 4 },
   primaryButtonPressed: { opacity: 0.86, transform: [{ scale: 0.99 }] },
   primaryButtonText: { color: "#172033", fontSize: 15, fontWeight: "800", flex: 1, textAlign: "center" },
-  privacyFooter: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, marginTop: -2 },
-  privacyFooterText: { color: "#8493aa", fontSize: 12 },
   cancelButton: { minHeight: 42, alignItems: "center", justifyContent: "center" },
   cancelText: { color: "#94a3b8", fontSize: 13, fontWeight: "600" },
   disclaimerSection: { paddingHorizontal: 2, paddingTop: 2, gap: 6 },

@@ -130,7 +130,6 @@ export default function UploadJsonScreen() {
         isImporting={isImporting}
         onSync={handleImportVillageData}
         onBack={() => router.back()}
-        showPrivacyCard
         showCancel
         showDisclaimer
       />

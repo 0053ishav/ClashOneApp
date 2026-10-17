@@ -32,6 +32,7 @@ interface JsonImportScreenLayoutProps {
   isImporting: boolean;
   onSync: () => void;
   onBack: () => void;
+  onOpenGameError: () => void;
   showPrivacyCard?: boolean;
   showPrivacyFooter?: boolean;
   showCancel?: boolean;
@@ -56,6 +57,7 @@ export function JsonImportScreenLayout({
   isImporting,
   onSync,
   onBack,
+  onOpenGameError,
   showPrivacyCard = false,
   showPrivacyFooter = false,
   showCancel = false,
@@ -65,8 +67,7 @@ export function JsonImportScreenLayout({
     try {
       await Linking.openURL("https://link.clashofclans.com/en/?action=OpenMoreSettings");
     } catch {
-      // The parent screen owns error reporting and navigation.
-      onPasteError("unavailable");
+      onOpenGameError();
     }
   };
 

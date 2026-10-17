@@ -124,7 +124,7 @@ export default function AddAccountScreen() {
         isImporting={isImporting}
         onSync={handleImport}
         onBack={() => router.back()}
-        showPrivacyFooter
+        showDisclaimer
       />
       <ConfirmModal
         visible={modalVisible}

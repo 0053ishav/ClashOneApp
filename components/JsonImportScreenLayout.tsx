@@ -1,3 +1,198 @@
+// import { Ionicons } from "@expo/vector-icons";
+// import type { ComponentProps, ReactNode } from "react";
+// import {
+//   ActivityIndicator,
+//   Linking,
+//   Pressable,
+//   ScrollView,
+//   StyleSheet,
+//   Text,
+//   View,
+// } from "react-native";
+// import { SafeAreaView } from "react-native-safe-area-context";
+// import { JsonClipboardInput, type ClipboardPasteError } from "@/components/JsonClipboardInput";
+
+// type IconName = ComponentProps<typeof Ionicons>["name"];
+
+// interface JsonImportScreenLayoutProps {
+//   headerEyebrow: string;
+//   headerTitle: string;
+//   headerIcon: IconName;
+//   introTitle: string;
+//   introDescription: string;
+//   exportTitle: string;
+//   exportSubtitle: string;
+//   exportSteps: string[];
+//   pasteTitle: string;
+//   pasteSubtitle: string;
+//   actionLabel: string;
+//   jsonText: string;
+//   onJsonTextChange: (value: string) => void;
+//   onPasteError: (error: ClipboardPasteError) => void;
+//   isImporting: boolean;
+//   onSync: () => void;
+//   onBack: () => void;
+//   onOpenGameError: () => void;
+//   showCancel?: boolean;
+//   showDisclaimer?: boolean;
+//   footer?: ReactNode;
+// }
+
+// export function JsonImportScreenLayout({
+//   headerEyebrow,
+//   headerTitle,
+//   headerIcon,
+//   introTitle,
+//   introDescription,
+//   exportTitle,
+//   exportSubtitle,
+//   exportSteps,
+//   pasteTitle,
+//   pasteSubtitle,
+//   actionLabel,
+//   jsonText,
+//   onJsonTextChange,
+//   onPasteError,
+//   isImporting,
+//   onSync,
+//   onBack,
+//   onOpenGameError,
+//   showCancel = false,
+//   showDisclaimer = false,
+//   footer,
+// }: JsonImportScreenLayoutProps) {
+//   const openClashSettings = async () => {
+//     try {
+//       await Linking.openURL("https://link.clashofclans.com/en/?action=OpenMoreSettings");
+//     } catch {
+//       onOpenGameError();
+//     }
+//   };
+
+//   return (
+//     <SafeAreaView style={styles.root}>
+//       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+//         <View style={styles.topBar}>
+//           <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={onBack} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+//             <Ionicons name="chevron-back" size={22} color="#f8fafc" />
+//           </Pressable>
+//           <View style={styles.topBarText}>
+//             <Text style={styles.eyebrow}>{headerEyebrow}</Text>
+//             <Text style={styles.topBarTitle}>{headerTitle}</Text>
+//           </View>
+//           <View style={styles.headerIcon}>
+//             <Ionicons name={headerIcon} size={22} color="#fbbf24" />
+//           </View>
+//         </View>
+
+//         <View style={styles.intro}>
+//           <Text style={styles.title}>{introTitle}</Text>
+//           <Text style={styles.description}>{introDescription}</Text>
+//         </View>
+
+//         <View style={styles.exportSection}>
+//           <View style={styles.sectionHeading}>
+//             <View style={styles.sectionIcon}><Ionicons name="document-text-outline" size={18} color="#fbbf24" /></View>
+//             <View style={styles.sectionHeadingText}>
+//               <Text style={styles.sectionTitle}>{exportTitle}</Text>
+//               <Text style={styles.sectionSubtitle}>{exportSubtitle}</Text>
+//             </View>
+//           </View>
+//           <View style={styles.exportCard}>
+//           <View style={styles.steps}>
+//             {exportSteps.map((step, index) => (
+//               <View key={step} style={styles.stepRow}>
+//                 <View style={styles.stepNumber}><Text style={styles.stepNumberText}>{index + 1}</Text></View>
+//                 <Text style={styles.stepText}>{step}</Text>
+//               </View>
+//             ))}
+//           </View>
+//           <Pressable accessibilityRole="button" disabled={isImporting} style={({ pressed }) => [styles.openGameButton, pressed && styles.pressed, isImporting && styles.disabled]} onPress={openClashSettings}>
+//             <Ionicons name="game-controller-outline" size={18} color="#fbbf24" />
+//             <Text style={styles.openGameButtonText}>Open Clash of Clans</Text>
+//             <Ionicons name="arrow-up-right-box" size={16} color="#fbbf24" />
+//           </Pressable>
+//           </View>
+//         </View>
+
+//         <View style={styles.importSection}>
+//           <View style={styles.sectionHeading}>
+//             <View style={styles.sectionIcon}><Ionicons name="clipboard-outline" size={18} color="#fbbf24" /></View>
+//             <View style={styles.sectionHeadingText}>
+//               <Text style={styles.sectionTitle}>{pasteTitle}</Text>
+//               <Text style={styles.sectionSubtitle}>{pasteSubtitle}</Text>
+//             </View>
+//           </View>
+//           <JsonClipboardInput value={jsonText} onChangeText={onJsonTextChange} disabled={isImporting} onPasteError={onPasteError} />
+//           <Pressable accessibilityRole="button" disabled={isImporting} style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed, isImporting && styles.disabled]} onPress={onSync}>
+//             {isImporting ? <ActivityIndicator color="#172033" /> : <>
+//               <Ionicons name="sync-outline" size={19} color="#172033" />
+//               <Text style={styles.primaryButtonText}>{actionLabel}</Text>
+//               <Ionicons name="arrow-forward" size={18} color="#172033" />
+//             </>}
+//           </Pressable>
+//           {showCancel ? <Pressable accessibilityRole="button" disabled={isImporting} style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed, isImporting && styles.disabled]} onPress={onBack}><Text style={styles.cancelText}>Cancel</Text></Pressable> : null}
+//         </View>
+//         {showDisclaimer ? (
+//           <View style={styles.disclaimerSection}>
+//             <Text style={styles.disclaimerTitle}>Disclaimer</Text>
+//             <Text style={styles.disclaimerText}>Clash One is not affiliated with, endorsed, sponsored, or approved by Supercell.</Text>
+//             <Pressable accessibilityRole="link" onPress={() => Linking.openURL("https://supercell.com/en/fan-content-policy/")} style={({ pressed }) => [styles.policyLink, pressed && styles.pressed]}>
+//               <Text style={styles.policyLinkText}>Read the Fan Content Policy</Text>
+//               <Ionicons name="open-outline" size={14} color="#fbbf24" />
+//             </Pressable>
+//           </View>
+//         ) : null}
+//         {footer}
+//       </ScrollView>
+//     </SafeAreaView>
+//   );
+// }
+
+// const styles = StyleSheet.create({
+//   root: { flex: 1, backgroundColor: "#0b1220" },
+//   container: { flexGrow: 1, paddingTop: 12, paddingBottom: 36, paddingHorizontal: 20, gap: 22 },
+//   topBar: { flexDirection: "row", alignItems: "center", gap: 12 },
+//   backButton: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "#172033", borderWidth: 1, borderColor: "#2b3850" },
+//   topBarText: { flex: 1, gap: 3 },
+//   eyebrow: { color: "#fbbf24", fontSize: 10, fontWeight: "800", letterSpacing: 1.4 },
+//   topBarTitle: { color: "#f8fafc", fontSize: 20, fontWeight: "800" },
+//   headerIcon: { width: 48, height: 48, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(251,191,36,0.1)", borderWidth: 1, borderColor: "rgba(251,191,36,0.22)" },
+//   intro: { gap: 8 },
+//   title: { color: "#f8fafc", fontSize: 25, lineHeight: 31, fontWeight: "800", letterSpacing: -0.5 },
+//   description: { color: "#9aa8bd", fontSize: 14, lineHeight: 21 },
+//   exportSection: { gap: 14 },
+//   exportCard: { padding: 16, borderRadius: 20, backgroundColor: "#131e30", borderWidth: 1, borderColor: "#26344a", gap: 15 },
+//   sectionHeading: { flexDirection: "row", alignItems: "center", gap: 11 },
+//   sectionIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: "rgba(251,191,36,0.12)", alignItems: "center", justifyContent: "center" },
+//   sectionHeadingText: { flex: 1, gap: 3 },
+//   sectionTitle: { color: "#f8fafc", fontSize: 15, fontWeight: "700" },
+//   sectionSubtitle: { color: "#8493aa", fontSize: 12, lineHeight: 17 },
+//   steps: { gap: 12 },
+//   stepRow: { flexDirection: "row", alignItems: "center", gap: 11 },
+//   stepNumber: { width: 25, height: 25, borderRadius: 9, alignItems: "center", justifyContent: "center", backgroundColor: "#26344a" },
+//   stepNumberText: { color: "#fbbf24", fontSize: 12, fontWeight: "800" },
+//   stepText: { flex: 1, color: "#cbd5e1", fontSize: 13, lineHeight: 19 },
+//   openGameButton: { minHeight: 48, borderRadius: 14, borderWidth: 1, borderColor: "rgba(251,191,36,0.35)", backgroundColor: "rgba(251,191,36,0.07)", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, paddingHorizontal: 14, marginTop: 1 },
+//   openGameButtonText: { color: "#fbbf24", fontSize: 14, fontWeight: "700", flex: 1 },
+//   importSection: { gap: 14 },
+//   primaryButton: { minHeight: 54, borderRadius: 16, paddingHorizontal: 18, backgroundColor: "#fbbf24", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, shadowColor: "#fbbf24", shadowOpacity: 0.15, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 4 },
+//   primaryButtonPressed: { opacity: 0.86, transform: [{ scale: 0.99 }] },
+//   primaryButtonText: { color: "#172033", fontSize: 15, fontWeight: "800", flex: 1, textAlign: "center" },
+//   cancelButton: { minHeight: 42, alignItems: "center", justifyContent: "center" },
+//   cancelText: { color: "#94a3b8", fontSize: 13, fontWeight: "600" },
+//   disclaimerSection: { paddingHorizontal: 2, paddingTop: 2, gap: 6 },
+//   disclaimerTitle: { color: "#8493aa", fontSize: 11, fontWeight: "800", letterSpacing: 0.8, textTransform: "uppercase" },
+//   disclaimerText: { color: "#64748b", fontSize: 11, lineHeight: 16 },
+//   policyLink: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", paddingVertical: 4 },
+//   policyLinkText: { color: "#fbbf24", fontSize: 12, fontWeight: "700" },
+//   pressed: { opacity: 0.82 },
+//   disabled: { opacity: 0.5 },
+// });
+import {
+  JsonClipboardInput,
+  type ClipboardPasteError,
+} from "@/components/JsonClipboardInput";
 import { Ionicons } from "@expo/vector-icons";
 import type { ComponentProps, ReactNode } from "react";
 import {
@@ -10,7 +205,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { JsonClipboardInput, type ClipboardPasteError } from "@/components/JsonClipboardInput";
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
 
@@ -63,7 +257,9 @@ export function JsonImportScreenLayout({
 }: JsonImportScreenLayoutProps) {
   const openClashSettings = async () => {
     try {
-      await Linking.openURL("https://link.clashofclans.com/en/?action=OpenMoreSettings");
+      await Linking.openURL(
+        "https://link.clashofclans.com/en/?action=OpenMoreSettings",
+      );
     } catch {
       onOpenGameError();
     }
@@ -71,74 +267,175 @@ export function JsonImportScreenLayout({
 
   return (
     <SafeAreaView style={styles.root}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Top bar */}
         <View style={styles.topBar}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={onBack} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-            <Ionicons name="chevron-back" size={22} color="#f8fafc" />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            onPress={onBack}
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.backButton,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Ionicons name="chevron-back" size={22} color="#f1f5f9" />
           </Pressable>
           <View style={styles.topBarText}>
             <Text style={styles.eyebrow}>{headerEyebrow}</Text>
             <Text style={styles.topBarTitle}>{headerTitle}</Text>
           </View>
           <View style={styles.headerIcon}>
-            <Ionicons name={headerIcon} size={22} color="#fbbf24" />
+            <Ionicons name={headerIcon} size={21} color="#fbbf24" />
           </View>
         </View>
 
+        {/* Intro */}
         <View style={styles.intro}>
           <Text style={styles.title}>{introTitle}</Text>
           <Text style={styles.description}>{introDescription}</Text>
         </View>
 
-        <View style={styles.exportSection}>
-          <View style={styles.sectionHeading}>
-            <View style={styles.sectionIcon}><Ionicons name="document-text-outline" size={18} color="#fbbf24" /></View>
-            <View style={styles.sectionHeadingText}>
-              <Text style={styles.sectionTitle}>{exportTitle}</Text>
+        {/* Flow: one rail connects export -> paste */}
+        <View style={styles.flow}>
+          {/* Stage 1 */}
+          <View style={styles.stage}>
+            <View style={styles.rail}>
+              <View style={styles.node}>
+                <Text style={styles.nodeText}>1</Text>
+              </View>
+              <View style={styles.railLine} />
+            </View>
+            <View style={[styles.stageBody, styles.stageBodyGap]}>
+              <View style={styles.stageHeading}>
+                <Ionicons
+                  name="document-text-outline"
+                  size={17}
+                  color="#fbbf24"
+                />
+                <Text style={styles.sectionTitle}>{exportTitle}</Text>
+              </View>
               <Text style={styles.sectionSubtitle}>{exportSubtitle}</Text>
+
+              <View style={styles.stepsPanel}>
+                {exportSteps.map((step, index) => (
+                  <View key={step} style={styles.stepRow}>
+                    <Text style={styles.stepIndex}>{index + 1}.</Text>
+                    <Text style={styles.stepText}>{step}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <Pressable
+                accessibilityRole="button"
+                disabled={isImporting}
+                style={({ pressed }) => [
+                  styles.openGameButton,
+                  pressed && styles.pressed,
+                  isImporting && styles.disabled,
+                ]}
+                onPress={openClashSettings}
+              >
+                <Ionicons
+                  name="game-controller-outline"
+                  size={18}
+                  color="#fbbf24"
+                />
+                <Text style={styles.openGameButtonText}>
+                  Open Clash of Clans
+                </Text>
+                <Ionicons name="open-outline" size={16} color="#fbbf24" />
+              </Pressable>
             </View>
           </View>
-          <View style={styles.exportCard}>
-          <View style={styles.steps}>
-            {exportSteps.map((step, index) => (
-              <View key={step} style={styles.stepRow}>
-                <View style={styles.stepNumber}><Text style={styles.stepNumberText}>{index + 1}</Text></View>
-                <Text style={styles.stepText}>{step}</Text>
+
+          {/* Stage 2 */}
+          <View style={styles.stage}>
+            <View style={styles.rail}>
+              <View style={styles.node}>
+                <Text style={styles.nodeText}>2</Text>
               </View>
-            ))}
-          </View>
-          <Pressable accessibilityRole="button" disabled={isImporting} style={({ pressed }) => [styles.openGameButton, pressed && styles.pressed, isImporting && styles.disabled]} onPress={openClashSettings}>
-            <Ionicons name="game-controller-outline" size={18} color="#fbbf24" />
-            <Text style={styles.openGameButtonText}>Open Clash of Clans</Text>
-            <Ionicons name="arrow-up-right-box" size={16} color="#fbbf24" />
-          </Pressable>
+            </View>
+            <View style={styles.stageBody}>
+              <View style={styles.stageHeading}>
+                <Ionicons name="clipboard-outline" size={17} color="#fbbf24" />
+                <Text style={styles.sectionTitle}>{pasteTitle}</Text>
+              </View>
+              <Text style={styles.sectionSubtitle}>{pasteSubtitle}</Text>
+
+              <View style={styles.inputWrap}>
+                <JsonClipboardInput
+                  value={jsonText}
+                  onChangeText={onJsonTextChange}
+                  disabled={isImporting}
+                  onPasteError={onPasteError}
+                />
+              </View>
+
+              <Pressable
+                accessibilityRole="button"
+                disabled={isImporting}
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  pressed && styles.primaryButtonPressed,
+                  isImporting && styles.disabled,
+                ]}
+                onPress={onSync}
+              >
+                {isImporting ? (
+                  <ActivityIndicator color="#1a1203" />
+                ) : (
+                  <>
+                    <Ionicons name="sync-outline" size={19} color="#1a1203" />
+                    <Text style={styles.primaryButtonText}>{actionLabel}</Text>
+                    <Ionicons name="arrow-forward" size={18} color="#1a1203" />
+                  </>
+                )}
+              </Pressable>
+
+              {showCancel ? (
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={isImporting}
+                  style={({ pressed }) => [
+                    styles.cancelButton,
+                    pressed && styles.pressed,
+                    isImporting && styles.disabled,
+                  ]}
+                  onPress={onBack}
+                >
+                  <Text style={styles.cancelText}>Cancel</Text>
+                </Pressable>
+              ) : null}
+            </View>
           </View>
         </View>
 
-        <View style={styles.importSection}>
-          <View style={styles.sectionHeading}>
-            <View style={styles.sectionIcon}><Ionicons name="clipboard-outline" size={18} color="#fbbf24" /></View>
-            <View style={styles.sectionHeadingText}>
-              <Text style={styles.sectionTitle}>{pasteTitle}</Text>
-              <Text style={styles.sectionSubtitle}>{pasteSubtitle}</Text>
-            </View>
-          </View>
-          <JsonClipboardInput value={jsonText} onChangeText={onJsonTextChange} disabled={isImporting} onPasteError={onPasteError} />
-          <Pressable accessibilityRole="button" disabled={isImporting} style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed, isImporting && styles.disabled]} onPress={onSync}>
-            {isImporting ? <ActivityIndicator color="#172033" /> : <>
-              <Ionicons name="sync-outline" size={19} color="#172033" />
-              <Text style={styles.primaryButtonText}>{actionLabel}</Text>
-              <Ionicons name="arrow-forward" size={18} color="#172033" />
-            </>}
-          </Pressable>
-          {showCancel ? <Pressable accessibilityRole="button" disabled={isImporting} style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed, isImporting && styles.disabled]} onPress={onBack}><Text style={styles.cancelText}>Cancel</Text></Pressable> : null}
-        </View>
         {showDisclaimer ? (
           <View style={styles.disclaimerSection}>
             <Text style={styles.disclaimerTitle}>Disclaimer</Text>
-            <Text style={styles.disclaimerText}>Clash One is not affiliated with, endorsed, sponsored, or approved by Supercell.</Text>
-            <Pressable accessibilityRole="link" onPress={() => Linking.openURL("https://supercell.com/en/fan-content-policy/")} style={({ pressed }) => [styles.policyLink, pressed && styles.pressed]}>
-              <Text style={styles.policyLinkText}>Read the Fan Content Policy</Text>
+            <Text style={styles.disclaimerText}>
+              Clash One is not affiliated with, endorsed, sponsored, or approved
+              by Supercell.
+            </Text>
+            <Pressable
+              accessibilityRole="link"
+              onPress={() =>
+                Linking.openURL("https://supercell.com/en/fan-content-policy/")
+              }
+              style={({ pressed }) => [
+                styles.policyLink,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text style={styles.policyLinkText}>
+                Read the Fan Content Policy
+              </Text>
               <Ionicons name="open-outline" size={14} color="#fbbf24" />
             </Pressable>
           </View>
@@ -149,43 +446,179 @@ export function JsonImportScreenLayout({
   );
 }
 
+const GOLD = "#fbbf24";
+const INK = "#1a1203";
+
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#0b1220" },
-  container: { flexGrow: 1, paddingTop: 12, paddingBottom: 36, paddingHorizontal: 20, gap: 22 },
+  root: { flex: 1, backgroundColor: "#0a0f1a" },
+  container: {
+    flexGrow: 1,
+    paddingTop: 12,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+    gap: 26,
+  },
+
+  // Top bar
   topBar: { flexDirection: "row", alignItems: "center", gap: 12 },
-  backButton: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "#172033", borderWidth: 1, borderColor: "#2b3850" },
-  topBarText: { flex: 1, gap: 3 },
-  eyebrow: { color: "#fbbf24", fontSize: 10, fontWeight: "800", letterSpacing: 1.4 },
-  topBarTitle: { color: "#f8fafc", fontSize: 20, fontWeight: "800" },
-  headerIcon: { width: 48, height: 48, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(251,191,36,0.1)", borderWidth: 1, borderColor: "rgba(251,191,36,0.22)" },
-  intro: { gap: 8 },
-  title: { color: "#f8fafc", fontSize: 25, lineHeight: 31, fontWeight: "800", letterSpacing: -0.5 },
-  description: { color: "#9aa8bd", fontSize: 14, lineHeight: 21 },
-  exportSection: { gap: 14 },
-  exportCard: { padding: 16, borderRadius: 20, backgroundColor: "#131e30", borderWidth: 1, borderColor: "#26344a", gap: 15 },
-  sectionHeading: { flexDirection: "row", alignItems: "center", gap: 11 },
-  sectionIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: "rgba(251,191,36,0.12)", alignItems: "center", justifyContent: "center" },
-  sectionHeadingText: { flex: 1, gap: 3 },
-  sectionTitle: { color: "#f8fafc", fontSize: 15, fontWeight: "700" },
-  sectionSubtitle: { color: "#8493aa", fontSize: 12, lineHeight: 17 },
-  steps: { gap: 12 },
-  stepRow: { flexDirection: "row", alignItems: "center", gap: 11 },
-  stepNumber: { width: 25, height: 25, borderRadius: 9, alignItems: "center", justifyContent: "center", backgroundColor: "#26344a" },
-  stepNumberText: { color: "#fbbf24", fontSize: 12, fontWeight: "800" },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#121a2b",
+    borderWidth: 1,
+    borderColor: "#222d44",
+  },
+  topBarText: { flex: 1, gap: 2 },
+  eyebrow: { color: "#8493aa", fontSize: 12, fontWeight: "600" },
+  topBarTitle: { color: "#f1f5f9", fontSize: 18, fontWeight: "800" },
+  headerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(251,191,36,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(251,191,36,0.25)",
+  },
+
+  // Intro
+  intro: { gap: 10 },
+  title: {
+    color: "#f8fafc",
+    fontSize: 30,
+    lineHeight: 35,
+    fontWeight: "900",
+    letterSpacing: -0.8,
+  },
+  description: { color: "#94a3b8", fontSize: 15, lineHeight: 22 },
+
+  // Flow
+  flow: { gap: 0 },
+  stage: { flexDirection: "row", gap: 14 },
+  rail: { width: 32, alignItems: "center" },
+  node: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: GOLD,
+  },
+  nodeText: { color: INK, fontSize: 14, fontWeight: "900" },
+  railLine: {
+    flex: 1,
+    width: 2,
+    marginTop: 6,
+    marginBottom: 6,
+    borderRadius: 1,
+    backgroundColor: "rgba(251,191,36,0.28)",
+  },
+  stageBody: { flex: 1, gap: 6, paddingTop: 4 },
+  stageBodyGap: { paddingBottom: 26 },
+  stageHeading: { flexDirection: "row", alignItems: "center", gap: 8 },
+  sectionTitle: {
+    color: "#f8fafc",
+    fontSize: 17,
+    fontWeight: "800",
+    flexShrink: 1,
+  },
+  sectionSubtitle: {
+    color: "#8493aa",
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 8,
+  },
+
+  // Stage 1 content
+  stepsPanel: {
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: "#111a2b",
+    borderWidth: 1,
+    borderColor: "#202c43",
+    gap: 11,
+  },
+  stepRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
+  stepIndex: {
+    width: 18,
+    color: GOLD,
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: "800",
+  },
   stepText: { flex: 1, color: "#cbd5e1", fontSize: 13, lineHeight: 19 },
-  openGameButton: { minHeight: 48, borderRadius: 14, borderWidth: 1, borderColor: "rgba(251,191,36,0.35)", backgroundColor: "rgba(251,191,36,0.07)", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, paddingHorizontal: 14, marginTop: 1 },
-  openGameButtonText: { color: "#fbbf24", fontSize: 14, fontWeight: "700", flex: 1 },
-  importSection: { gap: 14 },
-  primaryButton: { minHeight: 54, borderRadius: 16, paddingHorizontal: 18, backgroundColor: "#fbbf24", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, shadowColor: "#fbbf24", shadowOpacity: 0.15, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 4 },
-  primaryButtonPressed: { opacity: 0.86, transform: [{ scale: 0.99 }] },
-  primaryButtonText: { color: "#172033", fontSize: 15, fontWeight: "800", flex: 1, textAlign: "center" },
-  cancelButton: { minHeight: 42, alignItems: "center", justifyContent: "center" },
-  cancelText: { color: "#94a3b8", fontSize: 13, fontWeight: "600" },
-  disclaimerSection: { paddingHorizontal: 2, paddingTop: 2, gap: 6 },
-  disclaimerTitle: { color: "#8493aa", fontSize: 11, fontWeight: "800", letterSpacing: 0.8, textTransform: "uppercase" },
-  disclaimerText: { color: "#64748b", fontSize: 11, lineHeight: 16 },
-  policyLink: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", paddingVertical: 4 },
-  policyLinkText: { color: "#fbbf24", fontSize: 12, fontWeight: "700" },
+  openGameButton: {
+    minHeight: 48,
+    marginTop: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(251,191,36,0.4)",
+    backgroundColor: "rgba(251,191,36,0.08)",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 9,
+    paddingHorizontal: 14,
+  },
+  openGameButtonText: { color: GOLD, fontSize: 14, fontWeight: "700", flex: 1 },
+
+  // Stage 2 content
+  inputWrap: { borderRadius: 16, overflow: "hidden" },
+  primaryButton: {
+    minHeight: 56,
+    marginTop: 10,
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    backgroundColor: GOLD,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    shadowColor: GOLD,
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 5,
+  },
+  primaryButtonPressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
+  primaryButtonText: {
+    color: INK,
+    fontSize: 16,
+    fontWeight: "800",
+    flex: 1,
+    textAlign: "center",
+  },
+  cancelButton: {
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelText: { color: "#94a3b8", fontSize: 14, fontWeight: "600" },
+
+  // Disclaimer
+  disclaimerSection: {
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: "#0e1524",
+    borderWidth: 1,
+    borderColor: "#1a2438",
+    gap: 6,
+  },
+  disclaimerTitle: { color: "#8493aa", fontSize: 12, fontWeight: "700" },
+  disclaimerText: { color: "#64748b", fontSize: 12, lineHeight: 17 },
+  policyLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    paddingVertical: 4,
+  },
+  policyLinkText: { color: GOLD, fontSize: 12, fontWeight: "700" },
+
   pressed: { opacity: 0.82 },
   disabled: { opacity: 0.5 },
 });

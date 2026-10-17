@@ -98,8 +98,8 @@ export function JsonImportScreenLayout({
           <View style={styles.privacyCard}>
             <View style={styles.privacyIcon}><Ionicons name="shield-checkmark" size={20} color="#4ade80" /></View>
             <View style={styles.privacyContent}>
-              <Text style={styles.privacyTitle}>Import on this device</Text>
-              <Text style={styles.privacyDescription}>Paste the game export below to sync your village progress.</Text>
+              <Text style={styles.privacyTitle}>Before you sync</Text>
+              <Text style={styles.privacyDescription}>Use a fresh game export to refresh your village progress.</Text>
             </View>
             <Ionicons name="checkmark-circle" size={18} color="#4ade80" />
           </View>

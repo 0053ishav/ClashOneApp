@@ -4,7 +4,6 @@ import { ConfirmModal } from "@/components/ConfirmModal";
 import { JsonImportScreenLayout } from "@/components/JsonImportScreenLayout";
 import { type ClipboardPasteError } from "@/components/JsonClipboardInput";
 import { importVillageJson } from "@/services/jsonImport/jsonImportService";
-import { getNotificationsEnabled } from "@/storage/notificationConfig";
 import { getSessionSource, track } from "@/utils/analytics/analytics";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { useRouter } from "expo-router";
@@ -67,9 +66,6 @@ export default function AddAccountScreen() {
         await refreshWidget();
         setShouldNavigate(true);
         setTag(result.tag);
-        if (getNotificationsEnabled()) {
-          // Notifications are rescheduled by the existing notification workflow.
-        }
         setModalTitle(result.skippedExpired > 0 ? "Village Synced (Partial)" : "Village Synced");
         setModalMessage(
           result.skippedExpired > 0

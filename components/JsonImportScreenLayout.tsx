@@ -36,6 +36,7 @@ interface JsonImportScreenLayoutProps {
   showPrivacyCard?: boolean;
   showPrivacyFooter?: boolean;
   showCancel?: boolean;
+  showDisclaimer?: boolean;
   footer?: ReactNode;
 }
 
@@ -61,6 +62,7 @@ export function JsonImportScreenLayout({
   showPrivacyCard = false,
   showPrivacyFooter = false,
   showCancel = false,
+  showDisclaimer = false,
   footer,
 }: JsonImportScreenLayoutProps) {
   const openClashSettings = async () => {
@@ -145,6 +147,16 @@ export function JsonImportScreenLayout({
           {showPrivacyFooter ? <View style={styles.privacyFooter}><Ionicons name="shield-checkmark-outline" size={15} color="#4ade80" /><Text style={styles.privacyFooterText}>Your export stays on your device</Text></View> : null}
           {showCancel ? <Pressable accessibilityRole="button" disabled={isImporting} style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed, isImporting && styles.disabled]} onPress={onBack}><Text style={styles.cancelText}>Cancel</Text></Pressable> : null}
         </View>
+        {showDisclaimer ? (
+          <View style={styles.disclaimerSection}>
+            <Text style={styles.disclaimerTitle}>Fan-made companion app</Text>
+            <Text style={styles.disclaimerText}>Clash One is not affiliated with, endorsed, sponsored, or approved by Supercell.</Text>
+            <Pressable accessibilityRole="link" onPress={() => Linking.openURL("https://supercell.com/en/fan-content-policy/")} style={({ pressed }) => [styles.policyLink, pressed && styles.pressed]}>
+              <Text style={styles.policyLinkText}>Read the Fan Content Policy</Text>
+              <Ionicons name="open-outline" size={14} color="#fbbf24" />
+            </Pressable>
+          </View>
+        ) : null}
         {footer}
       </ScrollView>
     </SafeAreaView>
@@ -189,6 +201,11 @@ const styles = StyleSheet.create({
   privacyFooterText: { color: "#8493aa", fontSize: 12 },
   cancelButton: { minHeight: 42, alignItems: "center", justifyContent: "center" },
   cancelText: { color: "#94a3b8", fontSize: 13, fontWeight: "600" },
+  disclaimerSection: { paddingHorizontal: 2, paddingTop: 2, gap: 6 },
+  disclaimerTitle: { color: "#8493aa", fontSize: 11, fontWeight: "800", letterSpacing: 0.8, textTransform: "uppercase" },
+  disclaimerText: { color: "#64748b", fontSize: 11, lineHeight: 16 },
+  policyLink: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", paddingVertical: 4 },
+  policyLinkText: { color: "#fbbf24", fontSize: 12, fontWeight: "700" },
   pressed: { opacity: 0.82 },
   disabled: { opacity: 0.5 },
 });

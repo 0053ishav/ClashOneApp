@@ -322,3 +322,72 @@ export async function replaceEntities(
     throw e;
   }
 }
+
+
+/**
+ * Atomically replace the imported village snapshot.
+ *
+ * Upgrades and entity inventory are two parts of one import. Keeping both
+ * replacements in the same transaction prevents a failed second write from
+ * leaving the account with a mixed old/new snapshot.
+ */
+export async function replaceImportedVillageSnapshot(
+  tag: string,
+  upgrades: Upgrade[],
+  entities: Omit<EntityRecord, "accountTag">[],
+): Promise<void> {
+  if (!tag.trim()) throw new Error("INVALID_ACCOUNT_TAG");
+
+  const db = await getDB();
+
+  await db.execAsync("BEGIN TRANSACTION");
+  try {
+    await db.runAsync("DELETE FROM upgrades WHERE account_player_tag = ?", [tag]);
+    await db.runAsync("DELETE FROM entities WHERE account_player_tag = ?", [tag]);
+
+    for (const u of upgrades) {
+      await db.runAsync(
+        `INSERT INTO upgrades (
+          id, account_player_tag, village, data_id, entity, type, sub_type,
+          upgrade_type, builder_slot, builder_type, lab_slot, current_level,
+          next_level, start_time, duration_minutes, finish_timestamp,
+          has_helper, recurrent_helper, helper_applied_seconds, is_completed,
+          source, is_crafted, module_id, crafted_module_levels
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          u.id, tag, u.village ?? "home", u.dataId ?? null, u.entity, u.type,
+          u.subType ?? null, u.upgradeType,
+          u.builderSlot != null ? String(u.builderSlot) : null,
+          u.builderType ?? null, u.labSlot ?? null, u.currentLevel ?? null,
+          u.nextLevel ?? null, u.startTime, u.durationMinutes, u.endTime,
+          u.hasHelper ? 1 : 0, u.recurrentHelper ? 1 : 0,
+          u.helperAppliedSeconds ?? 0, u.isCompleted ? 1 : 0,
+          u.source ?? null, u.isCrafted ? 1 : 0, u.moduleId ?? null,
+          u.craftedModuleLevels ? JSON.stringify(u.craftedModuleLevels) : null,
+        ],
+      );
+    }
+
+    for (const entity of entities) {
+      await db.runAsync(
+        `INSERT INTO entities
+          (id, account_player_tag, data_id, type, level, cooldown)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          entity.id, tag, entity.dataId, entity.type, entity.level,
+          entity.cooldown ?? null,
+        ],
+      );
+    }
+
+    await db.execAsync("COMMIT");
+  } catch (error) {
+    try {
+      await db.execAsync("ROLLBACK");
+    } catch (rollbackError) {
+      console.error("Failed to roll back imported village snapshot:", rollbackError);
+    }
+    console.error("replaceImportedVillageSnapshot failed:", error);
+    throw error;
+  }
+}

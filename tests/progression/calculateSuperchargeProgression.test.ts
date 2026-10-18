@@ -35,6 +35,17 @@ describe("calculateSuperchargeProgression", () => {
     });
   });
 
+  it("excludes the already-paid in-progress charge from future totals", () => {
+    expect(calculateSuperchargeProgression(data, 1, { inProgressLevel: 2 })).toMatchObject({
+      currentLevel: 1,
+      nextLevel: 2,
+      remainingLevels: 1,
+      nextCost: 2_000,
+      totalCost: 3_000,
+      totalUpgradeTime: 10_800,
+    });
+  });
+
   it("returns no next upgrade and zero remaining cost when fully charged", () => {
     expect(calculateSuperchargeProgression(data, 3)).toEqual({
       currentLevel: 3,

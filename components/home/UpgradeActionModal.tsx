@@ -29,6 +29,8 @@ type UpgradeActionModalProps = {
 };
 
 const SPARKY_ICON = `${ENV.CDN_BASE}/v2/home/other/sparky.png`;
+const SUPERCHARGE_ICON = `${ENV.CDN_BASE}/v2/home/other/sc.png`;
+const NOT_SUPERCHARGE_ICON = "https://cdn.clashwidget.online/v2/home/other/not-sc.png";
 
 const XP_ICON = `${ENV.CDN_BASE}/v2/home/other/xp.png`;
 
@@ -487,11 +489,42 @@ export function UpgradeActionModal({
           </View>
 
           <View style={styles.headerText}>
-            <Text style={styles.title} numberOfLines={1}>
-              {upgrade.isCrafted
-                ? (craftedProgression?.defenseName ?? upgrade.entity)
-                : upgrade.entity}
-            </Text>
+            <View style={styles.titleRow}>
+              <Text style={styles.title} numberOfLines={1}>
+                {upgrade.isCrafted
+                  ? (craftedProgression?.defenseName ?? upgrade.entity)
+                  : upgrade.entity}
+              </Text>
+              {upgrade.upgradeKind === "SUPERCHARGE" &&
+                superchargeProgression != null &&
+                superchargeProgression.maxLevel > 0 && (
+                  <View
+                    style={styles.superchargeIndicators}
+                    accessibilityLabel={`${Math.min(
+                      upgrade.currentSuperchargeLevel ?? 0,
+                      superchargeProgression.maxLevel,
+                    )} of ${superchargeProgression.maxLevel} supercharges completed`}
+                  >
+                    {Array.from(
+                      { length: superchargeProgression.maxLevel },
+                      (_, index) => {
+                        const completed =
+                          index < (upgrade.currentSuperchargeLevel ?? 0);
+                        return (
+                          <Image
+                            key={index}
+                            source={{
+                              uri: completed ? SUPERCHARGE_ICON : NOT_SUPERCHARGE_ICON,
+                            }}
+                            style={styles.superchargeIndicatorIcon}
+                            resizeMode="contain"
+                          />
+                        );
+                      },
+                    )}
+                  </View>
+                )}
+            </View>
 
             <Text style={styles.subtitle}>
               {getVillageName()}
@@ -1185,10 +1218,30 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    minWidth: 0,
+  },
+
   title: {
+    flexShrink: 1,
     fontSize: 16,
     fontWeight: "700",
     color: "#f8fafc",
+  },
+
+  superchargeIndicators: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    flexShrink: 0,
+  },
+
+  superchargeIndicatorIcon: {
+    width: 16,
+    height: 16,
   },
 
   subtitle: {

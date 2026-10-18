@@ -80,6 +80,9 @@ export async function getUpgrades(tag: string): Promise<Upgrade[]> {
     isCrafted: r.is_crafted === 1,
     moduleId: r.module_id,
     craftedModuleLevels: parseCraftedModuleLevels(r.crafted_module_levels),
+    upgradeKind: r.upgrade_kind === "SUPERCHARGE" ? "SUPERCHARGE" : "NORMAL",
+    currentSuperchargeLevel: r.current_supercharge_level ?? undefined,
+    nextSuperchargeLevel: r.next_supercharge_level ?? undefined,
   }));
   const effects = await getActiveMagicEffects(tag);
   return deriveCompletionState(applyMagicItemEffectsToUpgrades(normalized, effects));
@@ -224,9 +227,12 @@ export async function addUpgrade(tag: string, upgrade: Upgrade) {
     source,
     is_crafted,
     module_id,
-    crafted_module_levels
+    crafted_module_levels,
+    upgrade_kind,
+    current_supercharge_level,
+    next_supercharge_level
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       upgrade.id,
       tag,
@@ -260,6 +266,9 @@ export async function addUpgrade(tag: string, upgrade: Upgrade) {
       upgrade.isCrafted ? 1 : 0,
       upgrade.moduleId ?? null,
       upgrade.craftedModuleLevels ? JSON.stringify(upgrade.craftedModuleLevels) : null,
+      upgrade.upgradeKind ?? "NORMAL",
+      upgrade.currentSuperchargeLevel ?? null,
+      upgrade.nextSuperchargeLevel ?? null,
     ]
   );
 }

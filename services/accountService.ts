@@ -1,5 +1,5 @@
 import { getDB } from "@/db/database";
-import { EntityRecord, Upgrade } from "@/types/upgrade";
+import { BuildingProgressRecord, EntityRecord, Upgrade } from "@/types/upgrade";
 
 export type Account = {
   tag: string;
@@ -341,6 +341,7 @@ export async function replaceImportedVillageSnapshot(
   tag: string,
   upgrades: Upgrade[],
   entities: Omit<EntityRecord, "accountTag">[],
+  buildingProgress: BuildingProgressRecord[] = [],
 ): Promise<void> {
   if (!tag.trim()) throw new Error("INVALID_ACCOUNT_TAG");
 
@@ -350,6 +351,7 @@ export async function replaceImportedVillageSnapshot(
   try {
     await db.runAsync("DELETE FROM upgrades WHERE account_player_tag = ?", [tag]);
     await db.runAsync("DELETE FROM entities WHERE account_player_tag = ?", [tag]);
+    await db.runAsync("DELETE FROM building_progress WHERE account_player_tag = ?", [tag]);
 
     for (const u of upgrades) {
       await db.runAsync(
@@ -383,13 +385,18 @@ export async function replaceImportedVillageSnapshot(
         `INSERT INTO entities
           (id, account_player_tag, data_id, type, level, cooldown)
          VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          entity.id, tag, entity.dataId, entity.type, entity.level,
-          entity.cooldown ?? null,
-        ],
+        [entity.id, tag, entity.dataId, entity.type, entity.level, entity.cooldown ?? null],
       );
     }
 
+    for (const building of buildingProgress) {
+      await db.runAsync(
+        `INSERT INTO building_progress
+          (id, account_player_tag, village, data_id, normal_level, building_count, supercharge_level)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [building.id, tag, building.village, building.dataId, building.normalLevel, building.count, building.superchargeLevel],
+      );
+    }
     await db.execAsync("COMMIT");
   } catch (error) {
     try {
@@ -400,4 +407,31 @@ export async function replaceImportedVillageSnapshot(
     console.error("replaceImportedVillageSnapshot failed:", error);
     throw error;
   }
+}
+
+/** Read the most recently imported building progression snapshot for an account. */
+export async function getBuildingProgress(tag: string): Promise<BuildingProgressRecord[]> {
+  if (!tag.trim()) throw new Error("INVALID_ACCOUNT_TAG");
+  const db = await getDB();
+  const rows = await db.getAllAsync<{
+    id: string;
+    data_id: number;
+    village: "home";
+    normal_level: number;
+    building_count: number;
+    supercharge_level: number;
+  }>(
+    "SELECT id, data_id, village, normal_level, building_count, supercharge_level " +
+      "FROM building_progress WHERE account_player_tag = ? " +
+      "ORDER BY data_id, normal_level, supercharge_level",
+    [tag],
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    dataId: row.data_id,
+    village: row.village,
+    normalLevel: row.normal_level,
+    count: row.building_count,
+    superchargeLevel: row.supercharge_level,
+  }));
 }

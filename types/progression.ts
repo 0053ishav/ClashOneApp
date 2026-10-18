@@ -62,6 +62,10 @@ export interface ProgressionData {
   resource: ResourceType;
 
   maxLevel: number;
+  /** Highest available Supercharge level, independent of normal maxLevel. */
+  scMaxLevel?: number;
+  /** Supercharge progression keyed by target charge level (e.g. "1", "2"). */
+  supercharge?: Record<number, ProgressionLevel>;
   maxHallLevel: number;
   levels: Record<
     number,

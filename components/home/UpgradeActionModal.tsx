@@ -333,11 +333,6 @@ export function UpgradeActionModal({
    * -------------------------------------------------------
    */
 
-  const resourceIcon =
-    progression?.resource != null || superchargeData?.resource != null
-      ? resolveResourceIcon(progression?.resource ?? superchargeData!.resource)
-      : undefined;
-
   const superchargeData =
     upgrade.upgradeKind === "SUPERCHARGE" && upgrade.dataId != null
       ? ProgressionQueries.getProgression(upgrade.dataId)
@@ -350,10 +345,13 @@ export function UpgradeActionModal({
       )
     : null;
 
+  const resourceType = progression?.resource ?? superchargeData?.resource;
+
+  const resourceIcon =
+    resourceType != null ? resolveResourceIcon(resourceType) : undefined;
+
   const resourceColor =
-    progression?.resource != null || superchargeData?.resource != null
-      ? getResourceColor(progression?.resource ?? superchargeData!.resource)
-      : undefined;
+    resourceType != null ? getResourceColor(resourceType) : undefined;
 
   /*
    * -------------------------------------------------------

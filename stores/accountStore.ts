@@ -330,7 +330,7 @@ export const useAccountStore = create<AccountState>((set) => ({
     }
   },
 
-  importJsonData: async (tag, upgrades, entities) => {
+  importJsonData: async (tag, upgrades, entities, buildingProgress) => {
     set({ isSyncing: true });
 
     if (!tag) {

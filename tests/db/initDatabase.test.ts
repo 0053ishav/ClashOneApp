@@ -67,8 +67,9 @@ describe("initDatabase", () => {
     expect(executedSql).toContain("ADD COLUMN upgrade_kind");
     expect(executedSql).toContain("ADD COLUMN current_supercharge_level INTEGER");
     expect(executedSql).toContain("ADD COLUMN next_supercharge_level INTEGER");
+    expect(executedSql).toContain("CREATE TABLE IF NOT EXISTS building_progress");
 
-    expect(database.runAsync).toHaveBeenCalledTimes(9);
+    expect(database.runAsync).toHaveBeenCalledTimes(10);
     expect(database.getAllAsync).toHaveBeenCalledWith(
       "PRAGMA table_info(upgrades)",
     );
@@ -99,6 +100,6 @@ describe("initDatabase", () => {
     // The connection was opened once successfully; only schema setup retries.
     expect(mockOpenDatabaseAsync).toHaveBeenCalledTimes(1);
     expect(database.getFirstAsync).toHaveBeenCalledTimes(1);
-    expect(database.runAsync).toHaveBeenCalledTimes(9);
+    expect(database.runAsync).toHaveBeenCalledTimes(10);
   });
 });

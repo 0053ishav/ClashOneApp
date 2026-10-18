@@ -40,6 +40,11 @@ export type Upgrade = {
   currentLevel?: number;
   nextLevel?: number;
 
+  /** Distinguishes normal level progression from a Supercharge timer. */
+  upgradeKind?: "NORMAL" | "SUPERCHARGE";
+  currentSuperchargeLevel?: number;
+  nextSuperchargeLevel?: number;
+
   source?: "JSON" | "MANUAL";
 };
 

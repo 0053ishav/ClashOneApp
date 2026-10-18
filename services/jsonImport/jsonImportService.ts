@@ -1011,24 +1011,19 @@ export async function importVillageJson(
       } else if (
         item.village === HOME_VILLAGE
       ) {
-        if (homeBuilderUsed >= totalHomeBuilders) {
-          continue;
+        // Preserve every valid timer from the export, even if the export
+        // contains more concurrent tasks than the currently inferred builder
+        // count (events and unusual exports can produce this situation).
+        // Only assign a concrete slot while one is available.
+        if (homeBuilderUsed < totalHomeBuilders) {
+          builderSlot = homeBuilderUsed;
+          homeBuilderUsed++;
         }
-
-        builderSlot = homeBuilderUsed;
-        homeBuilderUsed++;
       } else {
-        if (
-          builderBaseBuilderUsed >=
-          totalBuilderBaseBuilders
-        ) {
-          continue;
+        if (builderBaseBuilderUsed < totalBuilderBaseBuilders) {
+          builderSlot = builderBaseBuilderUsed;
+          builderBaseBuilderUsed++;
         }
-
-        builderSlot =
-          builderBaseBuilderUsed;
-
-        builderBaseBuilderUsed++;
       }
     }
 

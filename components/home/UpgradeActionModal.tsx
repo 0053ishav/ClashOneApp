@@ -734,7 +734,7 @@ export function UpgradeActionModal({
             NEXT UPGRADE
         ====================================================== */}
 
-        {progression && !isMaxLevel && (
+        {progression && !isMaxLevel && upgrade.upgradeKind !== "SUPERCHARGE" && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Next upgrade</Text>
 

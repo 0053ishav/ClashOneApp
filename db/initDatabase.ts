@@ -316,6 +316,26 @@ async function migrateDatabase() {
     version = 9;
   }
 
+  // V10 - Preserve imported building levels and completed Supercharge state.
+  if (version < 10) {
+    await db.execAsync(\`
+      CREATE TABLE IF NOT EXISTS building_progress (
+        id TEXT PRIMARY KEY,
+        account_player_tag TEXT NOT NULL,
+        village TEXT NOT NULL DEFAULT 'home',
+        data_id INTEGER NOT NULL,
+        normal_level INTEGER NOT NULL,
+        building_count INTEGER NOT NULL DEFAULT 1,
+        supercharge_level INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY(account_player_tag) REFERENCES accounts(player_tag) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_building_progress_account
+      ON building_progress(account_player_tag, data_id);
+    \`);
+    await setSchemaVersion(db, 10);
+    version = 10;
+  }
+
   // log("✅ Database ready. Version:", version);
 
   // Debug only

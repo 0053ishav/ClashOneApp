@@ -1,4 +1,4 @@
-import { Account, deleteAccount, getAccounts, replaceEntities, replaceUpgrades } from "@/services/accountService";
+import { Account, deleteAccount, getAccounts, replaceImportedVillageSnapshot } from "@/services/accountService";
 import { switchAccountService } from "@/services/accountSwitchService";
 import { clearActiveAccount, getActiveAccount } from "@/storage/activeAccount";
 import { deleteLastJsonSync, getLastJsonSync, setLastJsonSync } from "@/storage/jsonSyncStorage";
@@ -337,8 +337,7 @@ export const useAccountStore = create<AccountState>((set) => ({
     }
 
     try {
-      await replaceUpgrades(tag, upgrades);
-      await replaceEntities(tag, entities);
+      await replaceImportedVillageSnapshot(tag, upgrades, entities);
 
       const { switchAccount, loadAccounts, setLastSync } = useAccountStore.getState();
       await loadAccounts();

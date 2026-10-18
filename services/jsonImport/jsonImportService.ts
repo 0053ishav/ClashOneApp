@@ -11,7 +11,7 @@ import { setLastJsonSync } from "@/storage/jsonSyncStorage";
 import { syncProfileFromApi } from "@/storage/playerProfile";
 import { useAccountStore } from "@/stores/accountStore";
 import { EntityType, Village } from "@/types/entity";
-import { Upgrade } from "@/types/upgrade";
+import { BuildingProgressRecord, Upgrade } from "@/types/upgrade";
 import { getSessionSource, track } from "@/utils/analytics/analytics";
 import { getEntity } from "@/utils/getEntity";
 import { projectHelperTimer } from "@/utils/helpers/projectHelperTimer";
@@ -258,6 +258,15 @@ function validateJson(data: any) {
   ) {
     throw new Error("INVALID_STRUCTURE");
   }
+
+  for (const building of data.buildings ?? []) {
+    if (
+      building.supercharge != null &&
+      (!Number.isSafeInteger(building.supercharge) || building.supercharge < 0)
+    ) {
+      throw new Error("INVALID_SUPERCHARGE_LEVEL");
+    }
+  }
 }
 
 export function resolveUpgradeType(entityType?: EntityType): Upgrade["upgradeType"] {
@@ -331,6 +340,18 @@ export async function importVillageJson(
     homeBuilders: totalHomeBuilders,
     builderBaseBuilders: totalBuilderBaseBuilders,
   } = getBuilderCounts(parsed);
+
+  const buildingProgress: BuildingProgressRecord[] = (parsed.buildings ?? []).map((building) => ({
+    id: randomUUID(),
+    dataId: building.data,
+    village: HOME_VILLAGE,
+    normalLevel: building.lvl,
+    count:
+      Number.isSafeInteger(building.cnt) && (building.cnt ?? 0) > 0
+        ? building.cnt!
+        : 1,
+    superchargeLevel: building.supercharge ?? 0,
+  }));
 
   // =========================================================
   // 🔥 STEP 1: BUILD ACTIVE TASK LIST (NORMAL + CRAFTED)
@@ -1201,7 +1222,7 @@ export async function importVillageJson(
   console.log("Writing upgrades:", newUpgrades.length);
 
   try {
-    await importJsonData(parsed.tag, newUpgrades, entities);
+    await importJsonData(parsed.tag, newUpgrades, entities, buildingProgress);
     // Imported timers are authoritative; app-side simulated potion effects must not re-project them.
     await clearActiveMagicEffects(parsed.tag);
     await replaceImportedBoostSnapshot({

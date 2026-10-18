@@ -184,6 +184,35 @@ describe("importVillageJson Gold Pass regression coverage", () => {
   });
 
 
+  it("uses configured builder capacity when the export under-reports builders", async () => {
+    jest.mocked(getAccountByTag).mockResolvedValue({
+      tag: accountTag,
+      name: "Existing Chief",
+      color: "#fbbf24",
+      townhall: 18,
+      builderCount: 6,
+      builderBaseBuilderCount: 3,
+    } as never);
+
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 2 },
+        { data: 123456, lvl: 1, timer: exportedRemainingSeconds },
+        { data: 123457, lvl: 1, timer: exportedRemainingSeconds + 60 },
+        { data: 123458, lvl: 1, timer: exportedRemainingSeconds + 120 },
+        { data: 123459, lvl: 1, timer: exportedRemainingSeconds + 180 },
+      ],
+    });
+
+    await importVillageJson(rawExport);
+
+    expect(importedUpgradeSnapshots[0]).toHaveLength(4);
+    expect(importedUpgradeSnapshots[0].map((upgrade) => upgrade.builderSlot))
+      .toEqual([0, 1, 2, 3]);
+  });
+
   it("does not reduce configured builder counts during import", async () => {
     jest.mocked(getAccountByTag).mockResolvedValue({
       tag: accountTag,

@@ -132,6 +132,7 @@ export async function resetVillageData(tag: string): Promise<void> {
   try {
     await db.runAsync("DELETE FROM upgrades WHERE account_player_tag = ?", [tag]);
     await db.runAsync("DELETE FROM entities WHERE account_player_tag = ?", [tag]);
+    await db.runAsync("DELETE FROM building_progress WHERE account_player_tag = ?", [tag]);
     await db.runAsync("DELETE FROM magic_item_inventory WHERE account_player_tag = ?", [tag]);
     await db.runAsync("DELETE FROM active_magic_effects WHERE account_player_tag = ?", [tag]);
     await db.runAsync("DELETE FROM imported_boosts WHERE account_player_tag = ?", [tag]);

@@ -113,10 +113,12 @@ export async function getBuilderWidgetData(inputTag?: string) {
     showProgress: !status.allFree,
     currentLevel: currentUpgrade.currentLevel,
     levelText:
-      currentUpgrade.currentLevel !== undefined &&
-      currentUpgrade.nextLevel !== undefined
-        ? `Lv ${currentUpgrade.currentLevel} → ${currentUpgrade.nextLevel}`
-        : undefined,
+      currentUpgrade.upgradeKind === "SUPERCHARGE"
+        ? \`SC \${currentUpgrade.currentSuperchargeLevel ?? 0} → \${currentUpgrade.nextSuperchargeLevel ?? "—"}\`
+        : currentUpgrade.currentLevel !== undefined &&
+            currentUpgrade.nextLevel !== undefined
+          ? \`Lv \${currentUpgrade.currentLevel} → \${currentUpgrade.nextLevel}\`
+          : undefined,
     builderCountText: `${status.freeBuilders} / ${status.maxBuilders} free`,
     nextUpgradeText: nextUpgrade
       ? `${nextTitle} • ${formatCountdown(nextUpgrade.endTime - Date.now())}`

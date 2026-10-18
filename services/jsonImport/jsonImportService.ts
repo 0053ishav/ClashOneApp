@@ -853,29 +853,59 @@ export async function importVillageJson(
       },
       goldPassSettings,
     );
+    const targetSuperchargeLevel =
+      item.supercharge != null ? item.supercharge + 1 : undefined;
+
     const progressionResult =
-      ProgressionApplicationService.resolveUpgrade({
-        id: randomUUID(),
-        accountTag: parsed.tag,
-        village: item.village,
-        dataId: item.data,
-        entity: entity.name.en,
+      targetSuperchargeLevel != null
+        ? (() => {
+            const progression = ProgressionQueries.getProgression(item.data);
+            const maximumSuperchargeLevel =
+              progression?.scMaxLevel ??
+              (progression?.supercharge
+                ? Math.max(...Object.keys(progression.supercharge).map(Number))
+                : 0);
+            const superchargeLevel =
+              progression?.supercharge?.[targetSuperchargeLevel];
 
-        type: normalizeEntityType(entity.type),
-        upgradeType,
+            if (
+              !progression ||
+              targetSuperchargeLevel > maximumSuperchargeLevel ||
+              superchargeLevel?.upgradeTime == null
+            ) {
+              // Fail before persistence. Never replace a good snapshot with an
+              // incomplete import when the export contains an active charge.
+              throw new Error("SUPERCHARGE_PROGRESSION_UNAVAILABLE");
+            }
 
-        currentLevel: item.lvl,
+            return {
+              currentLevel: item.lvl,
+              nextLevel: item.lvl,
+              nextUpgradeTime: superchargeLevel.upgradeTime,
+            };
+          })()
+        : ProgressionApplicationService.resolveUpgrade({
+            id: randomUUID(),
+            accountTag: parsed.tag,
+            village: item.village,
+            dataId: item.data,
+            entity: entity.name.en,
 
-        moduleId: item.moduleId,
-        isCrafted: item.isCrafted,
+            type: normalizeEntityType(entity.type),
+            upgradeType,
 
-        startTime: 0,
-        durationMinutes: 0,
-        endTime: 0,
+            currentLevel: item.lvl,
 
-        isCompleted: false,
-        source: "JSON",
-      }, { goldPassBoost });
+            moduleId: item.moduleId,
+            isCrafted: item.isCrafted,
+
+            startTime: 0,
+            durationMinutes: 0,
+            endTime: 0,
+
+            isCompleted: false,
+            source: "JSON",
+          }, { goldPassBoost });
 
     if (!progressionResult) {
       console.warn(
@@ -1013,6 +1043,10 @@ export async function importVillageJson(
       moduleId: item.moduleId,
       isCrafted: item.isCrafted,
       craftedModuleLevels: item.craftedModuleLevels,
+      upgradeKind:
+        targetSuperchargeLevel != null ? "SUPERCHARGE" : "NORMAL",
+      currentSuperchargeLevel: item.supercharge,
+      nextSuperchargeLevel: targetSuperchargeLevel,
     });
   }
 
@@ -1191,17 +1225,17 @@ export async function importVillageJson(
       status: "failed",
       error: e,
     });
+    // Propagate failures so the UI can report the failed import and the user
+    // can retry. Do not mark a failed import as synchronized.
+    throw e;
   }
+
   setLastJsonSync(parsed.tag, now);
   await resyncNotifications();
 
-  const builderCountOnly = newUpgrades.filter(
-    (u) => u.upgradeType === "BUILDER"
-  ).length;
-
   return {
     status: "SUCCESS",
-    activeCount: builderCountOnly,
+    activeCount: newUpgrades.length,
     skippedExpired,
     tag: parsed.tag,
   };

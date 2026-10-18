@@ -318,7 +318,7 @@ async function migrateDatabase() {
 
   // V10 - Preserve imported building levels and completed Supercharge state.
   if (version < 10) {
-    await db.execAsync(\`
+    await db.execAsync(`
       CREATE TABLE IF NOT EXISTS building_progress (
         id TEXT PRIMARY KEY,
         account_player_tag TEXT NOT NULL,
@@ -331,7 +331,7 @@ async function migrateDatabase() {
       );
       CREATE INDEX IF NOT EXISTS idx_building_progress_account
       ON building_progress(account_player_tag, data_id);
-    \`);
+    `);
     await setSchemaVersion(db, 10);
     version = 10;
   }

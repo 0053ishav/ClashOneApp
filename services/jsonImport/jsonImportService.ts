@@ -2,6 +2,7 @@ import { addAccount, getAccountByTag, updateAccount } from "@/services/accountSe
 import { fetchPlayerFromApi } from "@/services/clashApi";
 import { ensureCraftedLoaded } from "@/services/craftedService";
 import { ProgressionApplicationService } from "@/services/progression";
+import { ProgressionQueries } from "@/services/progression/progressionQueries";
 import { getGoldPassBoostSettings } from "@/services/goldPassBoostService";
 import { resolveGoldPassBoostForImport } from "@/services/jsonImport/resolveGoldPassBoostForImport";
 import { reconstructImportedUpgradeTiming } from "@/services/jsonImport/reconstructImportedUpgradeTiming";
@@ -30,6 +31,7 @@ type RawExport = {
     lvl: number;
     cnt?: number;
     timer?: number;
+    supercharge?: number;
     extra?: boolean;
     helper_timer?: number;
     helper_recurrent?: boolean;
@@ -133,6 +135,8 @@ type ActiveTask = {
   data: number;
   lvl: number;
   timer: number;
+  /** Exported completed charge level; the timer advances this to +1. */
+  supercharge?: number;
   extra?: boolean;
   village: Village;
 
@@ -391,6 +395,7 @@ export async function importVillageJson(
         data: b.data,
         lvl: b.lvl,
         timer: b.timer!,
+        supercharge: b.supercharge,
         extra: b.extra,
 
 
@@ -596,6 +601,7 @@ export async function importVillageJson(
     isCrafted?: boolean;
     moduleId?: number;
     craftedModuleLevels?: Record<number, number>;
+    supercharge?: number;
   }[] = [];
 
   let skippedExpired = 0;
@@ -661,6 +667,7 @@ export async function importVillageJson(
       isCrafted: item.isCrafted,
       moduleId: item.moduleId,
       craftedModuleLevels: item.craftedModuleLevels,
+      supercharge: item.supercharge,
     });
   }
 

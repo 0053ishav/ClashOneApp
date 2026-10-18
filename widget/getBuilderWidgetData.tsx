@@ -114,10 +114,10 @@ export async function getBuilderWidgetData(inputTag?: string) {
     currentLevel: currentUpgrade.currentLevel,
     levelText:
       currentUpgrade.upgradeKind === "SUPERCHARGE"
-        ? \`SC \${currentUpgrade.currentSuperchargeLevel ?? 0} → \${currentUpgrade.nextSuperchargeLevel ?? "—"}\`
+        ? "SC " + (currentUpgrade.currentSuperchargeLevel ?? 0) + " → " + (currentUpgrade.nextSuperchargeLevel ?? "—")
         : currentUpgrade.currentLevel !== undefined &&
             currentUpgrade.nextLevel !== undefined
-          ? \`Lv \${currentUpgrade.currentLevel} → \${currentUpgrade.nextLevel}\`
+          ? `Lv ${currentUpgrade.currentLevel} → ${currentUpgrade.nextLevel}`
           : undefined,
     builderCountText: `${status.freeBuilders} / ${status.maxBuilders} free`,
     nextUpgradeText: nextUpgrade

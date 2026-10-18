@@ -15,6 +15,8 @@ import { ResourceType } from "@/types/resource";
 import type { Upgrade } from "@/types/upgrade";
 import { formatStatName } from "@/utils/formatStatName";
 import { resolveResourceIcon } from "@/utils/icons/resolveResourceIcon";
+import { ProgressionQueries } from "@/services/progression/progressionQueries";
+import { calculateSuperchargeProgression } from "@/engine/progression/operations/calculateSuperchargeProgression";
 import { resolveUpgradeIcon } from "@/utils/icons/resolveUpgradeIcon";
 
 type UpgradeActionModalProps = {
@@ -266,7 +268,10 @@ export function UpgradeActionModal({
       : progression?.isMaxLevel ??
         (maxLevel != null && currentLevel != null && currentLevel >= maxLevel);
 
-  const headerLevel = nextLevel ?? currentLevel;
+  const headerLevel =
+    upgrade.upgradeKind === "SUPERCHARGE"
+      ? currentLevel
+      : nextLevel ?? currentLevel;
 
   /*
    * -------------------------------------------------------
@@ -297,14 +302,20 @@ export function UpgradeActionModal({
       : null;
 
   const nextIcon =
-    nextLevel != null && upgrade.dataId != null
-      ? resolveUpgradeIcon(upgrade.dataId, nextLevel, {
-          village: upgrade.village,
-          isCrafted: upgrade.isCrafted,
-          moduleId: upgrade.moduleId,
-          craftedModuleLevels: upgrade.craftedModuleLevels,
-          craftedModuleLevelOverride: nextLevel,
-        })
+    (upgrade.upgradeKind === "SUPERCHARGE" ? currentLevel : nextLevel) != null &&
+    upgrade.dataId != null
+      ? resolveUpgradeIcon(
+          upgrade.dataId,
+          upgrade.upgradeKind === "SUPERCHARGE" ? currentLevel : nextLevel,
+          {
+            village: upgrade.village,
+            isCrafted: upgrade.isCrafted,
+            moduleId: upgrade.moduleId,
+            craftedModuleLevels: upgrade.craftedModuleLevels,
+            craftedModuleLevelOverride:
+              upgrade.upgradeKind === "SUPERCHARGE" ? currentLevel : nextLevel,
+          },
+        )
       : null;
 
   /*
@@ -326,6 +337,18 @@ export function UpgradeActionModal({
     progression?.resource != null
       ? resolveResourceIcon(progression.resource)
       : undefined;
+
+  const superchargeData =
+    upgrade.upgradeKind === "SUPERCHARGE" && upgrade.dataId != null
+      ? ProgressionQueries.getProgression(upgrade.dataId)
+      : undefined;
+
+  const superchargeProgression = superchargeData
+    ? calculateSuperchargeProgression(
+        superchargeData,
+        upgrade.currentSuperchargeLevel ?? 0,
+      )
+    : null;
 
   const resourceColor =
     progression?.resource != null
@@ -639,13 +662,48 @@ export function UpgradeActionModal({
         {upgrade.upgradeKind === "SUPERCHARGE" && (
           <View style={styles.hallAvailabilityCard}>
             <View style={styles.hallAvailabilityHeader}>
-              <Ionicons name="flash-outline" size={16} color="#f59e0b" />
+              {currentIcon ? (
+                <Image
+                  source={{ uri: currentIcon }}
+                  style={styles.hallAvailabilityEntityIcon}
+                  resizeMode="contain"
+                />
+              ) : null}
               <Text style={styles.hallAvailabilityTitle}>Supercharge in progress</Text>
             </View>
             <Text style={styles.hallAvailabilityValue}>
               Building level {upgrade.currentLevel ?? "—"} · Charge{" "}
               {upgrade.currentSuperchargeLevel ?? 0} → {upgrade.nextSuperchargeLevel ?? "—"}
             </Text>
+            {superchargeProgression && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Supercharge costs</Text>
+                <DetailRow
+                  label="Next charge cost"
+                  value={formatGameCost(superchargeProgression.nextCost)}
+                  valueIconUri={resourceIcon}
+                  valueColor={resourceColor}
+                />
+                <DetailRow
+                  label="Next charge duration"
+                  value={
+                    superchargeProgression.nextUpgradeTime != null
+                      ? formatDuration(superchargeProgression.nextUpgradeTime)
+                      : "—"
+                  }
+                />
+                <DetailRow
+                  label="Total remaining cost"
+                  value={formatGameCost(superchargeProgression.totalCost)}
+                  valueIconUri={resourceIcon}
+                  valueColor={resourceColor}
+                />
+                <DetailRow
+                  label="Remaining charge levels"
+                  value={String(superchargeProgression.remainingLevels)}
+                />
+              </View>
+            )}
           </View>
         )}
 

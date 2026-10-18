@@ -4,3 +4,5 @@ export * from "./calculateUpgradeTime";
 export * from "./overallProgressionQueries";
 export * from "./progressionAggregation";
 export * from "./ProgressionTableQueries";
+
+export * from "./calculateSuperchargeProgression";

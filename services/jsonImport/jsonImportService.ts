@@ -341,7 +341,7 @@ export async function importVillageJson(
   // omits a hut record). Preserve explicitly configured account capacity so
   // valid active timers do not lose their builder slots during import.
   const existingAccount = await getAccountByTag(parsed.tag);
-  const totalHomeBuilders = Math.max(
+  let totalHomeBuilders = Math.max(
     exportedBuilderCounts.homeBuilders,
     existingAccount?.builderCount ?? 0,
   );
@@ -861,6 +861,18 @@ export async function importVillageJson(
     setLastJsonSync(parsed.tag, now);
     return { status: "NO_ACTIVE_BUILDERS", tag: parsed.tag };
   }
+
+  // The export's builder-hut count can be incomplete even when it contains
+  // several valid, concurrent builder timers. Each non-Goblin BUILDER timer
+  // is evidence that a normal builder was occupied at export time. Use that
+  // count as a lower bound so imported timers don't receive a '?' slot solely
+  // because the building snapshot under-reported builder capacity.
+  const inferredHomeBuilderSlots = validUpgrades.filter((item) => {
+    if (item.village !== HOME_VILLAGE || item.isGoblin) return false;
+    const entityType = item.isCrafted ? "building" : getEntity(item.data)?.type;
+    return resolveUpgradeType(entityType) === "BUILDER";
+  }).length;
+  totalHomeBuilders = Math.max(totalHomeBuilders, inferredHomeBuilderSlots);
 
   // =========================================================
   // 🔥 BUILD FINAL UPGRADES

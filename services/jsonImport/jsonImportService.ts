@@ -794,6 +794,7 @@ export async function importVillageJson(
 
   const existing = await getAccountByTag(parsed.tag);
   if (!existing) {
+    // First import initializes counts from the village export.
     await addAccount(
       parsed.tag,
       apiData?.name ?? "Chief",
@@ -803,13 +804,25 @@ export async function importVillageJson(
       totalBuilderBaseBuilders,
     );
   } else {
+    // Imports may infer fewer builders than the user has configured.
+    // Treat imported counts as lower-bound updates only; explicit user
+    // configuration remains authoritative for reductions.
+    const importedHomeBuilderCount = Math.max(
+      existing.builderCount,
+      totalHomeBuilders,
+    );
+    const importedBuilderBaseCount = Math.max(
+      existing.builderBaseBuilderCount,
+      totalBuilderBaseBuilders,
+    );
+
     await updateAccount(
       parsed.tag,
       apiData?.name ?? existing.name,
       existing.color,
       apiData?.townHallLevel ?? existing.townhall,
-      totalHomeBuilders,
-      totalBuilderBaseBuilders,
+      importedHomeBuilderCount,
+      importedBuilderBaseCount,
     );
   }
 

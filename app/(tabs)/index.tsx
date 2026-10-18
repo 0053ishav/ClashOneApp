@@ -1520,7 +1520,19 @@ export default function HomeScreen() {
                               </Text>
 
                               <View style={styles.badgeRow}>
-                                {u.currentLevel !== undefined &&
+                                {u.upgradeKind === "SUPERCHARGE" ? (
+                                  <View style={[styles.levelsBadge, styles.superchargeBadge]}>
+                                    <Image
+                                      source={{ uri: "https://cdn.clashwidget.online/v2/home/other/supercharge.png" }}
+                                      style={styles.superchargeIcon}
+                                      contentFit="contain"
+                                      cachePolicy="memory-disk"
+                                    />
+                                    <Text style={[styles.levelsText, styles.superchargeText]}>
+                                      SC {u.currentSuperchargeLevel ?? 0} → {u.nextSuperchargeLevel ?? (u.currentSuperchargeLevel ?? 0) + 1}
+                                    </Text>
+                                  </View>
+                                ) : u.currentLevel !== undefined &&
                                   u.nextLevel !== undefined && (
                                     <View style={styles.levelsBadge}>
                                       <Text style={styles.levelsText}>
@@ -2450,6 +2462,20 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "600",
     color: "#38bdf8",
+  },
+
+  superchargeBadge: {
+    backgroundColor: "rgba(251,191,36,0.12)",
+    gap: 4,
+  },
+
+  superchargeIcon: {
+    width: 13,
+    height: 13,
+  },
+
+  superchargeText: {
+    color: "#fbbf24",
   },
 
   helperRow: {

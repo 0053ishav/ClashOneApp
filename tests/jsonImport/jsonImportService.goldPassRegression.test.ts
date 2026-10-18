@@ -213,6 +213,46 @@ describe("importVillageJson Gold Pass regression coverage", () => {
       .toEqual([0, 1, 2, 3]);
   });
 
+  it("infers enough builder slots from concurrent active builder timers", async () => {
+    jest.mocked(getAccountByTag).mockResolvedValue({
+      tag: accountTag,
+      name: "Existing Chief",
+      color: "#fbbf24",
+      townhall: 18,
+      builderCount: 3,
+      builderBaseBuilderCount: 3,
+    } as never);
+
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 2 },
+        { data: 123456, lvl: 1, timer: 3600 },
+        { data: 123457, lvl: 1, timer: 3660 },
+        { data: 123458, lvl: 1, timer: 3720 },
+        { data: 123459, lvl: 1, timer: 3780 },
+      ],
+      heroes: [
+        { data: 28000004, lvl: 50, timer: 3840 },
+      ],
+    });
+
+    await importVillageJson(rawExport);
+
+    expect(importedUpgradeSnapshots[0]).toHaveLength(5);
+    expect(importedUpgradeSnapshots[0].map((upgrade) => upgrade.builderSlot))
+      .toEqual([0, 1, 2, 3, 4]);
+    expect(updateAccount).toHaveBeenCalledWith(
+      accountTag,
+      "Existing Chief",
+      "#fbbf24",
+      18,
+      5,
+      3,
+    );
+  });
+
   it("does not reduce configured builder counts during import", async () => {
     jest.mocked(getAccountByTag).mockResolvedValue({
       tag: accountTag,

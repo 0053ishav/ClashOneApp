@@ -344,7 +344,7 @@ export async function importVillageJson(
   const buildingProgress: BuildingProgressRecord[] = (parsed.buildings ?? []).map((building) => ({
     id: randomUUID(),
     dataId: building.data,
-    village: HOME_VILLAGE,
+    village: "home",
     normalLevel: building.lvl,
     count:
       Number.isSafeInteger(building.cnt) && (building.cnt ?? 0) > 0

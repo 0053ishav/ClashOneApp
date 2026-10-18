@@ -1,5 +1,5 @@
 import { replaceImportedVillageSnapshot } from "@/services/accountService";
-import type { EntityRecord, Upgrade } from "@/types/upgrade";
+import type { BuildingProgressRecord, EntityRecord, Upgrade } from "@/types/upgrade";
 
 const mockRunAsync = jest.fn();
 const mockExecAsync = jest.fn();
@@ -39,6 +39,15 @@ describe("replaceImportedVillageSnapshot", () => {
     level: 1,
   } as EntityRecord;
 
+  const buildingProgress: BuildingProgressRecord[] = [{
+    id: "building-progress-1",
+    dataId: 1000077,
+    village: "home",
+    normalLevel: 5,
+    count: 1,
+    superchargeLevel: 1,
+  }];
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockGetDB.mockResolvedValue(db);
@@ -47,7 +56,7 @@ describe("replaceImportedVillageSnapshot", () => {
   });
 
   it("replaces upgrades and entities in one transaction", async () => {
-    await replaceImportedVillageSnapshot("#TEST", [upgrade], [entity]);
+    await replaceImportedVillageSnapshot("#TEST", [upgrade], [entity], buildingProgress);
 
     expect(mockExecAsync.mock.calls.map(([sql]) => sql)).toEqual([
       "BEGIN TRANSACTION",
@@ -67,6 +76,10 @@ describe("replaceImportedVillageSnapshot", () => {
     );
     expect(mockRunAsync).toHaveBeenCalledWith(
       expect.stringContaining("INSERT INTO entities"),
+      expect.any(Array),
+    );
+    expect(mockRunAsync).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO building_progress"),
       expect.any(Array),
     );
   });

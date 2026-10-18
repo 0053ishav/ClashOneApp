@@ -358,8 +358,9 @@ export async function replaceImportedVillageSnapshot(
           upgrade_type, builder_slot, builder_type, lab_slot, current_level,
           next_level, start_time, duration_minutes, finish_timestamp,
           has_helper, recurrent_helper, helper_applied_seconds, is_completed,
-          source, is_crafted, module_id, crafted_module_levels
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          source, is_crafted, module_id, crafted_module_levels, upgrade_kind,
+          current_supercharge_level, next_supercharge_level
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           u.id, tag, u.village ?? "home", u.dataId ?? null, u.entity, u.type,
           u.subType ?? null, u.upgradeType,

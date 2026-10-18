@@ -86,15 +86,15 @@ describe("replaceImportedVillageSnapshot", () => {
 
   it("rolls back both tables if any write fails", async () => {
     mockRunAsync.mockImplementation(async (sql: string) => {
-      if (sql.includes("INSERT INTO entities")) {
-        throw new Error("simulated entity insert failure");
+      if (sql.includes("INSERT INTO building_progress")) {
+        throw new Error("simulated building progress insert failure");
       }
       return { changes: 1 };
     });
 
     await expect(
-      replaceImportedVillageSnapshot("#TEST", [upgrade], [entity]),
-    ).rejects.toThrow("simulated entity insert failure");
+      replaceImportedVillageSnapshot("#TEST", [upgrade], [entity], buildingProgress),
+    ).rejects.toThrow("simulated building progress insert failure");
 
     expect(mockExecAsync.mock.calls.map(([sql]) => sql)).toEqual([
       "BEGIN TRANSACTION",

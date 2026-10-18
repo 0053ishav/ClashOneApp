@@ -710,6 +710,18 @@ export async function importVillageJson(
     });
   }
 
+  // The export's builder-hut count can be incomplete even when it contains
+  // several valid, concurrent builder timers. Each non-Goblin BUILDER timer
+  // is evidence that a normal builder was occupied at export time. Use that
+  // count as a lower bound so imported timers don't receive a '?' slot solely
+  // because the building snapshot under-reported builder capacity.
+  const inferredHomeBuilderSlots = validUpgrades.filter((item) => {
+    if (item.village !== HOME_VILLAGE || item.isGoblin) return false;
+    const entityType = item.isCrafted ? "building" : getEntity(item.data)?.type;
+    return resolveUpgradeType(entityType) === "BUILDER";
+  }).length;
+  totalHomeBuilders = Math.max(totalHomeBuilders, inferredHomeBuilderSlots);
+
   type ValidLabTask = {
     data: number;
     lvl: number;
@@ -861,18 +873,6 @@ export async function importVillageJson(
     setLastJsonSync(parsed.tag, now);
     return { status: "NO_ACTIVE_BUILDERS", tag: parsed.tag };
   }
-
-  // The export's builder-hut count can be incomplete even when it contains
-  // several valid, concurrent builder timers. Each non-Goblin BUILDER timer
-  // is evidence that a normal builder was occupied at export time. Use that
-  // count as a lower bound so imported timers don't receive a '?' slot solely
-  // because the building snapshot under-reported builder capacity.
-  const inferredHomeBuilderSlots = validUpgrades.filter((item) => {
-    if (item.village !== HOME_VILLAGE || item.isGoblin) return false;
-    const entityType = item.isCrafted ? "building" : getEntity(item.data)?.type;
-    return resolveUpgradeType(entityType) === "BUILDER";
-  }).length;
-  totalHomeBuilders = Math.max(totalHomeBuilders, inferredHomeBuilderSlots);
 
   // =========================================================
   // 🔥 BUILD FINAL UPGRADES

@@ -336,10 +336,19 @@ export async function importVillageJson(
   const exportTimestampMs = parsed.timestamp * 1000;
   const now = Date.now();
 
-  const {
-    homeBuilders: totalHomeBuilders,
-    builderBaseBuilders: totalBuilderBaseBuilders,
-  } = getBuilderCounts(parsed);
+  const exportedBuilderCounts = getBuilderCounts(parsed);
+  // An export can under-report builder huts (for example, when the export
+  // omits a hut record). Preserve explicitly configured account capacity so
+  // valid active timers do not lose their builder slots during import.
+  const existingAccount = await getAccountByTag(parsed.tag);
+  const totalHomeBuilders = Math.max(
+    exportedBuilderCounts.homeBuilders,
+    existingAccount?.builderCount ?? 0,
+  );
+  const totalBuilderBaseBuilders = Math.max(
+    exportedBuilderCounts.builderBaseBuilders,
+    existingAccount?.builderBaseBuilderCount ?? 0,
+  );
 
   // Some exported building records (for example, crafted defenses) describe
   // module/type metadata and intentionally have no top-level level. They are
@@ -792,7 +801,7 @@ export async function importVillageJson(
     });
   }
 
-  const existing = await getAccountByTag(parsed.tag);
+  const existing = existingAccount;
   if (!existing) {
     // First import initializes counts from the village export.
     await addAccount(

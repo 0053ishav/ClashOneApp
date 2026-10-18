@@ -342,6 +342,7 @@ export function UpgradeActionModal({
     ? calculateSuperchargeProgression(
         superchargeData,
         upgrade.currentSuperchargeLevel ?? 0,
+        { inProgressLevel: upgrade.nextSuperchargeLevel },
       )
     : null;
 
@@ -677,7 +678,7 @@ export function UpgradeActionModal({
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Supercharge costs</Text>
                 <DetailRow
-                  label="Next charge cost"
+                  label="Current charge cost"
                   value={formatGameCost(superchargeProgression.nextCost)}
                   valueIconUri={resourceIcon}
                   valueColor={resourceColor}
@@ -691,13 +692,13 @@ export function UpgradeActionModal({
                   }
                 />
                 <DetailRow
-                  label="Total remaining cost"
+                  label="Future charge cost"
                   value={formatGameCost(superchargeProgression.totalCost)}
                   valueIconUri={resourceIcon}
                   valueColor={resourceColor}
                 />
                 <DetailRow
-                  label="Remaining charge levels"
+                  label="Future charge levels"
                   value={String(superchargeProgression.remainingLevels)}
                 />
               </View>

@@ -371,6 +371,9 @@ export async function replaceImportedVillageSnapshot(
           u.helperAppliedSeconds ?? 0, u.isCompleted ? 1 : 0,
           u.source ?? null, u.isCrafted ? 1 : 0, u.moduleId ?? null,
           u.craftedModuleLevels ? JSON.stringify(u.craftedModuleLevels) : null,
+          u.upgradeKind ?? "NORMAL",
+          u.currentSuperchargeLevel ?? null,
+          u.nextSuperchargeLevel ?? null,
         ],
       );
     }

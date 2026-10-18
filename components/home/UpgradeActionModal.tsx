@@ -261,8 +261,10 @@ export function UpgradeActionModal({
   const maxLevel = progression?.maxLevel;
 
   const isMaxLevel =
-    progression?.isMaxLevel ??
-    (maxLevel != null && currentLevel != null && currentLevel >= maxLevel);
+    upgrade.upgradeKind === "SUPERCHARGE"
+      ? false
+      : progression?.isMaxLevel ??
+        (maxLevel != null && currentLevel != null && currentLevel >= maxLevel);
 
   const headerLevel = nextLevel ?? currentLevel;
 
@@ -540,9 +542,15 @@ export function UpgradeActionModal({
               </View>
             )}
 
-            <Text style={styles.levelLabel}>CURRENT</Text>
+            <Text style={styles.levelLabel}>
+              {upgrade.upgradeKind === "SUPERCHARGE" ? "CHARGE LEVEL" : "CURRENT"}
+            </Text>
 
-            <Text style={styles.currentLevelNumber}>{currentLevel ?? "—"}</Text>
+            <Text style={styles.currentLevelNumber}>
+              {upgrade.upgradeKind === "SUPERCHARGE"
+                ? (upgrade.currentSuperchargeLevel ?? 0)
+                : (currentLevel ?? "—")}
+            </Text>
           </View>
 
           {/* ARROW */}
@@ -577,11 +585,19 @@ export function UpgradeActionModal({
             )}
 
             <Text style={styles.levelLabel}>
-              {isMaxLevel ? "STATUS" : "NEXT"}
+              {upgrade.upgradeKind === "SUPERCHARGE"
+                ? "NEXT CHARGE"
+                : isMaxLevel
+                  ? "STATUS"
+                  : "NEXT"}
             </Text>
 
             <Text style={styles.nextLevelNumber}>
-              {isMaxLevel ? "MAX" : (nextLevel ?? "—")}
+              {upgrade.upgradeKind === "SUPERCHARGE"
+                ? (upgrade.nextSuperchargeLevel ?? "—")
+                : isMaxLevel
+                  ? "MAX"
+                  : (nextLevel ?? "—")}
             </Text>
           </View>
         </View>
@@ -620,6 +636,19 @@ export function UpgradeActionModal({
             <Text style={styles.tinyText}>{formatMs(totalMs)}</Text>
           </View>
         </View>
+        {upgrade.upgradeKind === "SUPERCHARGE" && (
+          <View style={styles.hallAvailabilityCard}>
+            <View style={styles.hallAvailabilityHeader}>
+              <Ionicons name="flash-outline" size={16} color="#f59e0b" />
+              <Text style={styles.hallAvailabilityTitle}>Supercharge in progress</Text>
+            </View>
+            <Text style={styles.hallAvailabilityValue}>
+              Building level {upgrade.currentLevel ?? "—"} · Charge{" "}
+              {upgrade.currentSuperchargeLevel ?? 0} → {upgrade.nextSuperchargeLevel ?? "—"}
+            </Text>
+          </View>
+        )}
+
         <MagicItemTimeSaved milliseconds={upgrade.magicItemTimeSavedMs} />
 
         {/* =====================================================

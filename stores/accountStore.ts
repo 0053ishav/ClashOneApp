@@ -6,7 +6,7 @@ import { deletePlayerProfile, getPlayerProfile } from "@/storage/playerProfile";
 import { getWidgetPrefs, saveWidgetPrefs } from "@/storage/widgetPrefs";
 import { deleteWidgetCaches } from "@/utils/widget/widgetCache";
 import { PlayerProfile } from "@/types/player";
-import { EntityRecord, Upgrade } from "@/types/upgrade";
+import { BuildingProgressRecord, EntityRecord, Upgrade } from "@/types/upgrade";
 import { create } from "zustand";
 
 type AccountState = {
@@ -45,7 +45,8 @@ type AccountState = {
   importJsonData: (
     tag: string,
     upgrades: Upgrade[],
-    entities: EntityRecord[]
+    entities: EntityRecord[],
+    buildingProgress?: BuildingProgressRecord[],
   ) => Promise<void>;
 };
 
@@ -337,7 +338,7 @@ export const useAccountStore = create<AccountState>((set) => ({
     }
 
     try {
-      await replaceImportedVillageSnapshot(tag, upgrades, entities);
+      await replaceImportedVillageSnapshot(tag, upgrades, entities, buildingProgress);
 
       const { switchAccount, loadAccounts, setLastSync } = useAccountStore.getState();
       await loadAccounts();

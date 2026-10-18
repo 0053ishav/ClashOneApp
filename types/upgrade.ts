@@ -73,3 +73,13 @@ export type BuilderWidgetData = {
   color?: string;
   accountInitials?: string;
 };
+
+/** Imported Home Village building levels and completed Supercharge state. */
+export type BuildingProgressRecord = {
+  id: string;
+  dataId: number;
+  village: "home";
+  normalLevel: number;
+  count: number;
+  superchargeLevel: number;
+};

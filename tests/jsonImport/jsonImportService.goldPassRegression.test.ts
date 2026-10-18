@@ -4,6 +4,7 @@ import {
   saveGoldPassBoostSettings,
 } from "@/services/goldPassBoostService";
 import { ProgressionApplicationService } from "@/services/progression";
+import { ProgressionQueries } from "@/services/progression/progressionQueries";
 import { useAccountStore } from "@/stores/accountStore";
 import { getAccountByTag } from "@/services/accountService";
 import { fetchPlayerFromApi } from "@/services/clashApi";
@@ -28,6 +29,12 @@ jest.mock("@/services/craftedService", () => ({
 jest.mock("@/services/progression", () => ({
   ProgressionApplicationService: {
     resolveUpgrade: jest.fn(),
+  },
+}));
+
+jest.mock("@/services/progression/progressionQueries", () => ({
+  ProgressionQueries: {
+    getProgression: jest.fn(),
   },
 }));
 
@@ -171,6 +178,62 @@ describe("importVillageJson Gold Pass regression coverage", () => {
     jest.mocked(useAccountStore.getState).mockReturnValue(
       mockAccountStoreState as unknown as ReturnType<typeof useAccountStore.getState>,
     );
+  });
+
+
+  it("imports an active Supercharge timer without changing the normal building level", async () => {
+    const remainingSeconds = 318_348;
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 1000077, lvl: 5, timer: remainingSeconds, supercharge: 0 },
+      ],
+    });
+
+    jest.mocked(ProgressionQueries.getProgression).mockReturnValue({
+      id: 1000077,
+      maxLevel: 5,
+      scMaxLevel: 2,
+      maxHallLevel: 18,
+      resource: "gold",
+      levels: {},
+      supercharge: {
+        1: { hallLevel: 18, cost: 1, upgradeTime: 432_000 },
+        2: { hallLevel: 18, cost: 1, upgradeTime: 604_800 },
+      },
+    } as never);
+
+    await importVillageJson(rawExport);
+
+    const [importedUpgrade] = importedUpgradeSnapshots[0];
+    expect(importedUpgrade.upgradeKind).toBe("SUPERCHARGE");
+    expect(importedUpgrade.currentLevel).toBe(5);
+    expect(importedUpgrade.nextLevel).toBe(5);
+    expect(importedUpgrade.currentSuperchargeLevel).toBe(0);
+    expect(importedUpgrade.nextSuperchargeLevel).toBe(1);
+    expect(importedUpgrade.endTime).toBe(
+      exportTimestampMs + remainingSeconds * 1_000,
+    );
+  });
+
+  it("does not persist an active Supercharge when its progression metadata is missing", async () => {
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 1000077, lvl: 5, timer: exportedRemainingSeconds, supercharge: 0 },
+      ],
+    });
+
+    jest.mocked(ProgressionQueries.getProgression).mockReturnValue(undefined);
+
+    await expect(importVillageJson(rawExport)).rejects.toThrow(
+      "SUPERCHARGE_PROGRESSION_UNAVAILABLE",
+    );
+    expect(mockImportJsonData).not.toHaveBeenCalled();
   });
 
   it("preserves manually configured Gold Pass settings during JSON import", async () => {

@@ -6,7 +6,7 @@ import {
 import { ProgressionApplicationService } from "@/services/progression";
 import { ProgressionQueries } from "@/services/progression/progressionQueries";
 import { useAccountStore } from "@/stores/accountStore";
-import { getAccountByTag } from "@/services/accountService";
+import { getAccountByTag, updateAccount } from "@/services/accountService";
 import { fetchPlayerFromApi } from "@/services/clashApi";
 import { saveReEngagementBoostSettings } from "@/services/reEngagementBoostService";
 import type { BuildingProgressRecord, Upgrade } from "@/types/upgrade";
@@ -183,6 +183,28 @@ describe("importVillageJson Gold Pass regression coverage", () => {
     );
   });
 
+
+  it("does not reduce configured builder counts during import", async () => {
+    jest.mocked(getAccountByTag).mockResolvedValue({
+      tag: accountTag,
+      name: "Existing Chief",
+      color: "#fbbf24",
+      townhall: 18,
+      builderCount: 6,
+      builderBaseBuilderCount: 3,
+    } as never);
+
+    await importVillageJson(makeExport());
+
+    expect(updateAccount).toHaveBeenCalledWith(
+      accountTag,
+      "Existing Chief",
+      "#fbbf24",
+      18,
+      6,
+      3,
+    );
+  });
 
   it("imports an active Supercharge timer without changing the normal building level", async () => {
     const remainingSeconds = 318_348;

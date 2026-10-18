@@ -299,6 +299,23 @@ async function migrateDatabase() {
     version = 8;
   }
 
+  // V9 - Supercharge state is stored separately from normal building levels.
+  if (version < 9) {
+    for (const [column, definition] of [
+      ["upgrade_kind", "TEXT DEFAULT 'NORMAL'"],
+      ["current_supercharge_level", "INTEGER"],
+      ["next_supercharge_level", "INTEGER"],
+    ] as const) {
+      try {
+        await db.execAsync(`ALTER TABLE upgrades ADD COLUMN ${column} ${definition};`);
+      } catch (error) {
+        log(`⏭️ ${column} already exists`, error);
+      }
+    }
+    await setSchemaVersion(db, 9);
+    version = 9;
+  }
+
   // log("✅ Database ready. Version:", version);
 
   // Debug only

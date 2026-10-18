@@ -9,7 +9,7 @@ import { useAccountStore } from "@/stores/accountStore";
 import { getAccountByTag } from "@/services/accountService";
 import { fetchPlayerFromApi } from "@/services/clashApi";
 import { saveReEngagementBoostSettings } from "@/services/reEngagementBoostService";
-import type { Upgrade } from "@/types/upgrade";
+import type { BuildingProgressRecord, Upgrade } from "@/types/upgrade";
 import type { GoldPassBoostSettings } from "@/types/goldPass";
 
 jest.mock("@/services/accountService", () => ({
@@ -117,10 +117,12 @@ const otherAccountSettings: GoldPassBoostSettings = {
 
 const persistedSettings = new Map<string, GoldPassBoostSettings>();
 const importedUpgradeSnapshots: Upgrade[][] = [];
+const importedBuildingProgressSnapshots: BuildingProgressRecord[][] = [];
 
 const mockImportJsonData = jest.fn(
-  async (_tag: string, upgrades: Upgrade[], _entities: unknown[]) => {
+  async (_tag: string, upgrades: Upgrade[], _entities: unknown[], buildingProgress: BuildingProgressRecord[] = []) => {
     importedUpgradeSnapshots.push(upgrades);
+    importedBuildingProgressSnapshots.push(buildingProgress);
   },
 );
 
@@ -151,6 +153,7 @@ describe("importVillageJson Gold Pass regression coverage", () => {
     persistedSettings.set(accountTag, { ...originalSettings });
     persistedSettings.set(otherAccountTag, { ...otherAccountSettings });
     importedUpgradeSnapshots.length = 0;
+    importedBuildingProgressSnapshots.length = 0;
 
     jest.spyOn(Date, "now").mockReturnValue(exportTimestampMs + 1_000);
 
@@ -215,6 +218,37 @@ describe("importVillageJson Gold Pass regression coverage", () => {
     expect(importedUpgrade.nextSuperchargeLevel).toBe(1);
     expect(importedUpgrade.endTime).toBe(
       exportTimestampMs + remainingSeconds * 1_000,
+    );
+    expect(importedBuildingProgressSnapshots[0]).toContainEqual(
+      expect.objectContaining({
+        dataId: 1000077,
+        normalLevel: 5,
+        superchargeLevel: 0,
+      }),
+    );
+  });
+
+
+  it("preserves completed Supercharge levels even when no upgrade timer is active", async () => {
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 1000077, lvl: 5, cnt: 1, supercharge: 1 },
+      ],
+    });
+
+    await importVillageJson(rawExport);
+
+    expect(importedUpgradeSnapshots[0]).toHaveLength(0);
+    expect(importedBuildingProgressSnapshots[0]).toContainEqual(
+      expect.objectContaining({
+        dataId: 1000077,
+        normalLevel: 5,
+        count: 1,
+        superchargeLevel: 1,
+      }),
     );
   });
 

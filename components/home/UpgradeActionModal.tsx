@@ -29,7 +29,7 @@ type UpgradeActionModalProps = {
 };
 
 const SPARKY_ICON = `${ENV.CDN_BASE}/v2/home/other/sparky.png`;
-const SUPERCHARGE_ICON = `${ENV.CDN_BASE}/v2/home/other/sc.png`;
+const SUPERCHARGE_ICON = `${ENV.CDN_BASE}/v2/home/other/supercharge.png`;
 const NOT_SUPERCHARGE_ICON = "https://cdn.clashwidget.online/v2/home/other/not-sc.png";
 
 const XP_ICON = `${ENV.CDN_BASE}/v2/home/other/xp.png`;

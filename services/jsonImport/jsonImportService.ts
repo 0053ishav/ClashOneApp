@@ -816,7 +816,7 @@ export async function importVillageJson(
     validUpgrades.length === 0 &&
     validLabTasks.length === 0
   ) {
-    await importJsonData(parsed.tag, [], entities);
+    await importJsonData(parsed.tag, [], entities, buildingProgress);
     await clearActiveMagicEffects(parsed.tag);
     await replaceImportedBoostSnapshot({
       accountTag: parsed.tag,

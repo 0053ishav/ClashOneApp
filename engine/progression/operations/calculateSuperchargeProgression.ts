@@ -16,9 +16,15 @@ export interface SuperchargeProgression {
  * Supercharge records are keyed by the target charge level, so level 1's
  * cost is charged when moving from charge level 0 to 1.
  */
+export interface SuperchargeProgressionOptions {
+  /** Charge level currently being upgraded; its cost has already been paid. */
+  inProgressLevel?: number;
+}
+
 export function calculateSuperchargeProgression(
   progression: Pick<ProgressionData, "scMaxLevel" | "supercharge">,
   currentLevel: number,
+  options: SuperchargeProgressionOptions = {},
 ): SuperchargeProgression {
   const declaredMaxLevel = progression.scMaxLevel ?? Math.max(
     0,
@@ -35,13 +41,20 @@ export function calculateSuperchargeProgression(
   const nextData: ProgressionLevel | undefined = nextLevel == null
     ? undefined
     : progression.supercharge?.[nextLevel];
+  const completedThroughLevel = Math.max(
+    normalizedCurrentLevel,
+    Math.min(
+      maxLevel,
+      Math.max(0, Math.floor(options.inProgressLevel ?? normalizedCurrentLevel)),
+    ),
+  );
 
   let totalCost = 0;
   let totalUpgradeTime = 0;
   let hasCompleteCostData = true;
   let hasCompleteTimeData = true;
 
-  for (let level = normalizedCurrentLevel + 1; level <= maxLevel; level += 1) {
+  for (let level = completedThroughLevel + 1; level <= maxLevel; level += 1) {
     const levelData = progression.supercharge?.[level];
     if (levelData?.cost == null) {
       hasCompleteCostData = false;
@@ -59,7 +72,7 @@ export function calculateSuperchargeProgression(
     currentLevel: normalizedCurrentLevel,
     ...(nextLevel == null ? {} : { nextLevel }),
     maxLevel,
-    remainingLevels: Math.max(0, maxLevel - normalizedCurrentLevel),
+    remainingLevels: Math.max(0, maxLevel - completedThroughLevel),
     ...(nextData?.cost == null ? {} : { nextCost: nextData.cost }),
     ...(nextData?.upgradeTime == null ? {} : { nextUpgradeTime: nextData.upgradeTime }),
     ...(hasCompleteCostData ? { totalCost } : {}),

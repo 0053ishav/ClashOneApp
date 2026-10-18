@@ -334,8 +334,8 @@ export function UpgradeActionModal({
    */
 
   const resourceIcon =
-    progression?.resource != null
-      ? resolveResourceIcon(progression.resource)
+    progression?.resource != null || superchargeData?.resource != null
+      ? resolveResourceIcon(progression?.resource ?? superchargeData!.resource)
       : undefined;
 
   const superchargeData =
@@ -351,8 +351,8 @@ export function UpgradeActionModal({
     : null;
 
   const resourceColor =
-    progression?.resource != null
-      ? getResourceColor(progression.resource)
+    progression?.resource != null || superchargeData?.resource != null
+      ? getResourceColor(progression?.resource ?? superchargeData!.resource)
       : undefined;
 
   /*

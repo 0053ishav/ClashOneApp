@@ -341,17 +341,26 @@ export async function importVillageJson(
     builderBaseBuilders: totalBuilderBaseBuilders,
   } = getBuilderCounts(parsed);
 
-  const buildingProgress: BuildingProgressRecord[] = (parsed.buildings ?? []).map((building) => ({
-    id: randomUUID(),
-    dataId: building.data,
-    village: "home",
-    normalLevel: building.lvl,
-    count:
-      Number.isSafeInteger(building.cnt) && (building.cnt ?? 0) > 0
-        ? building.cnt!
-        : 1,
-    superchargeLevel: building.supercharge ?? 0,
-  }));
+  // Some exported building records (for example, crafted defenses) describe
+  // module/type metadata and intentionally have no top-level level. They are
+  // not ordinary building-level snapshots and must not be written to the
+  // NOT NULL building_progress.normal_level column.
+  const buildingProgress: BuildingProgressRecord[] = (parsed.buildings ?? [])
+    .filter(
+      (building) =>
+        Number.isSafeInteger(building.lvl) && building.lvl >= 0,
+    )
+    .map((building) => ({
+      id: randomUUID(),
+      dataId: building.data,
+      village: "home",
+      normalLevel: building.lvl,
+      count:
+        Number.isSafeInteger(building.cnt) && (building.cnt ?? 0) > 0
+          ? building.cnt!
+          : 1,
+      superchargeLevel: building.supercharge ?? 0,
+    }));
 
   // =========================================================
   // 🔥 STEP 1: BUILD ACTIVE TASK LIST (NORMAL + CRAFTED)

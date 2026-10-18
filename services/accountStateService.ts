@@ -1,15 +1,11 @@
 import { Upgrade } from "@/types/upgrade";
 import { isWorkForHireActive } from "@/utils/goblin";
 import { getEntities } from "./entityService";
-import { getBuildingProgress } from "./accountService";
 import { getUpgrades } from "./upgradeService";
 
 export async function getAccountState(tag: string) {
-  const [upgrades, entities, buildingProgress] = await Promise.all([
-    getUpgrades(tag),
-    getEntities(tag),
-    getBuildingProgress(tag),
-  ]);
+  const upgrades = await getUpgrades(tag);
+  const entities = await getEntities(tag);
   const now = Date.now();
 
   const activeUpgrades = upgrades.filter(
@@ -106,7 +102,6 @@ export async function getAccountState(tag: string) {
     guardians,
 
     entities,
-    buildingProgress,
     helpers: entities.filter((e) => e.type === "helper"),
     petsState: entities.filter((e) => e.type === "pet"),
     guardiansState: entities.filter((e) => e.type === "guardian"),

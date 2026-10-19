@@ -1,5 +1,5 @@
 import { useEntityStore } from "@/stores/entityStore";
-import type { EntityData } from "@/types/entities";
+import type { ExternalEntityData } from "@/types/entities";
 import type { PlayerFull } from "@/types/playerFull";
 import { normalizeVillage } from "@/types/entity";
 import { parseArmy } from "@/utils/profile/parseArmy";
@@ -22,7 +22,7 @@ describe("Builder Base village normalization", () => {
   it("resolves Builder Base troops and heroes from player API village values", () => {
     // The CDN metadata uses "builder" while the Clash API player payload uses
     // "builderBase". This cast models the external JSON before store normalization.
-    const metadata = [
+    const metadata: ExternalEntityData[] = [
       {
         id: 1001,
         slug: "barbarian",
@@ -44,7 +44,7 @@ describe("Builder Base village normalization", () => {
         type: "hero",
         village: "builder",
       },
-    ] as unknown as EntityData[];
+    ];
 
     useEntityStore.getState().setEntities(metadata);
 

@@ -5,7 +5,7 @@
 
 import { getCategorySlug } from "@/config/categorySlugs";
 import type {
-  EntityData,
+  ExternalEntityData,
 } from "@/types/entities";
 import { ResourceType } from "@/types/resource";
 
@@ -31,7 +31,7 @@ export type CraftedDefenseMetadataPayload =
 export async function fetchCategory(
   category: string,
 ): Promise<
-  EntityData[] | CraftedDefenseMetadataPayload
+  ExternalEntityData[] | CraftedDefenseMetadataPayload
 > {
   const slug = getCategorySlug(category);
 
@@ -53,5 +53,5 @@ export async function fetchCategory(
 
   return Object.values(
     data,
-  ) as EntityData[];
+  ) as ExternalEntityData[];
 }

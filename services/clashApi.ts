@@ -46,7 +46,7 @@ export async function fetchPlayerFromApi(playerTag: string) {
   const result = await res.json();
   console.log("✅ API data received:", result.source);
 
-  return result.data as PlayerFull;
+  return result.data;
 }
 
 export async function fetchFullPlayer(
@@ -70,5 +70,5 @@ export async function fetchFullPlayer(
   }
 
   const result = await res.json();
-  return result.data;
+  return result.data as PlayerFull;
 }

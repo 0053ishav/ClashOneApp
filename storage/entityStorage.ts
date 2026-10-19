@@ -1,7 +1,6 @@
 import { storage } from "@/storage/mmkv";
 
 import type {
-  EntityData,
   EntityManifest,
   ExternalEntityData,
 } from "@/types/entities";

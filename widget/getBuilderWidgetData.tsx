@@ -112,6 +112,9 @@ export async function getBuilderWidgetData(inputTag?: string) {
     progress,
     showProgress: !status.allFree,
     currentLevel: currentUpgrade.currentLevel,
+    upgradeKind: currentUpgrade.upgradeKind,
+    currentSuperchargeLevel: currentUpgrade.currentSuperchargeLevel,
+    nextSuperchargeLevel: currentUpgrade.nextSuperchargeLevel,
     levelText:
       currentUpgrade.upgradeKind === "SUPERCHARGE"
         ? "SC " + (currentUpgrade.currentSuperchargeLevel ?? 0) + " → " + (currentUpgrade.nextSuperchargeLevel ?? "—")

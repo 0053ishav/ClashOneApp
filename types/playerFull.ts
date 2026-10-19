@@ -33,9 +33,10 @@ export interface PlayerLeague {
   id?: number;
   name: string;
   iconUrls: {
-    small: string;
-    medium: string;
-    large: string;
+    small?: string;
+    medium?: string;
+    large?: string;
+    tiny?: string;
   };
 }
 

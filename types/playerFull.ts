@@ -11,9 +11,9 @@ export interface PlayerEntityLevel {
 export interface PlayerAchievement {
   id?: number;
   name: string;
-  stars?: number;
-  value?: number;
-  target?: number;
+  stars: number;
+  value: number;
+  target: number;
   info?: string;
   completionInfo?: string;
   village?: PlayerVillage;

@@ -32,7 +32,7 @@ export interface PlayerLabel {
 export interface PlayerLeague {
   id?: number;
   name: string;
-  iconUrls?: {
+  iconUrls: {
     small: string;
     medium: string;
     large: string;

@@ -18,6 +18,7 @@ import { resolveResourceIcon } from "@/utils/icons/resolveResourceIcon";
 import { ProgressionQueries } from "@/services/progression/progressionQueries";
 import { calculateSuperchargeProgression } from "@/engine/progression/operations/calculateSuperchargeProgression";
 import { resolveUpgradeIcon } from "@/utils/icons/resolveUpgradeIcon";
+import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 
 type UpgradeActionModalProps = {
   visible: boolean;
@@ -365,6 +366,22 @@ export function UpgradeActionModal({
   const hallIcon =
     progression?.requiredHallLevel != null
       ? resolveHallIcon(upgrade.village, progression.requiredHallLevel)
+      : undefined;
+
+  // The target level owns the laboratory requirement (e.g. Giant 12 → 13
+  // requires Laboratory 15). Keep this lookup tied to the next level's data.
+  const nextLevelData =
+    upgrade.dataId != null && nextLevel != null
+      ? ProgressionQueries.getProgression(upgrade.dataId)?.levels[nextLevel]
+      : undefined;
+  const requiredLabLevel =
+    nextLevelData?.laboratoryLevel ?? nextLevelData?.labLevel;
+  const labIcon =
+    requiredLabLevel != null
+      ? resolveEntityIcon(1000007, {
+          village: "home",
+          level: requiredLabLevel,
+        })
       : undefined;
 
   // A crafted module's current level is already achievable even if the
@@ -870,6 +887,15 @@ export function UpgradeActionModal({
               }
               valueIconUri={hallIcon}
             />
+
+            {upgrade.village === "home" && requiredLabLevel != null && (
+              <DetailRow
+                icon="flask-outline"
+                label="Required Lab"
+                value={String(requiredLabLevel)}
+                valueIconUri={labIcon}
+              />
+            )}
 
             {hasXp && (
               <DetailRow

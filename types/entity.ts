@@ -1,4 +1,21 @@
 export type Village = "home" | "builderBase" | "global";
+export type EntityMetadataVillage = Village | "builder";
+
+/**
+ * External entity metadata historically labels Builder Base as "builder".
+ * Runtime player API data uses "builderBase", which is the canonical app value.
+ */
+export function normalizeVillage(value: string): Village | null {
+  if (value === "builder") {
+    return "builderBase";
+  }
+
+  if (value === "home" || value === "builderBase" || value === "global") {
+    return value;
+  }
+
+  return null;
+}
 export type Resource = "gold" | "elixir" | "dark" ;
 
 /**

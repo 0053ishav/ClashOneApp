@@ -22,8 +22,9 @@ import { create } from "zustand";
 import type {
   EntityData,
   EntityManifest,
+  ExternalEntityData,
 } from "@/types/entities";
-import { Village } from "@/types/entity";
+import { normalizeVillage, type Village } from "@/types/entity";
 
 interface EntityStore {
   manifest: EntityManifest | null;
@@ -36,7 +37,7 @@ interface EntityStore {
   ) => void;
 
   setEntities: (
-    entities: EntityData[],
+    entities: ExternalEntityData[],
   ) => void;
 
   getEntity: (
@@ -74,24 +75,30 @@ export const useEntityStore =
         > = {};
 
         for (const entity of entities) {
-           if (!entity.name) {
-    console.log(
-      "[EntityStore] ❌ Invalid entity",
-      entity,
-    );
+          if (!entity.name?.en) {
+            console.warn("[EntityStore] Invalid entity name", entity);
+            continue;
+          }
 
-    continue;
-  }
+          const village = normalizeVillage(String(entity.village));
+          if (!village) {
+            console.warn("[EntityStore] Unsupported entity village", {
+              id: entity.id,
+              village: entity.village,
+            });
+            continue;
+          }
 
-  
-          mapped[entity.id] =
-            entity;
+          // Store only canonical domain values; normalize external metadata here.
+          const normalizedEntity: EntityData = {
+            ...entity,
+            village,
+          };
 
+          mapped[normalizedEntity.id] = normalizedEntity;
           byName[
-            `${entity.name.en
-              .trim()
-              .toLowerCase()}|${entity.village}`
-          ] = entity.id;
+            `${normalizedEntity.name.en.trim().toLowerCase()}|${normalizedEntity.village}`
+          ] = normalizedEntity.id;
         }
 
         return {

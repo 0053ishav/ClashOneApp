@@ -1,5 +1,5 @@
 import EntitySection from "@/components/Profile/EntitySection";
-import { PlayerFull } from "@/types/playerFull";
+import type { PlayerFull, PlayerVillage } from "@/types/playerFull";
 import { parseArmy } from "@/utils/profile/parseArmy";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -11,6 +11,7 @@ interface ArmyEntity {
   name: string;
   level: number;
   maxLevel: number;
+  village: PlayerVillage;
 }
 
 const GOLD = "#fbbf24";
@@ -124,6 +125,7 @@ function Grid({ items }: { items: ArmyEntity[] }) {
           dataId={item.dataId}
           level={item.level}
           maxLevel={item.maxLevel}
+          village={item.village}
         />
       ))}
     </View>

@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/react-native";
+import type { PlayerFull } from "@/types/playerFull";
 
 export async function fetchPlayerFromApi(playerTag: string) {
   console.log("📡 Fetching player from API:", playerTag);
@@ -50,7 +51,7 @@ export async function fetchPlayerFromApi(playerTag: string) {
 
 export async function fetchFullPlayer(
   playerTag: string
-) {
+): Promise<PlayerFull> {
   const encodedTag = encodeURIComponent(playerTag);
 
   const res = await fetch(
@@ -69,5 +70,5 @@ export async function fetchFullPlayer(
   }
 
   const result = await res.json();
-  return result.data;
+  return result.data as PlayerFull;
 }

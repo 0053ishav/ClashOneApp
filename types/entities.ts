@@ -1,4 +1,4 @@
-import { EntityType, SubType, Village } from "./entity";
+import type { EntityMetadataVillage, EntityType, SubType, Village } from "./entity";
 
 export interface EntityLevel {
   level: number;
@@ -38,3 +38,10 @@ export interface EntityManifest {
   version: number;
   categories: Record<string, number>;
 }
+/**
+ * Entity metadata arrives from the CDN and may use the legacy "builder" value.
+ * EntityData remains canonical after the entity store normalizes this boundary.
+ */
+export type ExternalEntityData = Omit<EntityData, "village"> & {
+  village: EntityMetadataVillage;
+};

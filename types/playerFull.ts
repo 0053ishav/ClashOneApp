@@ -1,3 +1,56 @@
+export type PlayerVillage = "home" | "builderBase";
+
+export interface PlayerEntityLevel {
+  id?: number;
+  name: string;
+  level: number;
+  maxLevel: number;
+  village: PlayerVillage;
+}
+
+export interface PlayerAchievement {
+  id?: number;
+  name: string;
+  stars: number;
+  value: number;
+  target: number;
+  info?: string;
+  completionInfo?: string;
+  village?: PlayerVillage;
+}
+
+export interface PlayerLabel {
+  id: number;
+  name: string;
+  iconUrls: {
+    small: string;
+    medium: string;
+    large: string;
+  };
+}
+
+export interface PlayerLeague {
+  id?: number;
+  name: string;
+  iconUrls: {
+    small?: string;
+    medium?: string;
+    large?: string;
+    tiny?: string;
+  };
+}
+
+export interface PlayerClan {
+  tag: string;
+  name: string;
+  clanLevel: number;
+  badgeUrls: {
+    small: string;
+    medium: string;
+    large: string;
+  };
+}
+
 export type PlayerFull = {
   tag: string;
   name: string;
@@ -16,49 +69,15 @@ export type PlayerFull = {
   role?: string;
   warPreference?: string;
 
-  league?: {
-    name: string;
-    iconUrls: {
-      small: string;
-      medium: string;
-      large: string;
-    };
-  };
+  league?: PlayerLeague;
+  leagueTier?: PlayerLeague;
+  clan?: PlayerClan;
+  labels?: PlayerLabel[];
 
-  leagueTier?: {
-    name: string;
-    iconUrls: {
-      small: string;
-      medium: string;
-      large: string;
-    };
-  };
-
-  clan?: {
-    tag: string;
-    name: string;
-    clanLevel: number;
-    badgeUrls: {
-      small: string;
-      medium: string;
-      large: string;
-    };
-  };
-
-  labels?: {
-    id: number;
-    name: string;
-    iconUrls: {
-      small: string;
-      medium: string;
-      large: string;
-    };
-  }[];
-
-  troops?: any[];
-  heroes?: any[];
-  spells?: any[];
-  achievements?: any[];
+  troops?: PlayerEntityLevel[];
+  heroes?: PlayerEntityLevel[];
+  spells?: PlayerEntityLevel[];
+  achievements?: PlayerAchievement[];
 
   helpers?: {
     id: number;
@@ -75,10 +94,8 @@ export type PlayerFull = {
   builderBaseTrophies?: number;
   bestBuilderBaseTrophies?: number;
 
-
   builderBaseLeague?: {
     id?: number;
     name?: string;
   };
-
 };

@@ -1,22 +1,15 @@
-import { Village } from "@/types/entity";
+import type { PlayerEntityLevel, PlayerFull, PlayerVillage } from "@/types/playerFull";
 import { getEntity, getEntityId } from "@/utils/getEntity";
 
-interface ArmyEntity {
-  name: string;
-  level: number;
-  maxLevel: number;
-  village: Village;
+export interface ParsedArmyEntity extends PlayerEntityLevel {
+  dataId: number;
 }
 
-function attachId(entity: ArmyEntity) {
+function attachId(entity: PlayerEntityLevel): ParsedArmyEntity {
   const id = getEntityId(entity.name, entity.village);
 
   if (__DEV__ && id === null) {
-    console.warn(
-      "Missing entity mapping:",
-      entity.name,
-      entity.village,
-    );
+    console.warn("Missing entity mapping:", entity.name, entity.village);
   }
 
   return {
@@ -25,95 +18,62 @@ function attachId(entity: ArmyEntity) {
   };
 }
 
-export function parseArmy(data: any) {
+function isResolved<T extends ParsedArmyEntity>(
+  entity: T,
+): entity is T & { dataId: number } {
+  return entity.dataId !== -1;
+}
 
-  const mappedTroops =
-    data.troops?.map(attachId) ?? [];
-  const mappedHeroes =
-    data.heroes?.map(attachId) ?? []
+export interface ParsedArmy {
+  home: {
+    troops: ParsedArmyEntity[];
+    pets: ParsedArmyEntity[];
+    siegeMachines: ParsedArmyEntity[];
+    heroes: ParsedArmyEntity[];
+  };
+  builderBase: {
+    troops: ParsedArmyEntity[];
+    heroes: ParsedArmyEntity[];
+  };
+}
 
-  const validHeroes =
-    mappedHeroes.filter(
-      (t: any) => t.dataId !== -1,
-    );
-  const validTroops =
-    mappedTroops.filter(
-      (t: any) => t.dataId !== -1,
-    );
+export function parseArmy(data: PlayerFull): ParsedArmy {
+  const mappedTroops = (data.troops ?? []).map(attachId);
+  const mappedHeroes = (data.heroes ?? []).map(attachId);
 
-  const troops =
-    validTroops
-      .filter((t: any) => {
-        const entity = getEntity(t.dataId);
+  const validTroops = mappedTroops.filter(isResolved);
+  const validHeroes = mappedHeroes.filter(isResolved);
 
-        return (
-          entity.type === "troop" &&
-          entity.subType !== "SUPER_TROOP"
-        );
-      })
-      // .sort((a: any, b: any) =>
-      //   a.name.localeCompare(b.name),
-      // ) ?? [];
+  const troops = validTroops.filter((troop) => {
+    const entity = getEntity(troop.dataId);
+    return entity.type === "troop" && entity.subType !== "SUPER_TROOP";
+  });
 
-  // const superTroops =
-  //   data.troops
-  //     ?.map(attachId)
-  //     .filter((t: any) => {
-  //       const entity = getEntity(t.dataId);
+  const pets = validTroops.filter(
+    (troop) => getEntity(troop.dataId).type === "pet",
+  );
+  const siegeMachines = validTroops.filter(
+    (troop) => getEntity(troop.dataId).type === "siege",
+  );
+  const heroes = validHeroes.filter(
+    (hero) => getEntity(hero.dataId).type === "hero",
+  );
 
-  //       return (
-  //         entity.type === "troop" &&
-  //         entity.subType === "SUPER_TROOP"
-  //       );
-  //     }) ?? [];
-
-  const pets =
-    validTroops
-      .filter((t: any) => {
-        const entity = getEntity(t.dataId);
-
-        return entity.type === "pet";
-      }) ?? [];
-
-  const siegeMachines =
-    validTroops
-      .filter((t: any) => {
-        const entity = getEntity(t.dataId);
-
-        return entity.type === "siege";
-      }) ?? [];
-
-  const heroes =
-    validHeroes
-      .filter((h: any) => {
-        const entity = getEntity(h.dataId);
-
-        return entity.type === "hero";
-      }) ?? [];
+  const inVillage = <T extends { village: PlayerVillage }>(
+    entities: T[],
+    village: PlayerVillage,
+  ) => entities.filter((entity) => entity.village === village);
 
   return {
     home: {
-      troops: troops.filter(
-        (t: any) => t.village === "home",
-      ),
-
-      pets,
-
-      siegeMachines,
-
-      heroes: heroes.filter(
-        (h: any) => h.village === "home",
-      ),
+      troops: inVillage(troops, "home"),
+      pets: inVillage(pets, "home"),
+      siegeMachines: inVillage(siegeMachines, "home"),
+      heroes: inVillage(heroes, "home"),
     },
-
     builderBase: {
-      troops: troops.filter(
-        (t: any) => t.village === "builderBase",
-      ),
-
-      heroes: heroes.filter(
-        (h: any) => h.village === "builderBase",
-      ),
+      troops: inVillage(troops, "builderBase"),
+      heroes: inVillage(heroes, "builderBase"),
     },
   };
 }

@@ -6,7 +6,7 @@ import {
 } from "@/storage/entityStorage";
 
 import type {
-  EntityData,
+  ExternalEntityData,
 } from "@/types/entities";
 
 import { CRAFTED_CATEGORY } from "@/services/progression/hydrateProgression";
@@ -22,7 +22,7 @@ export function hydrateEntities() {
   const store =
     useEntityStore.getState();
 
-  const merged: EntityData[] = [];
+  const merged: ExternalEntityData[] = [];
 
   for (const category of Object.keys(
     manifest.categories,

@@ -231,14 +231,13 @@ export default function HomeScreen() {
   }, [activeTag]);
 
   useEffect(() => {
-    if (activeTag) return;
-
-    // Invalidate pending reads and clear data from the previously active village.
+    // Never keep the previous account's state visible while the new account loads.
+    // Also invalidate any in-flight reads started for the previous account.
     refreshRequestRef.current += 1;
     hasLoadedAccountState.current = false;
     setAccountState(null);
     setMagicItemInventoryCount(0);
-    setIsLoadingAccountState(false);
+    setIsLoadingAccountState(Boolean(activeTag));
   }, [activeTag]);
 
   const { width } = useWindowDimensions();

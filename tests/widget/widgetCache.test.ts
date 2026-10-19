@@ -1,5 +1,6 @@
 import { STORAGE_KEYS } from "@/storage/keys";
 import { storage } from "@/storage/mmkv";
+import type { WidgetCacheData } from "@/types/widgetTypes";
 import {
   deleteWidgetCaches,
   getUpcomingWidgetCache,
@@ -40,7 +41,7 @@ describe("widget cache lifecycle", () => {
       upgradeKind: "SUPERCHARGE",
       currentSuperchargeLevel: 1,
       nextSuperchargeLevel: 2,
-    };
+    } satisfies WidgetCacheData;
 
     setWidgetCache("#PLAYER", "builder", data);
 

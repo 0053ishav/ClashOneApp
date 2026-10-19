@@ -15,6 +15,7 @@ export function BuilderStatusWidget(props: {
   showProgress: boolean;
   isFree?: boolean;
   levelText?: string;
+  isSupercharge?: boolean;
   builderCountText?: string;
   nextUpgradeText?: string;
   color?: string;

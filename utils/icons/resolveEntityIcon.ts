@@ -1,9 +1,14 @@
 import { ENV } from "@/config/env";
+import { ProgressionQueries } from "@/services/progression/progressionQueries";
 import { useCraftedDefenseProgressionStore } from "@/stores/crafted";
 import { useEntityStore } from "@/stores/entityStore";
 import type { EntityType, Village } from "@/types/entity";
 import { calculateCraftedDefenseTotalLevel } from "./calculateCraftedDefenseTotalLevel";
 import { resolveCraftedDefenseIconLevel } from "./resolveCraftedDefenseIconLevel";
+import {
+  resolveProgressionIconLevel,
+  type ProgressionImageRange,
+} from "./resolveProgressionIconLevel";
 
 export const FALLBACK_ICON =
   "https://cdn.clashwidget.online/entities/fallbacks/fallback.png";
@@ -218,13 +223,28 @@ export function resolveEntityIcon(
   /*
    * Normal Builder Base entities.
    */
-  if (
-    village === "builderBase"
-  ) {
-    const category =
-      BUILDER_ICON_CATEGORIES[type];
+  if (village === "builderBase") {
+    const category = BUILDER_ICON_CATEGORIES[type];
 
     if (category) {
+      if (type === "troop") {
+        /*
+         * Troop progression may define image ranges without those ranges
+         * being part of the shared ProgressionData domain type.
+         */
+        const progression = ProgressionQueries.getProgression(entityId) as
+          | { images?: ProgressionImageRange[] }
+          | undefined;
+        const iconLevel = resolveProgressionIconLevel(
+          level,
+          progression?.images,
+        );
+
+        if (iconLevel != null) {
+          return `${ENV.CDN_BASE}/v2/builder/${category}/${entityId}/${iconLevel}.png`;
+        }
+      }
+
       return `${ENV.CDN_BASE}/v2/builder/${category}/${entityId}/${level}.png`;
     }
   }

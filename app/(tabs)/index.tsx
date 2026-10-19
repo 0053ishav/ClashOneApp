@@ -61,6 +61,7 @@ import { setSessionSource, track } from "@/utils/analytics/analytics";
 import { calculateProgress } from "@/utils/calculateProgress";
 import { formatBuildingName } from "@/utils/formatBuildingName";
 import { formatCountdown } from "@/utils/formatCountdown";
+import { formatUpgradeFinishDateTime } from "@/utils/formatUpgradeFinishDateTime";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
 import { getEntity } from "@/utils/getEntity";
 import {
@@ -80,6 +81,7 @@ import { getBuilderStatus } from "@/utils/status/home/builderStatus";
 import { getVillageStatus } from "@/utils/status/home/getVillageStatus";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { shouldApplyAccountRefresh } from "@/utils/shouldApplyAccountRefresh";
+import { createAsyncTaskQueue } from "@/utils/createAsyncTaskQueue";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -181,6 +183,7 @@ export default function HomeScreen() {
 
   const hasLoadedAccountState = useRef(false);
   const refreshRequestRef = useRef(0);
+  const refreshQueueRef = useRef(createAsyncTaskQueue());
 
   const refreshState = useCallback(async () => {
     const tag = activeTag;
@@ -188,51 +191,62 @@ export default function HomeScreen() {
 
     const requestId = ++refreshRequestRef.current;
 
-    try {
-      if (!hasLoadedAccountState.current) {
-        setIsLoadingAccountState(true);
-      }
-
-      const [state, inventory] = await Promise.all([
-        getAccountState(tag),
-        getMagicItemInventory(tag),
-      ]);
-
-      // Ignore stale responses when a newer refresh or account switch wins.
+    await refreshQueueRef.current(async () => {
+      // A queued refresh can become obsolete while it waits for an earlier
+      // refresh to finish. Skip it before touching SQLite.
       if (
-        !shouldApplyAccountRefresh({
-          requestId,
-          latestRequestId: refreshRequestRef.current,
-          requestedTag: tag,
-          activeTag: useAccountStore.getState().activeTag,
-        })
+        requestId !== refreshRequestRef.current ||
+        useAccountStore.getState().activeTag !== tag
       ) {
         return;
       }
 
-      setAccountState(state);
-      const trackedPotionCount = inventory.reduce((total, entry) => {
-        const item = MAGIC_ITEMS.find(
-          (candidate) => candidate.id === entry.itemId,
-        );
-        return (
-          total +
-          (item && (item.itemType === "potion" || item.itemType === "snack")
-            ? entry.quantity
-            : 0)
-        );
-      }, 0);
-      setMagicItemInventoryCount(trackedPotionCount);
-      hasLoadedAccountState.current = true;
-    } catch (error) {
-      if (requestId === refreshRequestRef.current) {
-        console.error("[HOME] Failed to refresh account state:", error);
+      try {
+        if (!hasLoadedAccountState.current) {
+          setIsLoadingAccountState(true);
+        }
+
+        // Keep reads sequential on this connection, and serialize all Home
+        // refresh entry points (pull, focus, and timer) through the queue.
+        const state = await getAccountState(tag);
+        const inventory = await getMagicItemInventory(tag);
+
+        // Ignore stale responses when a newer refresh or account switch wins.
+        if (
+          !shouldApplyAccountRefresh({
+            requestId,
+            latestRequestId: refreshRequestRef.current,
+            requestedTag: tag,
+            activeTag: useAccountStore.getState().activeTag,
+          })
+        ) {
+          return;
+        }
+
+        setAccountState(state);
+        const trackedPotionCount = inventory.reduce((total, entry) => {
+          const item = MAGIC_ITEMS.find(
+            (candidate) => candidate.id === entry.itemId,
+          );
+          return (
+            total +
+            (item && (item.itemType === "potion" || item.itemType === "snack")
+              ? entry.quantity
+              : 0)
+          );
+        }, 0);
+        setMagicItemInventoryCount(trackedPotionCount);
+        hasLoadedAccountState.current = true;
+      } catch (error) {
+        if (requestId === refreshRequestRef.current) {
+          console.error("[HOME] Failed to refresh account state:", error);
+        }
+      } finally {
+        if (requestId === refreshRequestRef.current) {
+          setIsLoadingAccountState(false);
+        }
       }
-    } finally {
-      if (requestId === refreshRequestRef.current) {
-        setIsLoadingAccountState(false);
-      }
-    }
+    });
   }, [activeTag]);
 
   useEffect(() => {
@@ -1592,6 +1606,12 @@ export default function HomeScreen() {
                             <Text style={styles.totalTimeText}>
                               of {formatCountdown(totalMs)}
                             </Text>
+                            <Text
+                              style={styles.finishDateTimeText}
+                              numberOfLines={1}
+                            >
+                              {formatUpgradeFinishDateTime(u.endTime)}
+                            </Text>
                             <MagicItemTimeSaved
                               milliseconds={u.magicItemTimeSavedMs}
                             />
@@ -2527,6 +2547,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "#64748b",
     fontWeight: "500",
+  },
+
+  finishDateTimeText: {
+    fontSize: 9,
+    color: "#94a3b8",
+    fontWeight: "500",
+    maxWidth: 150,
   },
 
   progressTrack: {

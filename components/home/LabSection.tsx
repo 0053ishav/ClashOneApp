@@ -4,6 +4,7 @@ import { Village } from "@/types/entity";
 import { Upgrade } from "@/types/upgrade";
 import { calculateProgress } from "@/utils/calculateProgress";
 import { formatCountdown } from "@/utils/formatCountdown";
+import { formatUpgradeFinishDateTime } from "@/utils/formatUpgradeFinishDateTime";
 import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -243,6 +244,9 @@ function LabCard({
             </Text>
 
             <Text style={styles.totalTime}>of {formatCountdown(totalMs)}</Text>
+            <Text style={styles.totalTime}>
+              {formatUpgradeFinishDateTime(lab.endTime)}
+            </Text>
             <MagicItemTimeSaved milliseconds={lab.magicItemTimeSavedMs} />
           </View>
         </View>

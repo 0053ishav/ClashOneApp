@@ -1,4 +1,5 @@
 export type Village = "home" | "builderBase" | "global";
+export type EntityMetadataVillage = Village | "builder";
 
 /**
  * External entity metadata historically labels Builder Base as "builder".

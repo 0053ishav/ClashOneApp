@@ -22,6 +22,7 @@ import { create } from "zustand";
 import type {
   EntityData,
   EntityManifest,
+  ExternalEntityData,
 } from "@/types/entities";
 import { normalizeVillage, type Village } from "@/types/entity";
 
@@ -36,7 +37,7 @@ interface EntityStore {
   ) => void;
 
   setEntities: (
-    entities: EntityData[],
+    entities: ExternalEntityData[],
   ) => void;
 
   getEntity: (

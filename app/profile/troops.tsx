@@ -435,6 +435,7 @@ export default function TroopsScreen() {
             level={item.level}
             maxLevel={item.maxLevel}
             dataId={item.dataId}
+            village={item.village}
           />
         )}
         ListEmptyComponent={

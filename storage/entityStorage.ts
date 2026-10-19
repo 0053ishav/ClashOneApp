@@ -3,6 +3,7 @@ import { storage } from "@/storage/mmkv";
 import type {
   EntityData,
   EntityManifest,
+  ExternalEntityData,
 } from "@/types/entities";
 
 import { CraftedDefenseMetadataPayload } from "@/services/cdnEntities/entities";
@@ -47,7 +48,7 @@ export function loadEntityManifest():
 
 export function saveEntityCategory(
   category: string,
-  entities: EntityData[] | CraftedDefenseMetadataPayload,
+  entities: ExternalEntityData[] | CraftedDefenseMetadataPayload,
 ) {
   storage.set(
     `entities_${category}`,
@@ -57,7 +58,7 @@ export function saveEntityCategory(
 
 export function loadEntityCategory(
   category: string,
-): EntityData[] | CraftedDefenseMetadataPayload | null {
+): ExternalEntityData[] | CraftedDefenseMetadataPayload | null {
   const raw = storage.getString(
     `entities_${category}`,
   );

@@ -79,6 +79,7 @@ import { getBuilderBaseVillageStatus } from "@/utils/status/builderBase/getBuild
 import { getBuilderStatus } from "@/utils/status/home/builderStatus";
 import { getVillageStatus } from "@/utils/status/home/getVillageStatus";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
+import { shouldApplyAccountRefresh } from "@/utils/shouldApplyAccountRefresh";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -199,8 +200,12 @@ export default function HomeScreen() {
 
       // Ignore stale responses when a newer refresh or account switch wins.
       if (
-        requestId !== refreshRequestRef.current ||
-        useAccountStore.getState().activeTag !== tag
+        !shouldApplyAccountRefresh({
+          requestId,
+          latestRequestId: refreshRequestRef.current,
+          requestedTag: tag,
+          activeTag: useAccountStore.getState().activeTag,
+        })
       ) {
         return;
       }

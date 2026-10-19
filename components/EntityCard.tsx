@@ -1,6 +1,7 @@
 import { getUpgradeStatus } from "@/engine/progression/selectors/getUpgradeStatus";
 import { getProgressColor } from "@/utils/getProgressColor";
 import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
+import type { Village } from "@/types/entity";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -11,12 +12,14 @@ export default function EntityCard({
   level,
   maxLevel,
   onPress,
+  village,
 }: {
   dataId: number;
   name: string;
   level: number;
   maxLevel: number;
   onPress?: () => void;
+  village?: Village;
 }) {
   const status = getUpgradeStatus(level, maxLevel);
   const progressColor = getProgressColor(status);
@@ -42,7 +45,7 @@ export default function EntityCard({
       >
         <Image
           source={{
-            uri: resolveEntityIcon(dataId),
+            uri: resolveEntityIcon(dataId, village ? { village, level } : undefined),
           }}
           style={styles.cardImage}
           contentFit="contain"

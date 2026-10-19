@@ -248,10 +248,7 @@ export default function TroopsScreen() {
             </View>
 
             {/* Village selector */}
-            <View
-              accessibilityRole="tablist"
-              style={styles.villageSelector}
-            >
+            <View style={styles.villageSelector}>
               {([
                 { key: "home", label: "Home Village" },
                 { key: "builderBase", label: "Builder Base" },
@@ -261,7 +258,7 @@ export default function TroopsScreen() {
                 return (
                   <Pressable
                     key={option.key}
-                    accessibilityRole="tab"
+                    accessibilityRole="button"
                     accessibilityState={{ selected: active }}
                     onPress={() => setVillage(option.key)}
                     style={[

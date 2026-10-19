@@ -1283,6 +1283,7 @@ export default function SettingsScreen() {
 
           try {
             await resetVillageData(activeTag);
+            deleteWidgetCaches(activeTag);
             const resetProfile = resetPlayerProfile(activeTag, {
               playerName: activeAccount?.name ?? profile?.playerName ?? "Chief",
               townHallLevel: activeAccount?.townhall ?? 1,
@@ -1322,6 +1323,7 @@ export default function SettingsScreen() {
 
           try {
             await clearTrackedUpgrades(activeTag);
+            deleteWidgetCaches(activeTag);
             setShowClearUpgradesModal(false);
             await resyncNotifications();
             emitWidgetUpdate();

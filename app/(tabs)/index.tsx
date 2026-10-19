@@ -61,6 +61,7 @@ import { setSessionSource, track } from "@/utils/analytics/analytics";
 import { calculateProgress } from "@/utils/calculateProgress";
 import { formatBuildingName } from "@/utils/formatBuildingName";
 import { formatCountdown } from "@/utils/formatCountdown";
+import { formatUpgradeFinishDateTime } from "@/utils/formatUpgradeFinishDateTime";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
 import { getEntity } from "@/utils/getEntity";
 import {
@@ -1592,6 +1593,12 @@ export default function HomeScreen() {
                             <Text style={styles.totalTimeText}>
                               of {formatCountdown(totalMs)}
                             </Text>
+                            <Text
+                              style={styles.finishDateTimeText}
+                              numberOfLines={1}
+                            >
+                              {formatUpgradeFinishDateTime(u.endTime)}
+                            </Text>
                             <MagicItemTimeSaved
                               milliseconds={u.magicItemTimeSavedMs}
                             />
@@ -2527,6 +2534,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "#64748b",
     fontWeight: "500",
+  },
+
+  finishDateTimeText: {
+    fontSize: 9,
+    color: "#94a3b8",
+    fontWeight: "500",
+    maxWidth: 150,
   },
 
   progressTrack: {

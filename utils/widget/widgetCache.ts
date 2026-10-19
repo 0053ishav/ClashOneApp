@@ -82,10 +82,12 @@ export function getUpcomingWidgetCache() {
   }
 }
 
-/** Remove all account-scoped widget cache entries for a deleted village. */
+/** Invalidate cached widget data after an account is deleted, reset, or cleared. */
 export function deleteWidgetCaches(tag: string): void {
   if (!tag) return;
   for (const type of ["builder", "lab", "pet"] as const) {
     storage.remove(getKey(tag, type));
   }
+  // Upcoming upgrades is a combined, cross-account cache, so invalidate it too.
+  storage.remove(UPCOMING_WIDGET_KEY);
 }

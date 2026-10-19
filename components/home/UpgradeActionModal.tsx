@@ -14,6 +14,7 @@ import type { Village } from "@/types/entity";
 import { ResourceType } from "@/types/resource";
 import type { Upgrade } from "@/types/upgrade";
 import { formatStatName } from "@/utils/formatStatName";
+import { flattenProgressionStats } from "@/utils/flattenProgressionStats";
 import { resolveResourceIcon } from "@/utils/icons/resolveResourceIcon";
 import { ProgressionQueries } from "@/services/progression/progressionQueries";
 import { calculateSuperchargeProgression } from "@/engine/progression/operations/calculateSuperchargeProgression";
@@ -394,8 +395,14 @@ export function UpgradeActionModal({
    * -------------------------------------------------------
    */
 
-  const hasStats =
-    progression && Object.keys(progression.currentStats).length > 0;
+  const currentStats = flattenProgressionStats(progression?.currentStats);
+  const nextStatsByPath = new Map(
+    flattenProgressionStats(progression?.nextStats).map((stat) => [
+      stat.path,
+      stat.value,
+    ]),
+  );
+  const hasStats = currentStats.length > 0;
 
   /*
    * -------------------------------------------------------
@@ -954,16 +961,14 @@ export function UpgradeActionModal({
                 : "Stats"}
             </Text>
 
-            {Object.keys(progression.currentStats).map((stat) => {
-              const currentValue = progression.currentStats[stat];
-
-              const nextValue = progression.nextStats[stat];
+            {currentStats.map(({ path, label, value: currentValue }) => {
+              const nextValue = nextStatsByPath.get(path);
 
               return (
                 <DetailRow
-                  key={stat}
+                  key={path}
                   icon="stats-chart-outline"
-                  label={formatStatName(stat)}
+                  label={label}
                   value={
                     !isMaxLevel && nextValue != null
                       ? `${formatNumber(currentValue)} → ${formatNumber(

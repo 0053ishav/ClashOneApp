@@ -397,4 +397,130 @@ describe("importVillageJson Gold Pass regression coverage", () => {
     expect(secondImportedUpgrade.endTime).toBe(expectedEndTime);
     expect(secondImportedUpgrade.endTime).toBe(firstImportedUpgrade.endTime);
   });
+
+  it("keeps a regular building timer classified as a normal upgrade", async () => {
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 123456, lvl: 1, timer: exportedRemainingSeconds },
+      ],
+    });
+
+    await importVillageJson(rawExport);
+
+    expect(importedUpgradeSnapshots[0]).toHaveLength(1);
+    expect(importedUpgradeSnapshots[0][0]).toEqual(
+      expect.objectContaining({
+        dataId: 123456,
+        upgradeKind: "NORMAL",
+        currentLevel: 1,
+        nextLevel: 2,
+      }),
+    );
+  });
+
+  it("imports building progress with no active timers", async () => {
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 1000077, lvl: 5, cnt: 1, supercharge: 1 },
+      ],
+    });
+
+    await importVillageJson(rawExport);
+
+    expect(importedUpgradeSnapshots[0]).toHaveLength(0);
+    expect(importedBuildingProgressSnapshots[0]).toContainEqual(
+      expect.objectContaining({
+        dataId: 1000077,
+        normalLevel: 5,
+        count: 1,
+        superchargeLevel: 1,
+      }),
+    );
+  });
+
+  it("re-imports changed Supercharge state without retaining the old active timer", async () => {
+    jest.mocked(ProgressionQueries.getProgression).mockReturnValue({
+      id: 1000077,
+      maxLevel: 5,
+      scMaxLevel: 2,
+      maxHallLevel: 18,
+      resource: "gold",
+      levels: {},
+      supercharge: {
+        1: { hallLevel: 18, cost: 1, upgradeTime: 432_000 },
+        2: { hallLevel: 18, cost: 1, upgradeTime: 604_800 },
+      },
+    } as never);
+
+    const activeExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 1000077, lvl: 5, timer: exportedRemainingSeconds, supercharge: 0 },
+      ],
+    });
+    const completedExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: (exportTimestampMs + 60_000) / 1000,
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 1000077, lvl: 5, cnt: 1, supercharge: 1 },
+      ],
+    });
+
+    await importVillageJson(activeExport);
+    await importVillageJson(completedExport);
+
+    expect(importedUpgradeSnapshots).toHaveLength(2);
+    expect(importedUpgradeSnapshots[0]).toEqual([
+      expect.objectContaining({
+        dataId: 1000077,
+        upgradeKind: "SUPERCHARGE",
+        currentSuperchargeLevel: 0,
+        nextSuperchargeLevel: 1,
+      }),
+    ]);
+    expect(importedUpgradeSnapshots[1]).toHaveLength(0);
+    expect(importedBuildingProgressSnapshots[1]).toContainEqual(
+      expect.objectContaining({
+        dataId: 1000077,
+        normalLevel: 5,
+        count: 1,
+        superchargeLevel: 1,
+      }),
+    );
+  });
+
+  it("keeps active timers distinct when the export contains repeated building entries", async () => {
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 123456, lvl: 1, timer: exportedRemainingSeconds },
+        { data: 123456, lvl: 1, timer: exportedRemainingSeconds + 60 },
+      ],
+    });
+
+    await importVillageJson(rawExport);
+
+    const matchingUpgrades = importedUpgradeSnapshots[0].filter(
+      (upgrade) => upgrade.dataId === 123456,
+    );
+    expect(matchingUpgrades).toHaveLength(2);
+    expect(matchingUpgrades.map((upgrade) => upgrade.endTime).sort((a, b) => a - b))
+      .toEqual([
+        exportTimestampMs + exportedRemainingSeconds * 1_000,
+        exportTimestampMs + (exportedRemainingSeconds + 60) * 1_000,
+      ]);
+    expect(new Set(matchingUpgrades.map((upgrade) => upgrade.id)).size).toBe(2);
+  });
+
 });

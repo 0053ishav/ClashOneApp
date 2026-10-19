@@ -306,7 +306,6 @@ export function UpcomingUpgradesWidget(props: {
                             style={{
                               flexDirection: "row",
                               alignItems: "center",
-                              alignSelf: "flex-start",
                               marginTop: 2,
                               backgroundColor: "rgba(14,165,233,0.15)" as ColorProp,
                               borderRadius: 5,

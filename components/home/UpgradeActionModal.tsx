@@ -13,7 +13,6 @@ import type { ProgressionApplicationResult } from "@/engine/progression/models";
 import type { Village } from "@/types/entity";
 import { ResourceType } from "@/types/resource";
 import type { Upgrade } from "@/types/upgrade";
-import { formatStatName } from "@/utils/formatStatName";
 import { flattenProgressionStats } from "@/utils/flattenProgressionStats";
 import { resolveResourceIcon } from "@/utils/icons/resolveResourceIcon";
 import { ProgressionQueries } from "@/services/progression/progressionQueries";

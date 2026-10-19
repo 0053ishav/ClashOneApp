@@ -1,10 +1,10 @@
 import { ENV } from "@/config/env";
+import { ProgressionQueries } from "@/services/progression/progressionQueries";
 import { useCraftedDefenseProgressionStore } from "@/stores/crafted";
 import { useEntityStore } from "@/stores/entityStore";
 import type { EntityType, Village } from "@/types/entity";
 import { calculateCraftedDefenseTotalLevel } from "./calculateCraftedDefenseTotalLevel";
 import { resolveCraftedDefenseIconLevel } from "./resolveCraftedDefenseIconLevel";
-import { ProgressionQueries } from "@/services/progression/progressionQueries";
 import {
   resolveProgressionIconLevel,
   type ProgressionImageRange,

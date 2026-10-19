@@ -3,6 +3,7 @@ import { ENV } from "@/config/env";
 import { Upgrade } from "@/types/upgrade";
 import { calculateProgress } from "@/utils/calculateProgress";
 import { formatCountdown } from "@/utils/formatCountdown";
+import { formatUpgradeFinishDateTime } from "@/utils/formatUpgradeFinishDateTime";
 import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -132,6 +133,9 @@ export function PetSection({
 
                 <Text style={styles.totalTime}>
                   of {formatCountdown(totalMs)}
+                </Text>
+                <Text style={styles.totalTime}>
+                  {formatUpgradeFinishDateTime(activePet.endTime)}
                 </Text>
                 <MagicItemTimeSaved milliseconds={activePet.magicItemTimeSavedMs} />
               </View>

@@ -89,11 +89,12 @@ jest.mock("@sentry/react-native", () => ({
   captureException: jest.fn(),
 }));
 
-let mockUuidCounter = 0;
-
-jest.mock("expo-crypto", () => ({
-  randomUUID: jest.fn(() => `test-uuid-${++mockUuidCounter}`),
-}));
+jest.mock("expo-crypto", () => {
+  let uuidCounter = 0;
+  return {
+    randomUUID: jest.fn(() => `test-uuid-${++uuidCounter}`),
+  };
+});
 
 jest.mock("@/services/magicItemService", () => ({
   clearActiveMagicEffects: jest.fn(),

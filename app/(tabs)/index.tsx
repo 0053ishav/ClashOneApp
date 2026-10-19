@@ -79,6 +79,7 @@ import { getBuilderBaseVillageStatus } from "@/utils/status/builderBase/getBuild
 import { getBuilderStatus } from "@/utils/status/home/builderStatus";
 import { getVillageStatus } from "@/utils/status/home/getVillageStatus";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
+import { shouldApplyAccountRefresh } from "@/utils/shouldApplyAccountRefresh";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -199,8 +200,12 @@ export default function HomeScreen() {
 
       // Ignore stale responses when a newer refresh or account switch wins.
       if (
-        requestId !== refreshRequestRef.current ||
-        useAccountStore.getState().activeTag !== tag
+        !shouldApplyAccountRefresh({
+          requestId,
+          latestRequestId: refreshRequestRef.current,
+          requestedTag: tag,
+          activeTag: useAccountStore.getState().activeTag,
+        })
       ) {
         return;
       }
@@ -231,14 +236,13 @@ export default function HomeScreen() {
   }, [activeTag]);
 
   useEffect(() => {
-    if (activeTag) return;
-
-    // Invalidate pending reads and clear data from the previously active village.
+    // Never keep the previous account's state visible while the new account loads.
+    // Also invalidate any in-flight reads started for the previous account.
     refreshRequestRef.current += 1;
     hasLoadedAccountState.current = false;
     setAccountState(null);
     setMagicItemInventoryCount(0);
-    setIsLoadingAccountState(false);
+    setIsLoadingAccountState(Boolean(activeTag));
   }, [activeTag]);
 
   const { width } = useWindowDimensions();
@@ -1520,7 +1524,19 @@ export default function HomeScreen() {
                               </Text>
 
                               <View style={styles.badgeRow}>
-                                {u.currentLevel !== undefined &&
+                                {u.upgradeKind === "SUPERCHARGE" ? (
+                                  <View style={[styles.levelsBadge, styles.superchargeBadge]}>
+                                    <Image
+                                      source={{ uri: "https://cdn.clashwidget.online/v2/home/other/supercharge.png" }}
+                                      style={styles.superchargeIcon}
+                                      contentFit="contain"
+                                      cachePolicy="memory-disk"
+                                    />
+                                    <Text style={[styles.levelsText, styles.superchargeText]}>
+                                      SC {u.currentSuperchargeLevel ?? 0} → {u.nextSuperchargeLevel ?? (u.currentSuperchargeLevel ?? 0) + 1}
+                                    </Text>
+                                  </View>
+                                ) : u.currentLevel !== undefined &&
                                   u.nextLevel !== undefined && (
                                     <View style={styles.levelsBadge}>
                                       <Text style={styles.levelsText}>
@@ -2450,6 +2466,20 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "600",
     color: "#38bdf8",
+  },
+
+  superchargeBadge: {
+    backgroundColor: "rgba(251,191,36,0.12)",
+    gap: 4,
+  },
+
+  superchargeIcon: {
+    width: 13,
+    height: 13,
+  },
+
+  superchargeText: {
+    color: "#fbbf24",
   },
 
   helperRow: {

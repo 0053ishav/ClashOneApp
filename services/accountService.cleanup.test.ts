@@ -54,6 +54,7 @@ describe("account cleanup operations", () => {
     expect(db.runAsync.mock.calls).toEqual([
       ["DELETE FROM upgrades WHERE account_player_tag = ?", ["#PLAYER"]],
       ["DELETE FROM entities WHERE account_player_tag = ?", ["#PLAYER"]],
+      ["DELETE FROM building_progress WHERE account_player_tag = ?", ["#PLAYER"]],
       ["DELETE FROM magic_item_inventory WHERE account_player_tag = ?", ["#PLAYER"]],
       ["DELETE FROM active_magic_effects WHERE account_player_tag = ?", ["#PLAYER"]],
       ["DELETE FROM imported_boosts WHERE account_player_tag = ?", ["#PLAYER"]],

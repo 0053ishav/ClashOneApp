@@ -2,6 +2,7 @@ import { addAccount, getAccountByTag, updateAccount } from "@/services/accountSe
 import { fetchPlayerFromApi } from "@/services/clashApi";
 import { ensureCraftedLoaded } from "@/services/craftedService";
 import { ProgressionApplicationService } from "@/services/progression";
+import { ProgressionQueries } from "@/services/progression/progressionQueries";
 import { getGoldPassBoostSettings } from "@/services/goldPassBoostService";
 import { resolveGoldPassBoostForImport } from "@/services/jsonImport/resolveGoldPassBoostForImport";
 import { reconstructImportedUpgradeTiming } from "@/services/jsonImport/reconstructImportedUpgradeTiming";
@@ -10,7 +11,7 @@ import { setLastJsonSync } from "@/storage/jsonSyncStorage";
 import { syncProfileFromApi } from "@/storage/playerProfile";
 import { useAccountStore } from "@/stores/accountStore";
 import { EntityType, Village } from "@/types/entity";
-import { Upgrade } from "@/types/upgrade";
+import { BuildingProgressRecord, Upgrade } from "@/types/upgrade";
 import { getSessionSource, track } from "@/utils/analytics/analytics";
 import { getEntity } from "@/utils/getEntity";
 import { projectHelperTimer } from "@/utils/helpers/projectHelperTimer";
@@ -30,6 +31,7 @@ type RawExport = {
     lvl: number;
     cnt?: number;
     timer?: number;
+    supercharge?: number;
     extra?: boolean;
     helper_timer?: number;
     helper_recurrent?: boolean;
@@ -133,6 +135,8 @@ type ActiveTask = {
   data: number;
   lvl: number;
   timer: number;
+  /** Exported completed charge level; the timer advances this to +1. */
+  supercharge?: number;
   extra?: boolean;
   village: Village;
 
@@ -254,6 +258,15 @@ function validateJson(data: any) {
   ) {
     throw new Error("INVALID_STRUCTURE");
   }
+
+  for (const building of data.buildings ?? []) {
+    if (
+      building.supercharge != null &&
+      (!Number.isSafeInteger(building.supercharge) || building.supercharge < 0)
+    ) {
+      throw new Error("INVALID_SUPERCHARGE_LEVEL");
+    }
+  }
 }
 
 export function resolveUpgradeType(entityType?: EntityType): Upgrade["upgradeType"] {
@@ -323,10 +336,40 @@ export async function importVillageJson(
   const exportTimestampMs = parsed.timestamp * 1000;
   const now = Date.now();
 
-  const {
-    homeBuilders: totalHomeBuilders,
-    builderBaseBuilders: totalBuilderBaseBuilders,
-  } = getBuilderCounts(parsed);
+  const exportedBuilderCounts = getBuilderCounts(parsed);
+  // An export can under-report builder huts (for example, when the export
+  // omits a hut record). Preserve explicitly configured account capacity so
+  // valid active timers do not lose their builder slots during import.
+  const existingAccount = await getAccountByTag(parsed.tag);
+  let totalHomeBuilders = Math.max(
+    exportedBuilderCounts.homeBuilders,
+    existingAccount?.builderCount ?? 0,
+  );
+  const totalBuilderBaseBuilders = Math.max(
+    exportedBuilderCounts.builderBaseBuilders,
+    existingAccount?.builderBaseBuilderCount ?? 0,
+  );
+
+  // Some exported building records (for example, crafted defenses) describe
+  // module/type metadata and intentionally have no top-level level. They are
+  // not ordinary building-level snapshots and must not be written to the
+  // NOT NULL building_progress.normal_level column.
+  const buildingProgress: BuildingProgressRecord[] = (parsed.buildings ?? [])
+    .filter(
+      (building) =>
+        Number.isSafeInteger(building.lvl) && building.lvl >= 0,
+    )
+    .map((building) => ({
+      id: randomUUID(),
+      dataId: building.data,
+      village: "home",
+      normalLevel: building.lvl,
+      count:
+        Number.isSafeInteger(building.cnt) && (building.cnt ?? 0) > 0
+          ? building.cnt!
+          : 1,
+      superchargeLevel: building.supercharge ?? 0,
+    }));
 
   // =========================================================
   // 🔥 STEP 1: BUILD ACTIVE TASK LIST (NORMAL + CRAFTED)
@@ -391,6 +434,7 @@ export async function importVillageJson(
         data: b.data,
         lvl: b.lvl,
         timer: b.timer!,
+        supercharge: b.supercharge,
         extra: b.extra,
 
 
@@ -596,6 +640,7 @@ export async function importVillageJson(
     isCrafted?: boolean;
     moduleId?: number;
     craftedModuleLevels?: Record<number, number>;
+    supercharge?: number;
   }[] = [];
 
   let skippedExpired = 0;
@@ -661,8 +706,21 @@ export async function importVillageJson(
       isCrafted: item.isCrafted,
       moduleId: item.moduleId,
       craftedModuleLevels: item.craftedModuleLevels,
+      supercharge: item.supercharge,
     });
   }
+
+  // The export's builder-hut count can be incomplete even when it contains
+  // several valid, concurrent builder timers. Each non-Goblin BUILDER timer
+  // is evidence that a normal builder was occupied at export time. Use that
+  // count as a lower bound so imported timers don't receive a '?' slot solely
+  // because the building snapshot under-reported builder capacity.
+  const inferredHomeBuilderSlots = validUpgrades.filter((item) => {
+    if (item.village !== HOME_VILLAGE || item.isGoblin) return false;
+    const entityType = item.isCrafted ? "building" : getEntity(item.data)?.type;
+    return resolveUpgradeType(entityType) === "BUILDER";
+  }).length;
+  totalHomeBuilders = Math.max(totalHomeBuilders, inferredHomeBuilderSlots);
 
   type ValidLabTask = {
     data: number;
@@ -755,8 +813,9 @@ export async function importVillageJson(
     });
   }
 
-  const existing = await getAccountByTag(parsed.tag);
+  const existing = existingAccount;
   if (!existing) {
+    // First import initializes counts from the village export.
     await addAccount(
       parsed.tag,
       apiData?.name ?? "Chief",
@@ -766,13 +825,25 @@ export async function importVillageJson(
       totalBuilderBaseBuilders,
     );
   } else {
+    // Imports may infer fewer builders than the user has configured.
+    // Treat imported counts as lower-bound updates only; explicit user
+    // configuration remains authoritative for reductions.
+    const importedHomeBuilderCount = Math.max(
+      existing.builderCount,
+      totalHomeBuilders,
+    );
+    const importedBuilderBaseCount = Math.max(
+      existing.builderBaseBuilderCount,
+      totalBuilderBaseBuilders,
+    );
+
     await updateAccount(
       parsed.tag,
       apiData?.name ?? existing.name,
       existing.color,
       apiData?.townHallLevel ?? existing.townhall,
-      totalHomeBuilders,
-      totalBuilderBaseBuilders,
+      importedHomeBuilderCount,
+      importedBuilderBaseCount,
     );
   }
 
@@ -788,7 +859,7 @@ export async function importVillageJson(
     validUpgrades.length === 0 &&
     validLabTasks.length === 0
   ) {
-    await importJsonData(parsed.tag, [], entities);
+    await importJsonData(parsed.tag, [], entities, buildingProgress);
     await clearActiveMagicEffects(parsed.tag);
     await replaceImportedBoostSnapshot({
       accountTag: parsed.tag,
@@ -846,29 +917,59 @@ export async function importVillageJson(
       },
       goldPassSettings,
     );
+    const targetSuperchargeLevel =
+      item.supercharge != null ? item.supercharge + 1 : undefined;
+
     const progressionResult =
-      ProgressionApplicationService.resolveUpgrade({
-        id: randomUUID(),
-        accountTag: parsed.tag,
-        village: item.village,
-        dataId: item.data,
-        entity: entity.name.en,
+      targetSuperchargeLevel != null
+        ? (() => {
+            const progression = ProgressionQueries.getProgression(item.data);
+            const maximumSuperchargeLevel =
+              progression?.scMaxLevel ??
+              (progression?.supercharge
+                ? Math.max(...Object.keys(progression.supercharge).map(Number))
+                : 0);
+            const superchargeLevel =
+              progression?.supercharge?.[targetSuperchargeLevel];
 
-        type: normalizeEntityType(entity.type),
-        upgradeType,
+            if (
+              !progression ||
+              targetSuperchargeLevel > maximumSuperchargeLevel ||
+              superchargeLevel?.upgradeTime == null
+            ) {
+              // Fail before persistence. Never replace a good snapshot with an
+              // incomplete import when the export contains an active charge.
+              throw new Error("SUPERCHARGE_PROGRESSION_UNAVAILABLE");
+            }
 
-        currentLevel: item.lvl,
+            return {
+              currentLevel: item.lvl,
+              nextLevel: item.lvl,
+              nextUpgradeTime: superchargeLevel.upgradeTime,
+            };
+          })()
+        : ProgressionApplicationService.resolveUpgrade({
+            id: randomUUID(),
+            accountTag: parsed.tag,
+            village: item.village,
+            dataId: item.data,
+            entity: entity.name.en,
 
-        moduleId: item.moduleId,
-        isCrafted: item.isCrafted,
+            type: normalizeEntityType(entity.type),
+            upgradeType,
 
-        startTime: 0,
-        durationMinutes: 0,
-        endTime: 0,
+            currentLevel: item.lvl,
 
-        isCompleted: false,
-        source: "JSON",
-      }, { goldPassBoost });
+            moduleId: item.moduleId,
+            isCrafted: item.isCrafted,
+
+            startTime: 0,
+            durationMinutes: 0,
+            endTime: 0,
+
+            isCompleted: false,
+            source: "JSON",
+          }, { goldPassBoost });
 
     if (!progressionResult) {
       console.warn(
@@ -944,24 +1045,19 @@ export async function importVillageJson(
       } else if (
         item.village === HOME_VILLAGE
       ) {
-        if (homeBuilderUsed >= totalHomeBuilders) {
-          continue;
+        // Preserve every valid timer from the export, even if the export
+        // contains more concurrent tasks than the currently inferred builder
+        // count (events and unusual exports can produce this situation).
+        // Only assign a concrete slot while one is available.
+        if (homeBuilderUsed < totalHomeBuilders) {
+          builderSlot = homeBuilderUsed;
+          homeBuilderUsed++;
         }
-
-        builderSlot = homeBuilderUsed;
-        homeBuilderUsed++;
       } else {
-        if (
-          builderBaseBuilderUsed >=
-          totalBuilderBaseBuilders
-        ) {
-          continue;
+        if (builderBaseBuilderUsed < totalBuilderBaseBuilders) {
+          builderSlot = builderBaseBuilderUsed;
+          builderBaseBuilderUsed++;
         }
-
-        builderSlot =
-          builderBaseBuilderUsed;
-
-        builderBaseBuilderUsed++;
       }
     }
 
@@ -1006,6 +1102,10 @@ export async function importVillageJson(
       moduleId: item.moduleId,
       isCrafted: item.isCrafted,
       craftedModuleLevels: item.craftedModuleLevels,
+      upgradeKind:
+        targetSuperchargeLevel != null ? "SUPERCHARGE" : "NORMAL",
+      currentSuperchargeLevel: item.supercharge,
+      nextSuperchargeLevel: targetSuperchargeLevel,
     });
   }
 
@@ -1160,7 +1260,7 @@ export async function importVillageJson(
   console.log("Writing upgrades:", newUpgrades.length);
 
   try {
-    await importJsonData(parsed.tag, newUpgrades, entities);
+    await importJsonData(parsed.tag, newUpgrades, entities, buildingProgress);
     // Imported timers are authoritative; app-side simulated potion effects must not re-project them.
     await clearActiveMagicEffects(parsed.tag);
     await replaceImportedBoostSnapshot({
@@ -1184,17 +1284,17 @@ export async function importVillageJson(
       status: "failed",
       error: e,
     });
+    // Propagate failures so the UI can report the failed import and the user
+    // can retry. Do not mark a failed import as synchronized.
+    throw e;
   }
+
   setLastJsonSync(parsed.tag, now);
   await resyncNotifications();
 
-  const builderCountOnly = newUpgrades.filter(
-    (u) => u.upgradeType === "BUILDER"
-  ).length;
-
   return {
     status: "SUCCESS",
-    activeCount: builderCountOnly,
+    activeCount: newUpgrades.length,
     skippedExpired,
     tag: parsed.tag,
   };

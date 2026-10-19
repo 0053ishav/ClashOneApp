@@ -15,6 +15,7 @@ export function BuilderStatusWidget(props: {
   showProgress: boolean;
   isFree?: boolean;
   levelText?: string;
+  isSupercharge?: boolean;
   builderCountText?: string;
   nextUpgradeText?: string;
   color?: string;
@@ -196,15 +197,27 @@ export function BuilderStatusWidget(props: {
                   marginTop: 3,
                 }}
               >
-                <TextWidget
-                  text={props.levelText}
-                  style={{
-                    color: "#0ea5e9",
-                    fontSize: 9,
-                    fontWeight: "600",
-                  }}
-                  maxLines={1}
-                />
+                <FlexWidget
+                  style={{ flexDirection: "row", alignItems: "center" }}
+                >
+                  {props.isSupercharge && (
+                    <ImageWidget
+                      image="https://cdn.clashwidget.online/v2/home/other/supercharge.png"
+                      imageWidth={12}
+                      imageHeight={12}
+                    />
+                  )}
+                  <TextWidget
+                    text={props.levelText}
+                    style={{
+                      color: "#0ea5e9",
+                      fontSize: 9,
+                      fontWeight: "600",
+                      marginLeft: props.isSupercharge ? 4 : 0,
+                    }}
+                    maxLines={1}
+                  />
+                </FlexWidget>
               </FlexWidget>
             )}
 

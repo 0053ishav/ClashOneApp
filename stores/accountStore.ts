@@ -1,4 +1,4 @@
-import { Account, deleteAccount, getAccounts, replaceEntities, replaceUpgrades } from "@/services/accountService";
+import { Account, deleteAccount, getAccounts, replaceImportedVillageSnapshot } from "@/services/accountService";
 import { switchAccountService } from "@/services/accountSwitchService";
 import { clearActiveAccount, getActiveAccount } from "@/storage/activeAccount";
 import { deleteLastJsonSync, getLastJsonSync, setLastJsonSync } from "@/storage/jsonSyncStorage";
@@ -6,7 +6,7 @@ import { deletePlayerProfile, getPlayerProfile } from "@/storage/playerProfile";
 import { getWidgetPrefs, saveWidgetPrefs } from "@/storage/widgetPrefs";
 import { deleteWidgetCaches } from "@/utils/widget/widgetCache";
 import { PlayerProfile } from "@/types/player";
-import { EntityRecord, Upgrade } from "@/types/upgrade";
+import { BuildingProgressRecord, EntityRecord, Upgrade } from "@/types/upgrade";
 import { create } from "zustand";
 
 type AccountState = {
@@ -45,7 +45,8 @@ type AccountState = {
   importJsonData: (
     tag: string,
     upgrades: Upgrade[],
-    entities: EntityRecord[]
+    entities: EntityRecord[],
+    buildingProgress?: BuildingProgressRecord[],
   ) => Promise<void>;
 };
 
@@ -329,7 +330,7 @@ export const useAccountStore = create<AccountState>((set) => ({
     }
   },
 
-  importJsonData: async (tag, upgrades, entities) => {
+  importJsonData: async (tag, upgrades, entities, buildingProgress) => {
     set({ isSyncing: true });
 
     if (!tag) {
@@ -337,8 +338,7 @@ export const useAccountStore = create<AccountState>((set) => ({
     }
 
     try {
-      await replaceUpgrades(tag, upgrades);
-      await replaceEntities(tag, entities);
+      await replaceImportedVillageSnapshot(tag, upgrades, entities, buildingProgress);
 
       const { switchAccount, loadAccounts, setLastSync } = useAccountStore.getState();
       await loadAccounts();

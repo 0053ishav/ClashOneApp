@@ -4,11 +4,12 @@ import {
   saveGoldPassBoostSettings,
 } from "@/services/goldPassBoostService";
 import { ProgressionApplicationService } from "@/services/progression";
+import { ProgressionQueries } from "@/services/progression/progressionQueries";
 import { useAccountStore } from "@/stores/accountStore";
-import { getAccountByTag } from "@/services/accountService";
+import { getAccountByTag, updateAccount } from "@/services/accountService";
 import { fetchPlayerFromApi } from "@/services/clashApi";
 import { saveReEngagementBoostSettings } from "@/services/reEngagementBoostService";
-import type { Upgrade } from "@/types/upgrade";
+import type { BuildingProgressRecord, Upgrade } from "@/types/upgrade";
 import type { GoldPassBoostSettings } from "@/types/goldPass";
 
 jest.mock("@/services/accountService", () => ({
@@ -28,6 +29,12 @@ jest.mock("@/services/craftedService", () => ({
 jest.mock("@/services/progression", () => ({
   ProgressionApplicationService: {
     resolveUpgrade: jest.fn(),
+  },
+}));
+
+jest.mock("@/services/progression/progressionQueries", () => ({
+  ProgressionQueries: {
+    getProgression: jest.fn(),
   },
 }));
 
@@ -82,9 +89,12 @@ jest.mock("@sentry/react-native", () => ({
   captureException: jest.fn(),
 }));
 
-jest.mock("expo-crypto", () => ({
-  randomUUID: jest.fn(() => "test-uuid"),
-}));
+jest.mock("expo-crypto", () => {
+  let uuidCounter = 0;
+  return {
+    randomUUID: jest.fn(() => `test-uuid-${++uuidCounter}`),
+  };
+});
 
 jest.mock("@/services/magicItemService", () => ({
   clearActiveMagicEffects: jest.fn(),
@@ -110,10 +120,12 @@ const otherAccountSettings: GoldPassBoostSettings = {
 
 const persistedSettings = new Map<string, GoldPassBoostSettings>();
 const importedUpgradeSnapshots: Upgrade[][] = [];
+const importedBuildingProgressSnapshots: BuildingProgressRecord[][] = [];
 
 const mockImportJsonData = jest.fn(
-  async (_tag: string, upgrades: Upgrade[], _entities: unknown[]) => {
+  async (_tag: string, upgrades: Upgrade[], _entities: unknown[], buildingProgress: BuildingProgressRecord[] = []) => {
     importedUpgradeSnapshots.push(upgrades);
+    importedBuildingProgressSnapshots.push(buildingProgress);
   },
 );
 
@@ -144,6 +156,7 @@ describe("importVillageJson Gold Pass regression coverage", () => {
     persistedSettings.set(accountTag, { ...originalSettings });
     persistedSettings.set(otherAccountTag, { ...otherAccountSettings });
     importedUpgradeSnapshots.length = 0;
+    importedBuildingProgressSnapshots.length = 0;
 
     jest.spyOn(Date, "now").mockReturnValue(exportTimestampMs + 1_000);
 
@@ -171,6 +184,184 @@ describe("importVillageJson Gold Pass regression coverage", () => {
     jest.mocked(useAccountStore.getState).mockReturnValue(
       mockAccountStoreState as unknown as ReturnType<typeof useAccountStore.getState>,
     );
+  });
+
+
+  it("uses configured builder capacity when the export under-reports builders", async () => {
+    jest.mocked(getAccountByTag).mockResolvedValue({
+      tag: accountTag,
+      name: "Existing Chief",
+      color: "#fbbf24",
+      townhall: 18,
+      builderCount: 6,
+      builderBaseBuilderCount: 3,
+    } as never);
+
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 2 },
+        { data: 123456, lvl: 1, timer: exportedRemainingSeconds },
+        { data: 123457, lvl: 1, timer: exportedRemainingSeconds + 60 },
+        { data: 123458, lvl: 1, timer: exportedRemainingSeconds + 120 },
+        { data: 123459, lvl: 1, timer: exportedRemainingSeconds + 180 },
+      ],
+    });
+
+    await importVillageJson(rawExport);
+
+    expect(importedUpgradeSnapshots[0]).toHaveLength(4);
+    expect(importedUpgradeSnapshots[0].map((upgrade) => upgrade.builderSlot))
+      .toEqual([0, 1, 2, 3]);
+  });
+
+  it("infers enough builder slots from concurrent active builder timers", async () => {
+    jest.mocked(getAccountByTag).mockResolvedValue({
+      tag: accountTag,
+      name: "Existing Chief",
+      color: "#fbbf24",
+      townhall: 18,
+      builderCount: 3,
+      builderBaseBuilderCount: 3,
+    } as never);
+
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 2 },
+        { data: 123456, lvl: 1, timer: 3600 },
+        { data: 123457, lvl: 1, timer: 3660 },
+        { data: 123458, lvl: 1, timer: 3720 },
+        { data: 123459, lvl: 1, timer: 3780 },
+      ],
+      heroes: [
+        { data: 28000004, lvl: 50, timer: 3840 },
+      ],
+    });
+
+    await importVillageJson(rawExport);
+
+    expect(importedUpgradeSnapshots[0]).toHaveLength(5);
+    expect(importedUpgradeSnapshots[0].map((upgrade) => upgrade.builderSlot))
+      .toEqual([0, 1, 2, 3, 4]);
+    expect(updateAccount).toHaveBeenCalledWith(
+      accountTag,
+      "Existing Chief",
+      "#fbbf24",
+      18,
+      5,
+      3,
+    );
+  });
+
+  it("does not reduce configured builder counts during import", async () => {
+    jest.mocked(getAccountByTag).mockResolvedValue({
+      tag: accountTag,
+      name: "Existing Chief",
+      color: "#fbbf24",
+      townhall: 18,
+      builderCount: 6,
+      builderBaseBuilderCount: 3,
+    } as never);
+
+    await importVillageJson(makeExport());
+
+    expect(updateAccount).toHaveBeenCalledWith(
+      accountTag,
+      "Existing Chief",
+      "#fbbf24",
+      18,
+      6,
+      3,
+    );
+  });
+
+  it("imports an active Supercharge timer without changing the normal building level", async () => {
+    const remainingSeconds = 318_348;
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 1000077, lvl: 5, timer: remainingSeconds, supercharge: 0 },
+      ],
+    });
+
+    jest.mocked(ProgressionQueries.getProgression).mockReturnValue({
+      id: 1000077,
+      maxLevel: 5,
+      scMaxLevel: 2,
+      maxHallLevel: 18,
+      resource: "gold",
+      levels: {},
+      supercharge: {
+        1: { hallLevel: 18, cost: 1, upgradeTime: 432_000 },
+        2: { hallLevel: 18, cost: 1, upgradeTime: 604_800 },
+      },
+    } as never);
+
+    await importVillageJson(rawExport);
+
+    const [importedUpgrade] = importedUpgradeSnapshots[0];
+    expect(importedUpgrade.upgradeKind).toBe("SUPERCHARGE");
+    expect(importedUpgrade.currentLevel).toBe(5);
+    expect(importedUpgrade.nextLevel).toBe(5);
+    expect(importedUpgrade.currentSuperchargeLevel).toBe(0);
+    expect(importedUpgrade.nextSuperchargeLevel).toBe(1);
+    expect(importedUpgrade.endTime).toBe(
+      exportTimestampMs + remainingSeconds * 1_000,
+    );
+    expect(importedBuildingProgressSnapshots[0]).toContainEqual(
+      expect.objectContaining({
+        dataId: 1000077,
+        normalLevel: 5,
+        superchargeLevel: 0,
+      }),
+    );
+  });
+
+
+  it("preserves completed Supercharge levels even when no upgrade timer is active", async () => {
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 1000077, lvl: 5, cnt: 1, supercharge: 1 },
+      ],
+    });
+
+    await importVillageJson(rawExport);
+
+    expect(importedUpgradeSnapshots[0]).toHaveLength(0);
+    expect(importedBuildingProgressSnapshots[0]).toContainEqual(
+      expect.objectContaining({
+        dataId: 1000077,
+        normalLevel: 5,
+        count: 1,
+        superchargeLevel: 1,
+      }),
+    );
+  });
+
+  it("does not persist an active Supercharge when its progression metadata is missing", async () => {
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 1000077, lvl: 5, timer: exportedRemainingSeconds, supercharge: 0 },
+      ],
+    });
+
+    jest.mocked(ProgressionQueries.getProgression).mockReturnValue(undefined);
+
+    await expect(importVillageJson(rawExport)).rejects.toThrow(
+      "SUPERCHARGE_PROGRESSION_UNAVAILABLE",
+    );
+    expect(mockImportJsonData).not.toHaveBeenCalled();
   });
 
   it("preserves manually configured Gold Pass settings during JSON import", async () => {
@@ -209,4 +400,130 @@ describe("importVillageJson Gold Pass regression coverage", () => {
     expect(secondImportedUpgrade.endTime).toBe(expectedEndTime);
     expect(secondImportedUpgrade.endTime).toBe(firstImportedUpgrade.endTime);
   });
+
+  it("keeps a regular building timer classified as a normal upgrade", async () => {
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 123456, lvl: 1, timer: exportedRemainingSeconds },
+      ],
+    });
+
+    await importVillageJson(rawExport);
+
+    expect(importedUpgradeSnapshots[0]).toHaveLength(1);
+    expect(importedUpgradeSnapshots[0][0]).toEqual(
+      expect.objectContaining({
+        dataId: 123456,
+        upgradeKind: "NORMAL",
+        currentLevel: 1,
+        nextLevel: 2,
+      }),
+    );
+  });
+
+  it("imports building progress with no active timers", async () => {
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 1000077, lvl: 5, cnt: 1, supercharge: 1 },
+      ],
+    });
+
+    await importVillageJson(rawExport);
+
+    expect(importedUpgradeSnapshots[0]).toHaveLength(0);
+    expect(importedBuildingProgressSnapshots[0]).toContainEqual(
+      expect.objectContaining({
+        dataId: 1000077,
+        normalLevel: 5,
+        count: 1,
+        superchargeLevel: 1,
+      }),
+    );
+  });
+
+  it("re-imports changed Supercharge state without retaining the old active timer", async () => {
+    jest.mocked(ProgressionQueries.getProgression).mockReturnValue({
+      id: 1000077,
+      maxLevel: 5,
+      scMaxLevel: 2,
+      maxHallLevel: 18,
+      resource: "gold",
+      levels: {},
+      supercharge: {
+        1: { hallLevel: 18, cost: 1, upgradeTime: 432_000 },
+        2: { hallLevel: 18, cost: 1, upgradeTime: 604_800 },
+      },
+    } as never);
+
+    const activeExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 1000077, lvl: 5, timer: exportedRemainingSeconds, supercharge: 0 },
+      ],
+    });
+    const completedExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: (exportTimestampMs + 60_000) / 1000,
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 1000077, lvl: 5, cnt: 1, supercharge: 1 },
+      ],
+    });
+
+    await importVillageJson(activeExport);
+    await importVillageJson(completedExport);
+
+    expect(importedUpgradeSnapshots).toHaveLength(2);
+    expect(importedUpgradeSnapshots[0]).toEqual([
+      expect.objectContaining({
+        dataId: 1000077,
+        upgradeKind: "SUPERCHARGE",
+        currentSuperchargeLevel: 0,
+        nextSuperchargeLevel: 1,
+      }),
+    ]);
+    expect(importedUpgradeSnapshots[1]).toHaveLength(0);
+    expect(importedBuildingProgressSnapshots[1]).toContainEqual(
+      expect.objectContaining({
+        dataId: 1000077,
+        normalLevel: 5,
+        count: 1,
+        superchargeLevel: 1,
+      }),
+    );
+  });
+
+  it("keeps active timers distinct when the export contains repeated building entries", async () => {
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 123456, lvl: 1, timer: exportedRemainingSeconds },
+        { data: 123456, lvl: 1, timer: exportedRemainingSeconds + 60 },
+      ],
+    });
+
+    await importVillageJson(rawExport);
+
+    const matchingUpgrades = importedUpgradeSnapshots[0].filter(
+      (upgrade) => upgrade.dataId === 123456,
+    );
+    expect(matchingUpgrades).toHaveLength(2);
+    expect(matchingUpgrades.map((upgrade) => upgrade.endTime).sort((a, b) => a - b))
+      .toEqual([
+        exportTimestampMs + exportedRemainingSeconds * 1_000,
+        exportTimestampMs + (exportedRemainingSeconds + 60) * 1_000,
+      ]);
+    expect(new Set(matchingUpgrades.map((upgrade) => upgrade.id)).size).toBe(2);
+  });
+
 });

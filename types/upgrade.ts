@@ -40,6 +40,11 @@ export type Upgrade = {
   currentLevel?: number;
   nextLevel?: number;
 
+  /** Distinguishes normal level progression from a Supercharge timer. */
+  upgradeKind?: "NORMAL" | "SUPERCHARGE";
+  currentSuperchargeLevel?: number;
+  nextSuperchargeLevel?: number;
+
   source?: "JSON" | "MANUAL";
 };
 
@@ -67,4 +72,14 @@ export type BuilderWidgetData = {
   craftedModuleLevels?: Record<number, number>;
   color?: string;
   accountInitials?: string;
+};
+
+/** Imported Home Village building levels and completed Supercharge state. */
+export type BuildingProgressRecord = {
+  id: string;
+  dataId: number;
+  village: "home";
+  normalLevel: number;
+  count: number;
+  superchargeLevel: number;
 };

@@ -56,6 +56,7 @@ import {
   stopSmartWidgetScheduler,
 } from "@/utils/scheduleWidgetRefresh";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
+import { deleteWidgetCaches } from "@/utils/widget/widgetCache";
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
@@ -1283,6 +1284,7 @@ export default function SettingsScreen() {
 
           try {
             await resetVillageData(activeTag);
+            deleteWidgetCaches(activeTag);
             const resetProfile = resetPlayerProfile(activeTag, {
               playerName: activeAccount?.name ?? profile?.playerName ?? "Chief",
               townHallLevel: activeAccount?.townhall ?? 1,
@@ -1322,6 +1324,7 @@ export default function SettingsScreen() {
 
           try {
             await clearTrackedUpgrades(activeTag);
+            deleteWidgetCaches(activeTag);
             setShowClearUpgradesModal(false);
             await resyncNotifications();
             emitWidgetUpdate();

@@ -8,6 +8,9 @@ export type WidgetCacheData = {
   craftedModuleLevels?: Record<number, number>;
   progress: number;
   currentLevel?: number;
+  upgradeKind?: "NORMAL" | "SUPERCHARGE";
+  currentSuperchargeLevel?: number;
+  nextSuperchargeLevel?: number;
   showProgress: boolean;
   levelText?: string;
   builderCountText?: string;

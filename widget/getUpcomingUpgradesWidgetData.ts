@@ -13,6 +13,9 @@ export type UpcomingUpgradeRow = {
   dataId?: number;
   moduleId?: number;
   currentLevel?: number;
+  upgradeKind?: "NORMAL" | "SUPERCHARGE";
+  currentSuperchargeLevel?: number;
+  nextSuperchargeLevel?: number;
   isCrafted?: boolean;
   craftedModuleLevels?: Record<number, number>;
   icon?: string | number;
@@ -57,6 +60,9 @@ export async function getUpcomingUpgradesWidgetData() {
         moduleId: upgrade.moduleId,
         isCrafted: upgrade.isCrafted,
         currentLevel: upgrade.currentLevel,
+        upgradeKind: upgrade.upgradeKind,
+        currentSuperchargeLevel: upgrade.currentSuperchargeLevel,
+        nextSuperchargeLevel: upgrade.nextSuperchargeLevel,
         craftedModuleLevels: upgrade.craftedModuleLevels,
       });
     }

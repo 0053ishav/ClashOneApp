@@ -18,6 +18,9 @@ type Row = {
   entity: string;
   upgradeType: "BUILDER" | "LAB" | "PET";
   remainingMs: number;
+  upgradeKind?: "NORMAL" | "SUPERCHARGE";
+  currentSuperchargeLevel?: number;
+  nextSuperchargeLevel?: number;
   icon?: string | number;
 };
 
@@ -298,6 +301,36 @@ export function UpcomingUpgradesWidget(props: {
                           }}
                           maxLines={1}
                         />
+                        {row.upgradeKind === "SUPERCHARGE" && (
+                          <FlexWidget
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              alignSelf: "flex-start",
+                              marginTop: 2,
+                              backgroundColor: "rgba(14,165,233,0.15)" as ColorProp,
+                              borderRadius: 5,
+                              paddingHorizontal: 5,
+                              paddingVertical: 2,
+                            }}
+                          >
+                            <ImageWidget
+                              image="https://cdn.clashwidget.online/v2/home/other/supercharge.png"
+                              imageWidth={10}
+                              imageHeight={10}
+                            />
+                            <TextWidget
+                              text={`SC ${row.currentSuperchargeLevel ?? 0} → ${row.nextSuperchargeLevel ?? "—"}`}
+                              style={{
+                                color: "#38bdf8",
+                                fontSize: 8,
+                                fontWeight: "700",
+                                marginLeft: 3,
+                              }}
+                              maxLines={1}
+                            />
+                          </FlexWidget>
+                        )}
                         <FlexWidget
                           style={{
                             marginTop: 2,

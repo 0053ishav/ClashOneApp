@@ -74,9 +74,13 @@ describe("switchAccountService", () => {
 
     expect(mockSetActiveAccount).toHaveBeenCalledWith("#TARGET");
     expect(mockSavePlayerProfile).toHaveBeenCalledWith("#TARGET", {
+      id: "profile-target",
       playerTag: "#TARGET",
       playerName: "Target village",
       townHallLevel: 16,
+      normalBuilderCount: 5,
+      builderBaseBuilderCount: 1,
+      playerApiConnected: false,
       customField: "preserved",
     });
   });

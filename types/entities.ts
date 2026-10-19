@@ -1,4 +1,4 @@
-import { EntityType, SubType, Village } from "./entity";
+import type { EntityMetadataVillage, EntityType, SubType, Village } from "./entity";
 
 export interface EntityLevel {
   level: number;
@@ -43,5 +43,5 @@ export interface EntityManifest {
  * EntityData remains canonical after the entity store normalizes this boundary.
  */
 export type ExternalEntityData = Omit<EntityData, "village"> & {
-  village: import("./entity").EntityMetadataVillage;
+  village: EntityMetadataVillage;
 };

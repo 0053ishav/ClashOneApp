@@ -21,7 +21,7 @@ describe("Builder Base village normalization", () => {
 
   it("resolves Builder Base troops and heroes from player API village values", () => {
     // The CDN metadata uses "builder" while the Clash API player payload uses
-    // "builderBase". This cast models the external JSON before store normalization.
+    // "builderBase". The external metadata type keeps that distinction explicit.
     const metadata: ExternalEntityData[] = [
       {
         id: 1001,

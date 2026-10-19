@@ -56,6 +56,7 @@ import {
   stopSmartWidgetScheduler,
 } from "@/utils/scheduleWidgetRefresh";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
+import { deleteWidgetCaches } from "@/utils/widget/widgetCache";
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";

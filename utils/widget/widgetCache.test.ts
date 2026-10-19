@@ -34,6 +34,9 @@ describe("widget cache lifecycle", () => {
     const data = {
       cachedAt: 1_800_000_000_000,
       title: "Archer Tower",
+      subtitle: "Builder upgrade",
+      progress: 0,
+      showProgress: true,
       upgradeKind: "SUPERCHARGE",
       currentSuperchargeLevel: 1,
       nextSuperchargeLevel: 2,
@@ -49,7 +52,7 @@ describe("widget cache lifecycle", () => {
   });
 
   it("invalidates the target account's widget caches and the shared upcoming cache", () => {
-    const data = { cachedAt: 1, title: "Old upgrade" };
+    const data = { cachedAt: 1, title: "Old upgrade", subtitle: "Builder upgrade", progress: 0, showProgress: true };
 
     setWidgetCache("#PLAYER", "builder", data);
     setWidgetCache("#PLAYER", "lab", data);
@@ -67,7 +70,7 @@ describe("widget cache lifecycle", () => {
   });
 
   it("does not remove caches for an empty tag", () => {
-    const data = { cachedAt: 1, title: "Keep me" };
+    const data = { cachedAt: 1, title: "Keep me", subtitle: "Builder upgrade", progress: 0, showProgress: true };
     setWidgetCache("#PLAYER", "builder", data);
 
     deleteWidgetCaches("");

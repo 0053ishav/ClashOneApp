@@ -103,6 +103,7 @@ export async function renderBuilderWidget() {
         progress={data.progress ?? 0}
         showProgress={data.showProgress ?? false}
         levelText={data.levelText}
+        isSupercharge={data.upgradeKind === "SUPERCHARGE"}
         builderCountText={data.builderCountText}
         nextUpgradeText={data.nextUpgradeText}
         color={data.color}

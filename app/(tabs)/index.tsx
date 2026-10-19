@@ -194,10 +194,10 @@ export default function HomeScreen() {
         setIsLoadingAccountState(true);
       }
 
-      const [state, inventory] = await Promise.all([
-        getAccountState(tag),
-        getMagicItemInventory(tag),
-      ]);
+      // expo-sqlite uses one native database handle here. Keep these reads
+      // sequential rather than preparing statements concurrently on that handle.
+      const state = await getAccountState(tag);
+      const inventory = await getMagicItemInventory(tag);
 
       // Ignore stale responses when a newer refresh or account switch wins.
       if (

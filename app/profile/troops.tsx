@@ -4,6 +4,7 @@ import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { fetchFullPlayer } from "@/services/clashApi";
 import { track } from "@/utils/analytics/analytics";
 import { parseArmy } from "@/utils/profile/parseArmy";
+import type { PlayerVillage } from "@/types/playerFull";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -25,7 +26,7 @@ interface Troop {
   level: number;
   maxLevel: number;
   status: "max" | "near" | "mid" | "low";
-  village: string;
+  village: PlayerVillage;
 }
 
 type Filter = "all" | "maxed" | "upgradable";
@@ -44,7 +45,12 @@ export default function TroopsScreen() {
   const router = useRouter();
   const { profile } = usePlayerProfile();
 
-  const [troops, setTroops] = useState<Troop[]>([]);
+  const [troopsByVillage, setTroopsByVillage] = useState<Record<PlayerVillage, Troop[]>>({
+    home: [],
+    builderBase: [],
+  });
+  const [village, setVillage] = useState<PlayerVillage>("home");
+  const troops = troopsByVillage[village];
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,18 +82,20 @@ export default function TroopsScreen() {
 
       const parsed = parseArmy(data);
 
-      const homeTroops: Troop[] = parsed.home.troops
-        ?.filter((t: any) => t.village === "home")
-        .map((t: any) => ({
-          dataId: t.dataId,
-          name: t.name,
-          level: t.level,
-          maxLevel: t.maxLevel,
-          village: t.village,
-          status: getUpgradeStatus(t.level, t.maxLevel),
+      const toTroops = (entities: typeof parsed.home.troops): Troop[] =>
+        entities.map((entity) => ({
+          dataId: entity.dataId,
+          name: entity.name,
+          level: entity.level,
+          maxLevel: entity.maxLevel,
+          village: entity.village,
+          status: getUpgradeStatus(entity.level, entity.maxLevel),
         }));
 
-      setTroops(homeTroops);
+      setTroopsByVillage({
+        home: toTroops(parsed.home.troops),
+        builderBase: toTroops(parsed.builderBase.troops),
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load troops");
     } finally {
@@ -239,6 +247,49 @@ export default function TroopsScreen() {
               <View style={styles.headerSpacer} />
             </View>
 
+            {/* Village selector */}
+            <View
+              accessibilityRole="tablist"
+              style={styles.villageSelector}
+            >
+              {([
+                { key: "home", label: "Home Village" },
+                { key: "builderBase", label: "Builder Base" },
+              ] as const).map((option) => {
+                const active = village === option.key;
+
+                return (
+                  <Pressable
+                    key={option.key}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: active }}
+                    onPress={() => setVillage(option.key)}
+                    style={[
+                      styles.villageTab,
+                      active && styles.villageTabActive,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.villageTabText,
+                        active && styles.villageTabTextActive,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.villageTabCount,
+                        active && styles.villageTabTextActive,
+                      ]}
+                    >
+                      {troopsByVillage[option.key].length}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
             {/* Overview */}
             <View style={styles.overviewCard}>
               <View style={styles.overviewTop}>
@@ -304,7 +355,7 @@ export default function TroopsScreen() {
               />
 
               <TextInput
-                placeholder="Search troops"
+                placeholder={village === "home" ? "Search Home Village troops" : "Search Builder Base troops"}
                 placeholderTextColor="#64748b"
                 value={search}
                 onChangeText={setSearch}
@@ -366,7 +417,7 @@ export default function TroopsScreen() {
             {/* Results */}
             <View style={styles.resultsRow}>
               <Text style={styles.resultsText}>
-                {filtered.length} troop{filtered.length !== 1 ? "s" : ""}
+                {filtered.length} {village === "home" ? "Home Village" : "Builder Base"} troop{filtered.length !== 1 ? "s" : ""}
               </Text>
 
               {hasActiveFilters && (
@@ -400,7 +451,9 @@ export default function TroopsScreen() {
             <Text style={styles.emptySubtext}>
               {hasActiveFilters
                 ? "Nothing matches your search or filter."
-                : "There are no home troops to show yet."}
+                : village === "home"
+                  ? "There are no Home Village troops to show yet."
+                  : "There are no Builder Base troops to show yet."}
             </Text>
 
             {hasActiveFilters && (
@@ -476,6 +529,48 @@ const styles = StyleSheet.create({
 
   headerSpacer: {
     width: 40,
+  },
+
+  villageSelector: {
+    flexDirection: "row",
+    gap: 8,
+    padding: 5,
+    borderRadius: 14,
+    backgroundColor: "#1e293b",
+    borderWidth: 1,
+    borderColor: "#334155",
+    marginBottom: 14,
+  },
+
+  villageTab: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+
+  villageTabActive: {
+    backgroundColor: "#334155",
+  },
+
+  villageTabText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#94a3b8",
+  },
+
+  villageTabCount: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#64748b",
+  },
+
+  villageTabTextActive: {
+    color: GOLD,
   },
 
   // ── Overview ────────────────────────────────────────────

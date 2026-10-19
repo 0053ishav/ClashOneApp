@@ -1,4 +1,5 @@
 import { getAccountByTag } from "@/services/accountService";
+import type { PlayerProfile } from "@/types/player";
 import { switchAccountService } from "@/services/accountSwitchService";
 import { setActiveAccount } from "@/storage/activeAccount";
 import {
@@ -57,12 +58,17 @@ describe("switchAccountService", () => {
       builderCount: 6,
       builderBaseBuilderCount: 2,
     });
-    mockGetPlayerProfile.mockReturnValue({
+    const existingProfile: PlayerProfile & { customField: string } = {
+      id: "profile-target",
       playerTag: "#TARGET",
       playerName: "Old name",
       townHallLevel: 15,
+      normalBuilderCount: 5,
+      builderBaseBuilderCount: 1,
+      playerApiConnected: false,
       customField: "preserved",
-    } as ReturnType<typeof getPlayerProfile>);
+    };
+    mockGetPlayerProfile.mockReturnValue(existingProfile);
 
     await switchAccountService("#TARGET");
 

@@ -82,6 +82,10 @@ jobs:
           (
             cd "$base_dir"
             npm ci
+          )
+
+          (
+            cd "$base_dir"
             npx --no-install fingerprint fingerprint:generate --platform android
           ) > "$RUNNER_TEMP/base-android-fingerprint.json"
 

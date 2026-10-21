@@ -13,6 +13,11 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  CI: true
+  EXPO_NO_TELEMETRY: 1
+  EXPO_NO_GIT_STATUS: 1
+
 jobs:
   lint:
     name: Lint (Expo ESLint)

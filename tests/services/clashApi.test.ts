@@ -5,6 +5,11 @@ jest.mock("@sentry/react-native", () => ({
   captureException: jest.fn(),
 }));
 
+const originalFetch = global.fetch;
+const originalBackendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
+const originalAppSecret = process.env.EXPO_PUBLIC_APP_SECRET;
+const originalAppKey = process.env.EXPO_PUBLIC_APP_KEY;
+
 const validPlayer = {
   tag: "#ABC123",
   name: "Test Chief",
@@ -35,14 +40,29 @@ describe("player API runtime validation", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    fetchMock.mockReset();
     process.env.EXPO_PUBLIC_BACKEND_URL = "https://api.example.test";
     process.env.EXPO_PUBLIC_APP_SECRET = "public-client-key";
     global.fetch = fetchMock;
   });
 
   afterEach(() => {
-    delete process.env.EXPO_PUBLIC_BACKEND_URL;
-    delete process.env.EXPO_PUBLIC_APP_SECRET;
+    global.fetch = originalFetch;
+    if (originalBackendUrl === undefined) {
+      delete process.env.EXPO_PUBLIC_BACKEND_URL;
+    } else {
+      process.env.EXPO_PUBLIC_BACKEND_URL = originalBackendUrl;
+    }
+    if (originalAppSecret === undefined) {
+      delete process.env.EXPO_PUBLIC_APP_SECRET;
+    } else {
+      process.env.EXPO_PUBLIC_APP_SECRET = originalAppSecret;
+    }
+    if (originalAppKey === undefined) {
+      delete process.env.EXPO_PUBLIC_APP_KEY;
+    } else {
+      process.env.EXPO_PUBLIC_APP_KEY = originalAppKey;
+    }
   });
 
   it("validates and returns a valid player payload", async () => {

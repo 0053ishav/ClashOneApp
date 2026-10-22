@@ -36,7 +36,10 @@ async function fetchPlayerData(playerTag: string): Promise<PlayerFull> {
       headers: {
         // EXPO_PUBLIC_* values are embedded in the app. This header is a public
         // client identifier only and must never be treated as a secret.
-        "x-app-key": process.env.EXPO_PUBLIC_APP_SECRET ?? "",
+        "x-app-key":
+          process.env.EXPO_PUBLIC_APP_KEY ||
+          process.env.EXPO_PUBLIC_APP_SECRET ||
+          "",
       },
     });
   } catch {

@@ -5,6 +5,7 @@ import {
 } from "@/components/goldPass/GoldPassBoostQuickPanel";
 import { HammerJamBanner } from "@/components/HammerJamBanner";
 import { LabSection } from "@/components/home/LabSection";
+import { ProgressionEmptyState } from "@/components/home/ProgressionEmptyState";
 import {
   formatSavedDuration,
   MagicItemActivityPopup,
@@ -959,7 +960,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView
       edges={["top"]}
-      style={{ flex: 1, backgroundColor: "#0f172a" }}
+      style={styles.screen}
     >
       {/* ── Header ── */}
       <View style={styles.header}>
@@ -1635,29 +1636,14 @@ export default function HomeScreen() {
               </View>
             )}
 
-            {/* Empty state (dimensions preserved) */}
+            {/* Shared empty state keeps both villages visually consistent. */}
             {!isLoadingAccountState && sortedUpgrades.length === 0 && (
-              <View style={styles.emptyStateContainer}>
-                <View style={styles.emptyIconWrapper}>
-                  <Image
-                    source={
-                      selectedVillage === "home"
-                        ? {
-                            uri: `${ENV.CDN_BASE}/v2/home/fallbacks/builder-idle.png`,
-                          }
-                        : {
-                            uri: `${ENV.CDN_BASE}/v2/builder/fallbacks/master-builder-sleeping.png`,
-                          }
-                    }
-                    style={styles.emptyIcon}
-                    contentFit="contain"
-                    cachePolicy="memory-disk"
-                  />
-                </View>
-                <Text style={styles.emptyTitle}>No Active Upgrades</Text>
-                <Text style={styles.emptySubtitle}>
-                  No upgrades are currently being tracked
-                </Text>
+              <View style={styles.upgradesSection}>
+                <ProgressionEmptyState
+                  icon="hammer-outline"
+                  title="No active upgrades"
+                  description="Your builders are free. Start an upgrade to track its progress here."
+                />
               </View>
             )}
 
@@ -1826,9 +1812,14 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#0A0F1A",
+  },
+
   container: {
     flex: 1,
-    backgroundColor: "#0f172a",
+    backgroundColor: "#0A0F1A",
   },
 
   loadingOverlay: {
@@ -1905,12 +1896,12 @@ const styles = StyleSheet.create({
 
   // ── Header ──
   header: {
-    backgroundColor: "#0f172a",
+    backgroundColor: "#0A0F1A",
     borderBottomWidth: 1,
-    borderBottomColor: "#263449",
-    paddingHorizontal: 14,
-    paddingTop: 6,
-    paddingBottom: 12,
+    borderBottomColor: "#222D44",
+    paddingHorizontal: 18,
+    paddingTop: 10,
+    paddingBottom: 14,
   },
 
   headerTop: {
@@ -1920,11 +1911,11 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    color: "#fbbf24",
-    fontSize: 26,
+    color: "#FBBF24",
+    fontSize: 27,
     fontWeight: "900",
-    lineHeight: 30,
-    letterSpacing: -0.4,
+    lineHeight: 32,
+    letterSpacing: -0.6,
   },
 
   syncBlock: {
@@ -2096,10 +2087,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 14,
     marginTop: 12,
     marginBottom: 14,
-    backgroundColor: "#111c2e",
+    backgroundColor: "#121A2B",
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#263449",
+    borderColor: "#222D44",
     overflow: "hidden",
   },
 
@@ -2114,7 +2105,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 13,
-    backgroundColor: "#0f172a",
+    backgroundColor: "#172033",
     justifyContent: "center",
     alignItems: "center",
     flexShrink: 0,
@@ -2212,7 +2203,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(34,197,94,0.25)",
   },
 
-  villageTabsTopSpacer: { height: 12 },
+  villageTabsTopSpacer: { height: 8 },
   // ── Village tabs ──
   magicItemsActionRow: {
     paddingHorizontal: 14,
@@ -2236,16 +2227,16 @@ const styles = StyleSheet.create({
 
   villageTabs: {
     flexDirection: "row",
-    backgroundColor: "#111c2e",
-    borderRadius: 999,
+    backgroundColor: "#121A2B",
+    borderRadius: 16,
     padding: 4,
-    height: 48,
+    height: 52,
     position: "relative",
     borderWidth: 1,
-    borderColor: "#263449",
+    borderColor: "#222D44",
     overflow: "hidden",
-    marginHorizontal: 14,
-    marginBottom: 14,
+    marginHorizontal: 16,
+    marginBottom: 16,
   },
 
   villageTab: {
@@ -2309,15 +2300,15 @@ const styles = StyleSheet.create({
 
   // ── Upgrade list ──
   upgradesSection: {
-    paddingHorizontal: 14,
-    gap: 8,
+    paddingHorizontal: 16,
+    gap: 10,
   },
 
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 2,
+    marginBottom: 6,
   },
 
   headerLeft: {
@@ -2377,12 +2368,12 @@ const styles = StyleSheet.create({
   },
 
   upgradeContent: {
-    backgroundColor: "#111c2e",
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    backgroundColor: "#121A2B",
+    paddingVertical: 13,
+    paddingHorizontal: 13,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#263449",
+    borderColor: "#222D44",
     gap: 10,
   },
 
@@ -2577,7 +2568,7 @@ const styles = StyleSheet.create({
   emptyStateContainer: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 28,
+    paddingVertical: 24,
     paddingHorizontal: 24,
     gap: 12,
   },

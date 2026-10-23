@@ -60,18 +60,11 @@ export default function EntityCard({
             isMax ? styles.levelBadgeMaxed : styles.levelBadgeDefault,
           ]}
         >
-          {isMax ? (
-            <Ionicons name="flame" size={13} color={HOME_COLORS.gold} />
-          ) : (
-            <Text style={styles.levelText}>{level}</Text>
+          <Text style={styles.levelText}>{level}</Text>
+          {isMax && (
+            <Ionicons name="flame" size={12} color={HOME_COLORS.gold} />
           )}
         </View>
-
-        {isMax && (
-          <View style={styles.maxedBadge}>
-            <Ionicons name="checkmark" size={10} color={HOME_COLORS.textDark} />
-          </View>
-        )}
       </View>
 
       <Text style={styles.cardName} numberOfLines={1}>
@@ -126,7 +119,7 @@ const styles = StyleSheet.create({
   },
 
   pressableFill: {
-    width: "100%",
+    width: "31.5%",
   },
 
   pressablePressed: {
@@ -159,17 +152,19 @@ const styles = StyleSheet.create({
   },
 
   cardImage: {
-    width: "100%",
-    height: "100%",
+    width: "82%",
+    height: "82%",
   },
 
   levelBadge: {
     position: "absolute",
     left: 3,
     bottom: 3,
-    minWidth: 19,
+    minWidth: 20,
     height: 18,
     paddingHorizontal: 4,
+    flexDirection: "row",
+    gap: 2,
     borderRadius: 4,
     alignItems: "center",
     justifyContent: "center",
@@ -183,7 +178,7 @@ const styles = StyleSheet.create({
 
   levelBadgeMaxed: {
     backgroundColor: "rgba(15,23,42,0.96)",
-    minWidth: 22,
+    minWidth: 29,
   },
 
   levelText: {
@@ -194,17 +189,6 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
 
-  maxedBadge: {
-    position: "absolute",
-    top: 3,
-    right: 3,
-    width: 17,
-    height: 17,
-    borderRadius: 5,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: HOME_COLORS.gold,
-  },
 
   cardName: {
     width: "100%",

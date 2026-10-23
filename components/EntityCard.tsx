@@ -14,6 +14,8 @@ interface EntityCardProps {
   maxLevel: number;
   onPress?: () => void;
   village?: Village;
+  /** Fill a FlatList column instead of using the three-column flex-wrap layout. */
+  fillContainer?: boolean;
 }
 
 export default function EntityCard({
@@ -23,6 +25,7 @@ export default function EntityCard({
   maxLevel,
   onPress,
   village,
+  fillContainer = false,
 }: EntityCardProps) {
   const status = getUpgradeStatus(level, maxLevel);
   const progressColor = getProgressColor(status);
@@ -91,7 +94,11 @@ export default function EntityCard({
   );
 
   if (!onPress) {
-    return <View style={styles.pressable}>{content}</View>;
+    return (
+      <View style={fillContainer ? styles.pressableFill : styles.pressable}>
+        {content}
+      </View>
+    );
   }
 
   return (
@@ -104,7 +111,7 @@ export default function EntityCard({
       }
       onPress={onPress}
       style={({ pressed }) => [
-        styles.pressable,
+        fillContainer ? styles.pressableFill : styles.pressable,
         pressed && styles.pressablePressed,
       ]}
     >
@@ -116,6 +123,10 @@ export default function EntityCard({
 const styles = StyleSheet.create({
   pressable: {
     width: "31.5%",
+  },
+
+  pressableFill: {
+    width: "100%",
   },
 
   pressablePressed: {

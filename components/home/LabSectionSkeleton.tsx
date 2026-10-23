@@ -1,3 +1,4 @@
+import { HOME_COLORS } from "@/theme/home";
 import { StyleSheet, View } from "react-native";
 
 export function LabSectionSkeleton() {
@@ -44,13 +45,13 @@ const styles = StyleSheet.create({
     width: 85,
     height: 11,
     borderRadius: 6,
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
   },
 
   card: {
     minHeight: 82,
     borderRadius: 16,
-    backgroundColor: "#172033",
+    backgroundColor: HOME_COLORS.surface,
     padding: 12,
     flexDirection: "row",
     alignItems: "center",
@@ -60,7 +61,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 14,
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
   },
 
   content: {
@@ -72,14 +73,14 @@ const styles = StyleSheet.create({
     width: "65%",
     height: 12,
     borderRadius: 6,
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
   },
 
   level: {
     width: 70,
     height: 17,
     borderRadius: 9,
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
     marginTop: 8,
   },
 
@@ -94,14 +95,14 @@ const styles = StyleSheet.create({
     width: 55,
     height: 9,
     borderRadius: 5,
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
   },
 
   progress: {
     flex: 1,
     height: 5,
     borderRadius: 3,
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
   },
 
   status: {
@@ -114,13 +115,13 @@ const styles = StyleSheet.create({
     width: 42,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
   },
 
   statusLineSmall: {
     width: 30,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
   },
 });

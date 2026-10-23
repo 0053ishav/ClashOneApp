@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { HOME_COLORS } from "@/theme/home";
 import type { ComponentProps } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
@@ -19,7 +20,7 @@ export function ProgressionEmptyState({
   icon,
   title,
   description,
-  accentColor = "#FBBF24",
+  accentColor = HOME_COLORS.gold,
 }: ProgressionEmptyStateProps) {
   return (
     <View style={styles.card}>
@@ -42,10 +43,10 @@ const styles = StyleSheet.create({
     gap: 14,
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: "#121A2B",
+    backgroundColor: HOME_COLORS.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#222D44",
+    borderColor: HOME_COLORS.border,
   },
   iconWrap: {
     width: 44,
@@ -59,12 +60,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   title: {
-    color: "#F1F5F9",
+    color: HOME_COLORS.textPrimary,
     fontSize: 14,
     fontWeight: "700",
   },
   description: {
-    color: "#94A3B8",
+    color: HOME_COLORS.textSecondary,
     fontSize: 12,
     lineHeight: 17,
   },

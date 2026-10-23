@@ -173,7 +173,6 @@ export default function ProfileScreen() {
               label: "War stars",
               value: data.warStars,
               highlight: true,
-              wide: true,
             },
             {
               icon: "flame",

@@ -1181,8 +1181,7 @@ export default function SettingsScreen() {
         {/* ── Footer ── */}
         <View style={styles.footer}>
           <Text style={styles.footerTitle}>
-            Clash One{" "}
-            <Text style={styles.footerVersion}>
+            Clash One <Text style={styles.footerVersion}>
               v{Application.nativeApplicationVersion}
             </Text>
           </Text>

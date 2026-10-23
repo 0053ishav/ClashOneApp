@@ -4,7 +4,7 @@ import { syncPremium } from "@/services/revenueCat/syncPremium";
 import { usePremiumStore } from "@/stores/premiumStore";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Keyboard, StyleSheet, Text, View } from "react-native";
 import {
   BannerAd,
@@ -47,6 +47,8 @@ function TabIcon({
   inactive: IconName;
   pillColor: string;
 }) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const progress = useRef(new Animated.Value(focused ? 1 : 0)).current;
 
   useEffect(() => {

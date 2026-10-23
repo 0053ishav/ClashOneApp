@@ -998,7 +998,7 @@ export default function HomeScreen() {
                 <Ionicons
                   name="sync-sharp"
                   size={19}
-                  color={isStale ? HOME_COLORS.gold : "#f8fafc"}
+                  color={isStale ? HOME_COLORS.gold : HOME_COLORS.textBright}
                 />
               </Pressable>
             </View>
@@ -1137,7 +1137,7 @@ export default function HomeScreen() {
                 pressed && styles.magicItemsButtonPressed,
               ]}
             >
-              <Ionicons name="flash" size={11} color="#34d399" />
+              <Ionicons name="flash" size={11} color=HOME_COLORS.emerald />
               <Text style={styles.profileSavedText}>
                 {formatSavedDuration(
                   (accountState?.activeUpgrades ?? []).reduce(
@@ -1212,7 +1212,7 @@ export default function HomeScreen() {
             onRefresh={handleRefresh}
             tintColor=HOME_COLORS.gold
             colors={[HOME_COLORS.gold]}
-            progressBackgroundColor="#111c2e"
+            progressBackgroundColor=HOME_COLORS.surfaceDark
           />
         }
       >
@@ -1674,7 +1674,7 @@ export default function HomeScreen() {
         </GestureDetector>
 
         <View style={styles.refreshHint}>
-          <Ionicons name="arrow-down" size={13} color="#475569" />
+          <Ionicons name="arrow-down" size={13} color=HOME_COLORS.slate />
           <Text style={styles.refreshHintText}>Pull down to refresh</Text>
         </View>
 
@@ -1955,7 +1955,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(52,211,153,0.22)",
   },
-  profileSavedText: { color: "#34d399", fontSize: 9, fontWeight: "900" },
+  profileSavedText: { color: HOME_COLORS.emerald, fontSize: 9, fontWeight: "900" },
   profileInventoryButton: {
     minWidth: 34,
     minHeight: 27,
@@ -1984,7 +1984,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: "#111c2e",
+    backgroundColor: HOME_COLORS.surfaceDark,
     borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
@@ -2022,9 +2022,9 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 8,
-    backgroundColor: "#111c2e",
+    backgroundColor: HOME_COLORS.surfaceDark,
     borderWidth: 1,
-    borderColor: "#263449",
+    borderColor: HOME_COLORS.borderStrong,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2080,7 +2080,7 @@ const styles = StyleSheet.create({
     width: 3,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: "#334155",
+    backgroundColor: HOME_COLORS.slateMuted,
   },
 
   // ── Status Card — dimensions kept identical for active & empty states ──
@@ -2144,7 +2144,7 @@ const styles = StyleSheet.create({
 
   statusDivider: {
     height: 1,
-    backgroundColor: "#263449",
+    backgroundColor: HOME_COLORS.borderStrong,
     marginHorizontal: 14,
   },
 
@@ -2637,7 +2637,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: "#0ea5e9",
+    backgroundColor: HOME_COLORS.blueStrong,
   },
 
   devButtonText: {

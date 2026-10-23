@@ -4,6 +4,7 @@ import { getProgressColor } from "@/utils/getProgressColor";
 import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import type { Village } from "@/types/entity";
 import { Ionicons } from "@expo/vector-icons";
+import FireBadge from "./FireBadge";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -60,27 +61,7 @@ export default function EntityCard({
           ]}
         >
           {isMax ? (
-            <View style={styles.maxLevelFlame}>
-              <Ionicons
-                name="flame"
-                size={29}
-                color="#EA580C"
-                style={styles.flameLayer}
-              />
-              <Ionicons
-                name="flame"
-                size={25}
-                color="#FDC262"
-                style={styles.flameLayer}
-              />
-              <Ionicons
-                name="flame"
-                size={17}
-                color="#FFF0B0"
-                style={styles.flameLayer}
-              />
-              <Text style={styles.maxLevelText}>{level}</Text>
-            </View>
+            <FireBadge level={level} width={32} />
           ) : (
             <Text style={styles.levelText}>{level}</Text>
           )}
@@ -205,13 +186,15 @@ const styles = StyleSheet.create({
   },
 
   levelBadgeMaxed: {
-    minWidth: 29,
-    width: 31,
-    height: 29,
+    width: 32,
+    height: 38,
+    minWidth: 32,
     paddingHorizontal: 0,
     paddingVertical: 0,
     borderWidth: 0,
     backgroundColor: "transparent",
+    left: 1,
+    bottom: 1,
   },
 
   levelText: {
@@ -222,33 +205,6 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
 
-  maxLevelFlame: {
-    width: 31,
-    height: 29,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  flameLayer: {
-    position: "absolute",
-    bottom: 0,
-  },
-
-  maxLevelText: {
-    position: "absolute",
-    top: 9,
-    left: 0,
-    right: 0,
-    textAlign: "center",
-    fontSize: 10,
-    lineHeight: 12,
-    fontWeight: "900",
-    color: HOME_COLORS.white,
-    fontVariant: ["tabular-nums"],
-    textShadowColor: "rgba(15,23,42,0.95)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
 
 
   cardName: {

@@ -179,7 +179,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
               value={subject}
               onChangeText={setSubject}
               placeholder="Short summary"
-              placeholderTextColor=HOME_COLORS.textMuted
+              placeholderTextColor={HOME_COLORS.textMuted}
               style={styles.input}
             /> */}
 
@@ -192,7 +192,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                 autoCapitalize="none"
                 autoCorrect={false}
                 placeholder="you@example.com"
-                placeholderTextColor=HOME_COLORS.textMuted
+                placeholderTextColor={HOME_COLORS.textMuted}
                 style={styles.input}
               />
 
@@ -203,7 +203,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                 value={message}
                 onChangeText={setMessage}
                 placeholder="Describe the issue or feedback..."
-                placeholderTextColor=HOME_COLORS.textMuted
+                placeholderTextColor={HOME_COLORS.textMuted}
                 style={styles.messageInput}
               />
               <Text

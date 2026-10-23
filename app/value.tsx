@@ -172,7 +172,7 @@ export default function ValueScreen() {
         <View style={styles.successHeader}>
           <View style={styles.checkmarkWrapper}>
             <View style={styles.checkmarkGlow} />
-            <Ionicons name="checkmark-circle" size={64} color=HOME_COLORS.success />
+            <Ionicons name="checkmark-circle" size={64} color={HOME_COLORS.success} />
           </View>
           <Text style={styles.successTitle}>All Set!</Text>
           <Text style={styles.successSubtitle}>
@@ -312,7 +312,7 @@ export default function ValueScreen() {
                 <Ionicons
                   name="information-circle-outline"
                   size={14}
-                  color=HOME_COLORS.textSecondary
+                  color={HOME_COLORS.textSecondary}
                 />
                 <Text style={styles.infoText}>Auto</Text>
               </View>
@@ -556,7 +556,7 @@ export default function ValueScreen() {
           <View style={styles.stepsList}>
             <View style={styles.stepItem}>
               <View style={styles.stepIcon}>
-                <Ionicons name="notifications" size={20} color=HOME_COLORS.gold />
+                <Ionicons name="notifications" size={20} color={HOME_COLORS.gold} />
               </View>
               <View style={styles.stepContent}>
                 <Text style={styles.stepTitle}>Get Notified</Text>
@@ -568,7 +568,7 @@ export default function ValueScreen() {
 
             {/* <View style={styles.stepItem}>
               <View style={styles.stepIcon}>
-                <Ionicons name="refresh" size={20} color=HOME_COLORS.gold />
+                <Ionicons name="refresh" size={20} color={HOME_COLORS.gold} />
               </View>
               <View style={styles.stepContent}>
                 <Text style={styles.stepTitle}>Stay Synced</Text>
@@ -580,7 +580,7 @@ export default function ValueScreen() {
 
             <View style={styles.stepItem}>
               <View style={styles.stepIcon}>
-                <Ionicons name="add-circle" size={20} color=HOME_COLORS.gold />
+                <Ionicons name="add-circle" size={20} color={HOME_COLORS.gold} />
               </View>
               <View style={styles.stepContent}>
                 <Text style={styles.stepTitle}>Track Upgrades</Text>
@@ -598,12 +598,12 @@ export default function ValueScreen() {
           style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
         >
           <Text style={styles.ctaText}>Continue</Text>
-          <Ionicons name="arrow-forward" size={20} color=HOME_COLORS.textDark />
+          <Ionicons name="arrow-forward" size={20} color={HOME_COLORS.textDark} />
         </Pressable>
 
         {/* 💡 Tip */}
         <View style={styles.tipCard}>
-          <Ionicons name="bulb" size={16} color=HOME_COLORS.gold />
+          <Ionicons name="bulb" size={16} color={HOME_COLORS.gold} />
           <Text style={styles.tipText}>
             Tip: Add this app to your home screen for quick access
           </Text>

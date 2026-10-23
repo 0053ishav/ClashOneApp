@@ -32,7 +32,7 @@ const TYPE_COLORS: Record<MagicItemType, string> = {
   potion: HOME_COLORS.blue,
   snack: HOME_COLORS.emerald,
   book: HOME_COLORS.gold,
-  hammer: "#fb923c",
+  hammer: HOME_COLORS.orangeLight,
 };
 
 export default function MagicItemsScreen() {

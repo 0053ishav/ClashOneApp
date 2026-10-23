@@ -1825,7 +1825,7 @@ const styles = StyleSheet.create({
 
   loadingOverlay: {
     flex: 1,
-    backgroundColor: HOME_COLORS.textDark,
+    backgroundColor: HOME_COLORS.background,
     justifyContent: "center",
     alignItems: "center",
   },

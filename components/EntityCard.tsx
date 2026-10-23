@@ -61,7 +61,7 @@ export default function EntityCard({
           ]}
         >
           {isMax ? (
-            <FireBadge level={level} width={32} />
+            <FireBadge level={level} width={22} />
           ) : (
             <Text style={styles.levelText}>{level}</Text>
           )}
@@ -186,15 +186,16 @@ const styles = StyleSheet.create({
   },
 
   levelBadgeMaxed: {
-    width: 32,
-    height: 38,
-    minWidth: 32,
+    width: 22,
+    height: 21,
+    minWidth: 22,
     paddingHorizontal: 0,
     paddingVertical: 0,
     borderWidth: 0,
     backgroundColor: "transparent",
-    left: 1,
-    bottom: 1,
+    borderRadius: 4,
+    left: 3,
+    bottom: 3,
   },
 
   levelText: {

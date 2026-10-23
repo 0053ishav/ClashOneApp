@@ -77,7 +77,7 @@ export function PetSection({
               pressed && styles.addIconButtonPressed,
             ]}
           >
-            <Ionicons name="add-circle" size={22} color=HOME_COLORS.purpleLight />
+            <Ionicons name="add-circle" size={22} color={HOME_COLORS.purpleLight} />
           </Pressable>
         )}
       </View>
@@ -162,7 +162,7 @@ export function PetSection({
           icon="paw"
           title="No pet upgrading"
           description="Your Pet House is ready when you are."
-          accentColor=HOME_COLORS.purpleLight
+          accentColor={HOME_COLORS.purpleLight}
         />
       ) : null}
     </View>

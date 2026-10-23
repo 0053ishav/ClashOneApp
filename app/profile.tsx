@@ -1,5 +1,6 @@
 import ArmySection from "@/components/Profile/ArmySection";
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import StatsGrid from "@/components/Profile/StatsGrid";
 import ProfileHeroCard from "@/components/Profile/ProfileHeroCard";
 import ProgressSection from "@/components/Profile/ProgressSection";
@@ -11,7 +12,7 @@ import { EntityRecord } from "@/types/upgrade";
 import { getSessionSource, track } from "@/utils/analytics/analytics";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState , useMemo } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -24,6 +25,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [data, setData] = useState<PlayerFull | null>(null);
@@ -92,7 +95,7 @@ export default function ProfileScreen() {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <View style={styles.loadingWrapper}>
-          <ActivityIndicator size={44} color={HOME_COLORS.gold} />
+          <ActivityIndicator size={44} color={colors.gold} />
           <Text style={styles.loadingText}>Loading profile…</Text>
         </View>
       </View>
@@ -103,7 +106,7 @@ export default function ProfileScreen() {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <View style={styles.errorIcon}>
-          <Ionicons name="alert-circle" size={32} color={HOME_COLORS.danger} />
+          <Ionicons name="alert-circle" size={32} color={colors.danger} />
         </View>
         <Text style={styles.errorTitle}>Couldn&apos;t load profile</Text>
         <Text style={styles.errorText}>
@@ -117,7 +120,7 @@ export default function ProfileScreen() {
             pressed && styles.pressed,
           ]}
         >
-          <Ionicons name="refresh" size={15} color={HOME_COLORS.textDark} />
+          <Ionicons name="refresh" size={15} color={colors.textDark} />
           <Text style={styles.retryButtonText}>Try again</Text>
         </Pressable>
       </View>
@@ -141,7 +144,7 @@ export default function ProfileScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={HOME_COLORS.gold}
+            tintColor={colors.gold}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -156,7 +159,7 @@ export default function ProfileScreen() {
               pressed && styles.pressed,
             ]}
           >
-            <Ionicons name="chevron-back" size={20} color={HOME_COLORS.textBright} />
+            <Ionicons name="chevron-back" size={20} color={colors.textBright} />
           </Pressable>
 
           <Text style={styles.headerTitle}>Profile</Text>
@@ -178,25 +181,25 @@ export default function ProfileScreen() {
               icon: "flame",
               label: "Attacks won",
               value: data.attackWins,
-              color: HOME_COLORS.orange,
+              color: colors.orange,
             },
             {
               icon: "shield-checkmark",
               label: "Defenses won",
               value: data.defenseWins,
-              color: HOME_COLORS.cyan,
+              color: colors.cyan,
             },
             {
               icon: "arrow-up",
               label: "Donated",
               value: data.donations,
-              color: HOME_COLORS.success,
+              color: colors.success,
             },
             {
               icon: "arrow-down",
               label: "Received",
               value: data.donationsReceived,
-              color: HOME_COLORS.blue,
+              color: colors.blue,
             },
           ]}
         />
@@ -206,7 +209,7 @@ export default function ProfileScreen() {
         <ProgressSection data={data} />
 
         <View style={styles.footer}>
-          <Ionicons name="checkmark-circle" size={13} color={HOME_COLORS.success} />
+          <Ionicons name="checkmark-circle" size={13} color={colors.success} />
           <Text style={styles.footerText}>Synced from Clash of Clans API</Text>
         </View>
       </ScrollView>
@@ -214,10 +217,10 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: HOME_COLORS.background,
+    backgroundColor: colors.background,
   },
 
   centerContent: {
@@ -251,9 +254,9 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 11,
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: HOME_COLORS.border,
+    borderColor: colors.border,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -261,7 +264,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     letterSpacing: -0.4,
   },
 
@@ -277,7 +280,7 @@ const styles = StyleSheet.create({
 
   loadingText: {
     fontSize: 14,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "600",
   },
 
@@ -295,13 +298,13 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
     marginBottom: 5,
   },
 
   errorText: {
     fontSize: 13,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "500",
     textAlign: "center",
   },
@@ -311,14 +314,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 7,
     marginTop: 18,
-    backgroundColor: HOME_COLORS.gold,
+    backgroundColor: colors.gold,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 11,
   },
 
   retryButtonText: {
-    color: HOME_COLORS.textDark,
+    color: colors.textDark,
     fontWeight: "800",
     fontSize: 13,
   },
@@ -338,7 +341,7 @@ const styles = StyleSheet.create({
 
   footerText: {
     fontSize: 11,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "500",
   },
 });

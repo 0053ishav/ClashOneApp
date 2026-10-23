@@ -85,7 +85,7 @@ import {
 type IconName = keyof typeof Ionicons.glyphMap;
 
 const GOLD = "#fbbf24";
-const RED = colors.danger;
+const RED = "#ef4444";
 const MIN_BUILDERS = 1;
 const MAX_BUILDERS = 6;
 

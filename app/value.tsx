@@ -616,7 +616,7 @@ export default function ValueScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: HOME_COLORS.textDark,
+    backgroundColor: HOME_COLORS.background,
   },
 
   container: {
@@ -678,12 +678,17 @@ const styles = StyleSheet.create({
 
   // Profile Card
   profileCard: {
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: HOME_COLORS.surface,
     borderRadius: 20,
     padding: 20,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: HOME_COLORS.slateMuted,
+    borderColor: "rgba(251,191,36,0.28)",
+    shadowColor: HOME_COLORS.gold,
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 3,
   },
 
   profileHeader: {
@@ -754,12 +759,17 @@ const styles = StyleSheet.create({
   },
 
   statusCard: {
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: HOME_COLORS.surface,
     borderRadius: 20,
     padding: 20,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: HOME_COLORS.slateMuted,
+    borderColor: HOME_COLORS.borderStrong,
+    shadowColor: HOME_COLORS.gold,
+    shadowOpacity: 0.09,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
 
   statusHeader: {
@@ -890,18 +900,23 @@ const styles = StyleSheet.create({
   },
 
   liveCard: {
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: HOME_COLORS.surface,
     borderRadius: 20,
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: HOME_COLORS.slateMuted,
+    borderColor: "rgba(56,189,248,0.24)",
+    shadowColor: HOME_COLORS.blue,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
 
   liveTitle: {
     fontSize: 14,
-    fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    fontWeight: "800",
+    color: HOME_COLORS.blue,
     marginBottom: 12,
   },
 
@@ -937,18 +952,23 @@ const styles = StyleSheet.create({
     color: HOME_COLORS.gold,
   },
   nextStepsCard: {
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: HOME_COLORS.surface,
     borderRadius: 20,
     padding: 20,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: HOME_COLORS.slateMuted,
+    borderColor: "rgba(52,211,153,0.24)",
+    shadowColor: HOME_COLORS.emerald,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
 
   nextStepsTitle: {
     fontSize: 18,
-    fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    fontWeight: "800",
+    color: HOME_COLORS.emerald,
     marginBottom: 16,
   },
 

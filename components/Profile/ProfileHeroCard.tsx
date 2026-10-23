@@ -51,7 +51,7 @@ export default function ProfileHeroCard({
               <Ionicons
                 name={warReady ? "flame" : "pause"}
                 size={11}
-                color={warReady ? HOME_COLORS.success : "#ef4444"}
+                color={warReady ? HOME_COLORS.success : HOME_COLORS.danger}
               />
               <Text
                 style={[
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
     color: HOME_COLORS.success,
   },
   warTextOut: {
-    color: "#ef4444",
+    color: HOME_COLORS.danger,
   },
 
   // Hall badges: compact pills stacked on the right

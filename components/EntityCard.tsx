@@ -64,8 +64,21 @@ export default function EntityCard({
             <View style={styles.maxLevelFlame}>
               <Ionicons
                 name="flame"
-                size={27}
-                color={HOME_COLORS.orange}
+                size={29}
+                color="#EA580C"
+                style={styles.flameLayer}
+              />
+              <Ionicons
+                name="flame"
+                size={25}
+                color="#FDC262"
+                style={styles.flameLayer}
+              />
+              <Ionicons
+                name="flame"
+                size={17}
+                color="#FFF0B0"
+                style={styles.flameLayer}
               />
               <Text style={styles.maxLevelText}>{level}</Text>
             </View>
@@ -207,6 +220,11 @@ const styles = StyleSheet.create({
     height: 29,
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  flameLayer: {
+    position: "absolute",
+    bottom: 0,
   },
 
   maxLevelText: {

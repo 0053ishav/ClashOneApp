@@ -167,7 +167,7 @@ export default function PrivacyScreen() {
           {/* Permissions */}
           <View style={styles.card}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="key-outline" size={20} color={HOME_COLORS.pink} />
+              <Ionicons name="key-outline" size={20} color={HOME_COLORS.purpleLight} />
               <Text style={styles.sectionTitle}>App Permissions</Text>
             </View>
 
@@ -228,7 +228,7 @@ export default function PrivacyScreen() {
           {/* Changes */}
           <View style={styles.card}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="refresh" size={20} color={HOME_COLORS.teal} />
+              <Ionicons name="refresh" size={20} color={HOME_COLORS.cyan} />
               <Text style={styles.sectionTitle}>Policy Changes</Text>
             </View>
             <Text style={styles.sectionText}>

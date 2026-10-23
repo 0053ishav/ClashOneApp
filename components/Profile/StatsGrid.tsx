@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import type { HomeColors } from "@/theme/home";
 import { useHomeColors } from "@/theme/useHomeColors";
 import { Ionicons } from "@expo/vector-icons";
@@ -24,9 +25,9 @@ interface StatsGridProps {
  * Shared horizontal profile-stat strip used by the profile screen and dropdown.
  * Each stat keeps its label above its value, matching the compact game-style layout.
  */
-export default function StatsGrid({
+export default function StatsGrid({ title = "Stats", stats }: StatsGridProps) {
   const colors = useHomeColors();
-  const styles = useMemo(() => createStyles(colors), [colors]); title = "Stats", stats }: StatsGridProps) {
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const visible = stats.filter((stat) => stat.value !== undefined);
 
   return (

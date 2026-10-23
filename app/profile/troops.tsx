@@ -1,5 +1,6 @@
 import EntityCard from "@/components/EntityCard";
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import { getUpgradeStatus } from "@/engine/progression/selectors/getUpgradeStatus";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { fetchFullPlayer } from "@/services/clashApi";
@@ -32,8 +33,6 @@ interface Troop {
 
 type Filter = "all" | "maxed" | "upgradable";
 
-const GOLD = HOME_COLORS.gold;
-const GREEN = HOME_COLORS.success;
 
 const FILTERS: { key: Filter; label: string }[] = [
   { key: "all", label: "All" },
@@ -42,6 +41,10 @@ const FILTERS: { key: Filter; label: string }[] = [
 ];
 
 export default function TroopsScreen() {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const GOLD = colors.gold;
+  const GREEN = colors.success;
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { profile } = usePlayerProfile();
@@ -183,7 +186,7 @@ export default function TroopsScreen() {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <View style={styles.errorIcon}>
-          <Ionicons name="alert-circle" size={36} color={HOME_COLORS.danger} />
+          <Ionicons name="alert-circle" size={36} color={colors.danger} />
         </View>
 
         <Text style={styles.errorTitle}>Couldn&apos;t load troops</Text>
@@ -197,7 +200,7 @@ export default function TroopsScreen() {
             pressed && styles.pressed,
           ]}
         >
-          <Ionicons name="refresh" size={16} color={HOME_COLORS.textDark} />
+          <Ionicons name="refresh" size={16} color={colors.textDark} />
           <Text style={styles.retryButtonText}>Try again</Text>
         </Pressable>
       </View>
@@ -240,7 +243,7 @@ export default function TroopsScreen() {
                   pressed && styles.pressed,
                 ]}
               >
-                <Ionicons name="chevron-back" size={22} color={HOME_COLORS.textBright} />
+                <Ionicons name="chevron-back" size={22} color={colors.textBright} />
               </Pressable>
 
               <Text style={styles.headerTitle}>Troops</Text>
@@ -349,12 +352,12 @@ export default function TroopsScreen() {
               <Ionicons
                 name="search"
                 size={16}
-                color={searchFocused ? GOLD : HOME_COLORS.textMuted}
+                color={searchFocused ? GOLD : colors.textMuted}
               />
 
               <TextInput
                 placeholder={village === "home" ? "Search Home Village troops" : "Search Builder Base troops"}
-                placeholderTextColor={HOME_COLORS.textMuted}
+                placeholderTextColor={colors.textMuted}
                 value={search}
                 onChangeText={setSearch}
                 onFocus={() => setSearchFocused(true)}
@@ -372,7 +375,7 @@ export default function TroopsScreen() {
                   hitSlop={8}
                   onPress={() => setSearch("")}
                 >
-                  <Ionicons name="close-circle" size={18} color={HOME_COLORS.textMuted} />
+                  <Ionicons name="close-circle" size={18} color={colors.textMuted} />
                 </Pressable>
               )}
             </View>
@@ -443,7 +446,7 @@ export default function TroopsScreen() {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <View style={styles.emptyIcon}>
-              <Ionicons name="search-outline" size={28} color={HOME_COLORS.textMuted} />
+              <Ionicons name="search-outline" size={28} color={colors.textMuted} />
             </View>
 
             <Text style={styles.emptyText}>No troops found</Text>
@@ -475,10 +478,10 @@ export default function TroopsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: HOME_COLORS.background,
+    backgroundColor: colors.background,
   },
 
   centerContent: {
@@ -513,9 +516,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: HOME_COLORS.border,
+    borderColor: colors.border,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -536,9 +539,9 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 5,
     borderRadius: 10,
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: HOME_COLORS.border,
+    borderColor: colors.border,
     marginBottom: 14,
   },
 
@@ -554,19 +557,19 @@ const styles = StyleSheet.create({
   },
 
   villageTabActive: {
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
   },
 
   villageTabText: {
     fontSize: 12,
     fontWeight: "700",
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
   },
 
   villageTabCount: {
     fontSize: 11,
     fontWeight: "800",
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
   },
 
   villageTabTextActive: {
@@ -575,12 +578,12 @@ const styles = StyleSheet.create({
 
   // ── Overview ────────────────────────────────────────────
   overviewCard: {
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: HOME_COLORS.border,
+    borderColor: colors.border,
   },
 
   overviewTop: {
@@ -597,13 +600,13 @@ const styles = StyleSheet.create({
   overviewLabel: {
     fontSize: 13,
     fontWeight: "600",
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
   },
 
   overviewValue: {
     fontSize: 32,
     fontWeight: "800",
-    color: HOME_COLORS.textBright,
+    color: colors.textBright,
     letterSpacing: -1,
   },
 
@@ -632,7 +635,7 @@ const styles = StyleSheet.create({
   overviewStats: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: HOME_COLORS.textDark,
+    backgroundColor: colors.textDark,
     borderRadius: 14,
     paddingVertical: 12,
   },
@@ -646,14 +649,14 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: "800",
-    color: HOME_COLORS.textBright,
+    color: colors.textBright,
     letterSpacing: -0.4,
   },
 
   statLabel: {
     fontSize: 11,
     fontWeight: "600",
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
   },
 
   statDivider: {
@@ -666,10 +669,10 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: HOME_COLORS.slateMuted,
+    borderColor: colors.slateMuted,
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 12,
@@ -682,7 +685,7 @@ const styles = StyleSheet.create({
 
   searchInput: {
     flex: 1,
-    color: HOME_COLORS.textBright,
+    color: colors.textBright,
     fontSize: 14,
     fontWeight: "500",
     padding: 0,
@@ -691,10 +694,10 @@ const styles = StyleSheet.create({
   // ── Segmented filter ────────────────────────────────────
   segmented: {
     flexDirection: "row",
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: HOME_COLORS.slateMuted,
+    borderColor: colors.slateMuted,
     padding: 4,
     gap: 4,
     marginBottom: 16,
@@ -717,7 +720,7 @@ const styles = StyleSheet.create({
   segmentText: {
     fontSize: 13,
     fontWeight: "600",
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
   },
 
   segmentTextActive: {
@@ -728,7 +731,7 @@ const styles = StyleSheet.create({
   segmentCount: {
     fontSize: 11,
     fontWeight: "700",
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
   },
 
   segmentCountActive: {
@@ -747,7 +750,7 @@ const styles = StyleSheet.create({
   resultsText: {
     fontSize: 12,
     fontWeight: "600",
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
   },
 
   clearText: {
@@ -759,7 +762,7 @@ const styles = StyleSheet.create({
   // ── States ──────────────────────────────────────────────
   loadingText: {
     marginTop: 12,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 14,
     fontWeight: "600",
   },
@@ -777,12 +780,12 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
     marginBottom: 6,
   },
 
   errorText: {
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 14,
     fontWeight: "500",
     textAlign: "center",
@@ -800,7 +803,7 @@ const styles = StyleSheet.create({
   },
 
   retryButtonText: {
-    color: HOME_COLORS.textDark,
+    color: colors.textDark,
     fontWeight: "800",
     fontSize: 14,
   },
@@ -816,7 +819,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 6,
@@ -825,12 +828,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
   },
 
   emptySubtext: {
     fontSize: 13,
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
     textAlign: "center",
   },
 

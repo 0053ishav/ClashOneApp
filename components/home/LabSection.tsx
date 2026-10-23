@@ -1,4 +1,5 @@
 import { MagicItemTimeSaved } from "@/components/home/MagicItemActivitySummary";
+import { ProgressionEmptyState } from "@/components/home/ProgressionEmptyState";
 import { ENV } from "@/config/env";
 import { Village } from "@/types/entity";
 import { Upgrade } from "@/types/upgrade";
@@ -97,26 +98,12 @@ export function LabSection({
 
       {/* EMPTY STATE */}
       {!labNormal && !labGoblin && (
-        <View style={styles.emptyCard}>
-          <View style={styles.emptyIconWrapper}>
-            <Ionicons name="flask" size={28} color="#475569" />
-          </View>
-
-          <Text style={styles.emptyText}>No research in progress</Text>
-
-          {onAddPress && (
-            <Pressable
-              style={({ pressed }) => [
-                styles.emptyAddButton,
-                styles.labEmptyButton,
-                pressed && styles.emptyAddButtonPressed,
-              ]}
-              onPress={onAddPress}
-            >
-              <Text style={styles.labEmptyText}>Start Research</Text>
-            </Pressable>
-          )}
-        </View>
+        <ProgressionEmptyState
+          icon="flask-conical"
+          title="No research in progress"
+          description="Your Laboratory is ready for the next troop or spell upgrade."
+          accentColor="#38BDF8"
+        />
       )}
     </View>
   );
@@ -337,7 +324,7 @@ const styles = StyleSheet.create({
   },
 
   labCard: {
-    backgroundColor: "#1e293b",
+    backgroundColor: "#121A2B",
   },
 
   goblinCard: {
@@ -352,12 +339,12 @@ const styles = StyleSheet.create({
   },
 
   cardContent: {
-    backgroundColor: "#1e293b",
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    borderRadius: 14,
+    backgroundColor: "#121A2B",
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#263244",
+    borderColor: "#222D44",
     gap: 10,
   },
 

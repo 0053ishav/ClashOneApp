@@ -1,6 +1,6 @@
 import { HOME_COLORS } from "@/theme/home";
 import { Ionicons } from "@expo/vector-icons";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -30,18 +30,14 @@ export default function StatsGrid({ title = "Stats", stats }: StatsGridProps) {
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.row}
-      >
+      <View style={styles.row}>
         {visible.map((stat) => {
           const tint = stat.highlight ? HOME_COLORS.gold : (stat.color ?? HOME_COLORS.textMuted);
 
           return (
             <View key={stat.label} style={styles.statItem}>
               <View style={[styles.iconChip, { backgroundColor: tint + "20" }]}>
-                <Ionicons name={stat.icon} size={13} color={tint} />
+                <Ionicons name={stat.icon} size={11} color={tint} />
               </View>
 
               <Text style={styles.label} numberOfLines={1}>
@@ -59,7 +55,7 @@ export default function StatsGrid({ title = "Stats", stats }: StatsGridProps) {
             </View>
           );
         })}
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -79,29 +75,29 @@ const styles = StyleSheet.create({
   },
 
   row: {
-    gap: 8,
-    paddingRight: 2,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
   },
 
   statItem: {
-    minWidth: 82,
-    maxWidth: 108,
-    flexGrow: 1,
+    width: "23.5%",
+    minWidth: 0,
     alignItems: "center",
     justifyContent: "center",
-    gap: 3,
-    paddingHorizontal: 9,
-    paddingVertical: 8,
-    borderRadius: 11,
+    gap: 2,
+    paddingHorizontal: 4,
+    paddingVertical: 6,
+    borderRadius: 9,
     backgroundColor: HOME_COLORS.surface,
     borderWidth: 1,
     borderColor: HOME_COLORS.border,
   },
 
   iconChip: {
-    width: 24,
-    height: 24,
-    borderRadius: 7,
+    width: 20,
+    height: 20,
+    borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 2,
@@ -109,7 +105,7 @@ const styles = StyleSheet.create({
 
   label: {
     width: "100%",
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "600",
     color: HOME_COLORS.textSecondary,
     textAlign: "center",
@@ -117,7 +113,7 @@ const styles = StyleSheet.create({
 
   value: {
     maxWidth: "100%",
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "800",
     color: HOME_COLORS.textBright,
     textAlign: "center",

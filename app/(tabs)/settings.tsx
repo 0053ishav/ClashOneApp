@@ -1,5 +1,7 @@
 import { ConfirmModal } from "@/components/ConfirmModal";
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
+import { useThemeStore } from "@/stores/themeStore";
 import {
   GoldPassBoostButton,
   GoldPassBoostQuickPanel,
@@ -63,7 +65,7 @@ import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import * as Notifications from "expo-notifications";
 import { useFocusEffect, useRouter } from "expo-router";
-import { Children, useCallback, useEffect, useRef, useState } from "react";
+import { Children, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Linking,
@@ -82,8 +84,8 @@ import {
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
-const GOLD = HOME_COLORS.gold;
-const RED = HOME_COLORS.danger;
+const GOLD = "#fbbf24";
+const RED = colors.danger;
 const MIN_BUILDERS = 1;
 const MAX_BUILDERS = 6;
 
@@ -175,6 +177,8 @@ function Section({
   footer?: string;
   children: React.ReactNode;
 }) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const items = Children.toArray(children);
 
   return (
@@ -231,7 +235,9 @@ function Row({
   onLongPress,
   accessibilityLabel,
 }: RowProps) {
-  const tint = destructive ? RED : iconColor;
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const tint = destructive ? colors.danger : iconColor;
   const interactive = !!onPress || !!onLongPress;
 
   return (
@@ -290,6 +296,8 @@ function IconButton({
   label: string;
   onPress: () => void;
 }) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <Pressable
       accessibilityRole="button"
@@ -312,6 +320,10 @@ function IconButton({
  * ──────────────────────────────────────────────────────────── */
 
 export default function SettingsScreen() {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const colorScheme = useThemeStore((state) => state.colorScheme);
+  const setColorScheme = useThemeStore((state) => state.setColorScheme);
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -724,7 +736,7 @@ export default function SettingsScreen() {
             title="Magic Items"
             subtitle="Track potions, snacks, books and hammers"
             leading={
-              <View style={[styles.iconChip, { backgroundColor: `${HOME_COLORS.gold}26` }]}>
+              <View style={[styles.iconChip, { backgroundColor: `${colors.gold}26` }]}>
                 <Image
                   source={{ uri: `${ENV.CDN_BASE}/v2/home/other/magic-inventory.png` }}
                   style={{ width: 24, height: 24 }}
@@ -1068,6 +1080,43 @@ export default function SettingsScreen() {
           />
         </Section>
 
+        {/* ── Appearance ── */}
+        <Section title="Appearance">
+          <Row
+            icon="color-palette-outline"
+            title="App theme"
+            subtitle="Choose how Clash One looks on this device"
+            right={
+              <View style={{ flexDirection: "row", gap: 4, padding: 3, borderRadius: 10, backgroundColor: colors.background }}>
+                {(["dark", "light"] as const).map((scheme) => {
+                  const selected = colorScheme === scheme;
+                  return (
+                    <Pressable
+                      key={scheme}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      accessibilityLabel={scheme === "dark" ? "Use dark theme" : "Use light theme"}
+                      onPress={() => setColorScheme(scheme)}
+                      style={{
+                        minWidth: 48,
+                        paddingHorizontal: 9,
+                        paddingVertical: 7,
+                        borderRadius: 8,
+                        alignItems: "center",
+                        backgroundColor: selected ? colors.gold : "transparent",
+                      }}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: "700", color: selected ? "#0f172a" : colors.textSecondary }}>
+                        {scheme === "dark" ? "Dark" : "Light"}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            }
+          />
+        </Section>
+
         {/* ── Notifications ── */}
         <Section title="Notifications">
           <Row
@@ -1379,10 +1428,10 @@ Reduce builders only after some upgrades complete.`}
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: HOME_COLORS.background,
+    backgroundColor: colors.background,
   },
 
   scrollContent: {
@@ -1401,7 +1450,7 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     fontSize: 28,
     fontWeight: "800",
     letterSpacing: -0.6,
@@ -1415,7 +1464,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: "600",
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     marginBottom: 6,
     marginHorizontal: 20,
   },
@@ -1423,23 +1472,23 @@ const styles = StyleSheet.create({
   sectionFooter: {
     fontSize: 12,
     lineHeight: 16,
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
     marginTop: 6,
     marginHorizontal: 20,
   },
 
   group: {
     marginHorizontal: 16,
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: HOME_COLORS.border,
+    borderColor: colors.border,
     overflow: "hidden",
   },
 
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: HOME_COLORS.borderMuted,
+    backgroundColor: colors.borderMuted,
     marginLeft: 58, // 14 padding + 32 icon + 12 gap
   },
 
@@ -1485,18 +1534,18 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     fontSize: 15,
     fontWeight: "600",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
   },
 
   rowSubtitle: {
     fontSize: 12,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "500",
   },
 
   rowValue: {
     fontSize: 13,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "600",
   },
 
@@ -1528,7 +1577,7 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
     borderWidth: 2,
-    borderColor: HOME_COLORS.surface,
+    borderColor: colors.surface,
   },
 
   chiefPill: {
@@ -1565,14 +1614,14 @@ const styles = StyleSheet.create({
   connectButtonText: {
     fontSize: 13,
     fontWeight: "700",
-    color: HOME_COLORS.gold,
+    color: colors.gold,
   },
 
   // ── Stepper ─────────────────────────────────────────────
   stepper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: HOME_COLORS.background,
+    backgroundColor: colors.background,
     borderRadius: 10,
     padding: 3,
   },
@@ -1581,7 +1630,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 8,
-    backgroundColor: HOME_COLORS.borderMuted,
+    backgroundColor: colors.borderMuted,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1595,7 +1644,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 15,
     fontWeight: "800",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
   },
 
   // ── Villages ────────────────────────────────────────────
@@ -1604,7 +1653,7 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     borderWidth: 2,
-    backgroundColor: HOME_COLORS.background,
+    backgroundColor: colors.background,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1621,11 +1670,11 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 4,
-    backgroundColor: HOME_COLORS.gold,
+    backgroundColor: colors.gold,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1.5,
-    borderColor: HOME_COLORS.surface,
+    borderColor: colors.surface,
   },
 
   activePill: {
@@ -1648,7 +1697,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: HOME_COLORS.background,
+    backgroundColor: colors.background,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1680,7 +1729,7 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 11,
     lineHeight: 16,
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
     textAlign: "center",
   },
 
@@ -1695,11 +1744,11 @@ const styles = StyleSheet.create({
   },
 
   sheet: {
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
-    borderColor: HOME_COLORS.border,
+    borderColor: colors.border,
     paddingHorizontal: 24,
     paddingTop: 12,
   },
@@ -1708,7 +1757,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     width: 40,
     height: 4,
-    backgroundColor: HOME_COLORS.slate,
+    backgroundColor: colors.slate,
     borderRadius: 2,
     marginBottom: 18,
   },
@@ -1742,6 +1791,6 @@ const styles = StyleSheet.create({
 
   colorSwatchActive: {
     borderWidth: 3,
-    borderColor: HOME_COLORS.textBright,
+    borderColor: colors.textBright,
   },
 });

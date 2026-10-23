@@ -56,6 +56,9 @@ export default function ProgressSection({ data }: { data: PlayerFull }) {
 }
 
 function AchievementItem({ name, stars = 0, info }: AchievementItemProps) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const GOLD = colors.gold;
   const filled = Math.min(stars, MAX_STARS);
   const complete = filled === MAX_STARS;
 

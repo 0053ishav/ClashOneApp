@@ -135,7 +135,7 @@ export function MagicItemDialog({
                   pressed && styles.pressed,
                 ]}
               >
-                {busy ? <ActivityIndicator size="small" color=HOME_COLORS.textDark /> : <Text style={styles.confirmText}>{confirmLabel}</Text>}
+                {busy ? <ActivityIndicator size="small" color={HOME_COLORS.textDark} /> : <Text style={styles.confirmText}>{confirmLabel}</Text>}
               </Pressable>
             )}
           </View>

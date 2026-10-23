@@ -426,8 +426,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
 
-    borderRadius: 999,
+    borderRadius: 6,
     marginTop: 6,
+    borderWidth: 1,
+    borderColor: HOME_COLORS.border,
   },
 
   villageBadgeText: {
@@ -573,7 +575,7 @@ const styles = StyleSheet.create({
     color: HOME_COLORS.gold,
   },
   summaryCard: {
-    backgroundColor: HOME_COLORS.surfaceDark,
+    backgroundColor: HOME_COLORS.surface,
     borderRadius: 12,
     padding: 14,
     marginBottom: 14,
@@ -682,18 +684,10 @@ const styles = StyleSheet.create({
 
   card: {
     backgroundColor: HOME_COLORS.surfaceRaised,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderStrong,
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    elevation: 3,
+    borderColor: HOME_COLORS.border,
   },
 
   cardTop: {

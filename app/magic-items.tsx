@@ -1,3 +1,4 @@
+import { HOME_COLORS } from "@/theme/home";
 import { MAGIC_ITEMS } from "@/config/magicItems";
 import {
   getMagicItemInventory,
@@ -28,9 +29,9 @@ const ITEM_GROUPS: { type: MagicItemType; title: string }[] = [
 ];
 
 const TYPE_COLORS: Record<MagicItemType, string> = {
-  potion: "#60a5fa",
-  snack: "#34d399",
-  book: "#fbbf24",
+  potion: HOME_COLORS.blue,
+  snack: HOME_COLORS.emerald,
+  book: HOME_COLORS.gold,
   hammer: "#fb923c",
 };
 
@@ -115,7 +116,7 @@ export default function MagicItemsScreen() {
           onPress={() => router.back()}
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={21} color="#f8fafc" />
+          <Ionicons name="arrow-back" size={21} color=HOME_COLORS.textBright />
         </Pressable>
         <View style={styles.headerText}>
           <Text style={styles.title}>Magic Items</Text>
@@ -127,13 +128,13 @@ export default function MagicItemsScreen() {
           onPress={() => void loadInventory()}
           style={styles.refreshButton}
         >
-          <Ionicons name="refresh" size={19} color="#cbd5e1" />
+          <Ionicons name="refresh" size={19} color=HOME_COLORS.textSecondary />
         </Pressable>
       </View>
 
       {!activeTag ? (
         <View style={styles.emptyState}>
-          <Ionicons name="people-outline" size={32} color="#64748b" />
+          <Ionicons name="people-outline" size={32} color=HOME_COLORS.textMuted />
           <Text style={styles.emptyTitle}>Connect a village first</Text>
           <Text style={styles.emptyBody}>
             Import your village data before tracking Magic Item inventory.
@@ -141,7 +142,7 @@ export default function MagicItemsScreen() {
         </View>
       ) : isLoading ? (
         <View style={styles.loading}>
-          <ActivityIndicator color="#fbbf24" />
+          <ActivityIndicator color=HOME_COLORS.gold />
           <Text style={styles.muted}>Loading inventory…</Text>
         </View>
       ) : (
@@ -150,7 +151,7 @@ export default function MagicItemsScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.notice}>
-            <Ionicons name="information-circle-outline" size={18} color="#93c5fd" />
+            <Ionicons name="information-circle-outline" size={18} color=HOME_COLORS.bluePale />
             <Text style={styles.noticeText}>
               Quantities are tracked manually and saved separately for each account.
             </Text>
@@ -216,7 +217,7 @@ export default function MagicItemsScreen() {
                           pressed && styles.pressed,
                         ]}
                       >
-                        <Ionicons name="remove" size={17} color="#f8fafc" />
+                        <Ionicons name="remove" size={17} color=HOME_COLORS.textBright />
                       </Pressable>
                       <Text style={styles.quantity}>{quantity}</Text>
                       <Pressable
@@ -231,9 +232,9 @@ export default function MagicItemsScreen() {
                         ]}
                       >
                         {isSaving ? (
-                          <ActivityIndicator size="small" color="#fbbf24" />
+                          <ActivityIndicator size="small" color=HOME_COLORS.gold />
                         ) : (
-                          <Ionicons name="add" size={17} color="#f8fafc" />
+                          <Ionicons name="add" size={17} color=HOME_COLORS.textBright />
                         )}
                       </Pressable>
                     </View>
@@ -250,14 +251,14 @@ export default function MagicItemsScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#0f172a" },
+  screen: { flex: 1, backgroundColor: HOME_COLORS.textDark },
   header: {
     minHeight: 64,
     paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: "#1e293b",
+    borderBottomColor: HOME_COLORS.surfaceRaised,
   },
   backButton: {
     width: 38,
@@ -265,11 +266,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
   },
   headerText: { flex: 1, marginLeft: 12 },
-  title: { fontSize: 20, fontWeight: "800", color: "#f8fafc" },
-  subtitle: { marginTop: 3, fontSize: 11, color: "#94a3b8" },
+  title: { fontSize: 20, fontWeight: "800", color: HOME_COLORS.textBright },
+  subtitle: { marginTop: 3, fontSize: 11, color: HOME_COLORS.textSecondary },
   refreshButton: {
     width: 36,
     height: 36,
@@ -284,16 +285,16 @@ const styles = StyleSheet.create({
     gap: 9,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: "#172554",
+    backgroundColor: HOME_COLORS.surfaceRaised,
     borderWidth: 1,
-    borderColor: "#1e3a8a",
+    borderColor: HOME_COLORS.border,
     marginBottom: 18,
   },
-  noticeText: { flex: 1, color: "#bfdbfe", fontSize: 12, lineHeight: 17 },
+  noticeText: { flex: 1, color: HOME_COLORS.bluePale, fontSize: 12, lineHeight: 17 },
   group: { marginBottom: 20 },
   groupTitle: {
     marginBottom: 9,
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
     fontSize: 13,
     fontWeight: "800",
     letterSpacing: 0.6,
@@ -306,24 +307,24 @@ const styles = StyleSheet.create({
     padding: 11,
     marginBottom: 8,
     borderRadius: 14,
-    backgroundColor: "#111c31",
+    backgroundColor: HOME_COLORS.surfaceDark,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: HOME_COLORS.surfaceRaised,
   },
   itemIconWrap: {
     width: 48,
     height: 48,
     borderRadius: 12,
     borderWidth: 1,
-    backgroundColor: "#0f172a",
+    backgroundColor: HOME_COLORS.textDark,
     alignItems: "center",
     justifyContent: "center",
   },
   itemIcon: { width: 39, height: 39 },
   itemInfo: { flex: 1, minWidth: 0 },
-  itemName: { fontSize: 12, fontWeight: "800", color: "#f8fafc" },
-  itemDescription: { marginTop: 3, fontSize: 10, lineHeight: 14, color: "#94a3b8" },
-  villageText: { marginTop: 4, fontSize: 9, color: "#64748b" },
+  itemName: { fontSize: 12, fontWeight: "800", color: HOME_COLORS.textBright },
+  itemDescription: { marginTop: 3, fontSize: 10, lineHeight: 14, color: HOME_COLORS.textSecondary },
+  villageText: { marginTop: 4, fontSize: 9, color: HOME_COLORS.textMuted },
   quantityControl: { alignItems: "center", gap: 4 },
   quantityButton: {
     width: 28,
@@ -331,14 +332,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#263449",
+    backgroundColor: HOME_COLORS.borderStrong,
   },
   quantity: {
     minWidth: 22,
     textAlign: "center",
     fontSize: 13,
     fontWeight: "800",
-    color: "#f8fafc",
+    color: HOME_COLORS.textBright,
   },
   disabled: { opacity: 0.35 },
   pressed: { opacity: 0.65 },
@@ -348,9 +349,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 32,
   },
-  emptyTitle: { marginTop: 12, color: "#f8fafc", fontSize: 16, fontWeight: "800" },
-  emptyBody: { marginTop: 7, color: "#94a3b8", textAlign: "center", lineHeight: 20 },
+  emptyTitle: { marginTop: 12, color: HOME_COLORS.textBright, fontSize: 16, fontWeight: "800" },
+  emptyBody: { marginTop: 7, color: HOME_COLORS.textSecondary, textAlign: "center", lineHeight: 20 },
   loading: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10 },
-  muted: { color: "#94a3b8", fontSize: 12 },
+  muted: { color: HOME_COLORS.textSecondary, fontSize: 12 },
   bottomSpacer: { height: 20 },
 });

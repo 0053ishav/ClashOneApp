@@ -40,10 +40,6 @@ export default function EntityCard({
           isMax ? styles.artworkMaxed : styles.artworkDefault,
         ]}
       >
-        <View
-          pointerEvents="none"
-          style={[styles.artworkGlow, isMax && styles.artworkGlowMaxed]}
-        />
         <Image
           accessibilityLabel={name}
           source={{
@@ -148,15 +144,14 @@ const styles = StyleSheet.create({
   },
 
   pressablePressed: {
-    opacity: 0.84,
-    transform: [{ scale: 0.985 }],
+    opacity: 0.88,
   },
 
   card: {
     width: "100%",
     alignItems: "center",
-    gap: 5,
-    paddingBottom: 2,
+    gap: 4,
+    paddingBottom: 1,
   },
 
   artwork: {
@@ -167,7 +162,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-    borderRadius: 11,
+    borderRadius: 5,
     borderWidth: 1.5,
     backgroundColor: HOME_COLORS.surfaceRaised,
   },
@@ -178,32 +173,12 @@ const styles = StyleSheet.create({
 
   artworkMaxed: {
     borderColor: HOME_COLORS.gold,
-    borderWidth: 1.8,
-    shadowColor: HOME_COLORS.gold,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.22,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-
-  artworkGlow: {
-    position: "absolute",
-    width: "74%",
-    height: "74%",
-    borderRadius: 999,
-    backgroundColor: HOME_COLORS.blue,
-    opacity: 0.045,
-  },
-
-  artworkGlowMaxed: {
-    backgroundColor: HOME_COLORS.gold,
-    opacity: 0.1,
+    borderWidth: 1.5,
   },
 
   cardImage: {
-    width: "70%",
-    height: "70%",
-    zIndex: 1,
+    width: "88%",
+    height: "88%",
   },
 
   levelBadge: {
@@ -224,6 +199,9 @@ const styles = StyleSheet.create({
 
   levelBadgeDefault: {
     backgroundColor: "rgba(15,23,42,0.94)",
+    borderRadius: 3,
+    minWidth: 22,
+    height: 21,
   },
 
   levelBadgeMaxed: {
@@ -237,8 +215,8 @@ const styles = StyleSheet.create({
   },
 
   levelText: {
-    fontSize: 11,
-    lineHeight: 14,
+    fontSize: 12,
+    lineHeight: 15,
     fontWeight: "900",
     color: HOME_COLORS.textBright,
     fontVariant: ["tabular-nums"],
@@ -278,22 +256,20 @@ const styles = StyleSheet.create({
     minHeight: 15,
     textAlign: "center",
     color: HOME_COLORS.textPrimary,
-    fontSize: 10.5,
-    lineHeight: 14,
+    fontSize: 10,
+    lineHeight: 13,
     fontWeight: "800",
   },
 
   remainingBadge: {
-    minHeight: 18,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
+    minHeight: 17,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
     flexDirection: "row",
     gap: 3,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.05)",
   },
 
   remainingText: {

@@ -143,7 +143,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                 <Text style={styles.title}>Support & Feedback</Text>
 
                 <Pressable onPress={onClose} hitSlop={12}>
-                  <Ionicons name="close" size={24} color=HOME_COLORS.textSecondary />
+                  <Ionicons name="close" size={24} color={HOME_COLORS.textSecondary} />
                 </Pressable>
               </View>
 
@@ -239,7 +239,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                 onPress={pickImages}
                 disabled={attachments.length >= 3}
               >
-                <Ionicons name="image-outline" size={18} color=HOME_COLORS.gold />
+                <Ionicons name="image-outline" size={18} color={HOME_COLORS.gold} />
 
                 <Text style={styles.attachText}>
                   {attachments.length >= 3
@@ -274,7 +274,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                           )
                         }
                       >
-                        <Ionicons name="close" size={12} color=HOME_COLORS.white />
+                        <Ionicons name="close" size={12} color={HOME_COLORS.white} />
                       </Pressable>
                     </View>
                   ))}
@@ -296,7 +296,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                   <Ionicons
                     name={includeDebugInfo ? "checkbox" : "square-outline"}
                     size={22}
-                    color=HOME_COLORS.gold
+                    color={HOME_COLORS.gold}
                   />
 
                   <Text style={styles.checkboxText}>
@@ -311,7 +311,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                   <Ionicons
                     name="document-text-outline"
                     size={18}
-                    color=HOME_COLORS.gold
+                    color={HOME_COLORS.gold}
                   />
 
                   <Text style={styles.debugText}>
@@ -323,7 +323,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                   style={styles.debugButton}
                   onPress={() => Clipboard.setStringAsync(debugInfo)}
                 >
-                  <Ionicons name="copy-outline" size={18} color=HOME_COLORS.gold />
+                  <Ionicons name="copy-outline" size={18} color={HOME_COLORS.gold} />
 
                   <Text style={styles.debugText}>
                     Copy Diagnostic Information
@@ -338,7 +338,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                 <Ionicons
                   name={consentGiven ? "checkbox" : "square-outline"}
                   size={22}
-                  color=HOME_COLORS.gold
+                  color={HOME_COLORS.gold}
                 />
 
                 <Text style={styles.checkboxText}>
@@ -465,7 +465,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
             <Text style={styles.title}>Diagnostic Information</Text>
 
             <Pressable onPress={() => setShowDebugInfo(false)}>
-              <Ionicons name="close" size={24} color=HOME_COLORS.textSecondary />
+              <Ionicons name="close" size={24} color={HOME_COLORS.textSecondary} />
             </Pressable>
           </View>
           <ScrollView>
@@ -476,7 +476,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
             style={styles.debugButton}
             onPress={() => Clipboard.setStringAsync(debugInfo)}
           >
-            <Ionicons name="copy-outline" size={18} color=HOME_COLORS.gold />
+            <Ionicons name="copy-outline" size={18} color={HOME_COLORS.gold} />
 
             <Text style={styles.debugText}>Copy Diagnostic Information</Text>
           </Pressable>

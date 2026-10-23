@@ -103,7 +103,7 @@ export function LabSection({
           icon="flask-outline"
           title="No research in progress"
           description="Your Laboratory is ready for the next troop or spell upgrade."
-          accentColor="#38BDF8"
+          accentColor=HOME_COLORS.blue
         />
       )}
     </View>

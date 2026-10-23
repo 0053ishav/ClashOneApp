@@ -535,10 +535,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     padding: 5,
-    borderRadius: 14,
+    borderRadius: 10,
     backgroundColor: HOME_COLORS.surface,
     borderWidth: 1,
-    borderColor: HOME_COLORS.slateMuted,
+    borderColor: HOME_COLORS.border,
     marginBottom: 14,
   },
 
@@ -576,11 +576,11 @@ const styles = StyleSheet.create({
   // ── Overview ────────────────────────────────────────────
   overviewCard: {
     backgroundColor: HOME_COLORS.surface,
-    borderRadius: 20,
-    padding: 16,
+    borderRadius: 12,
+    padding: 14,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: HOME_COLORS.slateMuted,
+    borderColor: HOME_COLORS.border,
   },
 
   overviewTop: {

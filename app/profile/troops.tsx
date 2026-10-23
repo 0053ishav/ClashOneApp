@@ -478,7 +478,7 @@ export default function TroopsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: HOME_COLORS.textDark,
+    backgroundColor: HOME_COLORS.background,
   },
 
   centerContent: {
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: HOME_COLORS.surface,
     borderWidth: 1,
-    borderColor: HOME_COLORS.slateMuted,
+    borderColor: HOME_COLORS.border,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -554,7 +554,7 @@ const styles = StyleSheet.create({
   },
 
   villageTabActive: {
-    backgroundColor: HOME_COLORS.slateMuted,
+    backgroundColor: HOME_COLORS.surfaceRaised,
   },
 
   villageTabText: {
@@ -581,11 +581,6 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     borderWidth: 1,
     borderColor: HOME_COLORS.slateMuted,
-    shadowColor: HOME_COLORS.black,
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
   },
 
   overviewTop: {

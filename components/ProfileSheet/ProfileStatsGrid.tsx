@@ -1,4 +1,5 @@
 import StatsGrid from "@/components/Profile/StatsGrid";
+import { HOME_COLORS } from "@/theme/home";
 import { PlayerProfile } from "@/types/player";
 
 function formatCapital(value: number): string {
@@ -31,25 +32,25 @@ export default function ProfileStatsGrid({
           icon: "flame",
           label: "Attacks won",
           value: profile.attackWins,
-          color: "#f97316",
+          color: HOME_COLORS.orange,
         },
         {
           icon: "shield-checkmark",
           label: "Defenses won",
           value: profile.defenseWins,
-          color: "#06b6d4",
+          color: HOME_COLORS.cyan,
         },
         {
           icon: "arrow-up",
           label: "Donated",
           value: profile.donations,
-          color: "#22c55e",
+          color: HOME_COLORS.success,
         },
         {
           icon: "arrow-down",
           label: "Received",
           value: profile.donationsReceived,
-          color: "#38bdf8",
+          color: HOME_COLORS.blue,
         },
         {
           icon: "diamond",
@@ -58,13 +59,13 @@ export default function ProfileStatsGrid({
             typeof profile.clanCapitalGold === "number"
               ? formatCapital(profile.clanCapitalGold)
               : undefined,
-          color: "#c084fc",
+          color: HOME_COLORS.purpleStrong,
         },
         {
           icon: "construct",
           label: "Builders",
           value: builderCount,
-          color: "#94a3b8",
+          color: HOME_COLORS.textSecondary,
         },
       ]}
     />

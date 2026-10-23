@@ -1,3 +1,4 @@
+import { HOME_COLORS } from "@/theme/home";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -20,7 +21,7 @@ export default function ProfileActions({
         label="Sync profile"
         description="Update from Clash API"
         icon="sync"
-        color="#fbbf24"
+        color={HOME_COLORS.gold}
         onPress={onSync}
       />
 
@@ -28,7 +29,7 @@ export default function ProfileActions({
         label="Full profile"
         description="View all details"
         icon="person"
-        color="#38bdf8"
+        color={HOME_COLORS.blue}
         onPress={onOpenProfile}
       />
 
@@ -36,7 +37,7 @@ export default function ProfileActions({
         label="Settings"
         description="App preferences"
         icon="settings"
-        color="#f87171"
+        color={HOME_COLORS.dangerLight}
         onPress={onSetting}
         last
       />
@@ -82,17 +83,17 @@ function ActionRow({
         <Text style={styles.description}>{description}</Text>
       </View>
 
-      <Ionicons name="chevron-forward" size={18} color="#64748b" />
+      <Ionicons name="chevron-forward" size={18} color={HOME_COLORS.textMuted} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#111c2e",
+    backgroundColor: HOME_COLORS.surfaceDark,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#263449",
+    borderColor: HOME_COLORS.borderStrong,
     overflow: "hidden",
   },
 
@@ -106,11 +107,11 @@ const styles = StyleSheet.create({
 
   rowDivider: {
     borderBottomWidth: 1,
-    borderBottomColor: "#202d40",
+    borderBottomColor: HOME_COLORS.borderMuted,
   },
 
   rowPressed: {
-    backgroundColor: "#172235",
+    backgroundColor: HOME_COLORS.surfaceRaised,
   },
 
   iconChip: {
@@ -129,12 +130,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#f1f5f9",
+    color: HOME_COLORS.textPrimary,
   },
 
   description: {
     fontSize: 11,
-    color: "#64748b",
+    color: HOME_COLORS.textMuted,
     fontWeight: "500",
   },
 });

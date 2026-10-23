@@ -102,6 +102,7 @@ function useKeyboardVisible() {
 
 export default function TabLayout() {
   const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const adUnitId = __DEV__ ? TestIds.BANNER : ENV.ADS.BANNER_ID;
 
   const insets = useSafeAreaInsets();
@@ -204,7 +205,7 @@ export default function TabLayout() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useHomeColors>) => StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.background,

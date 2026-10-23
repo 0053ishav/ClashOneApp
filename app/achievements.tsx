@@ -147,7 +147,7 @@ export default function AchievementsScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color=HOME_COLORS.gold />
+        <ActivityIndicator size="large" color={HOME_COLORS.gold} />
       </View>
     );
   }
@@ -182,7 +182,7 @@ export default function AchievementsScreen() {
           <>
             <View style={styles.header}>
               <Pressable onPress={() => router.back()}>
-                <Ionicons name="chevron-back" size={24} color=HOME_COLORS.gold />
+                <Ionicons name="chevron-back" size={24} color={HOME_COLORS.gold} />
               </Pressable>
 
               <Text style={styles.headerTitle}>Achievements</Text>
@@ -191,11 +191,11 @@ export default function AchievementsScreen() {
             </View>
 
             <View style={styles.searchContainer}>
-              <Ionicons name="search" size={16} color=HOME_COLORS.textMuted />
+              <Ionicons name="search" size={16} color={HOME_COLORS.textMuted} />
 
               <TextInput
                 placeholder="Search achievements..."
-                placeholderTextColor=HOME_COLORS.textMuted
+                placeholderTextColor={HOME_COLORS.textMuted}
                 value={search}
                 onChangeText={setSearch}
                 style={styles.searchInput}
@@ -208,7 +208,7 @@ export default function AchievementsScreen() {
                   accessibilityRole="button"
                   onPress={() => setSearch("")}
                 >
-                  <Ionicons name="close-circle" size={18} color=HOME_COLORS.textMuted />
+                  <Ionicons name="close-circle" size={18} color={HOME_COLORS.textMuted} />
                 </Pressable>
               )}
             </View>
@@ -319,7 +319,7 @@ export default function AchievementsScreen() {
               paddingVertical: 40,
             }}
           >
-            <Ionicons name="search" size={40} color=HOME_COLORS.textMuted />
+            <Ionicons name="search" size={40} color={HOME_COLORS.textMuted} />
 
             <Text
               style={{
@@ -370,7 +370,7 @@ const AchievementCard = React.memo(function AchievementCard({
               key={i}
               name={i <= achievement.stars ? "star" : "star-outline"}
               size={15}
-              color=HOME_COLORS.gold
+              color={HOME_COLORS.gold}
             />
           ))}
         </View>
@@ -403,7 +403,7 @@ const AchievementCard = React.memo(function AchievementCard({
 
       {completed && (
         <View style={styles.completedBadge}>
-          <Ionicons name="checkmark-circle" size={14} color=HOME_COLORS.success />
+          <Ionicons name="checkmark-circle" size={14} color={HOME_COLORS.success} />
 
           <Text style={styles.completedBadgeText}>Completed</Text>
         </View>

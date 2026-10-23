@@ -1,10 +1,12 @@
 import EntitySection from "@/components/Profile/EntitySection";
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import type { PlayerFull, PlayerVillage } from "@/types/playerFull";
 import { parseArmy } from "@/utils/profile/parseArmy";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
+import { useMemo } from "react";
 import EntityCard from "../EntityCard";
 
 interface ArmyEntity {
@@ -15,11 +17,13 @@ interface ArmyEntity {
   village: PlayerVillage;
 }
 
-const GOLD = HOME_COLORS.gold;
-const BUILDER = HOME_COLORS.purpleStrong; // matches Builder Base purple in ProfileHeroCard
 const TROOP_PREVIEW_LIMIT = 6;
 
 export default function ArmySection({ data }: { data: PlayerFull }) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const GOLD = colors.gold;
+  const BUILDER = colors.purpleStrong;
   const router = useRouter();
 
   const army = parseArmy(data);
@@ -133,14 +137,14 @@ function Grid({ items }: { items: ArmyEntity[] }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   container: {
-    backgroundColor: HOME_COLORS.surfaceDark,
+    backgroundColor: colors.surfaceDark,
     borderRadius: 20,
     padding: 14,
     gap: 14,
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderStrong,
+    borderColor: colors.borderStrong,
     marginBottom: 12,
   },
 
@@ -171,14 +175,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 15,
     fontWeight: "800",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
     letterSpacing: -0.2,
   },
 
   total: {
     fontSize: 12,
     fontWeight: "600",
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
   },
 
   grid: {

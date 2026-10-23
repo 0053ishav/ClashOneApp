@@ -186,8 +186,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFD75E",
     borderColor: "#FFD75E",
     borderRadius: 3,
-    minWidth: 22,
-    height: 21,
+    minWidth: 20,
+    height: 18,
+    paddingHorizontal: 3,
   },
 
   levelText: {
@@ -200,6 +201,8 @@ const styles = StyleSheet.create({
 
   levelTextMaxed: {
     color: "#111827",
+    fontSize: 11,
+    lineHeight: 13,
   },
 
 

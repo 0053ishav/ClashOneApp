@@ -1,4 +1,5 @@
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import { getUpgradeStatus } from "@/engine/progression/selectors/getUpgradeStatus";
 import { getProgressColor } from "@/utils/getProgressColor";
 import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
@@ -19,6 +20,8 @@ interface EntityCardProps {
 }
 
 export default function EntityCard({
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   dataId,
   name,
   level,
@@ -112,7 +115,7 @@ export default function EntityCard({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   pressable: {
     width: "31.5%",
   },
@@ -142,11 +145,11 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderRadius: 5,
     borderWidth: 1.5,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
   },
 
   artworkDefault: {
-    borderColor: HOME_COLORS.borderStrong,
+    borderColor: colors.borderStrong,
   },
 
   artworkMaxed: {
@@ -195,7 +198,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 15,
     fontWeight: "900",
-    color: HOME_COLORS.textBright,
+    color: colors.textBright,
     fontVariant: ["tabular-nums"],
   },
 
@@ -211,7 +214,7 @@ const styles = StyleSheet.create({
     width: "100%",
     minHeight: 15,
     textAlign: "center",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
     fontSize: 10,
     lineHeight: 13,
     fontWeight: "800",

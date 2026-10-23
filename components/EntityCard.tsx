@@ -7,6 +7,7 @@ import type { Village } from "@/types/entity";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useMemo } from "react";
 
 interface EntityCardProps {
   dataId: number;
@@ -20,8 +21,6 @@ interface EntityCardProps {
 }
 
 export default function EntityCard({
-  const colors = useHomeColors();
-  const styles = useMemo(() => createStyles(colors), [colors]);
   dataId,
   name,
   level,
@@ -30,6 +29,8 @@ export default function EntityCard({
   village,
   fillContainer = false,
 }: EntityCardProps) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const status = getUpgradeStatus(level, maxLevel);
   const progressColor = getProgressColor(status);
   const remaining = Math.max(0, maxLevel - level);

@@ -1,3 +1,4 @@
+import { HOME_COLORS } from "@/theme/home";
 import { getUpgradeStatus } from "@/engine/progression/selectors/getUpgradeStatus";
 import { getProgressColor } from "@/utils/getProgressColor";
 import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
@@ -32,7 +33,7 @@ export default function EntityCard({
       {/* Maxed Badge (top-right) */}
       {isMax && (
         <View style={styles.maxedBadge}>
-          <Ionicons name="checkmark" size={10} color="#0f172a" />
+          <Ionicons name="checkmark" size={10} color={HOME_COLORS.textDark} />
         </View>
       )}
 
@@ -100,7 +101,7 @@ export default function EntityCard({
       {/* Maxed Text */}
       {isMax && (
         <View style={styles.maxBadge}>
-          <Ionicons name="checkmark-circle" size={12} color="#22c55e" />
+          <Ionicons name="checkmark-circle" size={12} color={HOME_COLORS.success} />
           <Text style={styles.maxText}>MAXED</Text>
         </View>
       )}
@@ -135,21 +136,21 @@ const styles = StyleSheet.create({
 
   card: {
     width: "31%",
-    backgroundColor: "#0f172a",
+    backgroundColor: HOME_COLORS.textDark,
     borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 8,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: HOME_COLORS.slateMuted,
     gap: 4,
-    shadowColor: "#000",
+    shadowColor: HOME_COLORS.black,
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },
 
   cardMaxed: {
-    borderColor: "#22c55e",
+    borderColor: HOME_COLORS.success,
     backgroundColor: "rgba(34, 197, 94, 0.05)",
   },
 
@@ -160,11 +161,11 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: "#22c55e",
+    backgroundColor: HOME_COLORS.success,
     justifyContent: "center",
     alignItems: "center",
     zIndex: 1,
-    shadowColor: "#22c55e",
+    shadowColor: HOME_COLORS.success,
     shadowOpacity: 0.4,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
@@ -187,7 +188,7 @@ const styles = StyleSheet.create({
   cardName: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#f1f5f9",
+    color: HOME_COLORS.textPrimary,
     textAlign: "center",
     width: "100%",
     minHeight: 14,
@@ -208,7 +209,7 @@ const styles = StyleSheet.create({
   maxLevelText: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#64748b",
+    color: HOME_COLORS.textMuted,
   },
 
   progressBar: {
@@ -251,7 +252,7 @@ const styles = StyleSheet.create({
   maxText: {
     fontSize: 10,
     fontWeight: "800",
-    color: "#22c55e",
+    color: HOME_COLORS.success,
     letterSpacing: 0.5,
   },
 });

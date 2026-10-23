@@ -37,10 +37,13 @@ export default function EntityCard({
       <View
         style={[
           styles.artwork,
-          { borderColor: isMax ? HOME_COLORS.gold : HOME_COLORS.borderStrong },
-          isMax && styles.artworkMaxed,
+          isMax ? styles.artworkMaxed : styles.artworkDefault,
         ]}
       >
+        <View
+          pointerEvents="none"
+          style={[styles.artworkGlow, isMax && styles.artworkGlowMaxed]}
+        />
         <Image
           accessibilityLabel={name}
           source={{
@@ -99,6 +102,7 @@ export default function EntityCard({
             { backgroundColor: `${progressColor}20` },
           ]}
         >
+          <Ionicons name="trending-up" size={10} color={progressColor} />
           <Text style={[styles.remainingText, { color: progressColor }]}>
             {remaining} left
           </Text>
@@ -144,14 +148,15 @@ const styles = StyleSheet.create({
   },
 
   pressablePressed: {
-    opacity: 0.76,
-    transform: [{ scale: 0.98 }],
+    opacity: 0.84,
+    transform: [{ scale: 0.985 }],
   },
 
   card: {
     width: "100%",
     alignItems: "center",
     gap: 5,
+    paddingBottom: 2,
   },
 
   artwork: {
@@ -162,19 +167,43 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-    borderRadius: 9,
+    borderRadius: 11,
     borderWidth: 1.5,
-    borderColor: HOME_COLORS.borderStrong,
     backgroundColor: HOME_COLORS.surfaceRaised,
+  },
+
+  artworkDefault: {
+    borderColor: HOME_COLORS.borderStrong,
   },
 
   artworkMaxed: {
     borderColor: HOME_COLORS.gold,
+    borderWidth: 1.8,
+    shadowColor: HOME_COLORS.gold,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.22,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+
+  artworkGlow: {
+    position: "absolute",
+    width: "74%",
+    height: "74%",
+    borderRadius: 999,
+    backgroundColor: HOME_COLORS.blue,
+    opacity: 0.045,
+  },
+
+  artworkGlowMaxed: {
+    backgroundColor: HOME_COLORS.gold,
+    opacity: 0.1,
   },
 
   cardImage: {
     width: "70%",
     height: "70%",
+    zIndex: 1,
   },
 
   levelBadge: {
@@ -246,21 +275,25 @@ const styles = StyleSheet.create({
 
   cardName: {
     width: "100%",
-    minHeight: 14,
+    minHeight: 15,
     textAlign: "center",
     color: HOME_COLORS.textPrimary,
-    fontSize: 10,
-    lineHeight: 13,
-    fontWeight: "700",
+    fontSize: 10.5,
+    lineHeight: 14,
+    fontWeight: "800",
   },
 
   remainingBadge: {
-    minHeight: 16,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 5,
+    minHeight: 18,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+    flexDirection: "row",
+    gap: 3,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.05)",
   },
 
   remainingText: {

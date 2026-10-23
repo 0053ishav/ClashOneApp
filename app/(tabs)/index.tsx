@@ -2556,12 +2556,12 @@ const styles = StyleSheet.create({
 
   progressBar: {
     height: "100%",
-    backgroundColor: "#fbbf24",
+    backgroundColor: "#4ade2d",
     borderRadius: 2,
   },
 
   progressBarGoblin: {
-    backgroundColor: "#22c55e",
+    backgroundColor: "#4ade2d",
   },
 
   // ── Compact empty state: keep the next section visible sooner ──

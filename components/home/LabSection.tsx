@@ -71,7 +71,7 @@ export function LabSection({
               pressed && styles.addIconButtonPressed,
             ]}
           >
-            <Ionicons name="add-circle" size={22} color=HOME_COLORS.cyanBright />
+            <Ionicons name="add-circle" size={22} color={HOME_COLORS.cyanBright} />
           </Pressable>
         )}
       </View>
@@ -103,7 +103,7 @@ export function LabSection({
           icon="flask-outline"
           title="No research in progress"
           description="Your Laboratory is ready for the next troop or spell upgrade."
-          accentColor=HOME_COLORS.blue
+          accentColor={HOME_COLORS.blue}
         />
       )}
     </View>
@@ -210,7 +210,7 @@ function LabCard({
 
                     {lab.recurrentHelper && (
                       <View style={styles.recurrentBadge}>
-                        <Ionicons name="repeat" size={10} color=HOME_COLORS.gold />
+                        <Ionicons name="repeat" size={10} color={HOME_COLORS.gold} />
                       </View>
                     )}
                   </View>

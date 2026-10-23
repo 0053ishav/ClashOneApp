@@ -91,7 +91,7 @@ export default function EntityCard({
   );
 
   if (!onPress) {
-    return content;
+    return <View style={styles.pressable}>{content}</View>;
   }
 
   return (

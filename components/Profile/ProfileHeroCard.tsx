@@ -1,4 +1,5 @@
 import { ENV } from "@/config/env";
+import { HOME_COLORS } from "@/theme/home";
 import { PlayerFull } from "@/types/playerFull";
 import { EntityRecord } from "@/types/upgrade";
 import {
@@ -10,8 +11,8 @@ import { Image } from "expo-image";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import { XPBadge } from "../XPBadge";
 
-const HOME = "#38bdf8";
-const BUILDER = "#c084fc";
+const HOME = HOME_COLORS.blue;
+const BUILDER = HOME_COLORS.purpleStrong;
 const MONO = Platform.select({ ios: "Menlo", default: "monospace" });
 
 export default function ProfileHeroCard({
@@ -50,7 +51,7 @@ export default function ProfileHeroCard({
               <Ionicons
                 name={warReady ? "flame" : "pause"}
                 size={11}
-                color={warReady ? "#22c55e" : "#ef4444"}
+                color={warReady ? HOME_COLORS.success : "#ef4444"}
               />
               <Text
                 style={[
@@ -125,7 +126,7 @@ export default function ProfileHeroCard({
             <View style={styles.villageHeaderText}>
               <Text style={[styles.villageLabel, { color: HOME }]}>Home</Text>
               <Text
-                style={[styles.villageLeagueName, { color: "#7dd3fc" }]}
+                style={[styles.villageLeagueName, { color: HOME_COLORS.bluePale }]}
                 numberOfLines={2}
               >
                 {data.leagueTier?.name ?? data.league?.name ?? "Unranked"}
@@ -184,7 +185,7 @@ export default function ProfileHeroCard({
                   Builder
                 </Text>
                 <Text
-                  style={[styles.villageLeagueName, { color: "#d8b4fe" }]}
+                  style={[styles.villageLeagueName, { color: HOME_COLORS.purplePale }]}
                   numberOfLines={2}
                 >
                   {data.builderBaseLeague?.name ?? "Unranked"}
@@ -209,7 +210,7 @@ export default function ProfileHeroCard({
           </View>
         ) : (
           <View style={[styles.villageCard, styles.villageCardBuilderEmpty]}>
-            <Ionicons name="construct-outline" size={20} color="#475569" />
+            <Ionicons name="construct-outline" size={20} color={HOME_COLORS.slate} />
             <Text style={styles.villageEmptyText}>No Builder Base</Text>
           </View>
         )}
@@ -258,7 +259,7 @@ export default function ProfileHeroCard({
           {hasHelpers && (
             <View style={styles.extrasRow}>
               <View style={styles.caption}>
-                <Ionicons name="hammer" size={13} color="#f97316" />
+                <Ionicons name="hammer" size={13} color={HOME_COLORS.orange} />
                 <Text style={styles.captionText}>Helpers</Text>
               </View>
 
@@ -282,7 +283,7 @@ export default function ProfileHeroCard({
           {hasGuardians && (
             <View style={styles.extrasRow}>
               <View style={styles.caption}>
-                <Ionicons name="shield" size={13} color="#06b6d4" />
+                <Ionicons name="shield" size={13} color={HOME_COLORS.cyan} />
                 <Text style={styles.captionText}>Guardians</Text>
               </View>
 
@@ -306,7 +307,7 @@ export default function ProfileHeroCard({
           {hasLabels && (
             <View style={styles.extrasRow}>
               <View style={styles.caption}>
-                <Ionicons name="pricetag" size={13} color="#a78bfa" />
+                <Ionicons name="pricetag" size={13} color={HOME_COLORS.purpleLight} />
                 <Text style={styles.captionText}>Labels</Text>
               </View>
 
@@ -335,12 +336,12 @@ export default function ProfileHeroCard({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#111c2e",
+    backgroundColor: HOME_COLORS.surfaceDark,
     borderRadius: 20,
     padding: 14,
     gap: 10,
     borderWidth: 1,
-    borderColor: "#263449",
+    borderColor: HOME_COLORS.borderStrong,
     marginBottom: 12,
   },
 
@@ -358,7 +359,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
     letterSpacing: -0.5,
   },
   tagRow: {
@@ -375,7 +376,7 @@ const styles = StyleSheet.create({
   },
   tag: {
     fontSize: 11,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontWeight: "600",
     fontFamily: MONO,
   },
@@ -403,7 +404,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   warTextIn: {
-    color: "#22c55e",
+    color: HOME_COLORS.success,
   },
   warTextOut: {
     color: "#ef4444",
@@ -436,7 +437,7 @@ const styles = StyleSheet.create({
   hallLevel: {
     fontSize: 12,
     fontWeight: "800",
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
   },
 
   // ── Dual village ────────────────────────────────────────
@@ -445,7 +446,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#263449",
+    borderColor: HOME_COLORS.borderStrong,
   },
   villageCard: {
     flex: 1,
@@ -526,7 +527,7 @@ const styles = StyleSheet.create({
   trophyText: {
     fontSize: 19,
     fontWeight: "800",
-    color: "#f8fafc",
+    color: HOME_COLORS.textBright,
     letterSpacing: -0.4,
   },
   bestRow: {
@@ -536,7 +537,7 @@ const styles = StyleSheet.create({
   },
   bestText: {
     fontSize: 11,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontWeight: "500",
   },
   smallLeagueIcon: {
@@ -545,7 +546,7 @@ const styles = StyleSheet.create({
   },
   villageEmptyText: {
     fontSize: 12,
-    color: "#475569",
+    color: HOME_COLORS.slate,
     fontWeight: "500",
   },
 
@@ -580,7 +581,7 @@ const styles = StyleSheet.create({
   clanName: {
     fontSize: 14,
     fontWeight: "800",
-    color: "#4ade80",
+    color: HOME_COLORS.greenBright,
     letterSpacing: -0.2,
   },
   clanMeta: {
@@ -597,17 +598,17 @@ const styles = StyleSheet.create({
   clanLevelText: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#22c55e",
+    color: HOME_COLORS.success,
   },
   clanRole: {
     fontSize: 11,
-    color: "#cbd5e1",
+    color: HOME_COLORS.textPrimary,
     fontWeight: "600",
     flexShrink: 1,
   },
   clanTag: {
     fontSize: 10,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontWeight: "600",
     fontFamily: MONO,
   },
@@ -637,7 +638,7 @@ const styles = StyleSheet.create({
   captionText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#cbd5e1",
+    color: HOME_COLORS.textPrimary,
   },
   chip: {
     flexDirection: "row",
@@ -664,16 +665,16 @@ const styles = StyleSheet.create({
   helperLevel: {
     fontSize: 12,
     fontWeight: "800",
-    color: "#fb923c",
+    color: HOME_COLORS.orangeLight,
   },
   guardianLevel: {
     fontSize: 12,
     fontWeight: "800",
-    color: "#22d3ee",
+    color: HOME_COLORS.cyanBright,
   },
   labelText: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#a78bfa",
+    color: HOME_COLORS.purpleLight,
   },
 });

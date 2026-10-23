@@ -20,7 +20,13 @@ import {
 } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import ProfileActions from "./ProfileActions";
-import ProfileStatsGrid from "./ProfileStatsGrid";
+import StatsGrid from "@/components/Profile/StatsGrid";
+
+function formatCapital(value: number): string {
+  if (value >= 1_000_000) return (value / 1_000_000).toFixed(1) + "M";
+  if (value >= 1_000) return (value / 1_000).toFixed(1) + "K";
+  return value.toString();
+}
 
 export type ProfileDropdownSheetRef = {
   present: () => void;
@@ -323,9 +329,56 @@ const ProfileDropdownSheet = forwardRef<
             {/* Stats */}
             {profile.playerTag && (
               <View style={styles.section}>
-                <ProfileStatsGrid
-                  profile={profile}
-                  builderCount={activeAccount?.builderCount ?? 1}
+                <StatsGrid
+                  title="Player stats"
+                  stats={[
+                    {
+                      icon: "star",
+                      label: "War stars",
+                      value: profile.warStars,
+                      highlight: true,
+                      color: HOME_COLORS.gold,
+                    },
+                    {
+                      icon: "flame",
+                      label: "Attacks",
+                      value: profile.attackWins,
+                      color: HOME_COLORS.orange,
+                    },
+                    {
+                      icon: "shield-checkmark",
+                      label: "Defenses",
+                      value: profile.defenseWins,
+                      color: HOME_COLORS.cyan,
+                    },
+                    {
+                      icon: "arrow-up",
+                      label: "Donated",
+                      value: profile.donations,
+                      color: HOME_COLORS.success,
+                    },
+                    {
+                      icon: "arrow-down",
+                      label: "Received",
+                      value: profile.donationsReceived,
+                      color: HOME_COLORS.blue,
+                    },
+                    {
+                      icon: "diamond",
+                      label: "Capital gold",
+                      value:
+                        typeof profile.clanCapitalGold === "number"
+                          ? formatCapital(profile.clanCapitalGold)
+                          : undefined,
+                      color: HOME_COLORS.purpleStrong,
+                    },
+                    {
+                      icon: "construct",
+                      label: "Builders",
+                      value: activeAccount?.builderCount ?? 1,
+                      color: HOME_COLORS.textSecondary,
+                    },
+                  ]}
                 />
               </View>
             )}

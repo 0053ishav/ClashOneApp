@@ -1,4 +1,5 @@
 import GoblinEventBanner from "@/components/GoblinEventBanner";
+import { HOME_COLORS } from "@/theme/home";
 import {
   GoldPassBoostButton,
   GoldPassBoostQuickPanel,
@@ -977,7 +978,7 @@ export default function HomeScreen() {
                 <Ionicons
                   name="chatbubble-ellipses-outline"
                   size={19}
-                  color="#94a3b8"
+                  color=HOME_COLORS.textSecondary
                 />
               </Pressable>
               <Pressable
@@ -997,7 +998,7 @@ export default function HomeScreen() {
                 <Ionicons
                   name="sync-sharp"
                   size={19}
-                  color={isStale ? "#fbbf24" : "#f8fafc"}
+                  color={isStale ? HOME_COLORS.gold : "#f8fafc"}
                 />
               </Pressable>
             </View>
@@ -1123,7 +1124,7 @@ export default function HomeScreen() {
               )}
             </View>
             <View style={styles.chevronButton}>
-              <Ionicons name="chevron-down" size={14} color="#94a3b8" />
+              <Ionicons name="chevron-down" size={14} color=HOME_COLORS.textSecondary />
             </View>
           </Pressable>
           <View style={styles.profileMagicActions}>
@@ -1209,8 +1210,8 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor="#fbbf24"
-            colors={["#fbbf24"]}
+            tintColor=HOME_COLORS.gold
+            colors={[HOME_COLORS.gold]}
             progressBackgroundColor="#111c2e"
           />
         }
@@ -1584,7 +1585,7 @@ export default function HomeScreen() {
                                         <Ionicons
                                           name="repeat"
                                           size={10}
-                                          color="#fbbf24"
+                                          color=HOME_COLORS.gold
                                         />
                                       </View>
                                     )}
@@ -1814,17 +1815,17 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#0A0F1A",
+    backgroundColor: HOME_COLORS.background,
   },
 
   container: {
     flex: 1,
-    backgroundColor: "#0A0F1A",
+    backgroundColor: HOME_COLORS.background,
   },
 
   loadingOverlay: {
     flex: 1,
-    backgroundColor: "#0f172a",
+    backgroundColor: HOME_COLORS.textDark,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1851,13 +1852,13 @@ const styles = StyleSheet.create({
   loadingTitle: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
     letterSpacing: 0.5,
   },
 
   loadingMessage: {
     fontSize: 13,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontWeight: "500",
   },
 
@@ -1876,7 +1877,7 @@ const styles = StyleSheet.create({
 
   connectButton: {
     height: 52,
-    backgroundColor: "#fbbf24",
+    backgroundColor: HOME_COLORS.gold,
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
@@ -1886,7 +1887,7 @@ const styles = StyleSheet.create({
   connectButtonText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#0f172a",
+    color: HOME_COLORS.textDark,
   },
 
   scrollContent: {
@@ -1896,9 +1897,9 @@ const styles = StyleSheet.create({
 
   // ── Header ──
   header: {
-    backgroundColor: "#0A0F1A",
+    backgroundColor: HOME_COLORS.background,
     borderBottomWidth: 1,
-    borderBottomColor: "#222D44",
+    borderBottomColor: HOME_COLORS.border,
     paddingHorizontal: 18,
     paddingTop: 10,
     paddingBottom: 14,
@@ -1911,7 +1912,7 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    color: "#FBBF24",
+    color: HOME_COLORS.gold,
     fontSize: 27,
     fontWeight: "900",
     lineHeight: 32,
@@ -1931,7 +1932,7 @@ const styles = StyleSheet.create({
 
   syncText: {
     fontSize: 10,
-    color: "#64748b",
+    color: HOME_COLORS.textMuted,
     fontWeight: "500",
   },
 
@@ -1969,7 +1970,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(251,191,36,0.22)",
   },
   profileInventoryIcon: { width: 18, height: 18 },
-  profileInventoryText: { color: "#fbbf24", fontSize: 9, fontWeight: "900" },
+  profileInventoryText: { color: HOME_COLORS.gold, fontSize: 9, fontWeight: "900" },
   profileRow: {
     flex: 1,
     minWidth: 0,
@@ -2013,7 +2014,7 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#f1f5f9",
+    color: HOME_COLORS.textPrimary,
     flexShrink: 1,
   },
 
@@ -2034,7 +2035,7 @@ const styles = StyleSheet.create({
   },
 
   chiefBadge: {
-    backgroundColor: "#fbbf24",
+    backgroundColor: HOME_COLORS.gold,
     paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 5,
@@ -2043,7 +2044,7 @@ const styles = StyleSheet.create({
   chiefBadgeText: {
     fontSize: 9,
     fontWeight: "800",
-    color: "#0f172a",
+    color: HOME_COLORS.textDark,
   },
 
   profileMeta: {
@@ -2071,7 +2072,7 @@ const styles = StyleSheet.create({
 
   profileSub: {
     fontSize: 10,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontWeight: "500",
   },
 
@@ -2087,10 +2088,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 14,
     marginTop: 12,
     marginBottom: 14,
-    backgroundColor: "#121A2B",
+    backgroundColor: HOME_COLORS.surface,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#222D44",
+    borderColor: HOME_COLORS.border,
     overflow: "hidden",
   },
 
@@ -2105,7 +2106,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 13,
-    backgroundColor: "#172033",
+    backgroundColor: HOME_COLORS.surfaceRaised,
     justifyContent: "center",
     alignItems: "center",
     flexShrink: 0,
@@ -2124,7 +2125,7 @@ const styles = StyleSheet.create({
   statusEyebrow: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#64748b",
+    color: HOME_COLORS.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.7,
   },
@@ -2132,13 +2133,13 @@ const styles = StyleSheet.create({
   statusCountdown: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
     lineHeight: 26,
   },
 
   statusSub: {
     fontSize: 11,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
   },
 
   statusDivider: {
@@ -2157,13 +2158,13 @@ const styles = StyleSheet.create({
 
   insightText: {
     fontSize: 11,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     flex: 1,
     marginRight: 8,
   },
 
   insightUrgent: {
-    color: "#ef4444",
+    color: HOME_COLORS.danger,
     fontWeight: "600",
   },
 
@@ -2180,21 +2181,21 @@ const styles = StyleSheet.create({
   },
 
   builderDotFree: {
-    backgroundColor: "#22c55e",
+    backgroundColor: HOME_COLORS.success,
   },
 
   builderDotBusy: {
-    backgroundColor: "#ef4444",
+    backgroundColor: HOME_COLORS.danger,
   },
 
   goblinDotFree: {
-    backgroundColor: "#22c55e",
+    backgroundColor: HOME_COLORS.success,
     borderWidth: 1.5,
     borderColor: "rgba(34,197,94,0.35)",
   },
 
   goblinDotBusy: {
-    backgroundColor: "#ef4444",
+    backgroundColor: HOME_COLORS.danger,
   },
 
   goblinDotInactive: {
@@ -2223,17 +2224,17 @@ const styles = StyleSheet.create({
     borderColor: "rgba(251, 191, 36, 0.25)",
   },
   magicItemsButtonPressed: { opacity: 0.65 },
-  magicItemsButtonText: { color: "#fbbf24", fontSize: 10, fontWeight: "800" },
+  magicItemsButtonText: { color: HOME_COLORS.gold, fontSize: 10, fontWeight: "800" },
 
   villageTabs: {
     flexDirection: "row",
-    backgroundColor: "#121A2B",
+    backgroundColor: HOME_COLORS.surface,
     borderRadius: 16,
     padding: 4,
     height: 52,
     position: "relative",
     borderWidth: 1,
-    borderColor: "#222D44",
+    borderColor: HOME_COLORS.border,
     overflow: "hidden",
     marginHorizontal: 16,
     marginBottom: 16,
@@ -2254,7 +2255,7 @@ const styles = StyleSheet.create({
     left: 4,
     height: 40,
     borderRadius: 999,
-    backgroundColor: "#fbbf24",
+    backgroundColor: HOME_COLORS.gold,
     zIndex: 1,
   },
 
@@ -2270,11 +2271,11 @@ const styles = StyleSheet.create({
   villageTabLabel: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
   },
 
   villageTabLabelActive: {
-    color: "#0f172a",
+    color: HOME_COLORS.textDark,
   },
 
   villageHallBadge: {
@@ -2291,11 +2292,11 @@ const styles = StyleSheet.create({
   villageHallBadgeText: {
     fontSize: 9,
     fontWeight: "700",
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
   },
 
   villageHallBadgeTextActive: {
-    color: "#0f172a",
+    color: HOME_COLORS.textDark,
   },
 
   // ── Upgrade list ──
@@ -2340,12 +2341,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#f1f5f9",
+    color: HOME_COLORS.textPrimary,
     letterSpacing: -0.2,
   },
 
   countBadge: {
-    backgroundColor: "#fbbf24",
+    backgroundColor: HOME_COLORS.gold,
     paddingHorizontal: 9,
     paddingVertical: 3,
     borderRadius: 999,
@@ -2354,7 +2355,7 @@ const styles = StyleSheet.create({
   countBadgeText: {
     fontSize: 11,
     fontWeight: "800",
-    color: "#0f172a",
+    color: HOME_COLORS.textDark,
   },
 
   upgradeCard: {
@@ -2368,18 +2369,18 @@ const styles = StyleSheet.create({
   },
 
   upgradeContent: {
-    backgroundColor: "#121A2B",
+    backgroundColor: HOME_COLORS.surface,
     paddingVertical: 13,
     paddingHorizontal: 13,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#222D44",
+    borderColor: HOME_COLORS.border,
     gap: 10,
   },
 
   upgradeContentCompleted: {
-    backgroundColor: "#22c55e",
-    borderColor: "#22c55e",
+    backgroundColor: HOME_COLORS.success,
+    borderColor: HOME_COLORS.success,
   },
 
   goblinUpgradeCard: {
@@ -2391,7 +2392,7 @@ const styles = StyleSheet.create({
   },
 
   goblinBadge: {
-    backgroundColor: "#22c55e",
+    backgroundColor: HOME_COLORS.success,
   },
 
   builderBadge: {
@@ -2400,7 +2401,7 @@ const styles = StyleSheet.create({
     right: 8,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fbbf24",
+    backgroundColor: HOME_COLORS.gold,
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 7,
@@ -2410,7 +2411,7 @@ const styles = StyleSheet.create({
   builderBadgeText: {
     fontSize: 10,
     fontWeight: "800",
-    color: "#0f172a",
+    color: HOME_COLORS.textDark,
   },
 
   goblinBadgeIcon: {
@@ -2455,7 +2456,7 @@ const styles = StyleSheet.create({
   upgradeName: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#f1f5f9",
+    color: HOME_COLORS.textPrimary,
   },
 
   badgeRow: {
@@ -2476,7 +2477,7 @@ const styles = StyleSheet.create({
   levelsText: {
     fontSize: 10,
     fontWeight: "600",
-    color: "#38bdf8",
+    color: HOME_COLORS.blue,
   },
 
   superchargeBadge: {
@@ -2490,7 +2491,7 @@ const styles = StyleSheet.create({
   },
 
   superchargeText: {
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
   },
 
   helperRow: {
@@ -2506,7 +2507,7 @@ const styles = StyleSheet.create({
   helperSaved: {
     marginLeft: 3,
     fontSize: 10,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
   },
 
   recurrentBadge: {
@@ -2527,22 +2528,22 @@ const styles = StyleSheet.create({
   },
 
   upgradeTime: {
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
   },
 
   goblinTime: {
-    color: "#22c55e",
+    color: HOME_COLORS.success,
   },
 
   totalTimeText: {
     fontSize: 11,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontWeight: "500",
   },
 
   finishDateTimeText: {
     fontSize: 10,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontWeight: "500",
     maxWidth: 150,
   },
@@ -2556,12 +2557,12 @@ const styles = StyleSheet.create({
 
   progressBar: {
     height: "100%",
-    backgroundColor: "#4ade2d",
+    backgroundColor: HOME_COLORS.progress,
     borderRadius: 2,
   },
 
   progressBarGoblin: {
-    backgroundColor: "#4ade2d",
+    backgroundColor: HOME_COLORS.progress,
   },
 
   // ── Compact empty state: keep the next section visible sooner ──
@@ -2591,12 +2592,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#f1f5f9",
+    color: HOME_COLORS.textPrimary,
   },
 
   emptySubtitle: {
     fontSize: 13,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     textAlign: "center",
   },
 
@@ -2605,13 +2606,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 26,
     paddingVertical: 11,
     borderRadius: 12,
-    backgroundColor: "#fbbf24",
+    backgroundColor: HOME_COLORS.gold,
   },
 
   emptyButtonText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#0f172a",
+    color: HOME_COLORS.textDark,
   },
 
   // ── Refresh hint ──
@@ -2625,7 +2626,7 @@ const styles = StyleSheet.create({
 
   refreshHintText: {
     fontSize: 11,
-    color: "#64748b",
+    color: HOME_COLORS.textMuted,
     fontWeight: "500",
   },
 
@@ -2640,7 +2641,7 @@ const styles = StyleSheet.create({
   },
 
   devButtonText: {
-    color: "#fff",
+    color: HOME_COLORS.white,
     fontWeight: "600",
     fontSize: 12,
   },
@@ -2652,7 +2653,7 @@ const styles = StyleSheet.create({
   },
 
   resetButtonText: {
-    color: "#64748b",
+    color: HOME_COLORS.textMuted,
     fontSize: 12,
   },
 
@@ -2660,6 +2661,6 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#0f172a",
+    color: HOME_COLORS.textDark,
   },
 });

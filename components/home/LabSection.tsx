@@ -269,7 +269,7 @@ function LabCard({
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 32,
+    marginTop: 24,
     paddingHorizontal: 16,
   },
 
@@ -548,13 +548,13 @@ const styles = StyleSheet.create({
   },
 
   emptyCard: {
-    backgroundColor: "#1e293b",
+    backgroundColor: "#172033",
     borderRadius: 16,
-    padding: 32,
+    padding: 22,
     alignItems: "center",
     gap: 12,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: "#2b3850",
     borderStyle: "dashed",
   },
 
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
 
   emptyText: {
     fontSize: 14,
-    color: "#64748b",
+    color: "#94a3b8",
     fontWeight: "500",
   },
 

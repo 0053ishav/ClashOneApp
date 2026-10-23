@@ -1,6 +1,7 @@
 "use no memo";
 
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 
 import { useAccountStore } from "@/stores/accountStore";
 import { formatCountdown } from "@/utils/formatCountdown";
@@ -20,6 +21,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 
 export default function ValueScreen() {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
 
   const accounts = useAccountStore((s) => s.accounts);
@@ -172,7 +175,7 @@ export default function ValueScreen() {
         <View style={styles.successHeader}>
           <View style={styles.checkmarkWrapper}>
             <View style={styles.checkmarkGlow} />
-            <Ionicons name="checkmark-circle" size={64} color={HOME_COLORS.success} />
+            <Ionicons name="checkmark-circle" size={64} color={colors.success} />
           </View>
           <Text style={styles.successTitle}>All Set!</Text>
           <Text style={styles.successSubtitle}>
@@ -312,7 +315,7 @@ export default function ValueScreen() {
                 <Ionicons
                   name="information-circle-outline"
                   size={14}
-                  color={HOME_COLORS.textSecondary}
+                  color={colors.textSecondary}
                 />
                 <Text style={styles.infoText}>Auto</Text>
               </View>
@@ -523,7 +526,7 @@ export default function ValueScreen() {
                       style={{
                         alignSelf: "flex-start",
                         backgroundColor:
-                          u.village === "builderBase" ? HOME_COLORS.purple : HOME_COLORS.blueStrong,
+                          u.village === "builderBase" ? colors.purple : colors.blueStrong,
                         borderRadius: 8,
                         paddingHorizontal: 6,
                         paddingVertical: 2,
@@ -532,7 +535,7 @@ export default function ValueScreen() {
                     >
                       <Text
                         style={{
-                          color: HOME_COLORS.white,
+                          color: colors.white,
                           fontSize: 10,
                           fontWeight: "700",
                         }}
@@ -556,7 +559,7 @@ export default function ValueScreen() {
           <View style={styles.stepsList}>
             <View style={styles.stepItem}>
               <View style={styles.stepIcon}>
-                <Ionicons name="notifications" size={20} color={HOME_COLORS.gold} />
+                <Ionicons name="notifications" size={20} color={colors.gold} />
               </View>
               <View style={styles.stepContent}>
                 <Text style={styles.stepTitle}>Get Notified</Text>
@@ -568,7 +571,7 @@ export default function ValueScreen() {
 
             {/* <View style={styles.stepItem}>
               <View style={styles.stepIcon}>
-                <Ionicons name="refresh" size={20} color={HOME_COLORS.gold} />
+                <Ionicons name="refresh" size={20} color={colors.gold} />
               </View>
               <View style={styles.stepContent}>
                 <Text style={styles.stepTitle}>Stay Synced</Text>
@@ -580,7 +583,7 @@ export default function ValueScreen() {
 
             <View style={styles.stepItem}>
               <View style={styles.stepIcon}>
-                <Ionicons name="add-circle" size={20} color={HOME_COLORS.gold} />
+                <Ionicons name="add-circle" size={20} color={colors.gold} />
               </View>
               <View style={styles.stepContent}>
                 <Text style={styles.stepTitle}>Track Upgrades</Text>
@@ -598,12 +601,12 @@ export default function ValueScreen() {
           style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
         >
           <Text style={styles.ctaText}>Continue</Text>
-          <Ionicons name="arrow-forward" size={20} color={HOME_COLORS.textDark} />
+          <Ionicons name="arrow-forward" size={20} color={colors.textDark} />
         </Pressable>
 
         {/* 💡 Tip */}
         <View style={styles.tipCard}>
-          <Ionicons name="bulb" size={16} color={HOME_COLORS.gold} />
+          <Ionicons name="bulb" size={16} color={colors.gold} />
           <Text style={styles.tipText}>
             Tip: Add this app to your home screen for quick access
           </Text>
@@ -613,10 +616,10 @@ export default function ValueScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: HOME_COLORS.background,
+    backgroundColor: colors.background,
   },
 
   container: {
@@ -643,7 +646,7 @@ const styles = StyleSheet.create({
 
   dataSourceText: {
     fontSize: 13,
-    color: HOME_COLORS.success,
+    color: colors.success,
     fontWeight: "600",
   },
 
@@ -665,26 +668,26 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 32,
     fontWeight: "800",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
     marginBottom: 8,
     letterSpacing: -0.5,
   },
 
   successSubtitle: {
     fontSize: 16,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "500",
   },
 
   // Profile Card
   profileCard: {
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 20,
     padding: 20,
     marginBottom: 20,
     borderWidth: 1,
     borderColor: "rgba(251,191,36,0.28)",
-    shadowColor: HOME_COLORS.gold,
+    shadowColor: colors.gold,
     shadowOpacity: 0.12,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 5 },
@@ -707,7 +710,7 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 20,
     fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
   },
 
   leagueIcon: {
@@ -720,7 +723,7 @@ const styles = StyleSheet.create({
     gap: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: HOME_COLORS.slateMuted,
+    borderTopColor: colors.slateMuted,
   },
 
   statItem: {
@@ -747,25 +750,25 @@ const styles = StyleSheet.create({
 
   statText: {
     fontSize: 10,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "600",
   },
 
   playerTag: {
     marginTop: 10,
     fontSize: 12,
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
     fontWeight: "500",
   },
 
   statusCard: {
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 20,
     padding: 20,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderStrong,
-    shadowColor: HOME_COLORS.gold,
+    borderColor: colors.borderStrong,
+    shadowColor: colors.gold,
     shadowOpacity: 0.09,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
@@ -782,12 +785,12 @@ const styles = StyleSheet.create({
   statusTitleMain: {
     fontSize: 16,
     fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
   },
 
   statusSubText: {
     fontSize: 10,
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
     marginTop: 2,
     fontWeight: "500",
   },
@@ -796,7 +799,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: HOME_COLORS.slateMuted,
+    backgroundColor: colors.slateMuted,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -806,12 +809,12 @@ const styles = StyleSheet.create({
 
   infoText: {
     fontSize: 11,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "600",
   },
 
   builderCount: {
-    backgroundColor: HOME_COLORS.gold,
+    backgroundColor: colors.gold,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
@@ -820,7 +823,7 @@ const styles = StyleSheet.create({
   builderCountText: {
     fontSize: 13,
     fontWeight: "700",
-    color: HOME_COLORS.textDark,
+    color: colors.textDark,
   },
 
   statusContent: {
@@ -864,18 +867,18 @@ const styles = StyleSheet.create({
   statusTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
   },
 
   statusTime: {
     fontSize: 24,
     fontWeight: "800",
-    color: HOME_COLORS.gold,
+    color: colors.gold,
   },
 
   statusMessage: {
     fontSize: 13,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "500",
   },
 
@@ -892,21 +895,21 @@ const styles = StyleSheet.create({
   },
 
   builderDotFree: {
-    backgroundColor: HOME_COLORS.success,
+    backgroundColor: colors.success,
   },
 
   builderDotBusy: {
-    backgroundColor: HOME_COLORS.slate,
+    backgroundColor: colors.slate,
   },
 
   liveCard: {
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 20,
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
     borderColor: "rgba(56,189,248,0.24)",
-    shadowColor: HOME_COLORS.blue,
+    shadowColor: colors.blue,
     shadowOpacity: 0.08,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
@@ -916,7 +919,7 @@ const styles = StyleSheet.create({
   liveTitle: {
     fontSize: 14,
     fontWeight: "800",
-    color: HOME_COLORS.blue,
+    color: colors.blue,
     marginBottom: 12,
   },
 
@@ -944,21 +947,21 @@ const styles = StyleSheet.create({
   liveName: {
     fontSize: 14,
     fontWeight: "600",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
   },
 
   liveTime: {
     fontSize: 12,
-    color: HOME_COLORS.gold,
+    color: colors.gold,
   },
   nextStepsCard: {
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 20,
     padding: 20,
     marginBottom: 24,
     borderWidth: 1,
     borderColor: "rgba(52,211,153,0.24)",
-    shadowColor: HOME_COLORS.emerald,
+    shadowColor: colors.emerald,
     shadowOpacity: 0.08,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
@@ -968,7 +971,7 @@ const styles = StyleSheet.create({
   nextStepsTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: HOME_COLORS.emerald,
+    color: colors.emerald,
     marginBottom: 16,
   },
 
@@ -998,25 +1001,25 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
   },
 
   stepDescription: {
     fontSize: 13,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     lineHeight: 18,
   },
 
   // CTA Button
   cta: {
     flexDirection: "row",
-    backgroundColor: HOME_COLORS.gold,
+    backgroundColor: colors.gold,
     paddingVertical: 18,
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    shadowColor: HOME_COLORS.gold,
+    shadowColor: colors.gold,
     shadowOpacity: 0.3,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
@@ -1032,7 +1035,7 @@ const styles = StyleSheet.create({
   ctaText: {
     fontSize: 17,
     fontWeight: "700",
-    color: HOME_COLORS.textDark,
+    color: colors.textDark,
   },
 
   // Tip Card
@@ -1051,7 +1054,7 @@ const styles = StyleSheet.create({
 
   tipText: {
     fontSize: 13,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "500",
     textAlign: "center",
   },

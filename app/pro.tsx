@@ -4,6 +4,7 @@ import {
   restorePurchases,
 } from "@/services/revenueCat/purchase";
 import { usePremiumStore } from "@/stores/premiumStore";
+import { HOME_COLORS } from "@/theme/home";
 import { track } from "@/utils/analytics/analytics";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -160,7 +161,7 @@ export default function ProScreen() {
           <Text
             style={{
               textAlign: "center",
-              color: "#94a3b8",
+              color: HOME_COLORS.textMuted,
               marginTop: 12,
             }}
           >
@@ -257,7 +258,7 @@ function PlanCard({
         onPress={onPress}
       >
         {loading ? (
-          <ActivityIndicator color="#0f172a" />
+          <ActivityIndicator color={HOME_COLORS.textDark} />
         ) : (
           <Text
             style={[styles.buttonText, disabled && styles.disabledButtonText]}
@@ -273,7 +274,7 @@ function PlanCard({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f172a",
+    backgroundColor: HOME_COLORS.background,
   },
 
   content: {
@@ -282,15 +283,16 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    color: "#fbbf24",
-    fontSize: 30,
+    color: HOME_COLORS.gold,
+    fontSize: 32,
     fontWeight: "900",
     textAlign: "center",
-    marginTop: 20,
+    marginTop: 24,
+    letterSpacing: -0.6,
   },
 
   subtitle: {
-    color: "#94a3b8",
+    color: HOME_COLORS.textMuted,
     textAlign: "center",
     marginTop: 8,
     marginBottom: 30,
@@ -298,16 +300,26 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surface,
     borderRadius: 18,
     padding: 18,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: HOME_COLORS.borderStrong,
+    shadowColor: "#000000",
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 3,
   },
 
   highlightCard: {
-    borderColor: "#fbbf24",
+    borderColor: HOME_COLORS.gold,
+    backgroundColor: HOME_COLORS.surfaceRaised,
+    shadowColor: HOME_COLORS.gold,
+    shadowOpacity: 0.14,
+    shadowRadius: 16,
+    elevation: 4,
   },
 
   badge: {
@@ -319,27 +331,27 @@ const styles = StyleSheet.create({
   },
 
   badgeText: {
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
     fontSize: 11,
     fontWeight: "800",
   },
 
   planTitle: {
-    color: "#fff",
+    color: HOME_COLORS.textPrimary,
     fontSize: 24,
     fontWeight: "900",
     marginTop: 12,
   },
 
   price: {
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
     fontSize: 30,
     fontWeight: "900",
     marginTop: 8,
   },
 
   planSubtitle: {
-    color: "#94a3b8",
+    color: HOME_COLORS.textMuted,
     marginTop: 4,
   },
 
@@ -349,41 +361,46 @@ const styles = StyleSheet.create({
   },
 
   feature: {
-    color: "#f8fafc",
+    color: HOME_COLORS.textPrimary,
     fontSize: 14,
   },
 
   comingSoon: {
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
     fontWeight: "800",
     marginTop: 4,
   },
 
   button: {
     marginTop: 22,
-    backgroundColor: "#fbbf24",
-    borderRadius: 12,
-    paddingVertical: 14,
+    backgroundColor: HOME_COLORS.gold,
+    borderRadius: 14,
+    paddingVertical: 15,
     alignItems: "center",
+    shadowColor: HOME_COLORS.gold,
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
 
   buttonText: {
-    color: "#0f172a",
+    color: HOME_COLORS.textDark,
     fontWeight: "900",
     fontSize: 15,
   },
 
   disabledButton: {
-    backgroundColor: "#334155",
+    backgroundColor: HOME_COLORS.borderStrong,
   },
 
   disabledButtonText: {
-    color: "#94a3b8",
+    color: HOME_COLORS.textMuted,
   },
 
   secondary: {
     textAlign: "center",
-    color: "#64748b",
+    color: HOME_COLORS.textSecondary,
     marginTop: 10,
     marginBottom: 30,
   },
@@ -397,7 +414,7 @@ const styles = StyleSheet.create({
 
   modalCard: {
     width: "85%",
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surface,
     borderRadius: 20,
     padding: 24,
     alignItems: "center",
@@ -408,14 +425,14 @@ const styles = StyleSheet.create({
   },
 
   modalTitle: {
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
     fontSize: 24,
     fontWeight: "800",
     marginTop: 12,
   },
 
   modalText: {
-    color: "#cbd5e1",
+    color: HOME_COLORS.textSecondary,
     textAlign: "center",
     marginTop: 12,
     lineHeight: 22,
@@ -423,14 +440,14 @@ const styles = StyleSheet.create({
 
   modalButton: {
     marginTop: 20,
-    backgroundColor: "#fbbf24",
+    backgroundColor: HOME_COLORS.gold,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
   },
 
   modalButtonText: {
-    color: "#0f172a",
+    color: HOME_COLORS.textDark,
     fontWeight: "800",
   },
 

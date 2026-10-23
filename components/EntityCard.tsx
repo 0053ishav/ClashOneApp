@@ -62,7 +62,7 @@ export default function EntityCard({
         >
           <Text style={styles.levelText}>{level}</Text>
           {isMax && (
-            <Ionicons name="flame" size={12} color={HOME_COLORS.gold} />
+            <Ionicons name="flame" size={12} color={HOME_COLORS.orangeLight} />
           )}
         </View>
       </View>
@@ -152,8 +152,8 @@ const styles = StyleSheet.create({
   },
 
   cardImage: {
-    width: "82%",
-    height: "82%",
+    width: "70%",
+    height: "70%",
   },
 
   levelBadge: {

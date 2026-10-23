@@ -1,10 +1,11 @@
+import { HOME_COLORS } from "@/theme/home";
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
-const GOLD = "#fbbf24";
-const MUTED = "#64748b";
+const GOLD = HOME_COLORS.gold;
+const MUTED = HOME_COLORS.textMuted;
 
 export interface StatItem {
   icon: IconName;
@@ -81,7 +82,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#e2e8f0",
+    color: HOME_COLORS.textPrimary,
     letterSpacing: -0.2,
     paddingHorizontal: 2,
   },
@@ -99,12 +100,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surface,
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: HOME_COLORS.border,
   },
 
   statItemWide: {
@@ -132,7 +133,7 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#f8fafc",
+    color: HOME_COLORS.textBright,
     letterSpacing: -0.4,
   },
 
@@ -143,6 +144,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: "500",
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
   },
 });

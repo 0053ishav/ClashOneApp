@@ -1,6 +1,6 @@
 import StatsGrid from "@/components/Profile/StatsGrid";
 import { HOME_COLORS } from "@/theme/home";
-import { PlayerProfile } from "@/types/player";
+import type { PlayerProfile } from "@/types/player";
 
 function formatCapital(value: number): string {
   if (value >= 1_000_000) return (value / 1_000_000).toFixed(1) + "M";
@@ -19,7 +19,7 @@ export default function ProfileStatsGrid({
 }) {
   return (
     <StatsGrid
-      title="Battle stats"
+      title="Player stats"
       stats={[
         {
           icon: "star",

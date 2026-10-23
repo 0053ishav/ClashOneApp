@@ -183,7 +183,7 @@ export default function TroopsScreen() {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <View style={styles.errorIcon}>
-          <Ionicons name="alert-circle" size={36} color="#ef4444" />
+          <Ionicons name="alert-circle" size={36} color={HOME_COLORS.danger} />
         </View>
 
         <Text style={styles.errorTitle}>Couldn&apos;t load troops</Text>

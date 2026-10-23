@@ -116,7 +116,7 @@ export default function MagicItemsScreen() {
           onPress={() => router.back()}
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={21} color=HOME_COLORS.textBright />
+          <Ionicons name="arrow-back" size={21} color={HOME_COLORS.textBright} />
         </Pressable>
         <View style={styles.headerText}>
           <Text style={styles.title}>Magic Items</Text>
@@ -128,13 +128,13 @@ export default function MagicItemsScreen() {
           onPress={() => void loadInventory()}
           style={styles.refreshButton}
         >
-          <Ionicons name="refresh" size={19} color=HOME_COLORS.textSecondary />
+          <Ionicons name="refresh" size={19} color={HOME_COLORS.textSecondary} />
         </Pressable>
       </View>
 
       {!activeTag ? (
         <View style={styles.emptyState}>
-          <Ionicons name="people-outline" size={32} color=HOME_COLORS.textMuted />
+          <Ionicons name="people-outline" size={32} color={HOME_COLORS.textMuted} />
           <Text style={styles.emptyTitle}>Connect a village first</Text>
           <Text style={styles.emptyBody}>
             Import your village data before tracking Magic Item inventory.
@@ -142,7 +142,7 @@ export default function MagicItemsScreen() {
         </View>
       ) : isLoading ? (
         <View style={styles.loading}>
-          <ActivityIndicator color=HOME_COLORS.gold />
+          <ActivityIndicator color={HOME_COLORS.gold} />
           <Text style={styles.muted}>Loading inventory…</Text>
         </View>
       ) : (
@@ -151,7 +151,7 @@ export default function MagicItemsScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.notice}>
-            <Ionicons name="information-circle-outline" size={18} color=HOME_COLORS.bluePale />
+            <Ionicons name="information-circle-outline" size={18} color={HOME_COLORS.bluePale} />
             <Text style={styles.noticeText}>
               Quantities are tracked manually and saved separately for each account.
             </Text>
@@ -217,7 +217,7 @@ export default function MagicItemsScreen() {
                           pressed && styles.pressed,
                         ]}
                       >
-                        <Ionicons name="remove" size={17} color=HOME_COLORS.textBright />
+                        <Ionicons name="remove" size={17} color={HOME_COLORS.textBright} />
                       </Pressable>
                       <Text style={styles.quantity}>{quantity}</Text>
                       <Pressable
@@ -232,9 +232,9 @@ export default function MagicItemsScreen() {
                         ]}
                       >
                         {isSaving ? (
-                          <ActivityIndicator size="small" color=HOME_COLORS.gold />
+                          <ActivityIndicator size="small" color={HOME_COLORS.gold} />
                         ) : (
-                          <Ionicons name="add" size={17} color=HOME_COLORS.textBright />
+                          <Ionicons name="add" size={17} color={HOME_COLORS.textBright} />
                         )}
                       </Pressable>
                     </View>

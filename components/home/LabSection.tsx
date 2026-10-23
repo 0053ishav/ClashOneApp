@@ -523,15 +523,15 @@ const styles = StyleSheet.create({
   progressBar: {
     height: "100%",
     borderRadius: 2,
-    backgroundColor: "#06b6d4",
+    backgroundColor: "#4ade2d",
   },
 
   labProgressBar: {
-    backgroundColor: "#06b6d4",
+    backgroundColor: "#4ade2d",
   },
 
   goblinProgress: {
-    backgroundColor: "#22c55e",
+    backgroundColor: "#4ade2d",
   },
 
   emptyCard: {

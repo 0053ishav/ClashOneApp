@@ -1,3 +1,4 @@
+import { HOME_COLORS } from "@/theme/home";
 import { StyleSheet, View } from "react-native";
 
 export function ActiveUpgradesSkeleton() {
@@ -58,21 +59,21 @@ const styles = StyleSheet.create({
     width: 105,
     height: 11,
     borderRadius: 6,
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
   },
 
   countBadge: {
     width: 24,
     height: 20,
     borderRadius: 10,
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
   },
 
   card: {
     minHeight: 88,
     marginBottom: 8,
     borderRadius: 16,
-    backgroundColor: "#172033",
+    backgroundColor: HOME_COLORS.surface,
     overflow: "hidden",
     flexDirection: "row",
   },
@@ -81,7 +82,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 10,
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
     marginLeft: 10,
     marginTop: 14,
   },
@@ -101,7 +102,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
   },
 
   info: {
@@ -114,14 +115,14 @@ const styles = StyleSheet.create({
     width: "65%",
     height: 12,
     borderRadius: 6,
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
   },
 
   level: {
     width: 72,
     height: 18,
     borderRadius: 9,
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
   },
 
   timer: {
@@ -134,20 +135,20 @@ const styles = StyleSheet.create({
     width: 55,
     height: 12,
     borderRadius: 6,
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
   },
 
   timerTotal: {
     width: 42,
     height: 9,
     borderRadius: 5,
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
   },
 
   progressTrack: {
     height: 5,
     borderRadius: 3,
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
     marginTop: 10,
     overflow: "hidden",
   },
@@ -156,6 +157,6 @@ const styles = StyleSheet.create({
     width: "45%",
     height: "100%",
     borderRadius: 3,
-    backgroundColor: "#273449",
+    backgroundColor: HOME_COLORS.borderStrong,
   },
 });

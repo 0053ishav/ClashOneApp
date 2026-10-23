@@ -158,7 +158,7 @@ export function PetSection({
         </Pressable>
       ) : isIdle ? (
         <ProgressionEmptyState
-          icon="paw-print"
+          icon="paw"
           title="No pet upgrading"
           description="Your Pet House is ready when you are."
           accentColor="#A78BFA"
@@ -246,9 +246,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 10,
     borderRadius: 14,
-    backgroundColor: "#1e293b",
+    backgroundColor: #121A2B,
     // borderWidth: 1,
-    // borderColor: "#263244",
+    // borderColor: #222D44,
     gap: 10,
   },
 

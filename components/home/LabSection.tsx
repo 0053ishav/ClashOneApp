@@ -127,6 +127,8 @@ function LabCard({
   isGoblin?: boolean;
   onPress?: (lab: Upgrade) => void;
 }) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const now = Date.now();
 
   const progress = calculateProgress(lab.startTime, lab.endTime);

@@ -45,7 +45,7 @@ export default function StatsGrid({ title = "Stats", stats }: StatsGridProps) {
               ]}
             >
               <View style={[styles.iconChip, { backgroundColor: tint + "26" }]}>
-                <Ionicons name={stat.icon} size={17} color={tint} />
+                <Ionicons name={stat.icon} size={14} color={tint} />
               </View>
 
               <View style={styles.textCol}>
@@ -75,12 +75,12 @@ export default function StatsGrid({ title = "Stats", stats }: StatsGridProps) {
 
 const styles = StyleSheet.create({
   container: {
-    gap: 12,
-    marginBottom: 20,
+    gap: 8,
+    marginBottom: 14,
   },
 
   title: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "700",
     color: HOME_COLORS.textPrimary,
     letterSpacing: -0.2,
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: 6,
   },
 
   // flexGrow lets an odd last tile fill its row automatically
@@ -99,11 +99,11 @@ const styles = StyleSheet.create({
     flexBasis: "47%",
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 8,
     backgroundColor: HOME_COLORS.surface,
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 9,
     borderWidth: 1,
     borderColor: HOME_COLORS.border,
   },
@@ -118,9 +118,9 @@ const styles = StyleSheet.create({
   },
 
   iconChip: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   },
 
   value: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "800",
     color: HOME_COLORS.textBright,
     letterSpacing: -0.4,
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "500",
     color: HOME_COLORS.textSecondary,
   },

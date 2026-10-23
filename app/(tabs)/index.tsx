@@ -978,7 +978,7 @@ export default function HomeScreen() {
                 <Ionicons
                   name="chatbubble-ellipses-outline"
                   size={19}
-                  color=HOME_COLORS.textSecondary
+                  color={HOME_COLORS.textSecondary}
                 />
               </Pressable>
               <Pressable
@@ -1124,7 +1124,7 @@ export default function HomeScreen() {
               )}
             </View>
             <View style={styles.chevronButton}>
-              <Ionicons name="chevron-down" size={14} color=HOME_COLORS.textSecondary />
+              <Ionicons name="chevron-down" size={14} color={HOME_COLORS.textSecondary} />
             </View>
           </Pressable>
           <View style={styles.profileMagicActions}>
@@ -1137,7 +1137,7 @@ export default function HomeScreen() {
                 pressed && styles.magicItemsButtonPressed,
               ]}
             >
-              <Ionicons name="flash" size={11} color=HOME_COLORS.emerald />
+              <Ionicons name="flash" size={11} color={HOME_COLORS.emerald} />
               <Text style={styles.profileSavedText}>
                 {formatSavedDuration(
                   (accountState?.activeUpgrades ?? []).reduce(
@@ -1210,9 +1210,9 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor=HOME_COLORS.gold
+            tintColor={HOME_COLORS.gold}
             colors={[HOME_COLORS.gold]}
-            progressBackgroundColor=HOME_COLORS.surfaceDark
+            progressBackgroundColor={HOME_COLORS.surfaceDark}
           />
         }
       >
@@ -1585,7 +1585,7 @@ export default function HomeScreen() {
                                         <Ionicons
                                           name="repeat"
                                           size={10}
-                                          color=HOME_COLORS.gold
+                                          color={HOME_COLORS.gold}
                                         />
                                       </View>
                                     )}
@@ -1674,7 +1674,7 @@ export default function HomeScreen() {
         </GestureDetector>
 
         <View style={styles.refreshHint}>
-          <Ionicons name="arrow-down" size={13} color=HOME_COLORS.slate />
+          <Ionicons name="arrow-down" size={13} color={HOME_COLORS.slate} />
           <Text style={styles.refreshHintText}>Pull down to refresh</Text>
         </View>
 

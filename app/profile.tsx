@@ -179,7 +179,7 @@ export default function ProfileScreen() {
               icon: "flame",
               label: "Attacks won",
               value: data.attackWins,
-              color: "#f97316",
+              color: HOME_COLORS.orange,
             },
             {
               icon: "shield-checkmark",

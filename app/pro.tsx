@@ -4,10 +4,11 @@ import {
   restorePurchases,
 } from "@/services/revenueCat/purchase";
 import { usePremiumStore } from "@/stores/premiumStore";
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import { track } from "@/utils/analytics/analytics";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState , useMemo } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -20,6 +21,8 @@ import {
 } from "react-native";
 
 export default function ProScreen() {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const [purchasing, setPurchasing] = useState(false);
   const [showThankYou, setShowThankYou] = useState(false);
@@ -161,7 +164,7 @@ export default function ProScreen() {
           <Text
             style={{
               textAlign: "center",
-              color: HOME_COLORS.textMuted,
+              color: colors.textMuted,
               marginTop: 12,
             }}
           >
@@ -258,7 +261,7 @@ function PlanCard({
         onPress={onPress}
       >
         {loading ? (
-          <ActivityIndicator color={HOME_COLORS.textDark} />
+          <ActivityIndicator color={colors.textDark} />
         ) : (
           <Text
             style={[styles.buttonText, disabled && styles.disabledButtonText]}
@@ -271,10 +274,10 @@ function PlanCard({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: HOME_COLORS.background,
+    backgroundColor: colors.background,
   },
 
   content: {
@@ -283,7 +286,7 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     fontSize: 32,
     fontWeight: "900",
     textAlign: "center",
@@ -292,7 +295,7 @@ const styles = StyleSheet.create({
   },
 
   subtitle: {
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
     textAlign: "center",
     marginTop: 8,
     marginBottom: 30,
@@ -300,12 +303,12 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 18,
     padding: 18,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderStrong,
+    borderColor: colors.borderStrong,
     shadowColor: "#000000",
     shadowOpacity: 0.18,
     shadowRadius: 14,
@@ -314,9 +317,9 @@ const styles = StyleSheet.create({
   },
 
   highlightCard: {
-    borderColor: HOME_COLORS.gold,
-    backgroundColor: HOME_COLORS.surfaceRaised,
-    shadowColor: HOME_COLORS.gold,
+    borderColor: colors.gold,
+    backgroundColor: colors.surfaceRaised,
+    shadowColor: colors.gold,
     shadowOpacity: 0.14,
     shadowRadius: 16,
     elevation: 4,
@@ -331,27 +334,27 @@ const styles = StyleSheet.create({
   },
 
   badgeText: {
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     fontSize: 11,
     fontWeight: "800",
   },
 
   planTitle: {
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
     fontSize: 24,
     fontWeight: "900",
     marginTop: 12,
   },
 
   price: {
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     fontSize: 30,
     fontWeight: "900",
     marginTop: 8,
   },
 
   planSubtitle: {
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
     marginTop: 4,
   },
 
@@ -361,23 +364,23 @@ const styles = StyleSheet.create({
   },
 
   feature: {
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
     fontSize: 14,
   },
 
   comingSoon: {
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     fontWeight: "800",
     marginTop: 4,
   },
 
   button: {
     marginTop: 22,
-    backgroundColor: HOME_COLORS.gold,
+    backgroundColor: colors.gold,
     borderRadius: 14,
     paddingVertical: 15,
     alignItems: "center",
-    shadowColor: HOME_COLORS.gold,
+    shadowColor: colors.gold,
     shadowOpacity: 0.18,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
@@ -385,22 +388,22 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: HOME_COLORS.textDark,
+    color: colors.textDark,
     fontWeight: "900",
     fontSize: 15,
   },
 
   disabledButton: {
-    backgroundColor: HOME_COLORS.borderStrong,
+    backgroundColor: colors.borderStrong,
   },
 
   disabledButtonText: {
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
   },
 
   secondary: {
     textAlign: "center",
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     marginTop: 10,
     marginBottom: 30,
   },
@@ -414,7 +417,7 @@ const styles = StyleSheet.create({
 
   modalCard: {
     width: "85%",
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 20,
     padding: 24,
     alignItems: "center",
@@ -425,14 +428,14 @@ const styles = StyleSheet.create({
   },
 
   modalTitle: {
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     fontSize: 24,
     fontWeight: "800",
     marginTop: 12,
   },
 
   modalText: {
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: "center",
     marginTop: 12,
     lineHeight: 22,
@@ -440,14 +443,14 @@ const styles = StyleSheet.create({
 
   modalButton: {
     marginTop: 20,
-    backgroundColor: HOME_COLORS.gold,
+    backgroundColor: colors.gold,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
   },
 
   modalButtonText: {
-    color: HOME_COLORS.textDark,
+    color: colors.textDark,
     fontWeight: "800",
   },
 

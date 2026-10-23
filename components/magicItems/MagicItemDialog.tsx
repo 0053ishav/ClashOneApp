@@ -1,8 +1,9 @@
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import type { MagicItem } from "@/types/magicItem";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -34,12 +35,7 @@ type MagicItemDialogProps = {
 
 const EMPTY_CHOICES: MagicItemDialogChoice[] = [];
 
-const TONE_COLOR = {
-  confirm: HOME_COLORS.gold,
-  success: HOME_COLORS.emerald,
-  error: HOME_COLORS.dangerLight,
-  info: HOME_COLORS.blue,
-} as const;
+
 
 export function MagicItemDialog({
   visible,
@@ -54,8 +50,10 @@ export function MagicItemDialog({
   onConfirm,
   onClose,
 }: MagicItemDialogProps) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const accent = TONE_COLOR[tone];
+  const accent = tone === "confirm" ? colors.gold : tone === "success" ? colors.emerald : tone === "error" ? colors.dangerLight : colors.blue;
   const selectedChoice = choices.find((choice) => choice.item.id === selectedItemId);
 
   useEffect(() => {
@@ -135,7 +133,7 @@ export function MagicItemDialog({
                   pressed && styles.pressed,
                 ]}
               >
-                {busy ? <ActivityIndicator size="small" color={HOME_COLORS.textDark} /> : <Text style={styles.confirmText}>{confirmLabel}</Text>}
+                {busy ? <ActivityIndicator size="small" color={colors.textDark} /> : <Text style={styles.confirmText}>{confirmLabel}</Text>}
               </Pressable>
             )}
           </View>
@@ -145,28 +143,28 @@ export function MagicItemDialog({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   overlay: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24, backgroundColor: "rgba(2,6,23,0.76)" },
   scrim: { ...StyleSheet.absoluteFillObject },
-  dialog: { width: "100%", maxWidth: 420, maxHeight: "82%", padding: 20, borderRadius: 22, backgroundColor: HOME_COLORS.textDark, borderWidth: 1, borderColor: HOME_COLORS.slateMuted, alignItems: "center" },
+  dialog: { width: "100%", maxWidth: 420, maxHeight: "82%", padding: 20, borderRadius: 22, backgroundColor: colors.textDark, borderWidth: 1, borderColor: colors.slateMuted, alignItems: "center" },
   iconHalo: { width: 68, height: 68, borderRadius: 20, borderWidth: 1, alignItems: "center", justifyContent: "center", marginBottom: 13 },
   heroImage: { width: 52, height: 52 },
-  title: { color: HOME_COLORS.textBright, fontSize: 17, fontWeight: "900", textAlign: "center" },
-  message: { marginTop: 7, color: HOME_COLORS.textSecondary, fontSize: 12, lineHeight: 18, textAlign: "center" },
+  title: { color: colors.textBright, fontSize: 17, fontWeight: "900", textAlign: "center" },
+  message: { marginTop: 7, color: colors.textSecondary, fontSize: 12, lineHeight: 18, textAlign: "center" },
   choices: { width: "100%", maxHeight: 250, marginTop: 14 },
   choicesContent: { gap: 8 },
-  choice: { flexDirection: "row", alignItems: "center", gap: 9, padding: 9, borderRadius: 12, borderWidth: 1, borderColor: HOME_COLORS.borderStrong, backgroundColor: HOME_COLORS.surfaceDark },
+  choice: { flexDirection: "row", alignItems: "center", gap: 9, padding: 9, borderRadius: 12, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.surfaceDark },
   choiceIcon: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
   choiceImage: { width: 34, height: 34 },
   choiceText: { flex: 1, minWidth: 0 },
-  choiceTitle: { color: HOME_COLORS.textBright, fontSize: 11, fontWeight: "800" },
-  choiceDescription: { marginTop: 3, color: HOME_COLORS.textSecondary, fontSize: 9, lineHeight: 13 },
+  choiceTitle: { color: colors.textBright, fontSize: 11, fontWeight: "800" },
+  choiceDescription: { marginTop: 3, color: colors.textSecondary, fontSize: 9, lineHeight: 13 },
   quantity: { fontSize: 11, fontWeight: "900" },
   actions: { flexDirection: "row", width: "100%", gap: 9, marginTop: 18 },
-  cancelButton: { flex: 1, minHeight: 42, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: HOME_COLORS.surfaceRaised },
-  cancelText: { color: HOME_COLORS.textSecondary, fontSize: 12, fontWeight: "800" },
+  cancelButton: { flex: 1, minHeight: 42, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: colors.surfaceRaised },
+  cancelText: { color: colors.textSecondary, fontSize: 12, fontWeight: "800" },
   confirmButton: { flex: 1, minHeight: 42, borderRadius: 11, alignItems: "center", justifyContent: "center", paddingHorizontal: 12 },
-  confirmText: { color: HOME_COLORS.textDark, fontSize: 12, fontWeight: "900" },
+  confirmText: { color: colors.textDark, fontSize: 12, fontWeight: "900" },
   pressed: { opacity: 0.7 },
   disabled: { opacity: 0.4 },
 });

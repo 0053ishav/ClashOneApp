@@ -35,18 +35,3 @@ export const HOME_COLORS = {
   purple: "#8b5cf6",
   purpleLight: "#a78bfa",
 } as const;
-
-export const HOME_SPACING = {
-  xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 24,
-} as const;
-
-export const HOME_RADIUS = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  pill: 999,
-} as const;

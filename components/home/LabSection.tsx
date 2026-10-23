@@ -99,7 +99,7 @@ export function LabSection({
       {/* EMPTY STATE */}
       {!labNormal && !labGoblin && (
         <ProgressionEmptyState
-          icon="flask-conical"
+          icon="flask-outline"
           title="No research in progress"
           description="Your Laboratory is ready for the next troop or spell upgrade."
           accentColor="#38BDF8"

@@ -354,7 +354,7 @@ export default function TroopsScreen() {
 
               <TextInput
                 placeholder={village === "home" ? "Search Home Village troops" : "Search Builder Base troops"}
-                placeholderTextColor=HOME_COLORS.textMuted
+                placeholderTextColor={HOME_COLORS.textMuted}
                 value={search}
                 onChangeText={setSearch}
                 onFocus={() => setSearchFocused(true)}

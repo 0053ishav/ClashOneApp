@@ -60,9 +60,17 @@ export default function EntityCard({
             isMax ? styles.levelBadgeMaxed : styles.levelBadgeDefault,
           ]}
         >
-          <Text style={styles.levelText}>{level}</Text>
-          {isMax && (
-            <Ionicons name="flame" size={12} color={HOME_COLORS.orangeLight} />
+          {isMax ? (
+            <View style={styles.maxLevelFlame}>
+              <Ionicons
+                name="flame"
+                size={27}
+                color={HOME_COLORS.orange}
+              />
+              <Text style={styles.maxLevelText}>{level}</Text>
+            </View>
+          ) : (
+            <Text style={styles.levelText}>{level}</Text>
           )}
         </View>
       </View>
@@ -177,8 +185,13 @@ const styles = StyleSheet.create({
   },
 
   levelBadgeMaxed: {
-    backgroundColor: "rgba(15,23,42,0.96)",
     minWidth: 29,
+    width: 31,
+    height: 29,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    borderWidth: 0,
+    backgroundColor: "transparent",
   },
 
   levelText: {
@@ -187,6 +200,29 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: HOME_COLORS.textBright,
     fontVariant: ["tabular-nums"],
+  },
+
+  maxLevelFlame: {
+    width: 31,
+    height: 29,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  maxLevelText: {
+    position: "absolute",
+    top: 9,
+    left: 0,
+    right: 0,
+    textAlign: "center",
+    fontSize: 10,
+    lineHeight: 12,
+    fontWeight: "900",
+    color: HOME_COLORS.white,
+    fontVariant: ["tabular-nums"],
+    textShadowColor: "rgba(15,23,42,0.95)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 
 

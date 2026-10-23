@@ -1,10 +1,11 @@
 import EntitySection from "@/components/Profile/EntitySection";
+import { HOME_COLORS } from "@/theme/home";
 import { PlayerFull } from "@/types/playerFull";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
-const GOLD = "#fbbf24";
+const GOLD = HOME_COLORS.gold;
 const MAX_STARS = 3;
 const PREVIEW_LIMIT = 5;
 
@@ -60,7 +61,7 @@ function AchievementItem({ name, stars = 0, info }: AchievementItemProps) {
         <Ionicons
           name={complete ? "trophy" : "trophy-outline"}
           size={14}
-          color={complete ? GOLD : "#94a3b8"}
+          color={complete ? GOLD : HOME_COLORS.textSecondary}
         />
       </View>
 
@@ -81,7 +82,7 @@ function AchievementItem({ name, stars = 0, info }: AchievementItemProps) {
             key={i}
             name={i < filled ? "star" : "star-outline"}
             size={11}
-            color={i < filled ? GOLD : "#475569"}
+            color={i < filled ? GOLD : HOME_COLORS.slate}
           />
         ))}
       </View>
@@ -91,12 +92,12 @@ function AchievementItem({ name, stars = 0, info }: AchievementItemProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#111c2e",
+    backgroundColor: HOME_COLORS.surfaceDark,
     borderRadius: 20,
     padding: 14,
     gap: 10,
     borderWidth: 1,
-    borderColor: "#263449",
+    borderColor: HOME_COLORS.borderStrong,
     marginBottom: 12,
   },
 
@@ -121,7 +122,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#f1f5f9",
+    color: HOME_COLORS.textPrimary,
     letterSpacing: -0.2,
   },
 
@@ -165,13 +166,13 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#f1f5f9",
+    color: HOME_COLORS.textPrimary,
   },
 
   itemInfo: {
     fontSize: 10,
     fontWeight: "400",
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
   },
 
   starsRow: {

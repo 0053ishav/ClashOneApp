@@ -1,3 +1,4 @@
+import { HOME_COLORS } from "@/theme/home";
 import { ENV } from "@/config/env";
 import { MagicItemDialog } from "@/components/magicItems/MagicItemDialog";
 import { MAGIC_ITEMS } from "@/config/magicItems";
@@ -285,7 +286,7 @@ export function MagicItemsQuickModal({
                   pressed && styles.pressed,
                 ]}
               >
-                <Ionicons name="albums-outline" size={14} color="#fbbf24" />
+                <Ionicons name="albums-outline" size={14} color={HOME_COLORS.gold} />
                 <Text style={styles.inventoryButtonText}>Inventory</Text>
               </Pressable>
               <Pressable
@@ -294,13 +295,13 @@ export function MagicItemsQuickModal({
                 onPress={onClose}
                 style={styles.closeButton}
               >
-                <Ionicons name="close" size={21} color="#cbd5e1" />
+                <Ionicons name="close" size={21} color={HOME_COLORS.textSecondary} />
               </Pressable>
             </View>
 
             {!accountTag ? (
               <View style={styles.emptyState}>
-                <Ionicons name="people-outline" size={30} color="#64748b" />
+                <Ionicons name="people-outline" size={30} color={HOME_COLORS.textMuted} />
                 <Text style={styles.emptyTitle}>Connect a village first</Text>
                 <Text style={styles.emptyBody}>
                   Magic Items are tracked per account.
@@ -308,7 +309,7 @@ export function MagicItemsQuickModal({
               </View>
             ) : isLoading ? (
               <View style={styles.loading}>
-                <ActivityIndicator color="#fbbf24" />
+                <ActivityIndicator color={HOME_COLORS.gold} />
                 <Text style={styles.muted}>Loading inventory…</Text>
               </View>
             ) : (
@@ -318,7 +319,7 @@ export function MagicItemsQuickModal({
                     <Ionicons
                       name="information-circle-outline"
                       size={20}
-                      color="#93c5fd"
+                      color={HOME_COLORS.bluePale}
                     />
                     <View style={styles.emptyInventoryText}>
                       <Text style={styles.emptyInventoryTitle}>
@@ -345,7 +346,7 @@ export function MagicItemsQuickModal({
                             contentFit="contain"
                           />
                         ) : (
-                          <Ionicons name="sparkles" size={25} color="#fbbf24" />
+                          <Ionicons name="sparkles" size={25} color={HOME_COLORS.gold} />
                         )}
                       </View>
                       <View style={styles.itemInfo}>
@@ -374,7 +375,7 @@ export function MagicItemsQuickModal({
                         ]}
                       >
                         {isActivating ? (
-                          <ActivityIndicator size="small" color="#0f172a" />
+                          <ActivityIndicator size="small" color={HOME_COLORS.textDark} />
                         ) : (
                           <Text style={styles.activateText}>Use</Text>
                         )}
@@ -416,11 +417,11 @@ const styles = StyleSheet.create({
   scrim: { ...StyleSheet.absoluteFillObject },
   sheet: {
     maxHeight: "82%",
-    backgroundColor: "#0f172a",
+    backgroundColor: HOME_COLORS.textDark,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
-    borderColor: "#334155",
+    borderColor: HOME_COLORS.slateMuted,
     paddingBottom: 24,
   },
   handle: {
@@ -428,7 +429,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 4,
     borderRadius: 4,
-    backgroundColor: "#475569",
+    backgroundColor: HOME_COLORS.slate,
     marginTop: 9,
     marginBottom: 14,
   },
@@ -438,7 +439,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#1e293b",
+    borderBottomColor: HOME_COLORS.surfaceRaised,
   },
   headerIcon: {
     width: 40,
@@ -446,13 +447,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#422006",
+    backgroundColor: HOME_COLORS.surfaceRaised,
     marginRight: 11,
   },
   headerIconImage: { width: 28, height: 28 },
   headerText: { flex: 1 },
-  title: { color: "#f8fafc", fontSize: 17, fontWeight: "800" },
-  subtitle: { marginTop: 3, color: "#94a3b8", fontSize: 11 },
+  title: { color: HOME_COLORS.textBright, fontSize: 17, fontWeight: "800" },
+  subtitle: { marginTop: 3, color: HOME_COLORS.textSecondary, fontSize: 11 },
   inventoryButton: {
     minHeight: 32,
     flexDirection: "row",
@@ -462,16 +463,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     marginRight: 8,
     borderRadius: 9,
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
     borderWidth: 1,
-    borderColor: "#475569",
+    borderColor: HOME_COLORS.slate,
   },
-  inventoryButtonText: { color: "#fbbf24", fontSize: 10, fontWeight: "800" },
+  inventoryButtonText: { color: HOME_COLORS.gold, fontSize: 10, fontWeight: "800" },
   closeButton: {
     width: 34,
     height: 34,
     borderRadius: 10,
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -482,15 +483,15 @@ const styles = StyleSheet.create({
     gap: 9,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: "#172033",
+    backgroundColor: HOME_COLORS.surfaceRaised,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: HOME_COLORS.slateMuted,
   },
   emptyInventoryText: { flex: 1 },
-  emptyInventoryTitle: { color: "#e2e8f0", fontSize: 12, fontWeight: "800" },
+  emptyInventoryTitle: { color: HOME_COLORS.textPrimary, fontSize: 12, fontWeight: "800" },
   emptyInventoryBody: {
     marginTop: 4,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontSize: 11,
     lineHeight: 15,
   },
@@ -500,33 +501,33 @@ const styles = StyleSheet.create({
     gap: 10,
     padding: 11,
     borderRadius: 14,
-    backgroundColor: "#111c31",
+    backgroundColor: HOME_COLORS.surfaceDark,
     borderWidth: 1,
-    borderColor: "#263449",
+    borderColor: HOME_COLORS.borderStrong,
   },
   itemIconWrap: {
     width: 45,
     height: 45,
     borderRadius: 12,
-    backgroundColor: "#0f172a",
+    backgroundColor: HOME_COLORS.textDark,
     alignItems: "center",
     justifyContent: "center",
   },
   itemIcon: { width: 38, height: 38 },
   itemInfo: { flex: 1, minWidth: 0 },
-  itemName: { color: "#f8fafc", fontSize: 12, fontWeight: "800" },
-  description: { marginTop: 3, color: "#94a3b8", fontSize: 10, lineHeight: 14 },
-  quantity: { marginTop: 5, color: "#fbbf24", fontSize: 10, fontWeight: "700" },
+  itemName: { color: HOME_COLORS.textBright, fontSize: 12, fontWeight: "800" },
+  description: { marginTop: 3, color: HOME_COLORS.textSecondary, fontSize: 10, lineHeight: 14 },
+  quantity: { marginTop: 5, color: HOME_COLORS.gold, fontSize: 10, fontWeight: "700" },
   activateButton: {
     minWidth: 46,
     height: 32,
     borderRadius: 9,
-    backgroundColor: "#fbbf24",
+    backgroundColor: HOME_COLORS.gold,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 10,
   },
-  activateText: { color: "#0f172a", fontSize: 11, fontWeight: "900" },
+  activateText: { color: HOME_COLORS.textDark, fontSize: 11, fontWeight: "900" },
   disabled: { opacity: 0.35 },
   pressed: { opacity: 0.65 },
   emptyState: {
@@ -535,14 +536,14 @@ const styles = StyleSheet.create({
     padding: 30,
     gap: 9,
   },
-  emptyTitle: { color: "#f8fafc", fontSize: 15, fontWeight: "800" },
-  emptyBody: { color: "#94a3b8", textAlign: "center", fontSize: 12 },
+  emptyTitle: { color: HOME_COLORS.textBright, fontSize: 15, fontWeight: "800" },
+  emptyBody: { color: HOME_COLORS.textSecondary, textAlign: "center", fontSize: 12 },
   loading: {
     minHeight: 140,
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
   },
-  muted: { color: "#94a3b8", fontSize: 12 },
-  footnote: { color: "#64748b", fontSize: 10, lineHeight: 15, marginTop: 4 },
+  muted: { color: HOME_COLORS.textSecondary, fontSize: 12 },
+  footnote: { color: HOME_COLORS.textMuted, fontSize: 10, lineHeight: 15, marginTop: 4 },
 });

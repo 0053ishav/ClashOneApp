@@ -31,8 +31,7 @@ export function HammerJamBanner({ manifest }: Props) {
       <View style={styles.content}>
         <Text style={styles.title}>{manifest.title}</Text>
         <Text style={styles.subtitle}>
-          {Math.round((1 - manifest.timeMultiplier) * 100)}% less upgrade time ·{" "}
-          {Math.round((1 - manifest.costMultiplier) * 100)}% lower upgrade costs
+          {Math.round((1 - manifest.timeMultiplier) * 100)}% less upgrade time · {Math.round((1 - manifest.costMultiplier) * 100)}% lower upgrade costs
         </Text>
         <Text style={styles.subtitle}>
           {Math.round((manifest.resourceMultiplier - 1) * 100)}% more resource production

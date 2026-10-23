@@ -1,4 +1,5 @@
 import { ENV } from "@/config/env";
+import { HOME_COLORS } from "@/theme/home";
 import { syncPremium } from "@/services/revenueCat/syncPremium";
 import { usePremiumStore } from "@/stores/premiumStore";
 import { Ionicons } from "@expo/vector-icons";
@@ -14,11 +15,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
-const GOLD = "#fbbf24";
-const INACTIVE = "#94a3b8";
-const BAR_BG = "#1e293b";
-const BORDER = "#334155";
-const APP_BG = "#0f172a";
+const GOLD = HOME_COLORS.gold;
+const INACTIVE = HOME_COLORS.textMuted;
+const BAR_BG = HOME_COLORS.surface;
+const BORDER = HOME_COLORS.borderStrong;
+const APP_BG = HOME_COLORS.background;
 const TAB_BAR_HEIGHT = 64;
 
 // Add analytics / war / upload-json back here when they ship.
@@ -222,7 +223,7 @@ const styles = StyleSheet.create({
   pill: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: 15,
-    backgroundColor: "rgba(251, 191, 36, 0.16)",
+    backgroundColor: "rgba(251,191,36,0.16)",
   },
 
   label: {

@@ -1,9 +1,10 @@
+import { HOME_COLORS } from "@/theme/home";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
-const GOLD = "#fbbf24";
+const GOLD = HOME_COLORS.gold;
 
 interface EntitySectionProps {
   title: string;
@@ -91,7 +92,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#e2e8f0",
+    color: HOME_COLORS.textPrimary,
     letterSpacing: -0.2,
     flexShrink: 1,
   },
@@ -108,7 +109,7 @@ const styles = StyleSheet.create({
   countText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
   },
 
   viewAll: {

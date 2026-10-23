@@ -1,8 +1,11 @@
 import ProfileHeader from "@/components/ProfileSheet/ProfileHeader";
+import { HOME_COLORS } from "@/theme/home";
 import { getEntities } from "@/services/entityService";
 import { useAccountStore } from "@/stores/accountStore";
 import { EntityRecord } from "@/types/upgrade";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
@@ -17,7 +20,13 @@ import {
 } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import ProfileActions from "./ProfileActions";
-import ProfileStatsGrid from "./ProfileStatsGrid";
+import StatsGrid from "@/components/Profile/StatsGrid";
+
+function formatCapital(value: number): string {
+  if (value >= 1_000_000) return (value / 1_000_000).toFixed(1) + "M";
+  if (value >= 1_000) return (value / 1_000).toFixed(1) + "K";
+  return value.toString();
+}
 
 export type ProfileDropdownSheetRef = {
   present: () => void;
@@ -189,7 +198,7 @@ const ProfileDropdownSheet = forwardRef<
       >
         {!profile ? (
           <View style={styles.emptyProfile}>
-            <Ionicons name="person-outline" size={30} color="#64748b" />
+            <Ionicons name="person-outline" size={30} color={HOME_COLORS.textMuted} />
 
             <Text style={styles.emptyProfileText}>No profile connected</Text>
           </View>
@@ -208,7 +217,7 @@ const ProfileDropdownSheet = forwardRef<
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <View style={styles.sectionTitleRow}>
-                    <Ionicons name="people-outline" size={16} color="#94a3b8" />
+                    <Ionicons name="people-outline" size={16} color={HOME_COLORS.textSecondary} />
 
                     <Text style={styles.sectionTitle}>Accounts</Text>
                   </View>
@@ -254,7 +263,7 @@ const ProfileDropdownSheet = forwardRef<
                                 : `${acc.color}66`,
                               backgroundColor: isActive
                                 ? `${acc.color}20`
-                                : "#172235",
+                                : HOME_COLORS.surfaceRaised,
                             },
                           ]}
                         >
@@ -266,6 +275,20 @@ const ProfileDropdownSheet = forwardRef<
                           >
                             {initials}
                           </Text>
+
+                          <View style={styles.townHallBadge}>
+                            <Image
+                              source={{
+                                uri: resolveEntityIcon(1000001, {
+                                  village: "home",
+                                  level: acc.townhall,
+                                }),
+                              }}
+                              style={styles.townHallBadgeIcon}
+                              contentFit="contain"
+                              cachePolicy="memory-disk"
+                            />
+                          </View>
 
                           {isActive && (
                             <View
@@ -279,7 +302,7 @@ const ProfileDropdownSheet = forwardRef<
                               <Ionicons
                                 name="checkmark"
                                 size={10}
-                                color="#0f172a"
+                                color={HOME_COLORS.background}
                               />
                             </View>
                           )}
@@ -306,9 +329,56 @@ const ProfileDropdownSheet = forwardRef<
             {/* Stats */}
             {profile.playerTag && (
               <View style={styles.section}>
-                <ProfileStatsGrid
-                  profile={profile}
-                  builderCount={activeAccount?.builderCount ?? 1}
+                <StatsGrid
+                  title="Player stats"
+                  stats={[
+                    {
+                      icon: "star",
+                      label: "War stars",
+                      value: profile.warStars,
+                      highlight: true,
+                      color: HOME_COLORS.gold,
+                    },
+                    {
+                      icon: "flame",
+                      label: "Attacks",
+                      value: profile.attackWins,
+                      color: HOME_COLORS.orange,
+                    },
+                    {
+                      icon: "shield-checkmark",
+                      label: "Defenses",
+                      value: profile.defenseWins,
+                      color: HOME_COLORS.cyan,
+                    },
+                    {
+                      icon: "arrow-up",
+                      label: "Donated",
+                      value: profile.donations,
+                      color: HOME_COLORS.success,
+                    },
+                    {
+                      icon: "arrow-down",
+                      label: "Received",
+                      value: profile.donationsReceived,
+                      color: HOME_COLORS.blue,
+                    },
+                    {
+                      icon: "diamond",
+                      label: "Capital gold",
+                      value:
+                        typeof profile.clanCapitalGold === "number"
+                          ? formatCapital(profile.clanCapitalGold)
+                          : undefined,
+                      color: HOME_COLORS.purpleStrong,
+                    },
+                    {
+                      icon: "construct",
+                      label: "Builders",
+                      value: activeAccount?.builderCount ?? 1,
+                      color: HOME_COLORS.textSecondary,
+                    },
+                  ]}
                 />
               </View>
             )}
@@ -332,7 +402,7 @@ const ProfileDropdownSheet = forwardRef<
                 pressed && styles.closeButtonPressed,
               ]}
             >
-              <Ionicons name="close" size={18} color="#94a3b8" />
+              <Ionicons name="close" size={18} color={HOME_COLORS.textSecondary} />
 
               <Text style={styles.closeButtonText}>Close</Text>
             </Pressable>
@@ -347,12 +417,12 @@ export default ProfileDropdownSheet;
 
 const styles = StyleSheet.create({
   sheet: {
-    backgroundColor: "#0f172a",
+    backgroundColor: HOME_COLORS.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     borderWidth: 1,
     borderBottomWidth: 0,
-    borderColor: "#1e293b",
+    borderColor: HOME_COLORS.border,
   },
 
   handle: {
@@ -364,7 +434,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 4,
     borderRadius: 999,
-    backgroundColor: "#475569",
+    backgroundColor: HOME_COLORS.slate,
   },
 
   contentContainer: {
@@ -381,7 +451,7 @@ const styles = StyleSheet.create({
 
   emptyProfileText: {
     fontSize: 14,
-    color: "#64748b",
+    color: HOME_COLORS.textMuted,
     fontWeight: "600",
   },
 
@@ -410,7 +480,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#cbd5e1",
+    color: HOME_COLORS.textPrimary,
     letterSpacing: -0.1,
   },
 
@@ -419,17 +489,17 @@ const styles = StyleSheet.create({
     height: 20,
     paddingHorizontal: 6,
     borderRadius: 10,
-    backgroundColor: "#172235",
+    backgroundColor: HOME_COLORS.surfaceRaised,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#263449",
+    borderColor: HOME_COLORS.borderStrong,
   },
 
   countBadgeText: {
     fontSize: 10,
     fontWeight: "800",
-    color: "#64748b",
+    color: HOME_COLORS.textMuted,
   },
 
   avatarRow: {
@@ -453,6 +523,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
+  townHallBadge: {
+    position: "absolute",
+    left: -4,
+    bottom: -3,
+    width: 22,
+    height: 22,
+    borderRadius: 7,
+    backgroundColor: HOME_COLORS.surface,
+    borderWidth: 1,
+    borderColor: HOME_COLORS.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  townHallBadgeIcon: {
+    width: 19,
+    height: 19,
+  },
+
   avatarInitials: {
     fontSize: 14,
     fontWeight: "800",
@@ -466,7 +555,7 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     borderWidth: 2,
-    borderColor: "#0b1220",
+    borderColor: HOME_COLORS.background,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -475,19 +564,19 @@ const styles = StyleSheet.create({
     width: 70,
     fontSize: 12,
     fontWeight: "600",
-    color: "#64748b",
+    color: HOME_COLORS.textMuted,
     textAlign: "center",
   },
 
   avatarLabelActive: {
-    color: "#f1f5f9",
+    color: HOME_COLORS.textPrimary,
     fontWeight: "700",
   },
 
   avatarSub: {
     fontSize: 10,
     fontWeight: "600",
-    color: "#475569",
+    color: HOME_COLORS.slate,
   },
 
   actionsSection: {
@@ -498,9 +587,9 @@ const styles = StyleSheet.create({
     height: 48,
     marginTop: 12,
     borderRadius: 14,
-    backgroundColor: "#111c2e",
+    backgroundColor: HOME_COLORS.surfaceDark,
     borderWidth: 1,
-    borderColor: "#263449",
+    borderColor: HOME_COLORS.borderStrong,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -508,12 +597,12 @@ const styles = StyleSheet.create({
   },
 
   closeButtonPressed: {
-    backgroundColor: "#172235",
+    backgroundColor: HOME_COLORS.surfaceRaised,
   },
 
   closeButtonText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
   },
 });

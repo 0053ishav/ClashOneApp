@@ -1,5 +1,7 @@
 "use no memo";
 
+import { HOME_COLORS } from "@/theme/home";
+
 import { useAccountStore } from "@/stores/accountStore";
 import { formatCountdown } from "@/utils/formatCountdown";
 import { getBuilderStatus } from "@/utils/status/home/builderStatus";
@@ -170,7 +172,7 @@ export default function ValueScreen() {
         <View style={styles.successHeader}>
           <View style={styles.checkmarkWrapper}>
             <View style={styles.checkmarkGlow} />
-            <Ionicons name="checkmark-circle" size={64} color="#22c55e" />
+            <Ionicons name="checkmark-circle" size={64} color={HOME_COLORS.success} />
           </View>
           <Text style={styles.successTitle}>All Set!</Text>
           <Text style={styles.successSubtitle}>
@@ -310,7 +312,7 @@ export default function ValueScreen() {
                 <Ionicons
                   name="information-circle-outline"
                   size={14}
-                  color="#94a3b8"
+                  color={HOME_COLORS.textSecondary}
                 />
                 <Text style={styles.infoText}>Auto</Text>
               </View>
@@ -521,7 +523,7 @@ export default function ValueScreen() {
                       style={{
                         alignSelf: "flex-start",
                         backgroundColor:
-                          u.village === "builderBase" ? "#7c3aed" : "#2563eb",
+                          u.village === "builderBase" ? HOME_COLORS.purple : HOME_COLORS.blueStrong,
                         borderRadius: 8,
                         paddingHorizontal: 6,
                         paddingVertical: 2,
@@ -530,7 +532,7 @@ export default function ValueScreen() {
                     >
                       <Text
                         style={{
-                          color: "white",
+                          color: HOME_COLORS.white,
                           fontSize: 10,
                           fontWeight: "700",
                         }}
@@ -554,7 +556,7 @@ export default function ValueScreen() {
           <View style={styles.stepsList}>
             <View style={styles.stepItem}>
               <View style={styles.stepIcon}>
-                <Ionicons name="notifications" size={20} color="#fbbf24" />
+                <Ionicons name="notifications" size={20} color={HOME_COLORS.gold} />
               </View>
               <View style={styles.stepContent}>
                 <Text style={styles.stepTitle}>Get Notified</Text>
@@ -566,7 +568,7 @@ export default function ValueScreen() {
 
             {/* <View style={styles.stepItem}>
               <View style={styles.stepIcon}>
-                <Ionicons name="refresh" size={20} color="#fbbf24" />
+                <Ionicons name="refresh" size={20} color={HOME_COLORS.gold} />
               </View>
               <View style={styles.stepContent}>
                 <Text style={styles.stepTitle}>Stay Synced</Text>
@@ -578,7 +580,7 @@ export default function ValueScreen() {
 
             <View style={styles.stepItem}>
               <View style={styles.stepIcon}>
-                <Ionicons name="add-circle" size={20} color="#fbbf24" />
+                <Ionicons name="add-circle" size={20} color={HOME_COLORS.gold} />
               </View>
               <View style={styles.stepContent}>
                 <Text style={styles.stepTitle}>Track Upgrades</Text>
@@ -596,12 +598,12 @@ export default function ValueScreen() {
           style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
         >
           <Text style={styles.ctaText}>Continue</Text>
-          <Ionicons name="arrow-forward" size={20} color="#0f172a" />
+          <Ionicons name="arrow-forward" size={20} color={HOME_COLORS.textDark} />
         </Pressable>
 
         {/* 💡 Tip */}
         <View style={styles.tipCard}>
-          <Ionicons name="bulb" size={16} color="#fbbf24" />
+          <Ionicons name="bulb" size={16} color={HOME_COLORS.gold} />
           <Text style={styles.tipText}>
             Tip: Add this app to your home screen for quick access
           </Text>
@@ -614,7 +616,7 @@ export default function ValueScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#0f172a",
+    backgroundColor: HOME_COLORS.background,
   },
 
   container: {
@@ -641,7 +643,7 @@ const styles = StyleSheet.create({
 
   dataSourceText: {
     fontSize: 13,
-    color: "#22c55e",
+    color: HOME_COLORS.success,
     fontWeight: "600",
   },
 
@@ -663,25 +665,30 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 32,
     fontWeight: "800",
-    color: "#f1f5f9",
+    color: HOME_COLORS.textPrimary,
     marginBottom: 8,
     letterSpacing: -0.5,
   },
 
   successSubtitle: {
     fontSize: 16,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontWeight: "500",
   },
 
   // Profile Card
   profileCard: {
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surface,
     borderRadius: 20,
     padding: 20,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: "rgba(251,191,36,0.28)",
+    shadowColor: HOME_COLORS.gold,
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 3,
   },
 
   profileHeader: {
@@ -700,7 +707,7 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#f1f5f9",
+    color: HOME_COLORS.textPrimary,
   },
 
   leagueIcon: {
@@ -713,7 +720,7 @@ const styles = StyleSheet.create({
     gap: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: "#334155",
+    borderTopColor: HOME_COLORS.slateMuted,
   },
 
   statItem: {
@@ -740,24 +747,29 @@ const styles = StyleSheet.create({
 
   statText: {
     fontSize: 10,
-    color: "#cbd5e1",
+    color: HOME_COLORS.textSecondary,
     fontWeight: "600",
   },
 
   playerTag: {
     marginTop: 10,
     fontSize: 12,
-    color: "#64748b",
+    color: HOME_COLORS.textMuted,
     fontWeight: "500",
   },
 
   statusCard: {
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surface,
     borderRadius: 20,
     padding: 20,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: HOME_COLORS.borderStrong,
+    shadowColor: HOME_COLORS.gold,
+    shadowOpacity: 0.09,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
 
   statusHeader: {
@@ -770,12 +782,12 @@ const styles = StyleSheet.create({
   statusTitleMain: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#f1f5f9",
+    color: HOME_COLORS.textPrimary,
   },
 
   statusSubText: {
     fontSize: 10,
-    color: "#64748b",
+    color: HOME_COLORS.textMuted,
     marginTop: 2,
     fontWeight: "500",
   },
@@ -784,7 +796,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#334155",
+    backgroundColor: HOME_COLORS.slateMuted,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -794,12 +806,12 @@ const styles = StyleSheet.create({
 
   infoText: {
     fontSize: 11,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontWeight: "600",
   },
 
   builderCount: {
-    backgroundColor: "#fbbf24",
+    backgroundColor: HOME_COLORS.gold,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
@@ -808,7 +820,7 @@ const styles = StyleSheet.create({
   builderCountText: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#0f172a",
+    color: HOME_COLORS.textDark,
   },
 
   statusContent: {
@@ -852,18 +864,18 @@ const styles = StyleSheet.create({
   statusTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#f1f5f9",
+    color: HOME_COLORS.textPrimary,
   },
 
   statusTime: {
     fontSize: 24,
     fontWeight: "800",
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
   },
 
   statusMessage: {
     fontSize: 13,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontWeight: "500",
   },
 
@@ -880,26 +892,31 @@ const styles = StyleSheet.create({
   },
 
   builderDotFree: {
-    backgroundColor: "#22c55e",
+    backgroundColor: HOME_COLORS.success,
   },
 
   builderDotBusy: {
-    backgroundColor: "#475569",
+    backgroundColor: HOME_COLORS.slate,
   },
 
   liveCard: {
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surface,
     borderRadius: 20,
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: "rgba(56,189,248,0.24)",
+    shadowColor: HOME_COLORS.blue,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
 
   liveTitle: {
     fontSize: 14,
-    fontWeight: "700",
-    color: "#f1f5f9",
+    fontWeight: "800",
+    color: HOME_COLORS.blue,
     marginBottom: 12,
   },
 
@@ -927,26 +944,31 @@ const styles = StyleSheet.create({
   liveName: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#e2e8f0",
+    color: HOME_COLORS.textPrimary,
   },
 
   liveTime: {
     fontSize: 12,
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
   },
   nextStepsCard: {
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surface,
     borderRadius: 20,
     padding: 20,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: "rgba(52,211,153,0.24)",
+    shadowColor: HOME_COLORS.emerald,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
 
   nextStepsTitle: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#f1f5f9",
+    fontWeight: "800",
+    color: HOME_COLORS.emerald,
     marginBottom: 16,
   },
 
@@ -976,25 +998,25 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#f1f5f9",
+    color: HOME_COLORS.textPrimary,
   },
 
   stepDescription: {
     fontSize: 13,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     lineHeight: 18,
   },
 
   // CTA Button
   cta: {
     flexDirection: "row",
-    backgroundColor: "#fbbf24",
+    backgroundColor: HOME_COLORS.gold,
     paddingVertical: 18,
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    shadowColor: "#fbbf24",
+    shadowColor: HOME_COLORS.gold,
     shadowOpacity: 0.3,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
@@ -1010,7 +1032,7 @@ const styles = StyleSheet.create({
   ctaText: {
     fontSize: 17,
     fontWeight: "700",
-    color: "#0f172a",
+    color: HOME_COLORS.textDark,
   },
 
   // Tip Card
@@ -1029,7 +1051,7 @@ const styles = StyleSheet.create({
 
   tipText: {
     fontSize: 13,
-    color: "#cbd5e1",
+    color: HOME_COLORS.textSecondary,
     fontWeight: "500",
     textAlign: "center",
   },

@@ -1,4 +1,5 @@
 import { ENV } from "@/config/env";
+import { HOME_COLORS } from "@/theme/home";
 import { requestGalleryPermission } from "@/services/images/imagePicker";
 import { convertImagesToBase64 } from "@/services/images/supportAttachmentService";
 import { track } from "@/utils/analytics/analytics";
@@ -142,7 +143,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                 <Text style={styles.title}>Support & Feedback</Text>
 
                 <Pressable onPress={onClose} hitSlop={12}>
-                  <Ionicons name="close" size={24} color="#94a3b8" />
+                  <Ionicons name="close" size={24} color={HOME_COLORS.textSecondary} />
                 </Pressable>
               </View>
 
@@ -178,7 +179,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
               value={subject}
               onChangeText={setSubject}
               placeholder="Short summary"
-              placeholderTextColor="#64748b"
+              placeholderTextColor={HOME_COLORS.textMuted}
               style={styles.input}
             /> */}
 
@@ -191,7 +192,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                 autoCapitalize="none"
                 autoCorrect={false}
                 placeholder="you@example.com"
-                placeholderTextColor="#64748b"
+                placeholderTextColor={HOME_COLORS.textMuted}
                 style={styles.input}
               />
 
@@ -202,12 +203,12 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                 value={message}
                 onChangeText={setMessage}
                 placeholder="Describe the issue or feedback..."
-                placeholderTextColor="#64748b"
+                placeholderTextColor={HOME_COLORS.textMuted}
                 style={styles.messageInput}
               />
               <Text
                 style={{
-                  color: "#64748b",
+                  color: HOME_COLORS.textMuted,
                   fontSize: 12,
                   marginTop: 6,
                   textAlign: "right",
@@ -219,7 +220,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
               {message.trim().length > 0 && (
                 <Text
                   style={{
-                    color: message.trim().length < 10 ? "#f59e0b" : "#22c55e",
+                    color: message.trim().length < 10 ? HOME_COLORS.orange : HOME_COLORS.success,
                     fontSize: 12,
                     marginTop: 4,
                     textAlign: "right",
@@ -238,7 +239,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                 onPress={pickImages}
                 disabled={attachments.length >= 3}
               >
-                <Ionicons name="image-outline" size={18} color="#fbbf24" />
+                <Ionicons name="image-outline" size={18} color={HOME_COLORS.gold} />
 
                 <Text style={styles.attachText}>
                   {attachments.length >= 3
@@ -273,7 +274,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                           )
                         }
                       >
-                        <Ionicons name="close" size={12} color="#fff" />
+                        <Ionicons name="close" size={12} color={HOME_COLORS.white} />
                       </Pressable>
                     </View>
                   ))}
@@ -295,7 +296,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                   <Ionicons
                     name={includeDebugInfo ? "checkbox" : "square-outline"}
                     size={22}
-                    color="#fbbf24"
+                    color={HOME_COLORS.gold}
                   />
 
                   <Text style={styles.checkboxText}>
@@ -310,7 +311,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                   <Ionicons
                     name="document-text-outline"
                     size={18}
-                    color="#fbbf24"
+                    color={HOME_COLORS.gold}
                   />
 
                   <Text style={styles.debugText}>
@@ -322,7 +323,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                   style={styles.debugButton}
                   onPress={() => Clipboard.setStringAsync(debugInfo)}
                 >
-                  <Ionicons name="copy-outline" size={18} color="#fbbf24" />
+                  <Ionicons name="copy-outline" size={18} color={HOME_COLORS.gold} />
 
                   <Text style={styles.debugText}>
                     Copy Diagnostic Information
@@ -337,7 +338,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                 <Ionicons
                   name={consentGiven ? "checkbox" : "square-outline"}
                   size={22}
-                  color="#fbbf24"
+                  color={HOME_COLORS.gold}
                 />
 
                 <Text style={styles.checkboxText}>
@@ -395,7 +396,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                   marginTop: 24,
                   paddingTop: 20,
                   borderTopWidth: 1,
-                  borderTopColor: "#1e293b",
+                  borderTopColor: HOME_COLORS.surfaceRaised,
                 }}
               >
                 <Text style={styles.aboutTitle}>Clash One</Text>
@@ -406,7 +407,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
 
                 <Text
                   style={{
-                    color: "#64748b",
+                    color: HOME_COLORS.textMuted,
                     fontSize: 11,
                     marginTop: 4,
                   }}
@@ -415,7 +416,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                 </Text>
                 <Text
                   style={{
-                    color: "#64748b",
+                    color: HOME_COLORS.textMuted,
                     fontSize: 10,
                     marginTop: 4,
                   }}
@@ -464,7 +465,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
             <Text style={styles.title}>Diagnostic Information</Text>
 
             <Pressable onPress={() => setShowDebugInfo(false)}>
-              <Ionicons name="close" size={24} color="#94a3b8" />
+              <Ionicons name="close" size={24} color={HOME_COLORS.textSecondary} />
             </Pressable>
           </View>
           <ScrollView>
@@ -475,7 +476,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
             style={styles.debugButton}
             onPress={() => Clipboard.setStringAsync(debugInfo)}
           >
-            <Ionicons name="copy-outline" size={18} color="#fbbf24" />
+            <Ionicons name="copy-outline" size={18} color={HOME_COLORS.gold} />
 
             <Text style={styles.debugText}>Copy Diagnostic Information</Text>
           </Pressable>
@@ -493,13 +494,20 @@ const styles = StyleSheet.create({
   },
 
   container: {
-    backgroundColor: "#0f172a",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    height: "85%",
+    backgroundColor: HOME_COLORS.background,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    height: "88%",
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 22,
     paddingBottom: 32,
+    borderWidth: 1,
+    borderColor: HOME_COLORS.border,
+    shadowColor: HOME_COLORS.black,
+    shadowOpacity: 0.24,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: -5 },
+    elevation: 12,
   },
 
   header: {
@@ -511,29 +519,32 @@ const styles = StyleSheet.create({
 
   title: {
     fontSize: 24,
-    fontWeight: "800",
-    color: "#fbbf24",
+    fontWeight: "900",
+    color: HOME_COLORS.gold,
+    letterSpacing: -0.4,
+    flexShrink: 1,
+    marginRight: 12,
   },
 
   label: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#cbd5e1",
+    color: HOME_COLORS.textSecondary,
     marginBottom: 8,
     marginTop: 16,
   },
 
   privacyCard: {
     marginTop: 8,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: "#111827",
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: HOME_COLORS.surface,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: HOME_COLORS.border,
   },
 
   privacyText: {
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontSize: 13,
     lineHeight: 20,
   },
@@ -544,22 +555,22 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 18,
     padding: 14,
-    borderRadius: 12,
-    backgroundColor: "#111827",
+    borderRadius: 14,
+    backgroundColor: HOME_COLORS.surface,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: HOME_COLORS.border,
   },
 
   checkboxText: {
     flex: 1,
-    color: "#cbd5e1",
+    color: HOME_COLORS.textSecondary,
     fontSize: 13,
     lineHeight: 20,
   },
 
   debugContainer: {
     flex: 1,
-    backgroundColor: "#0f172a",
+    backgroundColor: HOME_COLORS.background,
     paddingHorizontal: 20,
     paddingTop: 56,
     paddingBottom: 24,
@@ -576,11 +587,11 @@ const styles = StyleSheet.create({
     marginTop: 18,
     padding: 14,
     borderRadius: 12,
-    backgroundColor: "#111827",
+    backgroundColor: HOME_COLORS.surfaceDark,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: HOME_COLORS.surfaceRaised,
 
-    color: "#cbd5e1",
+    color: HOME_COLORS.textSecondary,
     fontSize: 12,
     lineHeight: 18,
     fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
@@ -599,20 +610,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
 
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: HOME_COLORS.borderStrong,
 
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
   },
 
   attachText: {
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
     fontSize: 13,
     fontWeight: "600",
   },
 
   attachmentCount: {
     marginTop: 8,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontSize: 12,
     textAlign: "center",
   },
@@ -638,57 +649,57 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: "#ef4444",
+    backgroundColor: HOME_COLORS.danger,
     alignItems: "center",
     justifyContent: "center",
     zIndex: 10,
     borderWidth: 2,
-    borderColor: "#0f172a",
+    borderColor: HOME_COLORS.background,
   },
 
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
     marginRight: 10,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: HOME_COLORS.borderStrong,
   },
 
   chipActive: {
-    backgroundColor: "#fbbf24",
-    borderColor: "#fbbf24",
+    backgroundColor: HOME_COLORS.gold,
+    borderColor: HOME_COLORS.gold,
   },
 
   chipText: {
-    color: "#cbd5e1",
+    color: HOME_COLORS.textSecondary,
     fontSize: 12,
     fontWeight: "600",
   },
 
   chipTextActive: {
-    color: "#0f172a",
+    color: HOME_COLORS.background,
     fontWeight: "700",
   },
 
   input: {
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#334155",
-    color: "#f8fafc",
+    borderColor: HOME_COLORS.borderStrong,
+    color: HOME_COLORS.textBright,
     paddingHorizontal: 14,
     paddingVertical: 14,
     fontSize: 14,
   },
 
   messageInput: {
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#334155",
-    color: "#f8fafc",
+    borderColor: HOME_COLORS.borderStrong,
+    color: HOME_COLORS.textBright,
     paddingHorizontal: 14,
     paddingTop: 14,
     minHeight: 140,
@@ -706,14 +717,14 @@ const styles = StyleSheet.create({
   },
 
   guidelineTitle: {
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
     fontWeight: "700",
     fontSize: 13,
     marginBottom: 8,
   },
 
   guidelineText: {
-    color: "#cbd5e1",
+    color: HOME_COLORS.textSecondary,
     fontSize: 12,
     lineHeight: 18,
     marginBottom: 4,
@@ -728,26 +739,31 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#334155",
-    backgroundColor: "#1e293b",
+    borderColor: HOME_COLORS.borderStrong,
+    backgroundColor: HOME_COLORS.surfaceRaised,
   },
 
   debugText: {
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
     fontSize: 13,
     fontWeight: "600",
   },
 
   sendButton: {
     marginTop: 20,
-    backgroundColor: "#fbbf24",
+    backgroundColor: HOME_COLORS.gold,
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
+    shadowColor: HOME_COLORS.gold,
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
 
   sendText: {
-    color: "#0f172a",
+    color: HOME_COLORS.background,
     fontSize: 15,
     fontWeight: "800",
   },
@@ -759,7 +775,7 @@ const styles = StyleSheet.create({
   },
 
   cancelText: {
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontSize: 14,
     fontWeight: "600",
   },
@@ -767,12 +783,12 @@ const styles = StyleSheet.create({
   aboutTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
   },
 
   aboutVersion: {
     fontSize: 12,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontWeight: "600",
   },
 });

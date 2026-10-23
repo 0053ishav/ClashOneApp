@@ -1,4 +1,5 @@
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { HOME_COLORS } from "@/theme/home";
 import {
   GoldPassBoostButton,
   GoldPassBoostQuickPanel,
@@ -81,8 +82,8 @@ import {
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
-const GOLD = "#fbbf24";
-const RED = "#ef4444";
+const GOLD = HOME_COLORS.gold;
+const RED = HOME_COLORS.danger;
 const MIN_BUILDERS = 1;
 const MAX_BUILDERS = 6;
 
@@ -327,8 +328,7 @@ export default function SettingsScreen() {
     useState<GoldPassBoostSettings | null>(null);
   const [isLoadingGoldPassSettings, setIsLoadingGoldPassSettings] =
     useState(false);
-  const [goldPassSettingsLoadFailed, setGoldPassSettingsLoadFailed] =
-    useState(false);
+  const [goldPassSettingsLoadFailed, setGoldPassSettingsLoadFailed] =    useState(false);
   const [isSavingGoldPassSettings, setIsSavingGoldPassSettings] =
     useState(false);
   const goldPassLoadRequestRef = useRef(0);
@@ -657,8 +657,7 @@ export default function SettingsScreen() {
       source: "settings",
     });
 
-    if (value) {
-      const granted = await requestNotificationPermissions();
+    if (value) {      const granted = await requestNotificationPermissions();
       if (!granted) {
         setNotificationsEnabled(false);
         setLocalNotificationsEnabled(false);
@@ -725,7 +724,7 @@ export default function SettingsScreen() {
             title="Magic Items"
             subtitle="Track potions, snacks, books and hammers"
             leading={
-              <View style={[styles.iconChip, { backgroundColor: "#fbbf2426" }]}>
+              <View style={[styles.iconChip, { backgroundColor: `${HOME_COLORS.gold}26` }]}>
                 <Image
                   source={{ uri: `${ENV.CDN_BASE}/v2/home/other/magic-inventory.png` }}
                   style={{ width: 24, height: 24 }}
@@ -987,8 +986,7 @@ export default function SettingsScreen() {
                     <Text style={[styles.avatarText, { color: acc.color }]}>
                       {acc.name.slice(0, 2).toUpperCase()}
                     </Text>
-                    <View style={styles.editBadge}>
-                      <Ionicons name="pencil" size={8} color="#0f172a" />
+                    <View style={styles.editBadge}>                      <Ionicons name="pencil" size={8} color="#0f172a" />
                     </View>
                   </Pressable>
                 }
@@ -1183,8 +1181,7 @@ export default function SettingsScreen() {
         {/* ── Footer ── */}
         <View style={styles.footer}>
           <Text style={styles.footerTitle}>
-            Clash One{" "}
-            <Text style={styles.footerVersion}>
+            Clash One <Text style={styles.footerVersion}>
               v{Application.nativeApplicationVersion}
             </Text>
           </Text>
@@ -1317,8 +1314,7 @@ export default function SettingsScreen() {
         title="Clear All Upgrades?"
         message="This will remove all tracked upgrades but keep your village."
         confirmText="Clear"
-        destructive
-        onCancel={() => setShowClearUpgradesModal(false)}
+        destructive        onCancel={() => setShowClearUpgradesModal(false)}
         onConfirm={async () => {
           if (!activeTag) return;
 
@@ -1386,7 +1382,7 @@ Reduce builders only after some upgrades complete.`}
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#0f172a",
+    backgroundColor: HOME_COLORS.background,
   },
 
   scrollContent: {
@@ -1405,7 +1401,7 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    color: GOLD,
+    color: HOME_COLORS.gold,
     fontSize: 28,
     fontWeight: "800",
     letterSpacing: -0.6,
@@ -1419,7 +1415,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     marginBottom: 6,
     marginHorizontal: 20,
   },
@@ -1427,23 +1423,23 @@ const styles = StyleSheet.create({
   sectionFooter: {
     fontSize: 12,
     lineHeight: 16,
-    color: "#64748b",
+    color: HOME_COLORS.textMuted,
     marginTop: 6,
     marginHorizontal: 20,
   },
 
   group: {
     marginHorizontal: 16,
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: HOME_COLORS.border,
     overflow: "hidden",
   },
 
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "#334155",
+    backgroundColor: HOME_COLORS.borderMuted,
     marginLeft: 58, // 14 padding + 32 icon + 12 gap
   },
 
@@ -1458,7 +1454,7 @@ const styles = StyleSheet.create({
   },
 
   rowPressed: {
-    backgroundColor: "rgba(255, 255, 255, 0.04)",
+    backgroundColor: "rgba(255, 255, 255, 0.035)",
   },
   activeVillageActions: {
     flexDirection: "row",
@@ -1489,18 +1485,18 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     fontSize: 15,
     fontWeight: "600",
-    color: "#f1f5f9",
+    color: HOME_COLORS.textPrimary,
   },
 
   rowSubtitle: {
     fontSize: 12,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontWeight: "500",
   },
 
   rowValue: {
     fontSize: 13,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontWeight: "600",
   },
 
@@ -1532,7 +1528,7 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
     borderWidth: 2,
-    borderColor: "#1e293b",
+    borderColor: HOME_COLORS.surface,
   },
 
   chiefPill: {
@@ -1569,14 +1565,14 @@ const styles = StyleSheet.create({
   connectButtonText: {
     fontSize: 13,
     fontWeight: "700",
-    color: GOLD,
+    color: HOME_COLORS.gold,
   },
 
   // ── Stepper ─────────────────────────────────────────────
   stepper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#0f172a",
+    backgroundColor: HOME_COLORS.background,
     borderRadius: 10,
     padding: 3,
   },
@@ -1585,7 +1581,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 8,
-    backgroundColor: "#334155",
+    backgroundColor: HOME_COLORS.borderMuted,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1599,7 +1595,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 15,
     fontWeight: "800",
-    color: "#f1f5f9",
+    color: HOME_COLORS.textPrimary,
   },
 
   // ── Villages ────────────────────────────────────────────
@@ -1608,7 +1604,7 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     borderWidth: 2,
-    backgroundColor: "#0f172a",
+    backgroundColor: HOME_COLORS.background,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1625,11 +1621,11 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 4,
-    backgroundColor: "#fbbf24",
+    backgroundColor: HOME_COLORS.gold,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1.5,
-    borderColor: "#1e293b",
+    borderColor: HOME_COLORS.surface,
   },
 
   activePill: {
@@ -1648,12 +1644,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
   },
-
   iconButton: {
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: "#0f172a",
+    backgroundColor: HOME_COLORS.background,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1685,7 +1680,7 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 11,
     lineHeight: 16,
-    color: "#64748b",
+    color: HOME_COLORS.textMuted,
     textAlign: "center",
   },
 
@@ -1700,11 +1695,11 @@ const styles = StyleSheet.create({
   },
 
   sheet: {
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
-    borderColor: "#334155",
+    borderColor: HOME_COLORS.border,
     paddingHorizontal: 24,
     paddingTop: 12,
   },
@@ -1713,7 +1708,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     width: 40,
     height: 4,
-    backgroundColor: "#475569",
+    backgroundColor: HOME_COLORS.slate,
     borderRadius: 2,
     marginBottom: 18,
   },
@@ -1747,6 +1742,6 @@ const styles = StyleSheet.create({
 
   colorSwatchActive: {
     borderWidth: 3,
-    borderColor: "#f8fafc",
+    borderColor: HOME_COLORS.textBright,
   },
 });

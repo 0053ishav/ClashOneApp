@@ -1,3 +1,4 @@
+import { HOME_COLORS } from "@/theme/home";
 import { fetchFullPlayer } from "@/services/clashApi";
 import { useAccountStore } from "@/stores/accountStore";
 import { PlayerFull } from "@/types/playerFull";
@@ -146,7 +147,7 @@ export default function AchievementsScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#fbbf24" />
+        <ActivityIndicator size="large" color={HOME_COLORS.gold} />
       </View>
     );
   }
@@ -181,7 +182,7 @@ export default function AchievementsScreen() {
           <>
             <View style={styles.header}>
               <Pressable onPress={() => router.back()}>
-                <Ionicons name="chevron-back" size={24} color="#fbbf24" />
+                <Ionicons name="chevron-back" size={24} color={HOME_COLORS.gold} />
               </Pressable>
 
               <Text style={styles.headerTitle}>Achievements</Text>
@@ -190,11 +191,11 @@ export default function AchievementsScreen() {
             </View>
 
             <View style={styles.searchContainer}>
-              <Ionicons name="search" size={16} color="#64748b" />
+              <Ionicons name="search" size={16} color={HOME_COLORS.textMuted} />
 
               <TextInput
                 placeholder="Search achievements..."
-                placeholderTextColor="#64748b"
+                placeholderTextColor={HOME_COLORS.textMuted}
                 value={search}
                 onChangeText={setSearch}
                 style={styles.searchInput}
@@ -207,7 +208,7 @@ export default function AchievementsScreen() {
                   accessibilityRole="button"
                   onPress={() => setSearch("")}
                 >
-                  <Ionicons name="close-circle" size={18} color="#64748b" />
+                  <Ionicons name="close-circle" size={18} color={HOME_COLORS.textMuted} />
                 </Pressable>
               )}
             </View>
@@ -289,7 +290,7 @@ export default function AchievementsScreen() {
                     <Ionicons
                       name={filter.icon as any}
                       size={14}
-                      color={active ? "#fbbf24" : "#64748b"}
+                      color={active ? HOME_COLORS.gold : HOME_COLORS.textMuted}
                     />
 
                     <Text
@@ -318,11 +319,11 @@ export default function AchievementsScreen() {
               paddingVertical: 40,
             }}
           >
-            <Ionicons name="search" size={40} color="#64748b" />
+            <Ionicons name="search" size={40} color={HOME_COLORS.textMuted} />
 
             <Text
               style={{
-                color: "#94a3b8",
+                color: HOME_COLORS.textSecondary,
                 marginTop: 10,
               }}
             >
@@ -369,7 +370,7 @@ const AchievementCard = React.memo(function AchievementCard({
               key={i}
               name={i <= achievement.stars ? "star" : "star-outline"}
               size={15}
-              color="#fbbf24"
+              color={HOME_COLORS.gold}
             />
           ))}
         </View>
@@ -402,7 +403,7 @@ const AchievementCard = React.memo(function AchievementCard({
 
       {completed && (
         <View style={styles.completedBadge}>
-          <Ionicons name="checkmark-circle" size={14} color="#22c55e" />
+          <Ionicons name="checkmark-circle" size={14} color={HOME_COLORS.success} />
 
           <Text style={styles.completedBadgeText}>Completed</Text>
         </View>
@@ -414,7 +415,7 @@ const AchievementCard = React.memo(function AchievementCard({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f172a",
+    backgroundColor: HOME_COLORS.background,
   },
 
   villageBadge: {
@@ -425,12 +426,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
 
-    borderRadius: 999,
+    borderRadius: 6,
     marginTop: 6,
+    borderWidth: 1,
+    borderColor: HOME_COLORS.border,
   },
 
   villageBadgeText: {
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontSize: 11,
     fontWeight: "600",
   },
@@ -455,7 +458,7 @@ const styles = StyleSheet.create({
   },
 
   progressBadgeText: {
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
     fontSize: 11,
     fontWeight: "700",
   },
@@ -470,7 +473,7 @@ const styles = StyleSheet.create({
 
   progressFill: {
     height: "100%",
-    backgroundColor: "#fbbf24",
+    backgroundColor: HOME_COLORS.gold,
     borderRadius: 999,
   },
 
@@ -489,7 +492,7 @@ const styles = StyleSheet.create({
   },
 
   completedBadgeText: {
-    color: "#22c55e",
+    color: HOME_COLORS.success,
     fontSize: 12,
     fontWeight: "600",
   },
@@ -497,7 +500,7 @@ const styles = StyleSheet.create({
   center: {
     flex: 1,
     justifyContent: "center",
-    backgroundColor: "#0f172a",
+    backgroundColor: HOME_COLORS.background,
   },
 
   scrollContent: {
@@ -509,22 +512,24 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 18,
+    marginBottom: 14,
   },
 
   headerTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
     letterSpacing: -0.4,
   },
 
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#111827",
-    borderRadius: 12,
-    paddingHorizontal: 14,
+    backgroundColor: HOME_COLORS.surface,
+    borderWidth: 1,
+    borderColor: HOME_COLORS.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
     paddingVertical: 12,
     marginBottom: 12,
     gap: 10,
@@ -532,7 +537,7 @@ const styles = StyleSheet.create({
 
   searchInput: {
     flex: 1,
-    color: "#f8fafc",
+    color: HOME_COLORS.textBright,
     fontSize: 14,
     fontWeight: "500",
   },
@@ -551,7 +556,9 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: "#111827",
+    backgroundColor: HOME_COLORS.surface,
+    borderWidth: 1,
+    borderColor: HOME_COLORS.border,
   },
 
   filterButtonActive: {
@@ -561,49 +568,49 @@ const styles = StyleSheet.create({
   filterButtonText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#64748b",
+    color: HOME_COLORS.textMuted,
   },
 
   filterButtonTextActive: {
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
   },
   summaryCard: {
-    backgroundColor: "#111827",
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 16,
+    backgroundColor: HOME_COLORS.surface,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 14,
 
     borderWidth: 1,
-    borderColor: "#1f2937",
+    borderColor: HOME_COLORS.border,
   },
 
   summaryTitle: {
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontSize: 12,
   },
 
   summaryValue: {
-    color: "#fff",
+    color: HOME_COLORS.white,
     fontSize: 28,
     fontWeight: "700",
     marginTop: 4,
   },
 
   summaryPercent: {
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
     marginTop: 8,
     fontWeight: "600",
   },
 
   resultsText: {
-    color: "#64748b",
+    color: HOME_COLORS.textMuted,
     fontSize: 12,
     fontWeight: "600",
     marginBottom: 12,
   },
 
   progressText: {
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
     fontWeight: "700",
     fontSize: 12,
   },
@@ -613,7 +620,7 @@ const styles = StyleSheet.create({
   },
 
   dropdownLabel: {
-    color: "#64748b",
+    color: HOME_COLORS.textMuted,
     fontSize: 11,
     fontWeight: "700",
     textTransform: "uppercase",
@@ -621,10 +628,12 @@ const styles = StyleSheet.create({
   },
 
   villageChip: {
-    backgroundColor: "#111827",
+    backgroundColor: HOME_COLORS.surface,
+    borderWidth: 1,
+    borderColor: HOME_COLORS.border,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 999,
+    borderRadius: 8,
   },
 
   villageChipActive: {
@@ -632,24 +641,24 @@ const styles = StyleSheet.create({
   },
 
   villageChipText: {
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontSize: 12,
     fontWeight: "600",
   },
 
   villageChipTextActive: {
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
   },
 
   bigNumber: {
-    color: "#fff",
+    color: HOME_COLORS.white,
     fontSize: 32,
     fontWeight: "800",
     marginTop: 8,
   },
 
   percent: {
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
     marginBottom: 12,
     fontWeight: "700",
   },
@@ -664,29 +673,21 @@ const styles = StyleSheet.create({
 
   fill: {
     height: "100%",
-    backgroundColor: "#fbbf24",
+    backgroundColor: HOME_COLORS.gold,
     borderRadius: 999,
   },
 
   starText: {
-    color: "#cbd5e1",
+    color: HOME_COLORS.textSecondary,
     marginTop: 10,
   },
 
   card: {
-    backgroundColor: "#1e293b",
-    borderRadius: 16,
+    backgroundColor: HOME_COLORS.surfaceRaised,
+    borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#334155",
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    elevation: 3,
+    borderColor: HOME_COLORS.border,
   },
 
   cardTop: {
@@ -695,13 +696,13 @@ const styles = StyleSheet.create({
   },
 
   name: {
-    color: "#f8fafc",
+    color: HOME_COLORS.textBright,
     fontWeight: "700",
     fontSize: 14,
   },
 
   info: {
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     marginTop: 4,
     marginBottom: 6,
     fontSize: 12,
@@ -709,7 +710,7 @@ const styles = StyleSheet.create({
   },
 
   completionInfo: {
-    color: "#64748b",
+    color: HOME_COLORS.textMuted,
     fontSize: 12,
     marginTop: 8,
   },

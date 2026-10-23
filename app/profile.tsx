@@ -1,5 +1,6 @@
 import ArmySection from "@/components/Profile/ArmySection";
-import BattleStatsGrid from "@/components/Profile/BattleStatsGrid";
+import { HOME_COLORS } from "@/theme/home";
+import StatsGrid from "@/components/Profile/StatsGrid";
 import ProfileHeroCard from "@/components/Profile/ProfileHeroCard";
 import ProgressSection from "@/components/Profile/ProgressSection";
 import { fetchFullPlayer } from "@/services/clashApi";
@@ -91,7 +92,7 @@ export default function ProfileScreen() {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <View style={styles.loadingWrapper}>
-          <ActivityIndicator size={44} color="#fbbf24" />
+          <ActivityIndicator size={44} color={HOME_COLORS.gold} />
           <Text style={styles.loadingText}>Loading profile…</Text>
         </View>
       </View>
@@ -102,7 +103,7 @@ export default function ProfileScreen() {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <View style={styles.errorIcon}>
-          <Ionicons name="alert-circle" size={32} color="#ef4444" />
+          <Ionicons name="alert-circle" size={32} color={HOME_COLORS.danger} />
         </View>
         <Text style={styles.errorTitle}>Couldn&apos;t load profile</Text>
         <Text style={styles.errorText}>
@@ -116,7 +117,7 @@ export default function ProfileScreen() {
             pressed && styles.pressed,
           ]}
         >
-          <Ionicons name="refresh" size={15} color="#0f172a" />
+          <Ionicons name="refresh" size={15} color={HOME_COLORS.textDark} />
           <Text style={styles.retryButtonText}>Try again</Text>
         </Pressable>
       </View>
@@ -140,7 +141,7 @@ export default function ProfileScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#fbbf24"
+            tintColor={HOME_COLORS.gold}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -155,7 +156,7 @@ export default function ProfileScreen() {
               pressed && styles.pressed,
             ]}
           >
-            <Ionicons name="chevron-back" size={20} color="#f8fafc" />
+            <Ionicons name="chevron-back" size={20} color={HOME_COLORS.textBright} />
           </Pressable>
 
           <Text style={styles.headerTitle}>Profile</Text>
@@ -164,14 +165,48 @@ export default function ProfileScreen() {
         </View>
 
         <ProfileHeroCard data={data} helpers={helpers} guardians={guardians} />
-        <BattleStatsGrid data={data} />
+        <StatsGrid
+          title="Battle stats"
+          stats={[
+            {
+              icon: "star",
+              label: "War stars",
+              value: data.warStars,
+              highlight: true,
+            },
+            {
+              icon: "flame",
+              label: "Attacks won",
+              value: data.attackWins,
+              color: HOME_COLORS.orange,
+            },
+            {
+              icon: "shield-checkmark",
+              label: "Defenses won",
+              value: data.defenseWins,
+              color: HOME_COLORS.cyan,
+            },
+            {
+              icon: "arrow-up",
+              label: "Donated",
+              value: data.donations,
+              color: HOME_COLORS.success,
+            },
+            {
+              icon: "arrow-down",
+              label: "Received",
+              value: data.donationsReceived,
+              color: HOME_COLORS.blue,
+            },
+          ]}
+        />
 
         <ArmySection data={data} />
 
         <ProgressSection data={data} />
 
         <View style={styles.footer}>
-          <Ionicons name="checkmark-circle" size={13} color="#22c55e" />
+          <Ionicons name="checkmark-circle" size={13} color={HOME_COLORS.success} />
           <Text style={styles.footerText}>Synced from Clash of Clans API</Text>
         </View>
       </ScrollView>
@@ -182,7 +217,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f172a",
+    backgroundColor: HOME_COLORS.background,
   },
 
   centerContent: {
@@ -216,9 +251,9 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 11,
-    backgroundColor: "#111c2e",
+    backgroundColor: HOME_COLORS.surface,
     borderWidth: 1,
-    borderColor: "#263449",
+    borderColor: HOME_COLORS.border,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -226,7 +261,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#fbbf24",
+    color: HOME_COLORS.gold,
     letterSpacing: -0.4,
   },
 
@@ -242,7 +277,7 @@ const styles = StyleSheet.create({
 
   loadingText: {
     fontSize: 14,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontWeight: "600",
   },
 
@@ -260,13 +295,13 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#f1f5f9",
+    color: HOME_COLORS.textPrimary,
     marginBottom: 5,
   },
 
   errorText: {
     fontSize: 13,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontWeight: "500",
     textAlign: "center",
   },
@@ -276,14 +311,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 7,
     marginTop: 18,
-    backgroundColor: "#fbbf24",
+    backgroundColor: HOME_COLORS.gold,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 11,
   },
 
   retryButtonText: {
-    color: "#0f172a",
+    color: HOME_COLORS.textDark,
     fontWeight: "800",
     fontSize: 13,
   },
@@ -303,7 +338,7 @@ const styles = StyleSheet.create({
 
   footerText: {
     fontSize: 11,
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
     fontWeight: "500",
   },
 });

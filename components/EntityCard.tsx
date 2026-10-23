@@ -1,3 +1,4 @@
+import { HOME_COLORS } from "@/theme/home";
 import { getUpgradeStatus } from "@/engine/progression/selectors/getUpgradeStatus";
 import { getProgressColor } from "@/utils/getProgressColor";
 import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
@@ -6,6 +7,17 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+interface EntityCardProps {
+  dataId: number;
+  name: string;
+  level: number;
+  maxLevel: number;
+  onPress?: () => void;
+  village?: Village;
+  /** Fill a FlatList column instead of using the three-column flex-wrap layout. */
+  fillContainer?: boolean;
+}
+
 export default function EntityCard({
   dataId,
   name,
@@ -13,115 +25,91 @@ export default function EntityCard({
   maxLevel,
   onPress,
   village,
-}: {
-  dataId: number;
-  name: string;
-  level: number;
-  maxLevel: number;
-  onPress?: () => void;
-  village?: Village;
-}) {
+  fillContainer = false,
+}: EntityCardProps) {
   const status = getUpgradeStatus(level, maxLevel);
   const progressColor = getProgressColor(status);
-  const progress = maxLevel > 0 ? Math.min((level / maxLevel) * 100, 100) : 0;
-  const remaining = maxLevel - level;
+  const remaining = Math.max(0, maxLevel - level);
   const isMax = status === "max";
 
-  const CardContent = (
-    <View style={[styles.card, isMax && styles.cardMaxed]}>
-      {/* Maxed Badge (top-right) */}
-      {isMax && (
-        <View style={styles.maxedBadge}>
-          <Ionicons name="checkmark" size={10} color="#0f172a" />
-        </View>
-      )}
-
-      {/* Icon Container */}
+  const content = (
+    <View style={styles.card}>
       <View
         style={[
-          styles.iconContainer,
-          { backgroundColor: `${progressColor}15` },
+          styles.artwork,
+          isMax ? styles.artworkMaxed : styles.artworkDefault,
         ]}
       >
         <Image
+          accessibilityLabel={name}
           source={{
-            uri: resolveEntityIcon(dataId, village ? { village, level } : undefined),
+            uri: resolveEntityIcon(
+              dataId,
+              village ? { village, level } : undefined,
+            ),
           }}
           style={styles.cardImage}
           contentFit="contain"
           cachePolicy="memory-disk"
         />
+
+        <View
+          style={[
+            styles.levelBadge,
+            isMax ? styles.levelBadgeMaxed : styles.levelBadgeDefault,
+          ]}
+        >
+          <Text style={[styles.levelText, isMax && styles.levelTextMaxed]}>
+            {level}
+          </Text>
+        </View>
       </View>
 
-      {/* Name */}
       <Text style={styles.cardName} numberOfLines={1}>
         {name}
       </Text>
 
-      {/* Level Display */}
-      <View style={styles.levelContainer}>
-        <Text style={[styles.levelText, { color: progressColor }]}>
-          Lv {level}
-        </Text>
-        <Text style={styles.maxLevelText}>/ {maxLevel}</Text>
-      </View>
-
-      {/* Progress Bar */}
-      {!isMax && (
-        <>
-          <View style={styles.progressBar}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${progress}%`,
-                  backgroundColor: progressColor,
-                },
-              ]}
-            />
-          </View>
-
-          {/* Remaining Badge */}
-          {remaining > 0 && (
-            <View
-              style={[
-                styles.remainingBadge,
-                { backgroundColor: `${progressColor}20` },
-              ]}
-            >
-              <Text style={[styles.remainingText, { color: progressColor }]}>
-                {remaining} left
-              </Text>
-            </View>
-          )}
-        </>
-      )}
-
-      {/* Maxed Text */}
-      {isMax && (
-        <View style={styles.maxBadge}>
-          <Ionicons name="checkmark-circle" size={12} color="#22c55e" />
-          <Text style={styles.maxText}>MAXED</Text>
+      {!isMax && remaining > 0 && (
+        <View
+          style={[
+            styles.remainingBadge,
+            { backgroundColor: `${progressColor}20` },
+          ]}
+        >
+          <Ionicons name="trending-up" size={10} color={progressColor} />
+          <Text style={[styles.remainingText, { color: progressColor }]}>
+            {remaining} left
+          </Text>
         </View>
       )}
     </View>
   );
 
-  if (onPress) {
+  if (!onPress) {
     return (
-      <Pressable
-        onPress={onPress}
-        style={({ pressed }) => [
-          styles.pressable,
-          pressed && styles.pressablePressed,
-        ]}
-      >
-        {CardContent}
-      </Pressable>
+      <View style={fillContainer ? styles.pressableFill : styles.pressable}>
+        {content}
+      </View>
     );
   }
 
-  return CardContent;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={
+        isMax
+          ? `${name}, max level ${level}`
+          : `${name}, level ${level} of ${maxLevel}, ${remaining} levels left`
+      }
+      onPress={onPress}
+      style={({ pressed }) => [
+        fillContainer ? styles.pressableFill : styles.pressable,
+        pressed && styles.pressablePressed,
+      ]}
+    >
+      {content}
+    </Pressable>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -129,129 +117,121 @@ const styles = StyleSheet.create({
     width: "31.5%",
   },
 
+  pressableFill: {
+    width: "31.5%",
+  },
+
   pressablePressed: {
-    opacity: 0.7,
+    opacity: 0.88,
   },
 
   card: {
-    width: "31%",
-    backgroundColor: "#0f172a",
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
+    width: "100%",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#334155",
     gap: 4,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    paddingBottom: 1,
   },
 
-  cardMaxed: {
-    borderColor: "#22c55e",
-    backgroundColor: "rgba(34, 197, 94, 0.05)",
-  },
-
-  maxedBadge: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "#22c55e",
-    justifyContent: "center",
+  artwork: {
+    width: "100%",
+    aspectRatio: 1,
+    maxWidth: 92,
+    position: "relative",
     alignItems: "center",
-    zIndex: 1,
-    shadowColor: "#22c55e",
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    justifyContent: "center",
+    overflow: "hidden",
+    borderRadius: 5,
+    borderWidth: 1.5,
+    backgroundColor: HOME_COLORS.surfaceRaised,
   },
 
-  iconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 4,
+  artworkDefault: {
+    borderColor: HOME_COLORS.borderStrong,
+  },
+
+  artworkMaxed: {
+    borderColor: "#FFD75E",
+    borderWidth: 2,
   },
 
   cardImage: {
-    width: 48,
-    height: 48,
+    width: "88%",
+    height: "88%",
   },
 
-  cardName: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#f1f5f9",
-    textAlign: "center",
-    width: "100%",
-    minHeight: 14,
-  },
-
-  levelContainer: {
+  levelBadge: {
+    position: "absolute",
+    left: 3,
+    bottom: 3,
+    minWidth: 20,
+    height: 18,
+    paddingHorizontal: 4,
     flexDirection: "row",
-    alignItems: "baseline",
-    gap: 3,
+    gap: 2,
+    borderRadius: 4,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.28)",
+  },
+
+  levelBadgeDefault: {
+    backgroundColor: "rgba(15,23,42,0.94)",
+    borderRadius: 3,
+    minWidth: 22,
+    height: 21,
+  },
+
+  levelBadgeMaxed: {
+    backgroundColor: "#FFD75E",
+    borderColor: "#FFD75E",
+    borderRadius: 3,
+    minWidth: 20,
+    height: 18,
+    paddingHorizontal: 3,
   },
 
   levelText: {
-    fontSize: 13,
-    fontWeight: "800",
-    letterSpacing: -0.3,
+    fontSize: 12,
+    lineHeight: 15,
+    fontWeight: "900",
+    color: HOME_COLORS.textBright,
+    fontVariant: ["tabular-nums"],
   },
 
-  maxLevelText: {
+  levelTextMaxed: {
+    color: "#111827",
     fontSize: 11,
-    fontWeight: "600",
-    color: "#64748b",
+    lineHeight: 13,
   },
 
-  progressBar: {
+
+
+  cardName: {
     width: "100%",
-    height: 4,
-    backgroundColor: "rgba(51, 65, 85, 0.5)",
-    borderRadius: 2,
-    overflow: "hidden",
-    marginTop: 2,
-  },
-
-  progressFill: {
-    height: "100%",
-    borderRadius: 2,
+    minHeight: 15,
+    textAlign: "center",
+    color: HOME_COLORS.textPrimary,
+    fontSize: 10,
+    lineHeight: 13,
+    fontWeight: "800",
   },
 
   remainingBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    marginTop: 4,
+    minHeight: 17,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    flexDirection: "row",
+    gap: 3,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   remainingText: {
-    fontSize: 10,
-    fontWeight: "700",
-  },
-
-  maxBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "rgba(34, 197, 94, 0.15)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginTop: 2,
-  },
-
-  maxText: {
-    fontSize: 10,
+    fontSize: 9,
+    lineHeight: 11,
     fontWeight: "800",
-    color: "#22c55e",
-    letterSpacing: 0.5,
+    fontVariant: ["tabular-nums"],
   },
 });

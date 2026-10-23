@@ -727,8 +727,7 @@ export function UpgradeActionModal({
               <Text style={styles.hallAvailabilityTitle}>Supercharge in progress</Text>
             </View>
             <Text style={styles.hallAvailabilityValue}>
-              Building level {upgrade.currentLevel ?? "—"} · Charge{" "}
-              {upgrade.currentSuperchargeLevel ?? 0} → {upgrade.nextSuperchargeLevel ?? "—"}
+              Building level {upgrade.currentLevel ?? "—"} · Charge {upgrade.currentSuperchargeLevel ?? 0} → {upgrade.nextSuperchargeLevel ?? "—"}
             </Text>
             {superchargeProgression && (
               <View style={styles.section}>
@@ -791,11 +790,7 @@ export function UpgradeActionModal({
 
               <View style={styles.hallAvailabilityText}>
                 <Text style={styles.hallAvailabilityLabel}>
-                  At your current{" "}
-                  {upgrade.village === "builderBase"
-                    ? "Builder Hall"
-                    : "Town Hall"}{" "}
-                  {progression.currentHallLevel ?? "—"}
+                  At your current {upgrade.village === "builderBase" ? "Builder Hall" : "Town Hall"} {progression.currentHallLevel ?? "—"}
                 </Text>
 
                 <Text style={styles.hallAvailabilityValue}>

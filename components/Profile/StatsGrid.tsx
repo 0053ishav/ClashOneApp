@@ -1,21 +1,17 @@
+import { HOME_COLORS } from "@/theme/home";
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
-const GOLD = "#fbbf24";
-const MUTED = "#64748b";
-
 export interface StatItem {
   icon: IconName;
   label: string;
   value?: string | number;
-  /** Gold tile. Overrides `color`. */
+  /** Highlights the value using the shared gold accent. */
   highlight?: boolean;
-  /** Icon tint for non-highlighted tiles. */
+  /** Icon and value tint for non-highlighted stats. */
   color?: string;
-  /** Span the full row. */
-  wide?: boolean;
 }
 
 interface StatsGridProps {
@@ -23,47 +19,39 @@ interface StatsGridProps {
   stats: StatItem[];
 }
 
+/**
+ * Shared horizontal profile-stat strip used by the profile screen and dropdown.
+ * Each stat keeps its label above its value, matching the compact game-style layout.
+ */
 export default function StatsGrid({ title = "Stats", stats }: StatsGridProps) {
-  const visible = stats.filter((s) => s.value !== undefined);
+  const visible = stats.filter((stat) => stat.value !== undefined);
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
 
-      <View style={styles.grid}>
+      <View style={styles.row}>
         {visible.map((stat) => {
-          const tint = stat.highlight ? GOLD : (stat.color ?? MUTED);
+          const tint = stat.highlight ? HOME_COLORS.gold : (stat.color ?? HOME_COLORS.textMuted);
 
           return (
-            <View
-              key={stat.label}
-              style={[
-                styles.statItem,
-                stat.wide && styles.statItemWide,
-                stat.highlight && styles.statItemHighlight,
-              ]}
-            >
-              <View style={[styles.iconChip, { backgroundColor: tint + "26" }]}>
-                <Ionicons name={stat.icon} size={17} color={tint} />
+            <View key={stat.label} style={styles.statItem}>
+              <View style={[styles.iconChip, { backgroundColor: tint + "20" }]}>
+                <Ionicons name={stat.icon} size={11} color={tint} />
               </View>
 
-              <View style={styles.textCol}>
-                <Text
-                  style={[
-                    styles.value,
-                    stat.highlight && styles.highlightValue,
-                  ]}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                >
-                  {typeof stat.value === "number"
-                    ? stat.value.toLocaleString()
-                    : stat.value}
-                </Text>
-                <Text style={styles.label} numberOfLines={1}>
-                  {stat.label}
-                </Text>
-              </View>
+              <Text style={styles.label} numberOfLines={1}>
+                {stat.label}
+              </Text>
+              <Text
+                style={[styles.value, stat.highlight && styles.highlightValue]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {typeof stat.value === "number"
+                  ? stat.value.toLocaleString()
+                  : stat.value}
+              </Text>
             </View>
           );
         })}
@@ -74,75 +62,65 @@ export default function StatsGrid({ title = "Stats", stats }: StatsGridProps) {
 
 const styles = StyleSheet.create({
   container: {
-    gap: 12,
-    marginBottom: 20,
+    gap: 8,
+    marginBottom: 14,
   },
 
   title: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "700",
-    color: "#e2e8f0",
+    color: HOME_COLORS.textPrimary,
     letterSpacing: -0.2,
     paddingHorizontal: 2,
   },
 
-  grid: {
+  row: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: 6,
   },
 
-  // flexGrow lets an odd last tile fill its row automatically
   statItem: {
-    flexGrow: 1,
-    flexBasis: "47%",
-    flexDirection: "row",
+    width: "23.5%",
+    minWidth: 0,
     alignItems: "center",
-    gap: 12,
-    backgroundColor: "#1e293b",
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    justifyContent: "center",
+    gap: 2,
+    paddingHorizontal: 4,
+    paddingVertical: 6,
+    borderRadius: 9,
+    backgroundColor: HOME_COLORS.surface,
     borderWidth: 1,
-    borderColor: "#334155",
-  },
-
-  statItemWide: {
-    flexBasis: "100%",
-  },
-
-  statItemHighlight: {
-    backgroundColor: "rgba(251, 191, 36, 0.08)",
-    borderColor: "rgba(251, 191, 36, 0.3)",
+    borderColor: HOME_COLORS.border,
   },
 
   iconChip: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    justifyContent: "center",
+    width: 20,
+    height: 20,
+    borderRadius: 6,
     alignItems: "center",
-  },
-
-  textCol: {
-    flex: 1,
-    gap: 1,
-  },
-
-  value: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#f8fafc",
-    letterSpacing: -0.4,
-  },
-
-  highlightValue: {
-    color: GOLD,
+    justifyContent: "center",
+    marginBottom: 2,
   },
 
   label: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: "#94a3b8",
+    width: "100%",
+    fontSize: 9,
+    fontWeight: "600",
+    color: HOME_COLORS.textSecondary,
+    textAlign: "center",
+  },
+
+  value: {
+    maxWidth: "100%",
+    fontSize: 13,
+    fontWeight: "800",
+    color: HOME_COLORS.textBright,
+    textAlign: "center",
+    fontVariant: ["tabular-nums"],
+  },
+
+  highlightValue: {
+    color: HOME_COLORS.gold,
   },
 });

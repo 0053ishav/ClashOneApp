@@ -1,4 +1,5 @@
 import EntitySection from "@/components/Profile/EntitySection";
+import { HOME_COLORS } from "@/theme/home";
 import type { PlayerFull, PlayerVillage } from "@/types/playerFull";
 import { parseArmy } from "@/utils/profile/parseArmy";
 import { Ionicons } from "@expo/vector-icons";
@@ -14,8 +15,8 @@ interface ArmyEntity {
   village: PlayerVillage;
 }
 
-const GOLD = "#fbbf24";
-const BUILDER = "#c084fc"; // matches Builder Base purple in ProfileHeroCard
+const GOLD = HOME_COLORS.gold;
+const BUILDER = HOME_COLORS.purpleStrong; // matches Builder Base purple in ProfileHeroCard
 const TROOP_PREVIEW_LIMIT = 6;
 
 export default function ArmySection({ data }: { data: PlayerFull }) {
@@ -134,12 +135,12 @@ function Grid({ items }: { items: ArmyEntity[] }) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#111c2e",
+    backgroundColor: HOME_COLORS.surfaceDark,
     borderRadius: 20,
     padding: 14,
     gap: 14,
     borderWidth: 1,
-    borderColor: "#263449",
+    borderColor: HOME_COLORS.borderStrong,
     marginBottom: 12,
   },
 
@@ -170,14 +171,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#f1f5f9",
+    color: HOME_COLORS.textPrimary,
     letterSpacing: -0.2,
   },
 
   total: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#94a3b8",
+    color: HOME_COLORS.textSecondary,
   },
 
   grid: {

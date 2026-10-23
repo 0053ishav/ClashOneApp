@@ -1,4 +1,5 @@
 import { MagicItemTimeSaved } from "@/components/home/MagicItemActivitySummary";
+import { ProgressionEmptyState } from "@/components/home/ProgressionEmptyState";
 import { ENV } from "@/config/env";
 import { Upgrade } from "@/types/upgrade";
 import { calculateProgress } from "@/utils/calculateProgress";
@@ -156,26 +157,12 @@ export function PetSection({
           </View>
         </Pressable>
       ) : isIdle ? (
-        <View style={styles.emptyCard}>
-          <View style={styles.emptyIconWrapper}>
-            <Ionicons name="paw" size={28} color="#475569" />
-          </View>
-          <Text style={styles.emptyText}>No pet upgrading</Text>
-          {onAddPress && (
-            <Pressable
-              style={({ pressed }) => [
-                styles.emptyAddButton,
-                styles.petEmptyButton,
-                pressed && styles.emptyAddButtonPressed,
-              ]}
-              onPress={onAddPress}
-            >
-              <Text style={[styles.emptyAddText, styles.petEmptyText]}>
-                Start Upgrade
-              </Text>
-            </Pressable>
-          )}
-        </View>
+        <ProgressionEmptyState
+          icon="paw-print"
+          title="No pet upgrading"
+          description="Your Pet House is ready when you are."
+          accentColor="#A78BFA"
+        />
       ) : null}
     </View>
   );

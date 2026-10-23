@@ -2378,8 +2378,8 @@ const styles = StyleSheet.create({
 
   upgradeContent: {
     backgroundColor: "#111c2e",
-    paddingVertical: 10,
-    paddingHorizontal: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "#263449",
@@ -2544,21 +2544,21 @@ const styles = StyleSheet.create({
   },
 
   totalTimeText: {
-    fontSize: 10,
-    color: "#64748b",
+    fontSize: 11,
+    color: "#94a3b8",
     fontWeight: "500",
   },
 
   finishDateTimeText: {
-    fontSize: 9,
+    fontSize: 10,
     color: "#94a3b8",
     fontWeight: "500",
     maxWidth: 150,
   },
 
   progressTrack: {
-    height: 3,
-    backgroundColor: "rgba(148,163,184,0.12)",
+    height: 4,
+    backgroundColor: "rgba(148,163,184,0.16)",
     borderRadius: 2,
     overflow: "hidden",
   },
@@ -2573,19 +2573,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#22c55e",
   },
 
-  // ── Empty state — dimensions kept identical to before ──
+  // ── Compact empty state: keep the next section visible sooner ──
   emptyStateContainer: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 56,
-    paddingHorizontal: 30,
-    gap: 14,
+    paddingVertical: 28,
+    paddingHorizontal: 24,
+    gap: 12,
   },
 
   emptyIconWrapper: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: "rgba(251,191,36,0.08)",
     justifyContent: "center",
     alignItems: "center",
@@ -2593,12 +2593,12 @@ const styles = StyleSheet.create({
   },
 
   emptyIcon: {
-    width: 56,
-    height: 56,
+    width: 48,
+    height: 48,
   },
 
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "800",
     color: "#f1f5f9",
   },

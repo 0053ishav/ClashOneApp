@@ -286,7 +286,7 @@ export function MagicItemsQuickModal({
                   pressed && styles.pressed,
                 ]}
               >
-                <Ionicons name="albums-outline" size={14} color=HOME_COLORS.gold />
+                <Ionicons name="albums-outline" size={14} color={HOME_COLORS.gold} />
                 <Text style={styles.inventoryButtonText}>Inventory</Text>
               </Pressable>
               <Pressable
@@ -295,13 +295,13 @@ export function MagicItemsQuickModal({
                 onPress={onClose}
                 style={styles.closeButton}
               >
-                <Ionicons name="close" size={21} color=HOME_COLORS.textSecondary />
+                <Ionicons name="close" size={21} color={HOME_COLORS.textSecondary} />
               </Pressable>
             </View>
 
             {!accountTag ? (
               <View style={styles.emptyState}>
-                <Ionicons name="people-outline" size={30} color=HOME_COLORS.textMuted />
+                <Ionicons name="people-outline" size={30} color={HOME_COLORS.textMuted} />
                 <Text style={styles.emptyTitle}>Connect a village first</Text>
                 <Text style={styles.emptyBody}>
                   Magic Items are tracked per account.
@@ -309,7 +309,7 @@ export function MagicItemsQuickModal({
               </View>
             ) : isLoading ? (
               <View style={styles.loading}>
-                <ActivityIndicator color=HOME_COLORS.gold />
+                <ActivityIndicator color={HOME_COLORS.gold} />
                 <Text style={styles.muted}>Loading inventory…</Text>
               </View>
             ) : (
@@ -319,7 +319,7 @@ export function MagicItemsQuickModal({
                     <Ionicons
                       name="information-circle-outline"
                       size={20}
-                      color=HOME_COLORS.bluePale
+                      color={HOME_COLORS.bluePale}
                     />
                     <View style={styles.emptyInventoryText}>
                       <Text style={styles.emptyInventoryTitle}>
@@ -346,7 +346,7 @@ export function MagicItemsQuickModal({
                             contentFit="contain"
                           />
                         ) : (
-                          <Ionicons name="sparkles" size={25} color=HOME_COLORS.gold />
+                          <Ionicons name="sparkles" size={25} color={HOME_COLORS.gold} />
                         )}
                       </View>
                       <View style={styles.itemInfo}>
@@ -375,7 +375,7 @@ export function MagicItemsQuickModal({
                         ]}
                       >
                         {isActivating ? (
-                          <ActivityIndicator size="small" color=HOME_COLORS.textDark />
+                          <ActivityIndicator size="small" color={HOME_COLORS.textDark} />
                         ) : (
                           <Text style={styles.activateText}>Use</Text>
                         )}

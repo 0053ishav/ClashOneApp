@@ -4,7 +4,6 @@ import { getProgressColor } from "@/utils/getProgressColor";
 import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import type { Village } from "@/types/entity";
 import { Ionicons } from "@expo/vector-icons";
-import FireBadge from "./FireBadge";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -60,11 +59,9 @@ export default function EntityCard({
             isMax ? styles.levelBadgeMaxed : styles.levelBadgeDefault,
           ]}
         >
-          {isMax ? (
-            <FireBadge level={level} width={22} />
-          ) : (
-            <Text style={styles.levelText}>{level}</Text>
-          )}
+          <Text style={[styles.levelText, isMax && styles.levelTextMaxed]}>
+            {level}
+          </Text>
         </View>
       </View>
 
@@ -153,8 +150,8 @@ const styles = StyleSheet.create({
   },
 
   artworkMaxed: {
-    borderColor: HOME_COLORS.gold,
-    borderWidth: 1.5,
+    borderColor: "#FFD75E",
+    borderWidth: 2,
   },
 
   cardImage: {
@@ -186,16 +183,11 @@ const styles = StyleSheet.create({
   },
 
   levelBadgeMaxed: {
-    width: 22,
-    height: 21,
+    backgroundColor: "#FFD75E",
+    borderColor: "#FFD75E",
+    borderRadius: 3,
     minWidth: 22,
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-    borderWidth: 0,
-    backgroundColor: "transparent",
-    borderRadius: 4,
-    left: 3,
-    bottom: 3,
+    height: 21,
   },
 
   levelText: {
@@ -204,6 +196,10 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: HOME_COLORS.textBright,
     fontVariant: ["tabular-nums"],
+  },
+
+  levelTextMaxed: {
+    color: "#111827",
   },
 
 

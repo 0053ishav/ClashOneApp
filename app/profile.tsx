@@ -1,7 +1,6 @@
 import ArmySection from "@/components/Profile/ArmySection";
 import { HOME_COLORS } from "@/theme/home";
 import StatsGrid from "@/components/Profile/StatsGrid";
-import { HOME_COLORS } from "@/theme/home";
 import ProfileHeroCard from "@/components/Profile/ProfileHeroCard";
 import ProgressSection from "@/components/Profile/ProgressSection";
 import { fetchFullPlayer } from "@/services/clashApi";

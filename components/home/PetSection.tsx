@@ -385,11 +385,11 @@ const styles = StyleSheet.create({
   },
 
   petProgressBar: {
-    backgroundColor: "#8b5cf6",
+    backgroundColor: "#4ade2d",
   },
 
   labProgressBar: {
-    backgroundColor: "#06b6d4",
+    backgroundColor: "#4ade2d",
   },
 
   emptyCard: {

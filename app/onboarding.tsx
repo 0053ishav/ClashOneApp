@@ -1,4 +1,5 @@
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { HOME_COLORS } from "@/theme/home";
 import { requestNotificationPermissions } from "@/services/notifications/notificationPermissions";
 import { setOnboardingComplete } from "@/storage/appConfig";
 import { setNotificationsEnabled } from "@/storage/notificationConfig";
@@ -255,7 +256,7 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f172a",
+    backgroundColor: HOME_COLORS.background,
   },
 
   skip: {
@@ -269,7 +270,7 @@ const styles = StyleSheet.create({
   },
 
   skipText: {
-    color: "#94a3b8",
+    color: HOME_COLORS.textMuted,
     fontSize: 14,
     fontWeight: "600",
   },
@@ -278,7 +279,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 30,
-    paddingBottom: 60,
+    paddingBottom: 48,
   },
 
   iconWrapper: {
@@ -286,38 +287,44 @@ const styles = StyleSheet.create({
   },
 
   iconBg: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    backgroundColor: "rgba(251, 191, 36, 0.1)",
+    width: 82,
+    height: 82,
+    borderRadius: 24,
+    backgroundColor: "rgba(251,191,36,0.12)",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 2,
-    borderColor: "rgba(251, 191, 36, 0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(251,191,36,0.28)",
+    shadowColor: HOME_COLORS.gold,
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
   },
 
   image: {
-    width: 140,
-    height: 140,
-    marginBottom: 36,
+    width: 156,
+    height: 156,
+    marginBottom: 28,
     resizeMode: "contain",
   },
 
   title: {
-    fontSize: 26,
-    fontWeight: "800",
-    color: "#f8fafc",
+    fontSize: 28,
+    fontWeight: "900",
+    color: HOME_COLORS.gold,
     textAlign: "center",
     marginBottom: 12,
-    letterSpacing: -0.5,
+    letterSpacing: -0.6,
   },
 
   description: {
+    maxWidth: 320,
     fontSize: 14,
-    color: "#64748b",
+    color: HOME_COLORS.textSecondary,
     textAlign: "center",
-    lineHeight: 20,
-    paddingHorizontal: 20,
+    lineHeight: 22,
+    paddingHorizontal: 16,
   },
 
   enableButton: {
@@ -329,8 +336,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 28,
     borderRadius: 14,
-    backgroundColor: "#fbbf24",
-    shadowColor: "#fbbf24",
+    backgroundColor: HOME_COLORS.gold,
+    shadowColor: HOME_COLORS.gold,
     shadowOpacity: 0.3,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
@@ -340,13 +347,13 @@ const styles = StyleSheet.create({
   enableButtonText: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#0f172a",
+    color: HOME_COLORS.textDark,
     letterSpacing: 0.3,
   },
 
   enableButtonActive: {
-    backgroundColor: "#22c55e",
-    shadowColor: "#22c55e",
+    backgroundColor: HOME_COLORS.success,
+    shadowColor: HOME_COLORS.success,
   },
 
   enableButtonPressed: {
@@ -362,8 +369,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 28,
     borderRadius: 14,
-    backgroundColor: "#0ea5e9",
-    shadowColor: "#0ea5e9",
+    backgroundColor: HOME_COLORS.blue,
+    shadowColor: HOME_COLORS.blue,
     shadowOpacity: 0.3,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
@@ -383,7 +390,7 @@ const styles = StyleSheet.create({
 
   progressContainer: {
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 20,
     gap: 12,
   },
 
@@ -397,17 +404,17 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#334155",
+    backgroundColor: HOME_COLORS.borderStrong,
   },
 
   dotActive: {
-    backgroundColor: "#fbbf24",
+    backgroundColor: HOME_COLORS.gold,
     width: 24,
   },
 
   progressText: {
     fontSize: 12,
-    color: "#64748b",
+    color: HOME_COLORS.textSecondary,
     fontWeight: "600",
   },
 
@@ -417,11 +424,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    paddingVertical: 16,
-    borderRadius: 18,
-    backgroundColor: "#fbbf24",
-    marginBottom: 40,
-    elevation: 8,
+    paddingVertical: 17,
+    borderRadius: 16,
+    backgroundColor: HOME_COLORS.gold,
+    marginBottom: 24,
+    shadowColor: HOME_COLORS.gold,
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 5,
   },
 
   buttonPressed: {
@@ -431,7 +442,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontWeight: "700",
     fontSize: 16,
-    color: "#0f172a",
+    color: HOME_COLORS.textDark,
   },
   builderRow: {
     flexDirection: "row",
@@ -446,23 +457,23 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#1e293b",
+    backgroundColor: HOME_COLORS.surfaceRaised,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: HOME_COLORS.borderStrong,
   },
 
   builderButtonActive: {
-    backgroundColor: "#fbbf24",
+    backgroundColor: HOME_COLORS.gold,
     borderColor: "#fbbf24",
   },
 
   builderButtonText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#94a3b8",
+    color: HOME_COLORS.textMuted,
   },
 
   builderButtonTextActive: {
-    color: "#0f172a",
+    color: HOME_COLORS.textDark,
   },
 });

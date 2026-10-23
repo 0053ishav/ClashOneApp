@@ -121,6 +121,8 @@ export default function ArmySection({ data }: { data: PlayerFull }) {
 }
 
 function Grid({ items }: { items: ArmyEntity[] }) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.grid}>
       {items.map((item, index) => (

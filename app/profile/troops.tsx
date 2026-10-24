@@ -635,7 +635,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   overviewStats: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.textDark,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 14,
     paddingVertical: 12,
   },
@@ -649,7 +649,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: "800",
-    color: colors.textBright,
+    color: colors.textPrimary,
     letterSpacing: -0.4,
   },
 
@@ -662,7 +662,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   statDivider: {
     width: 1,
     height: 28,
-    backgroundColor: "rgba(255,255,255,0.07)",
+    backgroundColor: colors.border,
   },
 
   // ── Search ──────────────────────────────────────────────

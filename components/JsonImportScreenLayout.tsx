@@ -10,10 +10,9 @@
 //   View,
 // } from "react-native";
 // import { SafeAreaView } from "react-native-safe-area-context";
-// import type { HomeColors } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
 import { useHomeColors } from "@/theme/useHomeColors";
 import { useMemo } from "react";
-import { JsonClipboardInput, type ClipboardPasteError } from "@/components/JsonClipboardInput";
 
 // type IconName = ComponentProps<typeof Ionicons>["name"];
 
@@ -567,7 +566,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     gap: 9,
     paddingHorizontal: 14,
   },
-  openGameButtonText: { color: GOLD, fontSize: 14, fontWeight: "700", flex: 1 },
+  openGameButtonText: { color: colors.gold, fontSize: 14, fontWeight: "700", flex: 1 },
 
   // Stage 2 content
   inputWrap: { borderRadius: 16, overflow: "hidden" },
@@ -576,12 +575,12 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     marginTop: 10,
     borderRadius: 16,
     paddingHorizontal: 18,
-    backgroundColor: GOLD,
+    backgroundColor: colors.gold,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    shadowColor: GOLD,
+    shadowColor: colors.gold,
     shadowOpacity: 0.25,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 6 },
@@ -589,7 +588,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   },
   primaryButtonPressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
   primaryButtonText: {
-    color: INK,
+    color: colors.textDark,
     fontSize: 16,
     fontWeight: "800",
     flex: 1,

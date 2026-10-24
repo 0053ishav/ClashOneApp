@@ -10,7 +10,10 @@
 //   View,
 // } from "react-native";
 // import { SafeAreaView } from "react-native-safe-area-context";
-// import { JsonClipboardInput, type ClipboardPasteError } from "@/components/JsonClipboardInput";
+// import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
+import { useMemo } from "react";
+import { JsonClipboardInput, type ClipboardPasteError } from "@/components/JsonClipboardInput";
 
 // type IconName = ComponentProps<typeof Ionicons>["name"];
 
@@ -81,7 +84,7 @@
 //             <Text style={styles.topBarTitle}>{headerTitle}</Text>
 //           </View>
 //           <View style={styles.headerIcon}>
-//             <Ionicons name={headerIcon} size={22} color="#fbbf24" />
+//             <Ionicons name={headerIcon} size={22} color={colors.gold} />
 //           </View>
 //         </View>
 
@@ -156,8 +159,8 @@
 //   backButton: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "#172033", borderWidth: 1, borderColor: "#2b3850" },
 //   topBarText: { flex: 1, gap: 3 },
 //   eyebrow: { color: "#fbbf24", fontSize: 10, fontWeight: "800", letterSpacing: 1.4 },
-//   topBarTitle: { color: "#f8fafc", fontSize: 20, fontWeight: "800" },
-//   headerIcon: { width: 48, height: 48, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(251,191,36,0.1)", borderWidth: 1, borderColor: "rgba(251,191,36,0.22)" },
+//   topBarTitle: { color: colors.textBright, fontSize: 20, fontWeight: "800" },
+//   headerIcon: { width: 48, height: 48, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: `${colors.gold}1A`, borderWidth: 1, borderColor: "rgba(251,191,36,0.22)" },
 //   intro: { gap: 8 },
 //   title: { color: "#f8fafc", fontSize: 25, lineHeight: 31, fontWeight: "800", letterSpacing: -0.5 },
 //   description: { color: "#9aa8bd", fontSize: 14, lineHeight: 21 },
@@ -167,12 +170,12 @@
 //   sectionIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: "rgba(251,191,36,0.12)", alignItems: "center", justifyContent: "center" },
 //   sectionHeadingText: { flex: 1, gap: 3 },
 //   sectionTitle: { color: "#f8fafc", fontSize: 15, fontWeight: "700" },
-//   sectionSubtitle: { color: "#8493aa", fontSize: 12, lineHeight: 17 },
+//   sectionSubtitle: { color: colors.textSecondary, fontSize: 12, lineHeight: 17 },
 //   steps: { gap: 12 },
 //   stepRow: { flexDirection: "row", alignItems: "center", gap: 11 },
 //   stepNumber: { width: 25, height: 25, borderRadius: 9, alignItems: "center", justifyContent: "center", backgroundColor: "#26344a" },
 //   stepNumberText: { color: "#fbbf24", fontSize: 12, fontWeight: "800" },
-//   stepText: { flex: 1, color: "#cbd5e1", fontSize: 13, lineHeight: 19 },
+//   stepText: { flex: 1, color: colors.textPrimary, fontSize: 13, lineHeight: 19 },
 //   openGameButton: { minHeight: 48, borderRadius: 14, borderWidth: 1, borderColor: "rgba(251,191,36,0.35)", backgroundColor: "rgba(251,191,36,0.07)", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, paddingHorizontal: 14, marginTop: 1 },
 //   openGameButtonText: { color: "#fbbf24", fontSize: 14, fontWeight: "700", flex: 1 },
 //   importSection: { gap: 14 },
@@ -180,10 +183,10 @@
 //   primaryButtonPressed: { opacity: 0.86, transform: [{ scale: 0.99 }] },
 //   primaryButtonText: { color: "#172033", fontSize: 15, fontWeight: "800", flex: 1, textAlign: "center" },
 //   cancelButton: { minHeight: 42, alignItems: "center", justifyContent: "center" },
-//   cancelText: { color: "#94a3b8", fontSize: 13, fontWeight: "600" },
+//   cancelText: { color: colors.textSecondary, fontSize: 13, fontWeight: "600" },
 //   disclaimerSection: { paddingHorizontal: 2, paddingTop: 2, gap: 6 },
 //   disclaimerTitle: { color: "#8493aa", fontSize: 11, fontWeight: "800", letterSpacing: 0.8, textTransform: "uppercase" },
-//   disclaimerText: { color: "#64748b", fontSize: 11, lineHeight: 16 },
+//   disclaimerText: { color: colors.textMuted, fontSize: 11, lineHeight: 16 },
 //   policyLink: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", paddingVertical: 4 },
 //   policyLinkText: { color: "#fbbf24", fontSize: 12, fontWeight: "700" },
 //   pressed: { opacity: 0.82 },
@@ -255,6 +258,9 @@ export function JsonImportScreenLayout({
   showDisclaimer = false,
   footer,
 }: JsonImportScreenLayoutProps) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const openClashSettings = async () => {
     try {
       await Linking.openURL(
@@ -284,7 +290,7 @@ export function JsonImportScreenLayout({
               pressed && styles.pressed,
             ]}
           >
-            <Ionicons name="chevron-back" size={22} color="#f1f5f9" />
+            <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
           </Pressable>
           <View style={styles.topBarText}>
             <Text style={styles.eyebrow}>{headerEyebrow}</Text>
@@ -388,7 +394,7 @@ export function JsonImportScreenLayout({
                 onPress={onSync}
               >
                 {isImporting ? (
-                  <ActivityIndicator color="#1a1203" />
+                  <ActivityIndicator color={colors.textDark} />
                 ) : (
                   <>
                     <Ionicons name="sync-outline" size={19} color="#1a1203" />
@@ -446,11 +452,8 @@ export function JsonImportScreenLayout({
   );
 }
 
-const GOLD = "#fbbf24";
-const INK = "#1a1203";
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#0a0f1a" },
+const createStyles = (colors: HomeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
   container: {
     flexGrow: 1,
     paddingTop: 12,
@@ -467,13 +470,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#121a2b",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#222d44",
+    borderColor: colors.border,
   },
   topBarText: { flex: 1, gap: 2 },
   eyebrow: { color: "#8493aa", fontSize: 12, fontWeight: "600" },
-  topBarTitle: { color: "#f1f5f9", fontSize: 18, fontWeight: "800" },
+  topBarTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: "800" },
   headerIcon: {
     width: 40,
     height: 40,
@@ -482,7 +485,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "rgba(251,191,36,0.1)",
     borderWidth: 1,
-    borderColor: "rgba(251,191,36,0.25)",
+    borderColor: `${colors.gold}40`,
   },
 
   // Intro
@@ -506,16 +509,16 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: GOLD,
+    backgroundColor: colors.gold,
   },
-  nodeText: { color: INK, fontSize: 14, fontWeight: "900" },
+  nodeText: { color: colors.textDark, fontSize: 14, fontWeight: "900" },
   railLine: {
     flex: 1,
     width: 2,
     marginTop: 6,
     marginBottom: 6,
     borderRadius: 1,
-    backgroundColor: "rgba(251,191,36,0.28)",
+    backgroundColor: `${colors.gold}47`,
   },
   stageBody: { flex: 1, gap: 6, paddingTop: 4 },
   stageBodyGap: { paddingBottom: 26 },
@@ -537,15 +540,15 @@ const styles = StyleSheet.create({
   stepsPanel: {
     padding: 14,
     borderRadius: 16,
-    backgroundColor: "#111a2b",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#202c43",
+    borderColor: colors.borderMuted,
     gap: 11,
   },
   stepRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   stepIndex: {
     width: 18,
-    color: GOLD,
+    color: colors.gold,
     fontSize: 13,
     lineHeight: 19,
     fontWeight: "800",
@@ -556,8 +559,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "rgba(251,191,36,0.4)",
-    backgroundColor: "rgba(251,191,36,0.08)",
+    borderColor: `${colors.gold}66`,
+    backgroundColor: `${colors.gold}14`,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -603,9 +606,9 @@ const styles = StyleSheet.create({
   disclaimerSection: {
     padding: 14,
     borderRadius: 14,
-    backgroundColor: "#0e1524",
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: "#1a2438",
+    borderColor: colors.borderMuted,
     gap: 6,
   },
   disclaimerTitle: { color: "#8493aa", fontSize: 12, fontWeight: "700" },

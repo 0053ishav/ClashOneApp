@@ -154,7 +154,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   },
 
   artworkMaxed: {
-    borderColor: "#FFD75E",
+    borderColor: colors.gold,
     borderWidth: 2,
   },
 
@@ -176,19 +176,19 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.28)",
+    borderColor: colors.borderStrong,
   },
 
   levelBadgeDefault: {
-    backgroundColor: "rgba(15,23,42,0.94)",
+    backgroundColor: colors.surface,
     borderRadius: 3,
     minWidth: 22,
     height: 21,
   },
 
   levelBadgeMaxed: {
-    backgroundColor: "#FFD75E",
-    borderColor: "#FFD75E",
+    backgroundColor: colors.gold,
+    borderColor: colors.gold,
     borderRadius: 3,
     minWidth: 20,
     height: 18,
@@ -199,12 +199,12 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     fontSize: 12,
     lineHeight: 15,
     fontWeight: "900",
-    color: colors.textBright,
+    color: colors.textPrimary,
     fontVariant: ["tabular-nums"],
   },
 
   levelTextMaxed: {
-    color: "#111827",
+    color: colors.textDark,
     fontSize: 11,
     lineHeight: 13,
   },

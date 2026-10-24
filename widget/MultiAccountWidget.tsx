@@ -410,7 +410,7 @@ function renderUpsellCard(totalAccounts?: number): React.ReactNode {
       <TextWidget
         text="Unlock Pro"
         style={{
-          color: "#94a3b8",
+          color: colors.textSecondary,
           fontSize: 9,
           marginTop: 1,
         }}
@@ -492,7 +492,7 @@ function renderAddAccountCard(totalAccounts?: number): React.ReactNode {
       <TextWidget
         text="Track multiple accounts"
         style={{
-          color: "#94a3b8",
+          color: colors.textSecondary,
           fontSize: 8,
           marginTop: 1,
         }}

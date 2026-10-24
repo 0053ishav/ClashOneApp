@@ -1097,7 +1097,10 @@ export default function SettingsScreen() {
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
                       accessibilityLabel={scheme === "dark" ? "Use dark theme" : "Use light theme"}
-                      onPress={() => setColorScheme(scheme)}
+                      onPress={() => {
+                        setColorScheme(scheme);
+                        emitWidgetUpdate();
+                      }}
                       style={{
                         minWidth: 48,
                         paddingHorizontal: 9,

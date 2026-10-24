@@ -11,10 +11,7 @@ import {
 } from "@/services/magicItemService";
 import { useAccountStore } from "@/stores/accountStore";
 import type { Village } from "@/types/entity";
-import type {
-  MagicItem,
-  MagicItemTarget,
-} from "@/types/magicItem";
+import type { MagicItem, MagicItemTarget } from "@/types/magicItem";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import * as Crypto from "expo-crypto";
@@ -58,9 +55,7 @@ export function MagicItemsQuickModal({
   const router = useRouter();
   const accounts = useAccountStore((state) => state.accounts);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const [activeEffectIds, setActiveEffectIds] = useState<Set<string>>(
-    new Set(),
-  );
+  const [activeEffectIds, setActiveEffectIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [activatingItemId, setActivatingItemId] = useState<string | null>(null);
   const [dialog, setDialog] = useState<{
@@ -72,9 +67,7 @@ export function MagicItemsQuickModal({
     onConfirm?: () => Promise<void>;
   } | null>(null);
 
-  const accountName = accounts.find(
-    (account) => account.tag === accountTag,
-  )?.name;
+  const accountName = accounts.find((account) => account.tag === accountTag)?.name;
 
   const openInventory = () => {
     onClose();
@@ -95,17 +88,12 @@ export function MagicItemsQuickModal({
         getActiveMagicEffects(accountTag),
       ]);
       setQuantities(
-        Object.fromEntries(
-          inventory.map((entry) => [entry.itemId, entry.quantity]),
-        ),
+        Object.fromEntries(inventory.map((entry) => [entry.itemId, entry.quantity])),
       );
       setActiveEffectIds(
         new Set(
           effects
-            .filter(
-              (effect) =>
-                effect.expiresAt == null || effect.expiresAt > Date.now(),
-            )
+            .filter((effect) => effect.expiresAt == null || effect.expiresAt > Date.now())
             .map((effect) => effect.itemId),
         ),
       );
@@ -208,8 +196,7 @@ export function MagicItemsQuickModal({
       });
     } catch (error) {
       const message =
-        error instanceof Error &&
-        error.message === "MAGIC_ITEM_NOT_IN_INVENTORY"
+        error instanceof Error && error.message === "MAGIC_ITEM_NOT_IN_INVENTORY"
           ? "Your inventory quantity changed. Refresh and try again."
           : "Please try again.";
       setDialog({
@@ -306,9 +293,7 @@ export function MagicItemsQuickModal({
               <View style={styles.emptyState}>
                 <Ionicons name="people-outline" size={30} color={colors.textMuted} />
                 <Text style={styles.emptyTitle}>Connect a village first</Text>
-                <Text style={styles.emptyBody}>
-                  Magic Items are tracked per account.
-                </Text>
+                <Text style={styles.emptyBody}>Magic Items are tracked per account.</Text>
               </View>
             ) : isLoading ? (
               <View style={styles.loading}>
@@ -322,15 +307,15 @@ export function MagicItemsQuickModal({
                     <Ionicons
                       name="information-circle-outline"
                       size={20}
-                      color={colors.bluePale}
+                      color={colors.blue}
                     />
                     <View style={styles.emptyInventoryText}>
                       <Text style={styles.emptyInventoryTitle}>
                         No Potions or Snacks available
                       </Text>
                       <Text style={styles.emptyInventoryBody}>
-                        Open Inventory to add the quantities you have. Items
-                        with nothing recorded will show 0 available.
+                        Open Inventory to add the quantities you have. Items with nothing
+                        recorded will show 0 available.
                       </Text>
                     </View>
                   </View>
@@ -364,15 +349,11 @@ export function MagicItemsQuickModal({
                       <Pressable
                         accessibilityRole="button"
                         accessibilityLabel={`Activate ${item.name}`}
-                        disabled={
-                          quantity <= 0 || isActivating || !!activatingItemId
-                        }
+                        disabled={quantity <= 0 || isActivating || !!activatingItemId}
                         onPress={() => void activate(item)}
                         style={({ pressed }) => [
                           styles.activateButton,
-                          (quantity <= 0 ||
-                            isActivating ||
-                            !!activatingItemId) &&
+                          (quantity <= 0 || isActivating || !!activatingItemId) &&
                             styles.disabled,
                           pressed && styles.pressed,
                         ]}
@@ -387,8 +368,8 @@ export function MagicItemsQuickModal({
                   );
                 })}
                 <Text style={styles.footnote}>
-                  Inventory is manual. Activating an item consumes one tracked
-                  item and records its effect.
+                  Inventory is manual. Activating an item consumes one tracked item and
+                  records its effect.
                 </Text>
               </ScrollView>
             )}
@@ -402,151 +383,175 @@ export function MagicItemsQuickModal({
         item={dialog?.item}
         tone={dialog?.tone}
         confirmLabel={dialog?.confirmLabel}
-        onConfirm={
-          dialog?.onConfirm ? () => void dialog.onConfirm?.() : undefined
-        }
+        onConfirm={dialog?.onConfirm ? () => void dialog.onConfirm?.() : undefined}
         onClose={() => setDialog(null)}
       />
     </>
   );
 }
 
-const createStyles = (colors: HomeColors) => StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(2,6,23,0.55)",
-  },
-  scrim: { ...StyleSheet.absoluteFillObject },
-  sheet: {
-    maxHeight: "82%",
-    backgroundColor: colors.textDark,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderTopWidth: 1,
-    borderColor: colors.slateMuted,
-    paddingBottom: 24,
-  },
-  handle: {
-    alignSelf: "center",
-    width: 38,
-    height: 4,
-    borderRadius: 4,
-    backgroundColor: colors.slate,
-    marginTop: 9,
-    marginBottom: 14,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 18,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surfaceRaised,
-  },
-  headerIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.surfaceRaised,
-    marginRight: 11,
-  },
-  headerIconImage: { width: 28, height: 28 },
-  headerText: { flex: 1 },
-  title: { color: colors.textBright, fontSize: 17, fontWeight: "800" },
-  subtitle: { marginTop: 3, color: colors.textSecondary, fontSize: 11 },
-  inventoryButton: {
-    minHeight: 32,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-    paddingHorizontal: 9,
-    marginRight: 8,
-    borderRadius: 9,
-    backgroundColor: colors.surfaceRaised,
-    borderWidth: 1,
-    borderColor: colors.slate,
-  },
-  inventoryButtonText: { color: colors.gold, fontSize: 10, fontWeight: "800" },
-  closeButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: colors.surfaceRaised,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  content: { padding: 16, gap: 10 },
-  emptyInventoryHint: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 9,
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: colors.surfaceRaised,
-    borderWidth: 1,
-    borderColor: colors.slateMuted,
-  },
-  emptyInventoryText: { flex: 1 },
-  emptyInventoryTitle: { color: colors.textPrimary, fontSize: 12, fontWeight: "800" },
-  emptyInventoryBody: {
-    marginTop: 4,
-    color: colors.textSecondary,
-    fontSize: 11,
-    lineHeight: 15,
-  },
-  itemCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    padding: 11,
-    borderRadius: 14,
-    backgroundColor: colors.surfaceDark,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  itemIconWrap: {
-    width: 45,
-    height: 45,
-    borderRadius: 12,
-    backgroundColor: colors.textDark,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  itemIcon: { width: 38, height: 38 },
-  itemInfo: { flex: 1, minWidth: 0 },
-  itemName: { color: colors.textBright, fontSize: 12, fontWeight: "800" },
-  description: { marginTop: 3, color: colors.textSecondary, fontSize: 10, lineHeight: 14 },
-  quantity: { marginTop: 5, color: colors.gold, fontSize: 10, fontWeight: "700" },
-  activateButton: {
-    minWidth: 46,
-    height: 32,
-    borderRadius: 9,
-    backgroundColor: colors.gold,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 10,
-  },
-  activateText: { color: colors.textDark, fontSize: 11, fontWeight: "900" },
-  disabled: { opacity: 0.35 },
-  pressed: { opacity: 0.65 },
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 30,
-    gap: 9,
-  },
-  emptyTitle: { color: colors.textBright, fontSize: 15, fontWeight: "800" },
-  emptyBody: { color: colors.textSecondary, textAlign: "center", fontSize: 12 },
-  loading: {
-    minHeight: 140,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-  },
-  muted: { color: colors.textSecondary, fontSize: 12 },
-  footnote: { color: colors.textMuted, fontSize: 10, lineHeight: 15, marginTop: 4 },
-});
+const createStyles = (colors: HomeColors) =>
+  StyleSheet.create({
+    overlay: {
+      flex: 1,
+      justifyContent: "flex-end",
+      backgroundColor: "rgba(2,6,23,0.48)",
+    },
+    scrim: { ...StyleSheet.absoluteFillObject },
+    sheet: {
+      maxHeight: "82%",
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      borderTopWidth: 1,
+      borderColor: colors.border,
+      paddingBottom: 24,
+    },
+    handle: {
+      alignSelf: "center",
+      width: 38,
+      height: 4,
+      borderRadius: 4,
+      backgroundColor: colors.slate,
+      marginTop: 9,
+      marginBottom: 14,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 18,
+      paddingBottom: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    headerIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.surfaceRaised,
+      marginRight: 11,
+    },
+    headerIconImage: { width: 28, height: 28 },
+    headerText: { flex: 1 },
+    title: { color: colors.textPrimary, fontSize: 17, fontWeight: "800" },
+    subtitle: { marginTop: 3, color: colors.textSecondary, fontSize: 11 },
+    inventoryButton: {
+      minHeight: 32,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 5,
+      paddingHorizontal: 9,
+      marginRight: 8,
+      borderRadius: 9,
+      backgroundColor: colors.surfaceRaised,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    inventoryButtonText: { color: colors.gold, fontSize: 10, fontWeight: "800" },
+    closeButton: {
+      width: 34,
+      height: 34,
+      borderRadius: 10,
+      backgroundColor: colors.surfaceRaised,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    content: { padding: 16, gap: 10 },
+    emptyInventoryHint: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 9,
+      padding: 12,
+      borderRadius: 12,
+      backgroundColor: colors.surfaceRaised,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    emptyInventoryText: { flex: 1 },
+    emptyInventoryTitle: {
+      color: colors.textPrimary,
+      fontSize: 12,
+      fontWeight: "800",
+    },
+    emptyInventoryBody: {
+      marginTop: 4,
+      color: colors.textSecondary,
+      fontSize: 11,
+      lineHeight: 15,
+    },
+    itemCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      padding: 11,
+      borderRadius: 14,
+      backgroundColor: colors.surfaceRaised,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    itemIconWrap: {
+      width: 45,
+      height: 45,
+      borderRadius: 12,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    itemIcon: { width: 38, height: 38 },
+    itemInfo: { flex: 1, minWidth: 0 },
+    itemName: { color: colors.textPrimary, fontSize: 12, fontWeight: "800" },
+    description: {
+      marginTop: 3,
+      color: colors.textSecondary,
+      fontSize: 10,
+      lineHeight: 14,
+    },
+    quantity: {
+      marginTop: 5,
+      color: colors.gold,
+      fontSize: 10,
+      fontWeight: "700",
+    },
+    activateButton: {
+      minWidth: 46,
+      height: 32,
+      borderRadius: 9,
+      backgroundColor: colors.gold,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 10,
+    },
+    activateText: { color: colors.textDark, fontSize: 11, fontWeight: "900" },
+    disabled: { opacity: 0.35 },
+    pressed: { opacity: 0.65 },
+    emptyState: {
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 30,
+      gap: 9,
+    },
+    emptyTitle: { color: colors.textPrimary, fontSize: 15, fontWeight: "800" },
+    emptyBody: {
+      color: colors.textSecondary,
+      textAlign: "center",
+      fontSize: 12,
+    },
+    loading: {
+      minHeight: 140,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 10,
+    },
+    muted: { color: colors.textSecondary, fontSize: 12 },
+    footnote: {
+      color: colors.textMuted,
+      fontSize: 10,
+      lineHeight: 15,
+      marginTop: 4,
+    },
+  });

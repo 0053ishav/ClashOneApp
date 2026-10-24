@@ -1097,14 +1097,14 @@ export function UpgradeActionModal({
             ]}
             onPress={handleDeletePress}
           >
-            <Ionicons name="trash-outline" size={16} color="#ef4444" />
+            <Ionicons name="trash-outline" size={16} color={colors.danger} />
 
             <Text style={styles.deleteText}>Delete Upgrade</Text>
           </Pressable>
         ) : (
           <View style={styles.deleteConfirm}>
             <View style={styles.deleteConfirmIcon}>
-              <Ionicons name="trash-outline" size={18} color="#ef4444" />
+              <Ionicons name="trash-outline" size={18} color={colors.danger} />
             </View>
 
             <View style={styles.deleteConfirmContent}>
@@ -1219,7 +1219,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
    */
 
   sheetBackground: {
-    backgroundColor: colors.textDark,
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     borderWidth: 1,
@@ -1781,7 +1781,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   deleteText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#ef4444",
+    color: colors.danger,
   },
 
   deleteConfirm: {
@@ -1790,9 +1790,9 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     marginTop: 12,
     padding: 9,
     borderRadius: 10,
-    backgroundColor: "#111827",
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: "rgba(239,68,68,0.25)",
+    borderColor: `${colors.danger}40`,
   },
 
   deleteConfirmIcon: {
@@ -1801,7 +1801,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(239,68,68,0.08)",
+    backgroundColor: `${colors.danger}14`,
     marginRight: 8,
   },
 
@@ -1849,7 +1849,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     borderRadius: 7,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(239,68,68,0.14)",
+    backgroundColor: `${colors.danger}24`,
     borderWidth: 1,
     borderColor: "rgba(239,68,68,0.25)",
   },

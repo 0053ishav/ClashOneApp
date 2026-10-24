@@ -68,3 +68,6 @@ Use the relevant focused guide when the task matches:
 - `.agents/skills/testing-validation/SKILL.md`
 - `.agents/skills/game-data-progression/SKILL.md`
 - `.agents/skills/owasp-mobile-security/SKILL.md`
+- `.agents/skills/owasp-masvs-mastg/SKILL.md`
+- `.agents/skills/react-native-security/SKILL.md`
+- `.agents/skills/expo-project-structure/SKILL.md`

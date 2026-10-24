@@ -1089,14 +1089,20 @@ export default function SettingsScreen() {
             subtitle="Choose how Clash One looks on this device"
             right={
               <View style={{ flexDirection: "row", gap: 4, padding: 3, borderRadius: 10, backgroundColor: colors.background }}>
-                {(["dark", "light"] as const).map((scheme) => {
+                {(["system", "light", "dark"] as const).map((scheme) => {
                   const selected = colorScheme === scheme;
                   return (
                     <Pressable
                       key={scheme}
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
-                      accessibilityLabel={scheme === "dark" ? "Use dark theme" : "Use light theme"}
+                      accessibilityLabel={
+                        scheme === "system"
+                          ? "Use system theme"
+                          : scheme === "dark"
+                            ? "Use dark theme"
+                            : "Use light theme"
+                      }
                       onPress={() => {
                         setColorScheme(scheme);
                         emitWidgetUpdate();
@@ -1111,7 +1117,7 @@ export default function SettingsScreen() {
                       }}
                     >
                       <Text style={{ fontSize: 12, fontWeight: "700", color: selected ? "#0f172a" : colors.textSecondary }}>
-                        {scheme === "dark" ? "Dark" : "Light"}
+                        {scheme === "system" ? "System" : scheme === "dark" ? "Dark" : "Light"}
                       </Text>
                     </Pressable>
                   );

@@ -23,7 +23,6 @@ const child = spawn(
   {
     stdio: "inherit",
     env: { ...process.env, APP_VARIANT: variant },
-    shell: process.platform === "win32",
   },
 );
 

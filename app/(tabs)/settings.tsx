@@ -998,7 +998,8 @@ export default function SettingsScreen() {
                     <Text style={[styles.avatarText, { color: acc.color }]}>
                       {acc.name.slice(0, 2).toUpperCase()}
                     </Text>
-                    <View style={styles.editBadge}>                      <Ionicons name="pencil" size={8} color="#0f172a" />
+                    <View style={styles.editBadge}>
+                      <Ionicons name="pencil" size={8} color="#0f172a" />
                     </View>
                   </Pressable>
                 }

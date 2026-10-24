@@ -916,7 +916,7 @@ export default function SettingsScreen() {
                       pressed && styles.pressed,
                     ]}
                   >
-                    <Ionicons name="remove" size={18} color="#f1f5f9" />
+                    <Ionicons name="remove" size={18} color={colors.textPrimary} />
                   </Pressable>
 
                   <Text style={styles.stepValue}>{localBuilderCount}</Text>
@@ -936,7 +936,7 @@ export default function SettingsScreen() {
                       pressed && styles.pressed,
                     ]}
                   >
-                    <Ionicons name="add" size={18} color="#f1f5f9" />
+                    <Ionicons name="add" size={18} color={colors.textPrimary} />
                   </Pressable>
                 </View>
               }

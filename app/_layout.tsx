@@ -22,6 +22,7 @@ import { buildSupportInfo } from "@/services/supportDebugInfo";
 import { isOnboardingComplete } from "@/storage/appConfig";
 import { syncEntities } from "@/storage/syncEntities";
 import { useAccountStore } from "@/stores/accountStore";
+import { useThemeStore } from "@/stores/themeStore";
 import { useHammerJamStore } from "@/stores/hammerJamStore";
 import { setSessionSource, track } from "@/utils/analytics/analytics";
 import { log } from "@/utils/logger";
@@ -33,6 +34,7 @@ import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import * as Sentry from "@sentry/react-native";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
+import { StatusBar } from "expo-status-bar";
 import { Redirect, Stack, usePathname, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
@@ -93,6 +95,7 @@ type BootError = {
 
 export default Sentry.wrap(function RootLayout() {
   const colors = useHomeColors();
+  const colorScheme = useThemeStore((state) => state.colorScheme);
   const styles = useMemo(() => createStyles(colors), [colors]);
   const loadActiveAccount = useAccountStore((s) => s.loadActiveAccount);
 
@@ -538,6 +541,7 @@ export default Sentry.wrap(function RootLayout() {
       <BottomSheetModalProvider>
         <RemoteConfigProvider>
           <>
+            <StatusBar style={colorScheme === "light" ? "dark" : "light"} backgroundColor={colors.background} />
             <Stack
               screenOptions={{
                 headerShown: false,

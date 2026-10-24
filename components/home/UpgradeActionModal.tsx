@@ -19,6 +19,8 @@ import { ProgressionQueries } from "@/services/progression/progressionQueries";
 import { calculateSuperchargeProgression } from "@/engine/progression/operations/calculateSuperchargeProgression";
 import { resolveUpgradeIcon } from "@/utils/icons/resolveUpgradeIcon";
 import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 
 type UpgradeActionModalProps = {
   visible: boolean;
@@ -55,6 +57,8 @@ export function UpgradeActionModal({
   onDelete,
   onUseBook,
 }: UpgradeActionModalProps) {
+  const colors = useHomeColors();
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
   const bottomSheetRef = React.useRef<BottomSheetModal>(null);
 
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
@@ -249,7 +253,7 @@ export function UpgradeActionModal({
         return "#f59e0b";
 
       default:
-        return "#cbd5e1";
+        return colors.textSecondary;
     }
   };
 
@@ -507,7 +511,7 @@ export function UpgradeActionModal({
                 resizeMode="contain"
               />
             ) : (
-              <Ionicons name={getTypeIcon()} size={19} color="#cbd5e1" />
+              <Ionicons name={getTypeIcon()} size={19} color=colors.textSecondary />
             )}
           </View>
 
@@ -563,7 +567,7 @@ export function UpgradeActionModal({
             ]}
             onPress={() => bottomSheetRef.current?.dismiss()}
           >
-            <Ionicons name="close" size={18} color="#94a3b8" />
+            <Ionicons name="close" size={18} color=colors.textSecondary />
           </Pressable>
         </View>
 
@@ -574,7 +578,7 @@ export function UpgradeActionModal({
         {craftedProgression && (
           <View style={styles.craftedModuleHeader}>
             <View style={styles.craftedModuleIcon}>
-              <Ionicons name="construct-outline" size={15} color="#94a3b8" />
+              <Ionicons name="construct-outline" size={15} color=colors.textSecondary />
             </View>
 
             <View style={styles.craftedModuleText}>
@@ -616,7 +620,7 @@ export function UpgradeActionModal({
               />
             ) : (
               <View style={styles.currentEmptyLevelIcon}>
-                <Ionicons name={getTypeIcon()} size={17} color="#64748b" />
+                <Ionicons name={getTypeIcon()} size={17} color=colors.textMuted />
               </View>
             )}
 
@@ -634,7 +638,7 @@ export function UpgradeActionModal({
           {/* ARROW */}
 
           {nextLevel != null && (
-            <Ionicons name="arrow-forward" size={18} color="#64748b" />
+            <Ionicons name="arrow-forward" size={18} color=colors.textMuted />
           )}
 
           {/* NEXT */}
@@ -651,12 +655,12 @@ export function UpgradeActionModal({
             ) : (
               <View style={styles.nextEmptyLevelIcon}>
                 {isMaxLevel ? (
-                  <Ionicons name="checkmark-circle" size={24} color="#94a3b8" />
+                  <Ionicons name="checkmark-circle" size={24} color=colors.textSecondary />
                 ) : (
                   <Ionicons
                     name="help-circle-outline"
                     size={21}
-                    color="#64748b"
+                    color=colors.textMuted
                   />
                 )}
               </View>
@@ -687,7 +691,7 @@ export function UpgradeActionModal({
         <View style={styles.timerSection}>
           <View style={styles.timerRow}>
             <View style={styles.inlineLeft}>
-              <Ionicons name="time-outline" size={15} color="#94a3b8" />
+              <Ionicons name="time-outline" size={15} color=colors.textSecondary />
 
               <Text style={styles.mutedText}>Remaining</Text>
             </View>
@@ -733,12 +737,14 @@ export function UpgradeActionModal({
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Supercharge costs</Text>
                 <DetailRow
+              styles={styles}
                   label="Current charge cost"
                   value={formatGameCost(superchargeProgression.nextCost)}
                   valueIconUri={resourceIcon}
                   valueColor={resourceColor}
                 />
                 <DetailRow
+              styles={styles}
                   label="Next charge duration"
                   value={
                     superchargeProgression.nextUpgradeTime != null
@@ -747,12 +753,14 @@ export function UpgradeActionModal({
                   }
                 />
                 <DetailRow
+              styles={styles}
                   label="Future charge cost"
                   value={formatGameCost(superchargeProgression.totalCost)}
                   valueIconUri={resourceIcon}
                   valueColor={resourceColor}
                 />
                 <DetailRow
+              styles={styles}
                   label="Future charge levels"
                   value={String(superchargeProgression.remainingLevels)}
                 />
@@ -770,7 +778,7 @@ export function UpgradeActionModal({
         {progression && (
           <View style={styles.hallAvailabilityCard}>
             <View style={styles.hallAvailabilityHeader}>
-              <Ionicons name="home-outline" size={16} color="#64748b" />
+              <Ionicons name="home-outline" size={16} color=colors.textMuted />
 
               <Text style={styles.hallAvailabilityTitle}>
                 Available at your hall
@@ -825,7 +833,7 @@ export function UpgradeActionModal({
 
         {progression && isMaxLevel && (
           <View style={styles.maxStatus}>
-            <Ionicons name="checkmark-circle" size={17} color="#94a3b8" />
+            <Ionicons name="checkmark-circle" size={17} color=colors.textSecondary />
 
             <View>
               <Text style={styles.maxStatusTitle}>Max level reached</Text>
@@ -847,6 +855,7 @@ export function UpgradeActionModal({
             <Text style={styles.sectionTitle}>Next upgrade</Text>
 
             <DetailRow
+              styles={styles}
               icon="cash-outline"
               label="Cost"
               value={
@@ -859,6 +868,7 @@ export function UpgradeActionModal({
             />
 
             <DetailRow
+              styles={styles}
               icon="time-outline"
               label="Duration"
               value={
@@ -869,6 +879,7 @@ export function UpgradeActionModal({
             />
 
             <DetailRow
+              styles={styles}
               icon="home-outline"
               label={
                 upgrade.village === "builderBase"
@@ -885,6 +896,7 @@ export function UpgradeActionModal({
 
             {upgrade.village === "home" && requiredLabLevel != null && (
               <DetailRow
+              styles={styles}
                 icon="flask-outline"
                 label="Required Lab"
                 value={String(requiredLabLevel)}
@@ -894,6 +906,7 @@ export function UpgradeActionModal({
 
             {hasXp && (
               <DetailRow
+              styles={styles}
                 icon="star-outline"
                 label="XP"
                 value={
@@ -909,6 +922,7 @@ export function UpgradeActionModal({
 
             {craftedProgression && (
               <DetailRow
+              styles={styles}
                 icon="diamond-outline"
                 label="Sparky Stones"
                 value={formatNumber(craftedProgression.sparkyStones)}
@@ -986,6 +1000,7 @@ export function UpgradeActionModal({
 
               return (
                 <DetailRow
+              styles={styles}
                   key={path}
                   icon="stats-chart-outline"
                   label={label}
@@ -1015,12 +1030,14 @@ export function UpgradeActionModal({
             </Text>
 
             <DetailRow
+              styles={styles}
               icon="layers-outline"
               label="Levels remaining"
               value={String(progression.remainingLevels)}
             />
 
             <DetailRow
+              styles={styles}
               icon="wallet-outline"
               label="Total cost"
               value={formatGameCost(progression.remainingCost)}
@@ -1029,6 +1046,7 @@ export function UpgradeActionModal({
             />
 
             <DetailRow
+              styles={styles}
               icon="hourglass-outline"
               label="Total time"
               value={formatDuration(progression.remainingUpgradeTime)}
@@ -1048,7 +1066,7 @@ export function UpgradeActionModal({
               void onUseBook(upgrade);
             }}
           >
-            <Ionicons name="book" size={16} color="#0f172a" />
+            <Ionicons name="book" size={16} color=colors.textDark />
             <Text style={styles.useBookText}>Use Book to Finish Upgrade</Text>
           </Pressable>
         )}
@@ -1120,12 +1138,14 @@ export function UpgradeActionModal({
  */
 
 function DetailRow({
+  styles,
   icon,
   label,
   value,
   valueIconUri,
   valueColor,
 }: {
+  styles: ReturnType<typeof createStyles>;
   icon?: keyof typeof Ionicons.glyphMap;
   label: string;
   value: string;
@@ -1135,7 +1155,7 @@ function DetailRow({
   return (
     <View style={styles.detailRow}>
       <View style={styles.detailLeft}>
-        {icon && <Ionicons name={icon} size={15} color="#64748b" />}
+        {icon && <Ionicons name={icon} size={15} color=colors.textMuted />}
 
         <Text style={styles.detailLabel}>{label}</Text>
       </View>
@@ -1175,7 +1195,7 @@ function DetailRow({
  * ============================================================
  */
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   /*
    * ----------------------------------------------------------
    * SHEET
@@ -1183,12 +1203,12 @@ const styles = StyleSheet.create({
    */
 
   sheetBackground: {
-    backgroundColor: "#0f172a",
+    backgroundColor: colors.textDark,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     borderWidth: 1,
     borderBottomWidth: 0,
-    borderColor: "#1e293b",
+    borderColor: colors.border,
   },
 
   handle: {
@@ -1200,7 +1220,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 4,
     borderRadius: 999,
-    backgroundColor: "#475569",
+    backgroundColor: colors.slate,
   },
 
   contentContainer: {
@@ -1228,7 +1248,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 9,
-    backgroundColor: "#1e293b",
+    backgroundColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 9,
@@ -1254,7 +1274,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     fontSize: 16,
     fontWeight: "700",
-    color: "#f8fafc",
+    color: colors.textBright,
   },
 
   superchargeIndicators: {
@@ -1272,14 +1292,14 @@ const styles = StyleSheet.create({
   subtitle: {
     marginTop: 2,
     fontSize: 10,
-    color: "#64748b",
+    color: colors.textMuted,
   },
 
   closeButton: {
     width: 30,
     height: 30,
     borderRadius: 8,
-    backgroundColor: "#1e293b",
+    backgroundColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1297,16 +1317,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     marginBottom: 2,
     borderRadius: 9,
-    backgroundColor: "#111c31",
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: colors.border,
   },
 
   craftedModuleIcon: {
     width: 27,
     height: 27,
     borderRadius: 7,
-    backgroundColor: "#1e293b",
+    backgroundColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 8,
@@ -1320,14 +1340,14 @@ const styles = StyleSheet.create({
     fontSize: 7,
     fontWeight: "800",
     letterSpacing: 0.7,
-    color: "#64748b",
+    color: colors.textMuted,
   },
 
   craftedModuleName: {
     marginTop: 1,
     fontSize: 11,
     fontWeight: "700",
-    color: "#e2e8f0",
+    color: colors.textPrimary,
   },
 
   craftedModuleLevel: {
@@ -1338,12 +1358,12 @@ const styles = StyleSheet.create({
   craftedModuleLevelText: {
     fontSize: 14,
     fontWeight: "800",
-    color: "#f8fafc",
+    color: colors.textBright,
   },
 
   craftedModuleLevelMax: {
     fontSize: 9,
-    color: "#64748b",
+    color: colors.textMuted,
   },
 
   /*
@@ -1360,7 +1380,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: colors.border,
   },
 
   levelSide: {
@@ -1400,21 +1420,21 @@ const styles = StyleSheet.create({
     fontSize: 7,
     fontWeight: "800",
     letterSpacing: 0.6,
-    color: "#64748b",
+    color: colors.textMuted,
   },
 
   currentLevelNumber: {
     marginTop: 1,
     fontSize: 15,
     fontWeight: "700",
-    color: "#94a3b8",
+    color: colors.textSecondary,
   },
 
   nextLevelNumber: {
     marginTop: 1,
     fontSize: 19,
     fontWeight: "900",
-    color: "#f8fafc",
+    color: colors.textBright,
   },
 
   maxLevel: {
@@ -1426,7 +1446,7 @@ const styles = StyleSheet.create({
     marginTop: 3,
     fontSize: 12,
     fontWeight: "700",
-    color: "#64748b",
+    color: colors.textMuted,
   },
 
   /*
@@ -1438,7 +1458,7 @@ const styles = StyleSheet.create({
   timerSection: {
     paddingVertical: 9,
     borderBottomWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: colors.border,
   },
 
   timerRow: {
@@ -1456,26 +1476,26 @@ const styles = StyleSheet.create({
 
   mutedText: {
     fontSize: 11,
-    color: "#64748b",
+    color: colors.textMuted,
   },
 
   timerValue: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#e2e8f0",
+    color: colors.textPrimary,
   },
 
   progressTrack: {
     height: 4,
     borderRadius: 999,
-    backgroundColor: "#1e293b",
+    backgroundColor: colors.border,
     overflow: "hidden",
   },
 
   progressFill: {
     height: "100%",
     borderRadius: 999,
-    backgroundColor: "#94a3b8",
+    backgroundColor: colors.textSecondary,
   },
 
   timerFooter: {
@@ -1486,7 +1506,7 @@ const styles = StyleSheet.create({
 
   tinyText: {
     fontSize: 8,
-    color: "#475569",
+    color: colors.slate,
   },
 
   /*
@@ -1502,7 +1522,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#94a3b8",
+    color: colors.textSecondary,
     marginBottom: 2,
   },
 
@@ -1522,7 +1542,7 @@ const styles = StyleSheet.create({
 
   detailLabel: {
     fontSize: 10,
-    color: "#64748b",
+    color: colors.textMuted,
   },
 
   detailRight: {
@@ -1535,7 +1555,7 @@ const styles = StyleSheet.create({
   detailValue: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#cbd5e1",
+    color: colors.textSecondary,
   },
 
   valueIcon: {
@@ -1554,9 +1574,9 @@ const styles = StyleSheet.create({
     marginTop: 9,
     padding: 10,
     borderRadius: 10,
-    backgroundColor: "#111c31",
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: colors.border,
   },
 
   hallAvailabilityHeader: {
@@ -1569,7 +1589,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: "800",
     letterSpacing: 0.6,
-    color: "#64748b",
+    color: colors.textMuted,
     textTransform: "uppercase",
   },
 
@@ -1591,20 +1611,20 @@ const styles = StyleSheet.create({
 
   hallAvailabilityLabel: {
     fontSize: 9,
-    color: "#64748b",
+    color: colors.textMuted,
   },
 
   hallAvailabilityHall: {
     marginTop: 1,
     fontSize: 8,
-    color: "#94a3b8",
+    color: colors.textSecondary,
   },
 
   hallAvailabilityValue: {
     marginTop: 1,
     fontSize: 14,
     fontWeight: "800",
-    color: "#e2e8f0",
+    color: colors.textPrimary,
   },
 
   /*
@@ -1621,21 +1641,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     marginTop: 8,
     borderRadius: 9,
-    backgroundColor: "#111c31",
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: colors.border,
   },
 
   maxStatusTitle: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#cbd5e1",
+    color: colors.textSecondary,
   },
 
   maxStatusSubtitle: {
     marginTop: 1,
     fontSize: 8,
-    color: "#64748b",
+    color: colors.textMuted,
   },
 
   /*
@@ -1648,9 +1668,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
     padding: 9,
     borderRadius: 9,
-    backgroundColor: "#111c31",
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: colors.border,
   },
 
   moduleProgressTop: {
@@ -1667,13 +1687,13 @@ const styles = StyleSheet.create({
   moduleProgressName: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#e2e8f0",
+    color: colors.textPrimary,
   },
 
   moduleProgressSubtext: {
     marginTop: 2,
     fontSize: 8,
-    color: "#64748b",
+    color: colors.textMuted,
   },
 
   moduleProgressBadge: {
@@ -1684,7 +1704,7 @@ const styles = StyleSheet.create({
   moduleProgressBadgeText: {
     fontSize: 12,
     fontWeight: "800",
-    color: "#cbd5e1",
+    color: colors.textSecondary,
   },
 
   moduleProgressBadgeLabel: {
@@ -1692,7 +1712,7 @@ const styles = StyleSheet.create({
     fontSize: 6,
     fontWeight: "800",
     letterSpacing: 0.5,
-    color: "#64748b",
+    color: colors.textMuted,
   },
 
   moduleProgressTrack: {
@@ -1700,13 +1720,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderRadius: 999,
     overflow: "hidden",
-    backgroundColor: "#1e293b",
+    backgroundColor: colors.border,
   },
 
   moduleProgressFill: {
     height: "100%",
     borderRadius: 999,
-    backgroundColor: "#94a3b8",
+    backgroundColor: colors.textSecondary,
   },
 
   /*
@@ -1723,10 +1743,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#fbbf24",
+    backgroundColor: colors.gold,
   },
   useBookText: {
-    color: "#0f172a",
+    color: colors.textDark,
     fontSize: 11,
     fontWeight: "800",
   },
@@ -1777,14 +1797,14 @@ const styles = StyleSheet.create({
   deleteConfirmTitle: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#f1f5f9",
+    color: colors.textPrimary,
   },
 
   deleteConfirmMessage: {
     marginTop: 2,
     fontSize: 8,
     lineHeight: 11,
-    color: "#64748b",
+    color: colors.textMuted,
   },
 
   deleteConfirmActions: {
@@ -1798,13 +1818,13 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#1e293b",
+    backgroundColor: colors.border,
   },
 
   cancelDeleteText: {
     fontSize: 9,
     fontWeight: "700",
-    color: "#94a3b8",
+    color: colors.textSecondary,
   },
 
   confirmDeleteButton: {

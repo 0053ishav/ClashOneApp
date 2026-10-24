@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 const [variant, ...expoArgs] = process.argv.slice(2);
 const validVariants = new Set(["development", "preview", "production"]);
@@ -15,10 +16,10 @@ if (expoArgs.length === 0) {
   process.exit(1);
 }
 
-const cliPath = new URL("../node_modules/expo/bin/cli", import.meta.url);
+const cliPath = fileURLToPath(new URL("../node_modules/expo/bin/cli", import.meta.url));
 const child = spawn(
   process.execPath,
-  [cliPath.pathname, ...expoArgs],
+  [cliPath, ...expoArgs],
   {
     stdio: "inherit",
     env: { ...process.env, APP_VARIANT: variant },

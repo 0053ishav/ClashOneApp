@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState , useMemo } from "react";
 import {
   Animated,
   Linking,
@@ -14,6 +15,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function PrivacyScreen() {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(50));
@@ -44,7 +47,7 @@ export default function PrivacyScreen() {
           {/* Header */}
           <View style={styles.header}>
             <Pressable onPress={() => router.back()} style={styles.backButton}>
-              <Ionicons name="chevron-back" size={24} color={HOME_COLORS.gold} />
+              <Ionicons name="chevron-back" size={24} color={colors.gold} />
             </Pressable>
             <View style={styles.headerContent}>
               <Text style={styles.headerTitle}>Privacy Policy</Text>
@@ -63,7 +66,7 @@ export default function PrivacyScreen() {
             ]}
           >
             <View style={styles.infoContent}>
-              <Ionicons name="calendar" size={20} color={HOME_COLORS.gold} />
+              <Ionicons name="calendar" size={20} color={colors.gold} />
               <View style={styles.infoText}>
                 <Text style={styles.infoLabel}>Last Updated</Text>
                 <Text style={styles.infoValue}>May 2026</Text>
@@ -74,7 +77,7 @@ export default function PrivacyScreen() {
           {/* Overview Section */}
           <View style={styles.card}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="shield-checkmark" size={20} color={HOME_COLORS.success} />
+              <Ionicons name="shield-checkmark" size={20} color={colors.success} />
               <Text style={styles.sectionTitle}>Your Privacy</Text>
             </View>
             <Text style={styles.sectionText}>
@@ -89,7 +92,7 @@ export default function PrivacyScreen() {
           {/* Data Collection */}
           <View style={styles.card}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="document-outline" size={20} color={HOME_COLORS.blue} />
+              <Ionicons name="document-outline" size={20} color={colors.blue} />
               <Text style={styles.sectionTitle}>Data We Collect</Text>
             </View>
 
@@ -125,7 +128,7 @@ export default function PrivacyScreen() {
           {/* Data We Don't Collect */}
           <View style={styles.card}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="ban" size={20} color={HOME_COLORS.danger} />
+              <Ionicons name="ban" size={20} color={colors.danger} />
               <Text style={styles.sectionTitle}>What We Don&apos;t Do</Text>
             </View>
 
@@ -154,7 +157,7 @@ export default function PrivacyScreen() {
           {/* Data Storage */}
           <View style={styles.card}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="folder-outline" size={20} color={HOME_COLORS.purple} />
+              <Ionicons name="folder-outline" size={20} color={colors.purple} />
               <Text style={styles.sectionTitle}>Data Storage</Text>
             </View>
             <Text style={styles.sectionText}>
@@ -167,13 +170,13 @@ export default function PrivacyScreen() {
           {/* Permissions */}
           <View style={styles.card}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="key-outline" size={20} color={HOME_COLORS.purpleLight} />
+              <Ionicons name="key-outline" size={20} color={colors.purpleLight} />
               <Text style={styles.sectionTitle}>App Permissions</Text>
             </View>
 
             <View style={styles.permissionItem}>
               <View style={styles.permissionIcon}>
-                <Ionicons name="notifications" size={18} color={HOME_COLORS.gold} />
+                <Ionicons name="notifications" size={18} color={colors.gold} />
               </View>
               <View style={styles.permissionInfo}>
                 <Text style={styles.permissionTitle}>Notifications</Text>
@@ -185,7 +188,7 @@ export default function PrivacyScreen() {
 
             <View style={styles.permissionItem}>
               <View style={styles.permissionIcon}>
-                <Ionicons name="document" size={18} color={HOME_COLORS.gold} />
+                <Ionicons name="document" size={18} color={colors.gold} />
               </View>
               <View style={styles.permissionInfo}>
                 <Text style={styles.permissionTitle}>File Access</Text>
@@ -199,7 +202,7 @@ export default function PrivacyScreen() {
           {/* Children's Privacy */}
           <View style={styles.card}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="information-circle" size={20} color={HOME_COLORS.cyan} />
+              <Ionicons name="information-circle" size={20} color={colors.cyan} />
               <Text style={styles.sectionTitle}>Children&apos;s Privacy</Text>
             </View>
             <Text style={styles.sectionText}>
@@ -212,7 +215,7 @@ export default function PrivacyScreen() {
           {/* Advertising */}
           <View style={styles.card}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="megaphone" size={20} color={HOME_COLORS.success} />
+              <Ionicons name="megaphone" size={20} color={colors.success} />
               <Text style={styles.sectionTitle}>Advertising</Text>
             </View>
 
@@ -228,7 +231,7 @@ export default function PrivacyScreen() {
           {/* Changes */}
           <View style={styles.card}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="refresh" size={20} color={HOME_COLORS.cyan} />
+              <Ionicons name="refresh" size={20} color={colors.cyan} />
               <Text style={styles.sectionTitle}>Policy Changes</Text>
             </View>
             <Text style={styles.sectionText}>
@@ -241,7 +244,7 @@ export default function PrivacyScreen() {
           {/* Disclaimer */}
           <View style={styles.card}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="alert-circle" size={20} color={HOME_COLORS.orange} />
+              <Ionicons name="alert-circle" size={20} color={colors.orange} />
               <Text style={styles.sectionTitle}>Disclaimer</Text>
             </View>
             <Text style={styles.sectionText}>
@@ -257,7 +260,7 @@ export default function PrivacyScreen() {
             >
               <Text
                 style={{
-                  color: HOME_COLORS.gold,
+                  color: colors.gold,
                   marginTop: 10,
                   fontWeight: "600",
                 }}
@@ -270,7 +273,7 @@ export default function PrivacyScreen() {
           {/* Contact */}
           <View style={styles.card}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="mail" size={20} color={HOME_COLORS.gold} />
+              <Ionicons name="mail" size={20} color={colors.gold} />
               <Text style={styles.sectionTitle}>Contact Us</Text>
             </View>
 
@@ -287,7 +290,7 @@ export default function PrivacyScreen() {
                 )
               }
             >
-              <Ionicons name="mail-outline" size={18} color={HOME_COLORS.gold} />
+              <Ionicons name="mail-outline" size={18} color={colors.gold} />
               <Text style={styles.linkButtonText}>
                 legal@clashwidget.online
               </Text>
@@ -310,10 +313,10 @@ export default function PrivacyScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: HOME_COLORS.background,
+    backgroundColor: colors.background,
   },
 
   container: {
@@ -325,9 +328,9 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 24,
     paddingHorizontal: 20,
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: HOME_COLORS.borderStrong,
+    borderBottomColor: colors.borderStrong,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
@@ -351,24 +354,24 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 25,
     fontWeight: "900",
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     letterSpacing: -0.4,
   },
 
   headerSubtitle: {
     fontSize: 12,
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
     fontWeight: "500",
   },
 
   card: {
     marginHorizontal: 20,
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 18,
     padding: 18,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderStrong,
+    borderColor: colors.borderStrong,
     shadowColor: "#000000",
     shadowOpacity: 0.16,
     shadowRadius: 12,
@@ -378,7 +381,7 @@ const styles = StyleSheet.create({
 
   infoCard: {
     borderLeftWidth: 3,
-    borderLeftColor: HOME_COLORS.gold,
+    borderLeftColor: colors.gold,
     backgroundColor: "rgba(251,191,36,0.06)",
   },
 
@@ -394,13 +397,13 @@ const styles = StyleSheet.create({
 
   infoLabel: {
     fontSize: 12,
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
     fontWeight: "600",
   },
 
   infoValue: {
     fontSize: 14,
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     fontWeight: "700",
     marginTop: 2,
   },
@@ -415,12 +418,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
   },
 
   sectionText: {
     fontSize: 13,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     lineHeight: 20,
   },
 
@@ -439,13 +442,13 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: HOME_COLORS.gold,
+    backgroundColor: colors.gold,
     marginTop: 7,
   },
 
   bulletText: {
     fontSize: 13,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     flex: 1,
     lineHeight: 19,
   },
@@ -478,12 +481,12 @@ const styles = StyleSheet.create({
   permissionTitle: {
     fontSize: 13,
     fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
   },
 
   permissionDesc: {
     fontSize: 12,
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
   },
 
   backButtonFull: {
@@ -491,9 +494,9 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingVertical: 15,
     borderRadius: 14,
-    backgroundColor: HOME_COLORS.gold,
+    backgroundColor: colors.gold,
     alignItems: "center",
-    shadowColor: HOME_COLORS.gold,
+    shadowColor: colors.gold,
     shadowOpacity: 0.18,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
@@ -507,7 +510,7 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 15,
     fontWeight: "700",
-    color: HOME_COLORS.textDark,
+    color: colors.textDark,
   },
 
   linkButton: {
@@ -518,7 +521,7 @@ const styles = StyleSheet.create({
   },
 
   linkButtonText: {
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     fontSize: 13,
     fontWeight: "600",
   },

@@ -1,11 +1,12 @@
 import EntitySection from "@/components/Profile/EntitySection";
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import { PlayerFull } from "@/types/playerFull";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
+import { useMemo } from "react";
 
-const GOLD = HOME_COLORS.gold;
 const MAX_STARS = 3;
 const PREVIEW_LIMIT = 5;
 
@@ -16,6 +17,9 @@ interface AchievementItemProps {
 }
 
 export default function ProgressSection({ data }: { data: PlayerFull }) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const GOLD = colors.gold;
   const router = useRouter();
   const achievements = data.achievements ?? [];
 
@@ -52,6 +56,9 @@ export default function ProgressSection({ data }: { data: PlayerFull }) {
 }
 
 function AchievementItem({ name, stars = 0, info }: AchievementItemProps) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const GOLD = colors.gold;
   const filled = Math.min(stars, MAX_STARS);
   const complete = filled === MAX_STARS;
 
@@ -61,7 +68,7 @@ function AchievementItem({ name, stars = 0, info }: AchievementItemProps) {
         <Ionicons
           name={complete ? "trophy" : "trophy-outline"}
           size={14}
-          color={complete ? GOLD : HOME_COLORS.textSecondary}
+          color={complete ? GOLD : colors.textSecondary}
         />
       </View>
 
@@ -82,7 +89,7 @@ function AchievementItem({ name, stars = 0, info }: AchievementItemProps) {
             key={i}
             name={i < filled ? "star" : "star-outline"}
             size={11}
-            color={i < filled ? GOLD : HOME_COLORS.slate}
+            color={i < filled ? GOLD : colors.slate}
           />
         ))}
       </View>
@@ -90,14 +97,14 @@ function AchievementItem({ name, stars = 0, info }: AchievementItemProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   container: {
-    backgroundColor: HOME_COLORS.surfaceDark,
+    backgroundColor: colors.surfaceDark,
     borderRadius: 20,
     padding: 14,
     gap: 10,
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderStrong,
+    borderColor: colors.borderStrong,
     marginBottom: 12,
   },
 
@@ -122,7 +129,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 15,
     fontWeight: "800",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
     letterSpacing: -0.2,
   },
 
@@ -166,13 +173,13 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 12,
     fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
   },
 
   itemInfo: {
     fontSize: 10,
     fontWeight: "400",
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
   },
 
   starsRow: {

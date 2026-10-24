@@ -1,10 +1,10 @@
 import { ENV } from "@/config/env";
-import { HOME_COLORS } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import { syncPremium } from "@/services/revenueCat/syncPremium";
 import { usePremiumStore } from "@/stores/premiumStore";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Keyboard, StyleSheet, Text, View } from "react-native";
 import {
   BannerAd,
@@ -15,11 +15,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
-const GOLD = HOME_COLORS.gold;
-const INACTIVE = HOME_COLORS.textMuted;
-const BAR_BG = HOME_COLORS.surface;
-const BORDER = HOME_COLORS.borderStrong;
-const APP_BG = HOME_COLORS.background;
 const TAB_BAR_HEIGHT = 64;
 
 // Add analytics / war / upload-json back here when they ship.
@@ -44,12 +39,16 @@ function TabIcon({
   color,
   active,
   inactive,
+  pillColor,
 }: {
   focused: boolean;
   color: string;
   active: IconName;
   inactive: IconName;
+  pillColor: string;
 }) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const progress = useRef(new Animated.Value(focused ? 1 : 0)).current;
 
   useEffect(() => {
@@ -65,7 +64,7 @@ function TabIcon({
       <Animated.View
         style={[
           styles.pill,
-          {
+          { backgroundColor: pillColor,
             opacity: progress,
             transform: [
               {
@@ -104,6 +103,8 @@ function useKeyboardVisible() {
 }
 
 export default function TabLayout() {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const adUnitId = __DEV__ ? TestIds.BANNER : ENV.ADS.BANNER_ID;
 
   const insets = useSafeAreaInsets();
@@ -124,22 +125,22 @@ export default function TabLayout() {
   const tabBarInset = bannerVisible ? 0 : insets.bottom;
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
       <Tabs
         screenOptions={{
           headerShown: false,
           tabBarHideOnKeyboard: true,
-          sceneStyle: { backgroundColor: APP_BG },
+          sceneStyle: { backgroundColor: colors.background },
 
-          tabBarActiveTintColor: GOLD,
-          tabBarInactiveTintColor: INACTIVE,
+          tabBarActiveTintColor: colors.gold,
+          tabBarInactiveTintColor: colors.textMuted,
 
           tabBarStyle: {
             height: TAB_BAR_HEIGHT + tabBarInset,
             paddingBottom: tabBarInset,
-            backgroundColor: BAR_BG,
+            backgroundColor: colors.surface,
             borderTopWidth: 1,
-            borderTopColor: BORDER,
+            borderTopColor: colors.borderStrong,
             elevation: 0,
           },
           tabBarItemStyle: {
@@ -171,6 +172,7 @@ export default function TabLayout() {
                   color={color}
                   active={tab.active}
                   inactive={tab.inactive}
+                  pillColor={`${colors.gold}29`}
                 />
               ),
             }}
@@ -205,10 +207,10 @@ export default function TabLayout() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useHomeColors>) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: APP_BG,
+    backgroundColor: colors.background,
   },
 
   // ── Tab icon / label ────────────────────────────────────
@@ -223,7 +225,6 @@ const styles = StyleSheet.create({
   pill: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: 15,
-    backgroundColor: "rgba(251,191,36,0.16)",
   },
 
   label: {
@@ -240,7 +241,6 @@ const styles = StyleSheet.create({
   bannerWrap: {
     alignItems: "center",
     paddingTop: 6, // gap from the tab bar to avoid accidental ad taps
-    backgroundColor: APP_BG,
   },
 
   bannerCollapsed: {

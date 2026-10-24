@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { HOME_COLORS } from "@/theme/home";
-import type { ComponentProps } from "react";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
+import { useMemo, type ComponentProps } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 type EmptyStateIcon = ComponentProps<typeof Ionicons>["name"];
@@ -20,12 +21,15 @@ export function ProgressionEmptyState({
   icon,
   title,
   description,
-  accentColor = HOME_COLORS.gold,
+  accentColor,
 }: ProgressionEmptyStateProps) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const resolvedAccentColor = accentColor ?? colors.gold;
   return (
     <View style={styles.card}>
-      <View style={[styles.iconWrap, { backgroundColor: `${accentColor}14` }]}>
-        <Ionicons name={icon} size={23} color={accentColor} />
+      <View style={[styles.iconWrap, { backgroundColor: `${resolvedAccentColor}14` }]}>
+        <Ionicons name={icon} size={23} color={resolvedAccentColor} />
       </View>
       <View style={styles.copy}>
         <Text style={styles.title}>{title}</Text>
@@ -35,7 +39,7 @@ export function ProgressionEmptyState({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   card: {
     minHeight: 88,
     flexDirection: "row",
@@ -43,10 +47,10 @@ const styles = StyleSheet.create({
     gap: 14,
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: HOME_COLORS.border,
+    borderColor: colors.border,
   },
   iconWrap: {
     width: 44,
@@ -60,12 +64,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   title: {
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
     fontSize: 14,
     fontWeight: "700",
   },
   description: {
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 12,
     lineHeight: 17,
   },

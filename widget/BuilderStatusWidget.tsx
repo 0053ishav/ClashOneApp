@@ -1,6 +1,7 @@
 "use no memo";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
 import React from "react";
+import { getWidgetColors } from "@/utils/widget/widgetTheme";
 import {
   FlexWidget,
   ImageWidget,
@@ -23,6 +24,7 @@ export function BuilderStatusWidget(props: {
   updatedAt?: number;
   cachedAt?: number;
 }) {
+  const colors = getWidgetColors();
   const isFree = props.subtitle === "All builders free";
 
   const clamped = Math.max(0, Math.min(props.progress ?? 0, 1));
@@ -36,7 +38,7 @@ export function BuilderStatusWidget(props: {
       style={{
         width: "match_parent",
         height: "match_parent",
-        backgroundColor: "#0f172a",
+        backgroundColor: colors.surface,
         borderRadius: 16,
         flexDirection: "row",
       }}
@@ -138,7 +140,7 @@ export function BuilderStatusWidget(props: {
               <TextWidget
                 text={props.title}
                 style={{
-                  color: "#f1f5f9",
+                  color: colors.textPrimary,
                   fontSize: 12,
                   fontWeight: "700",
                 }}
@@ -178,7 +180,7 @@ export function BuilderStatusWidget(props: {
                     : " ⚠ "
                 }
                 style={{
-                  color: "#64748b",
+                  color: colors.textMuted,
                   fontSize: 8,
                   fontWeight: "500",
                 }}

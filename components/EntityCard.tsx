@@ -1,4 +1,5 @@
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import { getUpgradeStatus } from "@/engine/progression/selectors/getUpgradeStatus";
 import { getProgressColor } from "@/utils/getProgressColor";
 import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
@@ -6,6 +7,7 @@ import type { Village } from "@/types/entity";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useMemo } from "react";
 
 interface EntityCardProps {
   dataId: number;
@@ -27,6 +29,8 @@ export default function EntityCard({
   village,
   fillContainer = false,
 }: EntityCardProps) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const status = getUpgradeStatus(level, maxLevel);
   const progressColor = getProgressColor(status);
   const remaining = Math.max(0, maxLevel - level);
@@ -112,7 +116,7 @@ export default function EntityCard({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   pressable: {
     width: "31.5%",
   },
@@ -142,15 +146,15 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderRadius: 5,
     borderWidth: 1.5,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
   },
 
   artworkDefault: {
-    borderColor: HOME_COLORS.borderStrong,
+    borderColor: colors.borderStrong,
   },
 
   artworkMaxed: {
-    borderColor: "#FFD75E",
+    borderColor: colors.gold,
     borderWidth: 2,
   },
 
@@ -172,19 +176,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.28)",
+    borderColor: colors.borderStrong,
   },
 
   levelBadgeDefault: {
-    backgroundColor: "rgba(15,23,42,0.94)",
+    backgroundColor: colors.surface,
     borderRadius: 3,
     minWidth: 22,
     height: 21,
   },
 
   levelBadgeMaxed: {
-    backgroundColor: "#FFD75E",
-    borderColor: "#FFD75E",
+    backgroundColor: colors.gold,
+    borderColor: colors.gold,
     borderRadius: 3,
     minWidth: 20,
     height: 18,
@@ -195,12 +199,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 15,
     fontWeight: "900",
-    color: HOME_COLORS.textBright,
+    color: colors.textPrimary,
     fontVariant: ["tabular-nums"],
   },
 
   levelTextMaxed: {
-    color: "#111827",
+    color: colors.textDark,
     fontSize: 11,
     lineHeight: 13,
   },
@@ -211,7 +215,7 @@ const styles = StyleSheet.create({
     width: "100%",
     minHeight: 15,
     textAlign: "center",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
     fontSize: 10,
     lineHeight: 13,
     fontWeight: "800",

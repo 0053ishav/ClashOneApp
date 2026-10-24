@@ -1,6 +1,7 @@
 "use no memo";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
 import React from "react";
+import { getWidgetColors } from "@/utils/widget/widgetTheme";
 import {
   ColorProp,
   FlexWidget,
@@ -20,6 +21,7 @@ export function LabStatusWidget(props: {
   accountInitials?: string;
   updatedAt?: number;
 }) {
+  const colors = getWidgetColors();
   const isIdle = props.subtitle === "Idle";
 
   const clamped = Math.max(0, Math.min(props.progress ?? 0, 1));
@@ -33,7 +35,7 @@ export function LabStatusWidget(props: {
       style={{
         width: "match_parent",
         height: "match_parent",
-        backgroundColor: "#0f172a",
+        backgroundColor: colors.surface,
         borderRadius: 16,
         flexDirection: "row",
       }}
@@ -121,7 +123,7 @@ export function LabStatusWidget(props: {
               <TextWidget
                 text={props.title}
                 style={{
-                  color: "#f1f5f9",
+                  color: colors.textPrimary,
                   fontSize: 13,
                   fontWeight: "700",
                 }}
@@ -153,7 +155,7 @@ export function LabStatusWidget(props: {
                     : " ⚠ "
                 }
                 style={{
-                  color: "#475569",
+                  color: colors.textSecondary,
                   fontSize: 8,
                 }}
               />

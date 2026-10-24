@@ -1,3 +1,5 @@
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import { getMagicItem } from "@/config/magicItems";
 import { resolveUpgradeCompletionTime } from "@/engine/magicItems/resolveUpgradeCompletionTime";
 import type { ActiveMagicEffect, MagicItem } from "@/types/magicItem";
@@ -25,10 +27,12 @@ export function formatSavedDuration(milliseconds: number): string {
 }
 
 export function MagicItemTimeSaved({ milliseconds }: { milliseconds?: number }) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   if (!milliseconds || milliseconds <= 0) return null;
   return (
     <View style={styles.savedInline}>
-      <Ionicons name="flash" size={11} color="#34d399" />
+      <Ionicons name="flash" size={11} color={colors.success} />
       <Text style={styles.savedInlineText}>Saved {formatSavedDuration(milliseconds)}</Text>
     </View>
   );
@@ -39,6 +43,8 @@ export function MagicItemActivitySummary({
   upgrades,
   now = Date.now(),
 }: MagicItemActivitySummaryProps) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const activeItems = useMemo(() => {
     const seen = new Set<string>();
     return effects
@@ -89,7 +95,7 @@ export function MagicItemActivitySummary({
     <View style={styles.card}>
       <View style={styles.header}>
         <View style={styles.headerIcon}>
-          <Ionicons name="sparkles" size={17} color="#fbbf24" />
+          <Ionicons name="sparkles" size={17} color={colors.gold} />
         </View>
         <View style={styles.headerText}>
           <Text style={styles.title}>Potion & Snack Effects</Text>
@@ -125,24 +131,24 @@ export function MagicItemActivitySummary({
   );
 }
 
-const styles = StyleSheet.create({
-  card: { marginHorizontal: 14, marginTop: 2, marginBottom: 12, padding: 13, borderRadius: 15, backgroundColor: "#111c31", borderWidth: 1, borderColor: "#263449" },
+const createStyles = (colors: HomeColors) => StyleSheet.create({
+  card: { marginHorizontal: 14, marginTop: 2, marginBottom: 12, padding: 13, borderRadius: 15, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   header: { flexDirection: "row", alignItems: "center", gap: 9 },
   headerIcon: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(251,191,36,0.1)" },
   headerText: { flex: 1 },
-  title: { color: "#f8fafc", fontSize: 12, fontWeight: "900" },
-  subtitle: { color: "#64748b", fontSize: 9, marginTop: 3 },
+  title: { color: colors.textPrimary, fontSize: 12, fontWeight: "900" },
+  subtitle: { color: colors.textSecondary, fontSize: 9, marginTop: 3 },
   savedTotal: { alignItems: "flex-end" },
-  savedLabel: { color: "#64748b", fontSize: 8, fontWeight: "800", letterSpacing: 0.5 },
+  savedLabel: { color: colors.textSecondary, fontSize: 8, fontWeight: "800", letterSpacing: 0.5 },
   savedValue: { color: "#34d399", fontSize: 15, fontWeight: "900", marginTop: 2 },
   items: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 9 },
-  itemChip: { flexDirection: "row", alignItems: "center", gap: 5, paddingVertical: 5, paddingHorizontal: 7, borderRadius: 9, backgroundColor: "#0f172a", borderWidth: 1, borderColor: "#263449", maxWidth: "100%" },
+  itemChip: { flexDirection: "row", alignItems: "center", gap: 5, paddingVertical: 5, paddingHorizontal: 7, borderRadius: 9, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, maxWidth: "100%" },
   itemImage: { width: 20, height: 20 },
   itemDetails: { flexShrink: 1 },
-  itemName: { color: "#cbd5e1", fontSize: 9, fontWeight: "700" },
+  itemName: { color: colors.textSecondary, fontSize: 9, fontWeight: "700" },
   itemSaved: { color: "#34d399", fontSize: 8, fontWeight: "800", marginTop: 1 },
   activeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#34d399" },
-  emptyText: { marginTop: 11, color: "#94a3b8", fontSize: 10 },
+  emptyText: { marginTop: 11, color: colors.textSecondary, fontSize: 10 },
   savedInline: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 3 },
   savedInlineText: { color: "#34d399", fontSize: 9, fontWeight: "700" },
 });
@@ -165,6 +171,8 @@ export function MagicItemActivityPopup({
   error,
   onClose,
 }: MagicItemActivityPopupProps) {
+  const colors = useHomeColors();
+  const popupStyles = useMemo(() => createPopupStyles(colors), [colors]);
   const villageName = village === "home" ? "Home Village" : "Builder Base";
 
   return (
@@ -179,7 +187,7 @@ export function MagicItemActivityPopup({
         <View style={popupStyles.dialog}>
           <View style={popupStyles.topRow}>
             <View style={popupStyles.heroIcon}>
-              <Ionicons name="flash" size={22} color="#34d399" />
+              <Ionicons name="flash" size={22} color={colors.success} />
             </View>
             <View style={popupStyles.heading}>
               <Text style={popupStyles.title}>Magic Item Activity</Text>
@@ -192,7 +200,7 @@ export function MagicItemActivityPopup({
               hitSlop={10}
               style={popupStyles.closeButton}
             >
-              <Ionicons name="close" size={18} color="#94a3b8" />
+              <Ionicons name="close" size={18} color={colors.textSecondary} />
             </Pressable>
           </View>
 
@@ -202,7 +210,7 @@ export function MagicItemActivityPopup({
               <Text style={popupStyles.totalValue}>{formatSavedDuration(totalSavedMs)}</Text>
             </View>
             <View style={popupStyles.totalIcon}>
-              <Ionicons name="time-outline" size={23} color="#34d399" />
+              <Ionicons name="time-outline" size={23} color={colors.success} />
             </View>
           </View>
 
@@ -215,7 +223,7 @@ export function MagicItemActivityPopup({
 
           {error ? (
             <View style={popupStyles.emptyState}>
-              <Ionicons name="alert-circle-outline" size={23} color="#fb7185" />
+              <Ionicons name="alert-circle-outline" size={23} color={colors.danger} />
               <Text style={popupStyles.emptyText}>{error}</Text>
             </View>
           ) : items.length > 0 ? (
@@ -226,7 +234,7 @@ export function MagicItemActivityPopup({
                     {item.image ? (
                       <Image source={{ uri: item.image }} style={popupStyles.itemImage} contentFit="contain" />
                     ) : (
-                      <Ionicons name="sparkles" size={20} color="#fbbf24" />
+                      <Ionicons name="sparkles" size={20} color={colors.gold} />
                     )}
                   </View>
                   <View style={popupStyles.itemInfo}>
@@ -243,7 +251,7 @@ export function MagicItemActivityPopup({
           ) : (
             <View style={popupStyles.emptyState}>
               <View style={popupStyles.emptyIcon}>
-                <Ionicons name="flask-outline" size={22} color="#64748b" />
+                <Ionicons name="flask-outline" size={22} color={colors.textSecondary} />
               </View>
               <Text style={popupStyles.emptyTitle}>No active effects</Text>
               <Text style={popupStyles.emptyText}>Use a potion or snack to speed up your progression.</Text>
@@ -263,40 +271,40 @@ export function MagicItemActivityPopup({
   );
 }
 
-const popupStyles = StyleSheet.create({
+const createPopupStyles = (colors: HomeColors) => StyleSheet.create({
   overlay: { flex: 1, justifyContent: "center", alignItems: "center", padding: 22, backgroundColor: "rgba(2,6,23,0.76)" },
   scrim: { ...StyleSheet.absoluteFillObject },
-  dialog: { width: "100%", maxWidth: 410, maxHeight: "78%", padding: 18, borderRadius: 22, backgroundColor: "#0f172a", borderWidth: 1, borderColor: "#334155" },
+  dialog: { width: "100%", maxWidth: 410, maxHeight: "78%", padding: 18, borderRadius: 22, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border },
   topRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   heroIcon: { width: 43, height: 43, borderRadius: 13, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(52,211,153,0.1)", borderWidth: 1, borderColor: "rgba(52,211,153,0.22)" },
   heading: { flex: 1, minWidth: 0 },
-  title: { color: "#f8fafc", fontSize: 16, fontWeight: "900" },
-  subtitle: { color: "#94a3b8", fontSize: 10, marginTop: 4, fontWeight: "600" },
-  closeButton: { width: 30, height: 30, borderRadius: 9, backgroundColor: "#1e293b", alignItems: "center", justifyContent: "center" },
+  title: { color: colors.textPrimary, fontSize: 16, fontWeight: "900" },
+  subtitle: { color: colors.textSecondary, fontSize: 10, marginTop: 4, fontWeight: "600" },
+  closeButton: { width: 30, height: 30, borderRadius: 9, backgroundColor: colors.surfaceRaised, alignItems: "center", justifyContent: "center" },
   totalCard: { marginTop: 17, padding: 15, borderRadius: 15, flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "rgba(52,211,153,0.08)", borderWidth: 1, borderColor: "rgba(52,211,153,0.2)" },
   totalLabel: { color: "#6ee7b7", fontSize: 9, fontWeight: "900", letterSpacing: 0.8 },
   totalValue: { color: "#34d399", fontSize: 27, fontWeight: "900", marginTop: 5 },
   totalIcon: { width: 42, height: 42, borderRadius: 13, backgroundColor: "rgba(52,211,153,0.1)", alignItems: "center", justifyContent: "center" },
   sectionHeader: { marginTop: 19, marginBottom: 9, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  sectionTitle: { color: "#94a3b8", fontSize: 10, fontWeight: "900", letterSpacing: 0.8 },
-  countBadge: { minWidth: 23, height: 23, paddingHorizontal: 6, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: "#1e293b" },
-  countText: { color: "#e2e8f0", fontSize: 10, fontWeight: "900" },
+  sectionTitle: { color: colors.textSecondary, fontSize: 10, fontWeight: "900", letterSpacing: 0.8 },
+  countBadge: { minWidth: 23, height: 23, paddingHorizontal: 6, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: colors.surfaceRaised },
+  countText: { color: colors.textPrimary, fontSize: 10, fontWeight: "900" },
   list: { flexGrow: 0, flexShrink: 1, maxHeight: 230 },
   listContent: { gap: 8 },
-  itemRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 10, borderRadius: 13, backgroundColor: "#111c31", borderWidth: 1, borderColor: "#263449" },
-  itemIcon: { width: 42, height: 42, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: "#0b1425" },
+  itemRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 10, borderRadius: 13, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  itemIcon: { width: 42, height: 42, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: colors.background },
   itemImage: { width: 34, height: 34 },
   itemInfo: { flex: 1, minWidth: 0 },
-  itemName: { color: "#f1f5f9", fontSize: 12, fontWeight: "800" },
-  itemDescription: { color: "#94a3b8", fontSize: 9, lineHeight: 13, marginTop: 3 },
+  itemName: { color: colors.textPrimary, fontSize: 12, fontWeight: "800" },
+  itemDescription: { color: colors.textSecondary, fontSize: 9, lineHeight: 13, marginTop: 3 },
   activeStatus: { flexDirection: "row", alignItems: "center", gap: 4 },
   activeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#34d399" },
   activeText: { color: "#34d399", fontSize: 8, fontWeight: "900", letterSpacing: 0.3 },
-  emptyState: { alignItems: "center", justifyContent: "center", paddingVertical: 22, paddingHorizontal: 18, borderRadius: 14, backgroundColor: "#111c31", borderWidth: 1, borderColor: "#263449" },
-  emptyIcon: { width: 42, height: 42, borderRadius: 13, backgroundColor: "#0b1425", alignItems: "center", justifyContent: "center", marginBottom: 9 },
-  emptyTitle: { color: "#e2e8f0", fontSize: 12, fontWeight: "800", marginTop: 8 },
-  emptyText: { color: "#94a3b8", fontSize: 10, lineHeight: 15, textAlign: "center", marginTop: 5 },
-  doneButton: { marginTop: 16, height: 43, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "#fbbf24" },
-  doneText: { color: "#0f172a", fontSize: 12, fontWeight: "900" },
+  emptyState: { alignItems: "center", justifyContent: "center", paddingVertical: 22, paddingHorizontal: 18, borderRadius: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  emptyIcon: { width: 42, height: 42, borderRadius: 13, backgroundColor: colors.background, alignItems: "center", justifyContent: "center", marginBottom: 9 },
+  emptyTitle: { color: colors.textPrimary, fontSize: 12, fontWeight: "800", marginTop: 8 },
+  emptyText: { color: colors.textSecondary, fontSize: 10, lineHeight: 15, textAlign: "center", marginTop: 5 },
+  doneButton: { marginTop: 16, height: 43, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: colors.gold },
+  doneText: { color: colors.textDark, fontSize: 12, fontWeight: "900" },
   pressed: { opacity: 0.72 },
 });

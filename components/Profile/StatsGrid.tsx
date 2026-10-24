@@ -1,4 +1,6 @@
-import { HOME_COLORS } from "@/theme/home";
+import { useMemo } from "react";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 
@@ -24,6 +26,8 @@ interface StatsGridProps {
  * Each stat keeps its label above its value, matching the compact game-style layout.
  */
 export default function StatsGrid({ title = "Stats", stats }: StatsGridProps) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const visible = stats.filter((stat) => stat.value !== undefined);
 
   return (
@@ -32,7 +36,7 @@ export default function StatsGrid({ title = "Stats", stats }: StatsGridProps) {
 
       <View style={styles.row}>
         {visible.map((stat) => {
-          const tint = stat.highlight ? HOME_COLORS.gold : (stat.color ?? HOME_COLORS.textMuted);
+          const tint = stat.highlight ? colors.gold : (stat.color ?? colors.textMuted);
 
           return (
             <View key={stat.label} style={styles.statItem}>
@@ -60,7 +64,7 @@ export default function StatsGrid({ title = "Stats", stats }: StatsGridProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   container: {
     gap: 8,
     marginBottom: 14,
@@ -69,7 +73,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 13,
     fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
     letterSpacing: -0.2,
     paddingHorizontal: 2,
   },
@@ -89,9 +93,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 6,
     borderRadius: 9,
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: HOME_COLORS.border,
+    borderColor: colors.border,
   },
 
   iconChip: {
@@ -107,7 +111,7 @@ const styles = StyleSheet.create({
     width: "100%",
     fontSize: 9,
     fontWeight: "600",
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: "center",
   },
 
@@ -115,12 +119,12 @@ const styles = StyleSheet.create({
     maxWidth: "100%",
     fontSize: 13,
     fontWeight: "800",
-    color: HOME_COLORS.textBright,
+    color: colors.textBright,
     textAlign: "center",
     fontVariant: ["tabular-nums"],
   },
 
   highlightValue: {
-    color: HOME_COLORS.gold,
+    color: colors.gold,
   },
 });

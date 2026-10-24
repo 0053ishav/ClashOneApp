@@ -1,5 +1,6 @@
 import GoblinEventBanner from "@/components/GoblinEventBanner";
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import {
   GoldPassBoostButton,
   GoldPassBoostQuickPanel,
@@ -116,6 +117,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { scheduleOnRN } from "react-native-worklets";
 
 export default function HomeScreen() {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const isPremium = usePremiumStore((s) => s.isPremium);
   const hammerJamManifest = useHammerJamStore((s) => s.manifest);
@@ -978,7 +981,7 @@ export default function HomeScreen() {
                 <Ionicons
                   name="chatbubble-ellipses-outline"
                   size={19}
-                  color={HOME_COLORS.textSecondary}
+                  color={colors.textSecondary}
                 />
               </Pressable>
               <Pressable
@@ -998,7 +1001,7 @@ export default function HomeScreen() {
                 <Ionicons
                   name="sync-sharp"
                   size={19}
-                  color={isStale ? HOME_COLORS.gold : HOME_COLORS.textBright}
+                  color={isStale ? colors.gold : colors.textBright}
                 />
               </Pressable>
             </View>
@@ -1124,7 +1127,7 @@ export default function HomeScreen() {
               )}
             </View>
             <View style={styles.chevronButton}>
-              <Ionicons name="chevron-down" size={14} color={HOME_COLORS.textSecondary} />
+              <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />
             </View>
           </Pressable>
           <View style={styles.profileMagicActions}>
@@ -1137,7 +1140,7 @@ export default function HomeScreen() {
                 pressed && styles.magicItemsButtonPressed,
               ]}
             >
-              <Ionicons name="flash" size={11} color={HOME_COLORS.emerald} />
+              <Ionicons name="flash" size={11} color={colors.emerald} />
               <Text style={styles.profileSavedText}>
                 {formatSavedDuration(
                   (accountState?.activeUpgrades ?? []).reduce(
@@ -1210,9 +1213,9 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor={HOME_COLORS.gold}
-            colors={[HOME_COLORS.gold]}
-            progressBackgroundColor={HOME_COLORS.surfaceDark}
+            tintColor={colors.gold}
+            colors={[colors.gold]}
+            progressBackgroundColor={colors.surfaceDark}
           />
         }
       >
@@ -1585,7 +1588,7 @@ export default function HomeScreen() {
                                         <Ionicons
                                           name="repeat"
                                           size={10}
-                                          color={HOME_COLORS.gold}
+                                          color={colors.gold}
                                         />
                                       </View>
                                     )}
@@ -1674,7 +1677,7 @@ export default function HomeScreen() {
         </GestureDetector>
 
         <View style={styles.refreshHint}>
-          <Ionicons name="arrow-down" size={13} color={HOME_COLORS.slate} />
+          <Ionicons name="arrow-down" size={13} color={colors.slate} />
           <Text style={styles.refreshHintText}>Pull down to refresh</Text>
         </View>
 
@@ -1812,20 +1815,20 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: HOME_COLORS.background,
+    backgroundColor: colors.background,
   },
 
   container: {
     flex: 1,
-    backgroundColor: HOME_COLORS.background,
+    backgroundColor: colors.background,
   },
 
   loadingOverlay: {
     flex: 1,
-    backgroundColor: HOME_COLORS.background,
+    backgroundColor: colors.background,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1852,13 +1855,13 @@ const styles = StyleSheet.create({
   loadingTitle: {
     fontSize: 22,
     fontWeight: "800",
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     letterSpacing: 0.5,
   },
 
   loadingMessage: {
     fontSize: 13,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "500",
   },
 
@@ -1872,12 +1875,12 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "rgba(148,163,184,0.4)",
+    backgroundColor: `${colors.textMuted}66`,
   },
 
   connectButton: {
     height: 52,
-    backgroundColor: HOME_COLORS.gold,
+    backgroundColor: colors.gold,
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
@@ -1887,7 +1890,7 @@ const styles = StyleSheet.create({
   connectButtonText: {
     fontSize: 16,
     fontWeight: "700",
-    color: HOME_COLORS.textDark,
+    color: colors.textDark,
   },
 
   scrollContent: {
@@ -1897,9 +1900,9 @@ const styles = StyleSheet.create({
 
   // ── Header ──
   header: {
-    backgroundColor: HOME_COLORS.background,
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: HOME_COLORS.border,
+    borderBottomColor: colors.border,
     paddingHorizontal: 18,
     paddingTop: 10,
     paddingBottom: 14,
@@ -1912,7 +1915,7 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     fontSize: 27,
     fontWeight: "900",
     lineHeight: 32,
@@ -1932,7 +1935,7 @@ const styles = StyleSheet.create({
 
   syncText: {
     fontSize: 10,
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
     fontWeight: "500",
   },
 
@@ -1955,7 +1958,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(52,211,153,0.22)",
   },
-  profileSavedText: { color: HOME_COLORS.emerald, fontSize: 9, fontWeight: "900" },
+  profileSavedText: { color: colors.emerald, fontSize: 9, fontWeight: "900" },
   profileInventoryButton: {
     minWidth: 34,
     minHeight: 27,
@@ -1970,7 +1973,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(251,191,36,0.22)",
   },
   profileInventoryIcon: { width: 18, height: 18 },
-  profileInventoryText: { color: HOME_COLORS.gold, fontSize: 9, fontWeight: "900" },
+  profileInventoryText: { color: colors.gold, fontSize: 9, fontWeight: "900" },
   profileRow: {
     flex: 1,
     minWidth: 0,
@@ -1984,7 +1987,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: HOME_COLORS.surfaceDark,
+    backgroundColor: colors.surfaceDark,
     borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
@@ -2014,7 +2017,7 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 14,
     fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
     flexShrink: 1,
   },
 
@@ -2022,9 +2025,9 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 8,
-    backgroundColor: HOME_COLORS.surfaceDark,
+    backgroundColor: colors.surfaceDark,
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderStrong,
+    borderColor: colors.borderStrong,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2035,7 +2038,7 @@ const styles = StyleSheet.create({
   },
 
   chiefBadge: {
-    backgroundColor: HOME_COLORS.gold,
+    backgroundColor: colors.gold,
     paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 5,
@@ -2044,7 +2047,7 @@ const styles = StyleSheet.create({
   chiefBadgeText: {
     fontSize: 9,
     fontWeight: "800",
-    color: HOME_COLORS.textDark,
+    color: colors.textDark,
   },
 
   profileMeta: {
@@ -2072,7 +2075,7 @@ const styles = StyleSheet.create({
 
   profileSub: {
     fontSize: 10,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "500",
   },
 
@@ -2080,7 +2083,7 @@ const styles = StyleSheet.create({
     width: 3,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: HOME_COLORS.slateMuted,
+    backgroundColor: colors.slateMuted,
   },
 
   // ── Status Card — dimensions kept identical for active & empty states ──
@@ -2088,10 +2091,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 14,
     marginTop: 12,
     marginBottom: 14,
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: HOME_COLORS.border,
+    borderColor: colors.border,
     overflow: "hidden",
   },
 
@@ -2106,7 +2109,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 13,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
     justifyContent: "center",
     alignItems: "center",
     flexShrink: 0,
@@ -2125,7 +2128,7 @@ const styles = StyleSheet.create({
   statusEyebrow: {
     fontSize: 10,
     fontWeight: "700",
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.7,
   },
@@ -2133,18 +2136,18 @@ const styles = StyleSheet.create({
   statusCountdown: {
     fontSize: 22,
     fontWeight: "800",
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     lineHeight: 26,
   },
 
   statusSub: {
     fontSize: 11,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
   },
 
   statusDivider: {
     height: 1,
-    backgroundColor: HOME_COLORS.borderStrong,
+    backgroundColor: colors.borderStrong,
     marginHorizontal: 14,
   },
 
@@ -2158,13 +2161,13 @@ const styles = StyleSheet.create({
 
   insightText: {
     fontSize: 11,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     flex: 1,
     marginRight: 8,
   },
 
   insightUrgent: {
-    color: HOME_COLORS.danger,
+    color: colors.danger,
     fontWeight: "600",
   },
 
@@ -2181,21 +2184,21 @@ const styles = StyleSheet.create({
   },
 
   builderDotFree: {
-    backgroundColor: HOME_COLORS.success,
+    backgroundColor: colors.success,
   },
 
   builderDotBusy: {
-    backgroundColor: HOME_COLORS.danger,
+    backgroundColor: colors.danger,
   },
 
   goblinDotFree: {
-    backgroundColor: HOME_COLORS.success,
+    backgroundColor: colors.success,
     borderWidth: 1.5,
     borderColor: "rgba(34,197,94,0.35)",
   },
 
   goblinDotBusy: {
-    backgroundColor: HOME_COLORS.danger,
+    backgroundColor: colors.danger,
   },
 
   goblinDotInactive: {
@@ -2224,17 +2227,17 @@ const styles = StyleSheet.create({
     borderColor: "rgba(251, 191, 36, 0.25)",
   },
   magicItemsButtonPressed: { opacity: 0.65 },
-  magicItemsButtonText: { color: HOME_COLORS.gold, fontSize: 10, fontWeight: "800" },
+  magicItemsButtonText: { color: colors.gold, fontSize: 10, fontWeight: "800" },
 
   villageTabs: {
     flexDirection: "row",
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 4,
     height: 52,
     position: "relative",
     borderWidth: 1,
-    borderColor: HOME_COLORS.border,
+    borderColor: colors.border,
     overflow: "hidden",
     marginHorizontal: 16,
     marginBottom: 16,
@@ -2255,7 +2258,7 @@ const styles = StyleSheet.create({
     left: 4,
     height: 40,
     borderRadius: 999,
-    backgroundColor: HOME_COLORS.gold,
+    backgroundColor: colors.gold,
     zIndex: 1,
   },
 
@@ -2271,11 +2274,11 @@ const styles = StyleSheet.create({
   villageTabLabel: {
     fontSize: 12,
     fontWeight: "700",
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
   },
 
   villageTabLabelActive: {
-    color: HOME_COLORS.textDark,
+    color: colors.textDark,
   },
 
   villageHallBadge: {
@@ -2292,11 +2295,11 @@ const styles = StyleSheet.create({
   villageHallBadgeText: {
     fontSize: 9,
     fontWeight: "700",
-    color: HOME_COLORS.gold,
+    color: colors.gold,
   },
 
   villageHallBadgeTextActive: {
-    color: HOME_COLORS.textDark,
+    color: colors.textDark,
   },
 
   // ── Upgrade list ──
@@ -2341,12 +2344,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
     letterSpacing: -0.2,
   },
 
   countBadge: {
-    backgroundColor: HOME_COLORS.gold,
+    backgroundColor: colors.gold,
     paddingHorizontal: 9,
     paddingVertical: 3,
     borderRadius: 999,
@@ -2355,7 +2358,7 @@ const styles = StyleSheet.create({
   countBadgeText: {
     fontSize: 11,
     fontWeight: "800",
-    color: HOME_COLORS.textDark,
+    color: colors.textDark,
   },
 
   upgradeCard: {
@@ -2369,18 +2372,18 @@ const styles = StyleSheet.create({
   },
 
   upgradeContent: {
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     paddingVertical: 13,
     paddingHorizontal: 13,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: HOME_COLORS.border,
+    borderColor: colors.border,
     gap: 10,
   },
 
   upgradeContentCompleted: {
-    backgroundColor: HOME_COLORS.success,
-    borderColor: HOME_COLORS.success,
+    backgroundColor: colors.success,
+    borderColor: colors.success,
   },
 
   goblinUpgradeCard: {
@@ -2392,7 +2395,7 @@ const styles = StyleSheet.create({
   },
 
   goblinBadge: {
-    backgroundColor: HOME_COLORS.success,
+    backgroundColor: colors.success,
   },
 
   builderBadge: {
@@ -2401,7 +2404,7 @@ const styles = StyleSheet.create({
     right: 8,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: HOME_COLORS.gold,
+    backgroundColor: colors.gold,
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 7,
@@ -2411,7 +2414,7 @@ const styles = StyleSheet.create({
   builderBadgeText: {
     fontSize: 10,
     fontWeight: "800",
-    color: HOME_COLORS.textDark,
+    color: colors.textDark,
   },
 
   goblinBadgeIcon: {
@@ -2456,7 +2459,7 @@ const styles = StyleSheet.create({
   upgradeName: {
     fontSize: 14,
     fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
   },
 
   badgeRow: {
@@ -2477,7 +2480,7 @@ const styles = StyleSheet.create({
   levelsText: {
     fontSize: 10,
     fontWeight: "600",
-    color: HOME_COLORS.blue,
+    color: colors.blue,
   },
 
   superchargeBadge: {
@@ -2491,7 +2494,7 @@ const styles = StyleSheet.create({
   },
 
   superchargeText: {
-    color: HOME_COLORS.gold,
+    color: colors.gold,
   },
 
   helperRow: {
@@ -2507,7 +2510,7 @@ const styles = StyleSheet.create({
   helperSaved: {
     marginLeft: 3,
     fontSize: 10,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
   },
 
   recurrentBadge: {
@@ -2528,22 +2531,22 @@ const styles = StyleSheet.create({
   },
 
   upgradeTime: {
-    color: HOME_COLORS.gold,
+    color: colors.gold,
   },
 
   goblinTime: {
-    color: HOME_COLORS.success,
+    color: colors.success,
   },
 
   totalTimeText: {
     fontSize: 11,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "500",
   },
 
   finishDateTimeText: {
     fontSize: 10,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "500",
     maxWidth: 150,
   },
@@ -2557,12 +2560,12 @@ const styles = StyleSheet.create({
 
   progressBar: {
     height: "100%",
-    backgroundColor: HOME_COLORS.progress,
+    backgroundColor: colors.progress,
     borderRadius: 2,
   },
 
   progressBarGoblin: {
-    backgroundColor: HOME_COLORS.progress,
+    backgroundColor: colors.progress,
   },
 
   // ── Compact empty state: keep the next section visible sooner ──
@@ -2592,12 +2595,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
   },
 
   emptySubtitle: {
     fontSize: 13,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: "center",
   },
 
@@ -2606,13 +2609,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 26,
     paddingVertical: 11,
     borderRadius: 12,
-    backgroundColor: HOME_COLORS.gold,
+    backgroundColor: colors.gold,
   },
 
   emptyButtonText: {
     fontSize: 14,
     fontWeight: "700",
-    color: HOME_COLORS.textDark,
+    color: colors.textDark,
   },
 
   // ── Refresh hint ──
@@ -2626,7 +2629,7 @@ const styles = StyleSheet.create({
 
   refreshHintText: {
     fontSize: 11,
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
     fontWeight: "500",
   },
 
@@ -2637,11 +2640,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: HOME_COLORS.blueStrong,
+    backgroundColor: colors.blueStrong,
   },
 
   devButtonText: {
-    color: HOME_COLORS.white,
+    color: colors.white,
     fontWeight: "600",
     fontSize: 12,
   },
@@ -2653,7 +2656,7 @@ const styles = StyleSheet.create({
   },
 
   resetButtonText: {
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
     fontSize: 12,
   },
 
@@ -2661,6 +2664,6 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: 16,
     fontWeight: "700",
-    color: HOME_COLORS.textDark,
+    color: colors.textDark,
   },
 });

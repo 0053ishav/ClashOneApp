@@ -1,5 +1,6 @@
 import { ConfirmModal } from "@/components/ConfirmModal";
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import { requestNotificationPermissions } from "@/services/notifications/notificationPermissions";
 import { setOnboardingComplete } from "@/storage/appConfig";
 import { setNotificationsEnabled } from "@/storage/notificationConfig";
@@ -8,7 +9,7 @@ import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { Ionicons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState , useMemo } from "react";
 import {
   Animated,
   AppState,
@@ -50,6 +51,8 @@ const SLIDES = [
 ];
 
 export default function OnboardingScreen() {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
   const [index, setIndex] = useState(0);
@@ -253,10 +256,10 @@ export default function OnboardingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: HOME_COLORS.background,
+    backgroundColor: colors.background,
   },
 
   skip: {
@@ -270,7 +273,7 @@ const styles = StyleSheet.create({
   },
 
   skipText: {
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
     fontSize: 14,
     fontWeight: "600",
   },
@@ -295,7 +298,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: "rgba(251,191,36,0.28)",
-    shadowColor: HOME_COLORS.gold,
+    shadowColor: colors.gold,
     shadowOpacity: 0.18,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },
@@ -312,7 +315,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "900",
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     textAlign: "center",
     marginBottom: 12,
     letterSpacing: -0.6,
@@ -321,7 +324,7 @@ const styles = StyleSheet.create({
   description: {
     maxWidth: 320,
     fontSize: 14,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: "center",
     lineHeight: 22,
     paddingHorizontal: 16,
@@ -336,8 +339,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 28,
     borderRadius: 14,
-    backgroundColor: HOME_COLORS.gold,
-    shadowColor: HOME_COLORS.gold,
+    backgroundColor: colors.gold,
+    shadowColor: colors.gold,
     shadowOpacity: 0.3,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
@@ -347,13 +350,13 @@ const styles = StyleSheet.create({
   enableButtonText: {
     fontSize: 15,
     fontWeight: "700",
-    color: HOME_COLORS.textDark,
+    color: colors.textDark,
     letterSpacing: 0.3,
   },
 
   enableButtonActive: {
-    backgroundColor: HOME_COLORS.success,
-    shadowColor: HOME_COLORS.success,
+    backgroundColor: colors.success,
+    shadowColor: colors.success,
   },
 
   enableButtonPressed: {
@@ -369,8 +372,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 28,
     borderRadius: 14,
-    backgroundColor: HOME_COLORS.blue,
-    shadowColor: HOME_COLORS.blue,
+    backgroundColor: colors.blue,
+    shadowColor: colors.blue,
     shadowOpacity: 0.3,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
@@ -404,17 +407,17 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: HOME_COLORS.borderStrong,
+    backgroundColor: colors.borderStrong,
   },
 
   dotActive: {
-    backgroundColor: HOME_COLORS.gold,
+    backgroundColor: colors.gold,
     width: 24,
   },
 
   progressText: {
     fontSize: 12,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "600",
   },
 
@@ -426,9 +429,9 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 17,
     borderRadius: 16,
-    backgroundColor: HOME_COLORS.gold,
+    backgroundColor: colors.gold,
     marginBottom: 24,
-    shadowColor: HOME_COLORS.gold,
+    shadowColor: colors.gold,
     shadowOpacity: 0.2,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 5 },
@@ -442,7 +445,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontWeight: "700",
     fontSize: 16,
-    color: HOME_COLORS.textDark,
+    color: colors.textDark,
   },
   builderRow: {
     flexDirection: "row",
@@ -457,23 +460,23 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderStrong,
+    borderColor: colors.borderStrong,
   },
 
   builderButtonActive: {
-    backgroundColor: HOME_COLORS.gold,
+    backgroundColor: colors.gold,
     borderColor: "#fbbf24",
   },
 
   builderButtonText: {
     fontSize: 16,
     fontWeight: "700",
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
   },
 
   builderButtonTextActive: {
-    color: HOME_COLORS.textDark,
+    color: colors.textDark,
   },
 });

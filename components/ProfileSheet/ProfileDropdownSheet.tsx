@@ -1,5 +1,6 @@
 import ProfileHeader from "@/components/ProfileSheet/ProfileHeader";
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import { getEntities } from "@/services/entityService";
 import { useAccountStore } from "@/stores/accountStore";
 import { EntityRecord } from "@/types/upgrade";
@@ -17,6 +18,7 @@ import {
   useImperativeHandle,
   useRef,
   useState,
+  useMemo,
 } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import ProfileActions from "./ProfileActions";
@@ -47,6 +49,8 @@ const ProfileDropdownSheet = forwardRef<
   { onClose, onSync, onSetting, onOpenProfile },
   ref,
 ) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const bottomSheetRef = useRef<BottomSheetModal>(null);
 
   useImperativeHandle(
@@ -198,7 +202,7 @@ const ProfileDropdownSheet = forwardRef<
       >
         {!profile ? (
           <View style={styles.emptyProfile}>
-            <Ionicons name="person-outline" size={30} color={HOME_COLORS.textMuted} />
+            <Ionicons name="person-outline" size={30} color={colors.textMuted} />
 
             <Text style={styles.emptyProfileText}>No profile connected</Text>
           </View>
@@ -217,7 +221,7 @@ const ProfileDropdownSheet = forwardRef<
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <View style={styles.sectionTitleRow}>
-                    <Ionicons name="people-outline" size={16} color={HOME_COLORS.textSecondary} />
+                    <Ionicons name="people-outline" size={16} color={colors.textSecondary} />
 
                     <Text style={styles.sectionTitle}>Accounts</Text>
                   </View>
@@ -263,7 +267,7 @@ const ProfileDropdownSheet = forwardRef<
                                 : `${acc.color}66`,
                               backgroundColor: isActive
                                 ? `${acc.color}20`
-                                : HOME_COLORS.surfaceRaised,
+                                : colors.surfaceRaised,
                             },
                           ]}
                         >
@@ -302,7 +306,7 @@ const ProfileDropdownSheet = forwardRef<
                               <Ionicons
                                 name="checkmark"
                                 size={10}
-                                color={HOME_COLORS.background}
+                                color={colors.background}
                               />
                             </View>
                           )}
@@ -337,31 +341,31 @@ const ProfileDropdownSheet = forwardRef<
                       label: "War stars",
                       value: profile.warStars,
                       highlight: true,
-                      color: HOME_COLORS.gold,
+                      color: colors.gold,
                     },
                     {
                       icon: "flame",
                       label: "Attacks",
                       value: profile.attackWins,
-                      color: HOME_COLORS.orange,
+                      color: colors.orange,
                     },
                     {
                       icon: "shield-checkmark",
                       label: "Defenses",
                       value: profile.defenseWins,
-                      color: HOME_COLORS.cyan,
+                      color: colors.cyan,
                     },
                     {
                       icon: "arrow-up",
                       label: "Donated",
                       value: profile.donations,
-                      color: HOME_COLORS.success,
+                      color: colors.success,
                     },
                     {
                       icon: "arrow-down",
                       label: "Received",
                       value: profile.donationsReceived,
-                      color: HOME_COLORS.blue,
+                      color: colors.blue,
                     },
                     {
                       icon: "diamond",
@@ -370,13 +374,13 @@ const ProfileDropdownSheet = forwardRef<
                         typeof profile.clanCapitalGold === "number"
                           ? formatCapital(profile.clanCapitalGold)
                           : undefined,
-                      color: HOME_COLORS.purpleStrong,
+                      color: colors.purpleStrong,
                     },
                     {
                       icon: "construct",
                       label: "Builders",
                       value: activeAccount?.builderCount ?? 1,
-                      color: HOME_COLORS.textSecondary,
+                      color: colors.textSecondary,
                     },
                   ]}
                 />
@@ -402,7 +406,7 @@ const ProfileDropdownSheet = forwardRef<
                 pressed && styles.closeButtonPressed,
               ]}
             >
-              <Ionicons name="close" size={18} color={HOME_COLORS.textSecondary} />
+              <Ionicons name="close" size={18} color={colors.textSecondary} />
 
               <Text style={styles.closeButtonText}>Close</Text>
             </Pressable>
@@ -415,14 +419,14 @@ const ProfileDropdownSheet = forwardRef<
 
 export default ProfileDropdownSheet;
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   sheet: {
-    backgroundColor: HOME_COLORS.background,
+    backgroundColor: colors.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     borderWidth: 1,
     borderBottomWidth: 0,
-    borderColor: HOME_COLORS.border,
+    borderColor: colors.border,
   },
 
   handle: {
@@ -434,7 +438,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 4,
     borderRadius: 999,
-    backgroundColor: HOME_COLORS.slate,
+    backgroundColor: colors.slate,
   },
 
   contentContainer: {
@@ -451,7 +455,7 @@ const styles = StyleSheet.create({
 
   emptyProfileText: {
     fontSize: 14,
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
     fontWeight: "600",
   },
 
@@ -480,7 +484,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
     letterSpacing: -0.1,
   },
 
@@ -489,17 +493,17 @@ const styles = StyleSheet.create({
     height: 20,
     paddingHorizontal: 6,
     borderRadius: 10,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderStrong,
+    borderColor: colors.borderStrong,
   },
 
   countBadgeText: {
     fontSize: 10,
     fontWeight: "800",
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
   },
 
   avatarRow: {
@@ -530,9 +534,9 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 7,
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: HOME_COLORS.border,
+    borderColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -555,7 +559,7 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     borderWidth: 2,
-    borderColor: HOME_COLORS.background,
+    borderColor: colors.background,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -564,19 +568,19 @@ const styles = StyleSheet.create({
     width: 70,
     fontSize: 12,
     fontWeight: "600",
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
     textAlign: "center",
   },
 
   avatarLabelActive: {
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
     fontWeight: "700",
   },
 
   avatarSub: {
     fontSize: 10,
     fontWeight: "600",
-    color: HOME_COLORS.slate,
+    color: colors.slate,
   },
 
   actionsSection: {
@@ -587,9 +591,9 @@ const styles = StyleSheet.create({
     height: 48,
     marginTop: 12,
     borderRadius: 14,
-    backgroundColor: HOME_COLORS.surfaceDark,
+    backgroundColor: colors.surfaceDark,
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderStrong,
+    borderColor: colors.borderStrong,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -597,12 +601,12 @@ const styles = StyleSheet.create({
   },
 
   closeButtonPressed: {
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
   },
 
   closeButtonText: {
     fontSize: 14,
     fontWeight: "700",
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
   },
 });

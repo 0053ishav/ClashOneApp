@@ -1,5 +1,7 @@
 import { ENV } from "@/config/env";
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
+import { useMemo } from "react";
 import { PlayerProfile } from "@/types/player";
 import { EntityRecord } from "@/types/upgrade";
 import { formatCountdown } from "@/utils/formatCountdown";
@@ -12,8 +14,6 @@ import { Image } from "expo-image";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import { XPBadge } from "../XPBadge";
 
-const HOME = HOME_COLORS.blue;
-const BUILDER = HOME_COLORS.purpleStrong;
 const MONO = Platform.select({ ios: "Menlo", default: "monospace" });
 
 export default function ProfileHeader({
@@ -25,11 +25,16 @@ export default function ProfileHeader({
   helpers: EntityRecord[];
   guardians: EntityRecord[];
 }) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const HOME = colors.blue;
+  const BUILDER = colors.purpleStrong;
+
   if (!profile.playerTag) {
     return (
       <View style={styles.emptyContainer}>
         <View style={styles.emptyIcon}>
-          <Ionicons name="person-outline" size={30} color={HOME_COLORS.textMuted} />
+          <Ionicons name="person-outline" size={30} color={colors.textMuted} />
         </View>
         <Text style={styles.emptyTitle}>No account synced</Text>
         <Text style={styles.emptySubtitle}>
@@ -117,7 +122,7 @@ export default function ProfileHeader({
             <View style={styles.villageHeaderText}>
               <Text style={[styles.villageLabel, { color: HOME }]}>Home</Text>
               <Text
-                style={[styles.villageLeagueName, { color: HOME_COLORS.bluePale }]}
+                style={[styles.villageLeagueName, { color: colors.bluePale }]}
                 numberOfLines={2}
               >
                 {profile.leagueTierName ?? "Unranked"}
@@ -178,7 +183,7 @@ export default function ProfileHeader({
                   Builder
                 </Text>
                 <Text
-                  style={[styles.villageLeagueName, { color: HOME_COLORS.purplePale }]}
+                  style={[styles.villageLeagueName, { color: colors.purplePale }]}
                   numberOfLines={2}
                 >
                   {profile.builderBaseLeague?.name ?? "Unranked"}
@@ -205,7 +210,7 @@ export default function ProfileHeader({
           </View>
         ) : (
           <View style={[styles.villageCard, styles.villageCardBuilderEmpty]}>
-            <Ionicons name="construct-outline" size={20} color={HOME_COLORS.slate} />
+            <Ionicons name="construct-outline" size={20} color={colors.slate} />
             <Text style={styles.villageEmptyText}>No Builder Base</Text>
           </View>
         )}
@@ -256,7 +261,7 @@ export default function ProfileHeader({
           {hasHelpers && (
             <View style={styles.extrasRow}>
               <View style={styles.caption}>
-                <Ionicons name="hammer" size={13} color={HOME_COLORS.orange} />
+                <Ionicons name="hammer" size={13} color={colors.orange} />
                 <Text style={styles.captionText}>Helpers</Text>
               </View>
 
@@ -286,7 +291,7 @@ export default function ProfileHeader({
                         <Ionicons
                           name="time-outline"
                           size={11}
-                          color={HOME_COLORS.dangerLight}
+                          color={colors.dangerLight}
                         />
                         <Text style={styles.cooldownText}>
                           {formatCountdown(helper.cooldown as number)}
@@ -304,7 +309,7 @@ export default function ProfileHeader({
           {hasGuardians && (
             <View style={styles.extrasRow}>
               <View style={styles.caption}>
-                <Ionicons name="shield" size={13} color={HOME_COLORS.cyan} />
+                <Ionicons name="shield" size={13} color={colors.cyan} />
                 <Text style={styles.captionText}>Guardians</Text>
               </View>
 
@@ -328,7 +333,7 @@ export default function ProfileHeader({
           {hasLabels && (
             <View style={styles.extrasRow}>
               <View style={styles.caption}>
-                <Ionicons name="pricetag" size={13} color={HOME_COLORS.purpleLight} />
+                <Ionicons name="pricetag" size={13} color={colors.purpleLight} />
                 <Text style={styles.captionText}>Labels</Text>
               </View>
 
@@ -350,14 +355,15 @@ export default function ProfileHeader({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: HomeColors) {
+  return StyleSheet.create({
   container: {
-    backgroundColor: HOME_COLORS.surfaceDark,
+    backgroundColor: colors.surfaceDark,
     borderRadius: 20,
     padding: 14,
     gap: 10,
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderStrong,
+    borderColor: colors.borderStrong,
   },
 
   // ── Empty ───────────────────────────────────────────────
@@ -371,7 +377,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 4,
@@ -379,11 +385,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
   },
   emptySubtitle: {
     fontSize: 13,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: "center",
   },
 
@@ -401,7 +407,7 @@ const styles = StyleSheet.create({
   playerName: {
     fontSize: 22,
     fontWeight: "800",
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     letterSpacing: -0.5,
   },
   tagRow: {
@@ -418,7 +424,7 @@ const styles = StyleSheet.create({
   },
   playerTag: {
     fontSize: 11,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "600",
     fontFamily: MONO,
   },
@@ -450,7 +456,7 @@ const styles = StyleSheet.create({
   hallLevel: {
     fontSize: 12,
     fontWeight: "800",
-    color: HOME_COLORS.gold,
+    color: colors.gold,
   },
 
   // ── Dual village ────────────────────────────────────────
@@ -459,7 +465,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderStrong,
+    borderColor: colors.borderStrong,
   },
   villageCard: {
     flex: 1,
@@ -540,7 +546,7 @@ const styles = StyleSheet.create({
   trophyText: {
     fontSize: 19,
     fontWeight: "800",
-    color: HOME_COLORS.textBright,
+    color: colors.textBright,
     letterSpacing: -0.4,
   },
   bestRow: {
@@ -550,7 +556,7 @@ const styles = StyleSheet.create({
   },
   bestText: {
     fontSize: 11,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "500",
   },
   smallLeagueIcon: {
@@ -559,7 +565,7 @@ const styles = StyleSheet.create({
   },
   villageEmptyText: {
     fontSize: 12,
-    color: HOME_COLORS.slate,
+    color: colors.slate,
     fontWeight: "500",
   },
 
@@ -594,7 +600,7 @@ const styles = StyleSheet.create({
   clanName: {
     fontSize: 14,
     fontWeight: "800",
-    color: HOME_COLORS.greenBright,
+    color: colors.greenBright,
     letterSpacing: -0.2,
   },
   clanMeta: {
@@ -611,17 +617,17 @@ const styles = StyleSheet.create({
   clanLevelText: {
     fontSize: 10,
     fontWeight: "700",
-    color: HOME_COLORS.success,
+    color: colors.success,
   },
   clanRole: {
     fontSize: 11,
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
     fontWeight: "600",
     flexShrink: 1,
   },
   clanTag: {
     fontSize: 10,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "600",
     fontFamily: MONO,
   },
@@ -651,7 +657,7 @@ const styles = StyleSheet.create({
   captionText: {
     fontSize: 12,
     fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
   },
   chip: {
     flexDirection: "row",
@@ -678,12 +684,12 @@ const styles = StyleSheet.create({
   helperLevel: {
     fontSize: 12,
     fontWeight: "800",
-    color: HOME_COLORS.orangeLight,
+    color: colors.orangeLight,
   },
   guardianLevel: {
     fontSize: 12,
     fontWeight: "800",
-    color: HOME_COLORS.cyanBright,
+    color: colors.cyanBright,
   },
   cooldownInline: {
     flexDirection: "row",
@@ -693,12 +699,13 @@ const styles = StyleSheet.create({
   cooldownText: {
     fontSize: 10,
     fontWeight: "700",
-    color: HOME_COLORS.dangerLight,
+    color: colors.dangerLight,
   },
   readyDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: HOME_COLORS.success,
+    backgroundColor: colors.success,
   },
-});
+  });
+}

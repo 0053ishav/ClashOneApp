@@ -89,6 +89,8 @@ export default function ProScreen() {
         </Text>
 
         <PlanCard
+          colors={colors}
+          styles={styles}
           badge="CURRENT PLAN"
           title="FREE"
           price="₹0"
@@ -105,6 +107,8 @@ export default function ProScreen() {
         />
 
         <PlanCard
+          colors={colors}
+          styles={styles}
           badge={isPremium ? "ACTIVE" : "EARLY SUPPORTER"}
           title="CHIEF"
           price={isPremium ? "Owned" : price || "..."}
@@ -201,6 +205,8 @@ export default function ProScreen() {
 }
 
 type PlanCardProps = {
+  colors: HomeColors;
+  styles: ReturnType<typeof createStyles>;
   badge: string;
   title: string;
   price: string;
@@ -214,6 +220,8 @@ type PlanCardProps = {
 };
 
 function PlanCard({
+  colors,
+  styles,
   badge,
   title,
   price,

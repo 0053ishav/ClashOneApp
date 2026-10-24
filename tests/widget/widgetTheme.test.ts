@@ -1,3 +1,4 @@
+import { Appearance } from "react-native";
 import { storage } from "@/storage/mmkv";
 import { getHomeColors } from "@/theme/home";
 import { getWidgetColors } from "@/utils/widget/widgetTheme";
@@ -22,6 +23,11 @@ describe("widget theme resolver", () => {
   beforeEach(() => {
     mockStorage.__values.clear();
     jest.clearAllMocks();
+    jest.spyOn(Appearance, "getColorScheme").mockReturnValue("dark");
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it("uses dark mode when no preference has been persisted", () => {
@@ -43,8 +49,22 @@ describe("widget theme resolver", () => {
     expect(getWidgetColors()).toEqual(getHomeColors("dark"));
   });
 
-  it("falls back to dark mode for invalid persisted values", () => {
+  it("follows the system dark appearance when system is selected", () => {
     mockStorage.__values.set("appearance.colorScheme", "system");
+    jest.spyOn(Appearance, "getColorScheme").mockReturnValue("dark");
+
+    expect(getWidgetColors()).toEqual(getHomeColors("dark"));
+  });
+
+  it("follows the system light appearance when system is selected", () => {
+    mockStorage.__values.set("appearance.colorScheme", "system");
+    jest.spyOn(Appearance, "getColorScheme").mockReturnValue("light");
+
+    expect(getWidgetColors()).toEqual(getHomeColors("light"));
+  });
+
+  it("falls back to dark mode for invalid persisted values", () => {
+    mockStorage.__values.set("appearance.colorScheme", "unexpected");
 
     expect(getWidgetColors()).toEqual(getHomeColors("dark"));
   });

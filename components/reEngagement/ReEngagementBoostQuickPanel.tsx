@@ -1,6 +1,6 @@
 import type { HomeColors } from "@/theme/home";
 import { useHomeColors } from "@/theme/useHomeColors";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReEngagementBoostSettings } from "@/types/reEngagementBoost";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { ENV } from "@/config/env";
@@ -16,7 +16,6 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useEffect, useState } from "react";
 
 export type ReEngagementBoostDraft = {
   builderBoostPercent: number;

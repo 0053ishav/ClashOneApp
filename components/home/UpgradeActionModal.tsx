@@ -511,7 +511,7 @@ export function UpgradeActionModal({
                 resizeMode="contain"
               />
             ) : (
-              <Ionicons name={getTypeIcon()} size={19} color=colors.textSecondary />
+              <Ionicons name={getTypeIcon()} size={19} color={colors.textSecondary} />
             )}
           </View>
 
@@ -567,7 +567,7 @@ export function UpgradeActionModal({
             ]}
             onPress={() => bottomSheetRef.current?.dismiss()}
           >
-            <Ionicons name="close" size={18} color=colors.textSecondary />
+            <Ionicons name="close" size={18} color={colors.textSecondary} />
           </Pressable>
         </View>
 
@@ -578,7 +578,7 @@ export function UpgradeActionModal({
         {craftedProgression && (
           <View style={styles.craftedModuleHeader}>
             <View style={styles.craftedModuleIcon}>
-              <Ionicons name="construct-outline" size={15} color=colors.textSecondary />
+              <Ionicons name="construct-outline" size={15} color={colors.textSecondary} />
             </View>
 
             <View style={styles.craftedModuleText}>
@@ -620,7 +620,7 @@ export function UpgradeActionModal({
               />
             ) : (
               <View style={styles.currentEmptyLevelIcon}>
-                <Ionicons name={getTypeIcon()} size={17} color=colors.textMuted />
+                <Ionicons name={getTypeIcon()} size={17} color={colors.textMuted} />
               </View>
             )}
 
@@ -638,7 +638,7 @@ export function UpgradeActionModal({
           {/* ARROW */}
 
           {nextLevel != null && (
-            <Ionicons name="arrow-forward" size={18} color=colors.textMuted />
+            <Ionicons name="arrow-forward" size={18} color={colors.textMuted} />
           )}
 
           {/* NEXT */}
@@ -655,12 +655,12 @@ export function UpgradeActionModal({
             ) : (
               <View style={styles.nextEmptyLevelIcon}>
                 {isMaxLevel ? (
-                  <Ionicons name="checkmark-circle" size={24} color=colors.textSecondary />
+                  <Ionicons name="checkmark-circle" size={24} color={colors.textSecondary} />
                 ) : (
                   <Ionicons
                     name="help-circle-outline"
                     size={21}
-                    color=colors.textMuted
+                    color={colors.textMuted}
                   />
                 )}
               </View>
@@ -691,7 +691,7 @@ export function UpgradeActionModal({
         <View style={styles.timerSection}>
           <View style={styles.timerRow}>
             <View style={styles.inlineLeft}>
-              <Ionicons name="time-outline" size={15} color=colors.textSecondary />
+              <Ionicons name="time-outline" size={15} color={colors.textSecondary} />
 
               <Text style={styles.mutedText}>Remaining</Text>
             </View>
@@ -778,7 +778,7 @@ export function UpgradeActionModal({
         {progression && (
           <View style={styles.hallAvailabilityCard}>
             <View style={styles.hallAvailabilityHeader}>
-              <Ionicons name="home-outline" size={16} color=colors.textMuted />
+              <Ionicons name="home-outline" size={16} color={colors.textMuted} />
 
               <Text style={styles.hallAvailabilityTitle}>
                 Available at your hall
@@ -833,7 +833,7 @@ export function UpgradeActionModal({
 
         {progression && isMaxLevel && (
           <View style={styles.maxStatus}>
-            <Ionicons name="checkmark-circle" size={17} color=colors.textSecondary />
+            <Ionicons name="checkmark-circle" size={17} color={colors.textSecondary} />
 
             <View>
               <Text style={styles.maxStatusTitle}>Max level reached</Text>
@@ -1066,7 +1066,7 @@ export function UpgradeActionModal({
               void onUseBook(upgrade);
             }}
           >
-            <Ionicons name="book" size={16} color=colors.textDark />
+            <Ionicons name="book" size={16} color={colors.textDark} />
             <Text style={styles.useBookText}>Use Book to Finish Upgrade</Text>
           </Pressable>
         )}
@@ -1155,7 +1155,7 @@ function DetailRow({
   return (
     <View style={styles.detailRow}>
       <View style={styles.detailLeft}>
-        {icon && <Ionicons name={icon} size={15} color=colors.textMuted />}
+        {icon && <Ionicons name={icon} size={15} color={colors.textMuted} />}
 
         <Text style={styles.detailLabel}>{label}</Text>
       </View>

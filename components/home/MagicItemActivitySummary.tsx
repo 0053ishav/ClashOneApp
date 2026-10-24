@@ -43,6 +43,8 @@ export function MagicItemActivitySummary({
   upgrades,
   now = Date.now(),
 }: MagicItemActivitySummaryProps) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const activeItems = useMemo(() => {
     const seen = new Set<string>();
     return effects

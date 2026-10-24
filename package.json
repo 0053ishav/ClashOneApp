@@ -11,7 +11,15 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "start:dev": "node ./scripts/run-variant.mjs development start --dev-client --localhost",
+    "start:preview": "node ./scripts/run-variant.mjs preview start --dev-client --localhost",
+    "android:dev": "node ./scripts/run-variant.mjs development run:android",
+    "android:preview": "node ./scripts/run-variant.mjs preview run:android",
+    "android:production": "node ./scripts/run-variant.mjs production run:android",
+    "config:dev": "node ./scripts/run-variant.mjs development config",
+    "config:preview": "node ./scripts/run-variant.mjs preview config",
+    "config:production": "node ./scripts/run-variant.mjs production config"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

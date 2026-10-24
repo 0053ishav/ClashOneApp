@@ -1,11 +1,13 @@
+import { ENV } from "@/config/env";
 import { usePremiumStore } from "@/stores/premiumStore";
 import { log } from "@/utils/logger";
 import Purchases from "react-native-purchases";
 
 export async function purchasePremium() {
+  if (!ENV.FEATURES.REVENUECAT_ENABLED) return false;
+
   try {
     const offerings = await Purchases.getOfferings();
-
     const offering = offerings.current;
 
     if (!offering) {
@@ -13,7 +15,7 @@ export async function purchasePremium() {
     }
 
     const pkg = offering.availablePackages.find(
-      (p) => p.identifier === "$rc_lifetime"
+      (p) => p.identifier === "$rc_lifetime",
     );
 
     if (!pkg) {
@@ -21,12 +23,9 @@ export async function purchasePremium() {
     }
 
     const { customerInfo } = await Purchases.purchasePackage(pkg);
-
     const premium = hasPremium(customerInfo);
 
-    usePremiumStore
-      .getState()
-      .setPremium(premium);
+    usePremiumStore.getState().setPremium(premium);
 
     return premium;
   } catch (e: any) {
@@ -39,14 +38,13 @@ export async function purchasePremium() {
 }
 
 export async function restorePurchases() {
+  if (!ENV.FEATURES.REVENUECAT_ENABLED) return false;
+
   try {
     const customerInfo = await Purchases.restorePurchases();
-
     const premium = hasPremium(customerInfo);
 
-    usePremiumStore
-      .getState()
-      .setPremium(premium);
+    usePremiumStore.getState().setPremium(premium);
 
     return premium;
   } catch (e) {
@@ -55,15 +53,17 @@ export async function restorePurchases() {
   }
 }
 
-function hasPremium(customerInfo: any) {
-  return !!customerInfo.entitlements.active["chief"];
+function hasPremium(customerInfo: { entitlements: { active: Record<string, unknown> } }) {
+  return Boolean(customerInfo.entitlements.active["chief"]);
 }
 
 export async function getChiefPrice() {
-  const offerings = await Purchases.getOfferings();
+  if (!ENV.FEATURES.REVENUECAT_ENABLED) return "";
 
+  const offerings = await Purchases.getOfferings();
   const pkg = offerings.current?.availablePackages.find(
-    (p) => p.identifier === "$rc_lifetime"
+    (p) => p.identifier === "$rc_lifetime",
   );
+
   return pkg?.product.priceString ?? "";
 }

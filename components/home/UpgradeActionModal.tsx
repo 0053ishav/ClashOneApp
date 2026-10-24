@@ -1775,7 +1775,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 7,
-    backgroundColor: "rgba(239,68,68,0.07)",
+    backgroundColor: `${colors.danger}12`,
   },
 
   deleteText: {
@@ -1851,13 +1851,13 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     justifyContent: "center",
     backgroundColor: `${colors.danger}24`,
     borderWidth: 1,
-    borderColor: "rgba(239,68,68,0.25)",
+    borderColor: `${colors.danger}40`,
   },
 
   confirmDeleteText: {
     fontSize: 9,
     fontWeight: "700",
-    color: "#ef4444",
+    color: colors.danger,
   },
 
   pressed: {

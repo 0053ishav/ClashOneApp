@@ -621,7 +621,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
         <Ionicons name="warning-outline" size={44} color={colors.gold} />
         <Text style={styles.loadingTitle}>Something went wrong</Text>
         <Text style={[styles.loadingMessage, styles.boundaryMessage]}>
-          Clash One hit an unexpected screen error. Your saved village data has not been intentionally changed.
+          Clash One hit an unexpected screen error. Please try again.
         </Text>
         <Pressable
           accessibilityRole="button"

@@ -36,7 +36,7 @@ import * as Linking from "expo-linking";
 import * as SplashScreen from "expo-splash-screen";
 import * as Notifications from "expo-notifications";
 import { StatusBar } from "expo-status-bar";
-import { Redirect, Stack, usePathname, useRouter } from "expo-router";
+import { Redirect, Stack, usePathname, useRouter, type ErrorBoundaryProps } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -598,6 +598,49 @@ Update now for the best experience.`}
   );
 });
 
+/**
+ * Last-resort UI for render errors in the route tree.
+ * Boot failures remain handled by the dedicated bootstrap recovery screen above.
+ */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
+  useEffect(() => {
+    Sentry.captureException(error, { tags: { errorBoundary: "root-route" } });
+  }, [error]);
+
+  return (
+    <View style={[styles.container, styles.loadingOverlay, styles.boundaryContainer]}>
+      <StatusBar
+        style={useThemeStore.getState().colorScheme === "light" ? "dark" : "light"}
+        backgroundColor={colors.background}
+      />
+      <View style={styles.boundaryContent}>
+        <Ionicons name="warning-outline" size={44} color={colors.gold} />
+        <Text style={styles.loadingTitle}>Something went wrong</Text>
+        <Text style={[styles.loadingMessage, styles.boundaryMessage]}>
+          Clash One hit an unexpected screen error. Your saved village data has not been intentionally changed.
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            void retry();
+          }}
+          style={styles.retryButton}
+        >
+          <Text style={styles.retryText}>Try Again</Text>
+        </Pressable>
+        {__DEV__ && (
+          <Text selectable style={[styles.errorValue, styles.boundaryDetails]}>
+            {error.message}
+          </Text>
+        )}
+      </View>
+    </View>
+  );
+}
+
 const createStyles = (colors: HomeColors) => StyleSheet.create({
   container: {
     flex: 1,
@@ -607,6 +650,26 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   loadingOverlay: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+
+  boundaryContainer: {
+    justifyContent: "center",
+    paddingHorizontal: 28,
+  },
+
+  boundaryContent: {
+    alignItems: "center",
+    gap: 14,
+  },
+
+  boundaryMessage: {
+    textAlign: "center",
+    lineHeight: 20,
+  },
+
+  boundaryDetails: {
+    marginTop: 8,
+    textAlign: "center",
   },
 
   loadingContent: {

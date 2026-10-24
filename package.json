@@ -15,12 +15,14 @@
     "start:dev": "node ./scripts/run-variant.mjs development start --dev-client --localhost",
     "start:preview": "node ./scripts/run-variant.mjs preview start --dev-client --localhost",
     "android:dev": "node ./scripts/run-variant.mjs development run:android",
-    "android:dev:clean": "node ./scripts/run-variant.mjs development prebuild --clean && npm run android:dev",
     "android:preview": "node ./scripts/run-variant.mjs preview run:android",
     "android:production": "node ./scripts/run-variant.mjs production run:android",
     "config:dev": "node ./scripts/run-variant.mjs development config",
     "config:preview": "node ./scripts/run-variant.mjs preview config",
-    "config:production": "node ./scripts/run-variant.mjs production config"
+    "config:production": "node ./scripts/run-variant.mjs production config",
+    "prebuild:dev": "node ./scripts/run-variant.mjs development prebuild --clean",
+    "prebuild:preview": "node ./scripts/run-variant.mjs preview prebuild --clean",
+    "prebuild:production": "node ./scripts/run-variant.mjs production prebuild --clean"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

@@ -1,8 +1,14 @@
+import appJson from "./app.json";
 import type { ExpoConfig, ConfigContext } from "expo/config";
 
 type AppVariant = "development" | "preview" | "production";
 
-const VARIANTS: Record<AppVariant, { name: string; androidPackage: string }> = {
+type VariantConfig = {
+  name: string;
+  androidPackage: string;
+};
+
+const VARIANTS: Record<AppVariant, VariantConfig> = {
   development: {
     name: "Clash One Dev",
     androidPackage: "com.strngelabs.clashone.dev",
@@ -19,7 +25,11 @@ const VARIANTS: Record<AppVariant, { name: string; androidPackage: string }> = {
 
 function resolveVariant(value: string | undefined): AppVariant {
   if (value === undefined || value === "") return "production";
-  if (value === "development" || value === "preview" || value === "production") return value;
+
+  if (value === "development" || value === "preview" || value === "production") {
+    return value;
+  }
+
   throw new Error(
     `Invalid APP_VARIANT "${value}". Expected development, preview, or production.`,
   );
@@ -28,15 +38,25 @@ function resolveVariant(value: string | undefined): AppVariant {
 export default ({ config }: ConfigContext): ExpoConfig => {
   const variant = resolveVariant(process.env.APP_VARIANT);
   const selected = VARIANTS[variant];
+  const baseConfig = appJson.expo;
 
   return {
+    ...baseConfig,
     ...config,
+    slug: baseConfig.slug,
     name: selected.name,
+    icon: baseConfig.icon,
     android: {
+      ...baseConfig.android,
       ...config.android,
       package: selected.androidPackage,
+      adaptiveIcon: {
+        ...baseConfig.android.adaptiveIcon,
+        ...config.android?.adaptiveIcon,
+      },
     },
     extra: {
+      ...baseConfig.extra,
       ...config.extra,
       appVariant: variant,
     },

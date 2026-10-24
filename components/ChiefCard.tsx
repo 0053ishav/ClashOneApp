@@ -1,9 +1,14 @@
 import { usePremiumStore } from "@/stores/premiumStore";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import { useRouter } from "expo-router";
+import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export function ChiefCard() {
   const router = useRouter();
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const isPremium = usePremiumStore((state) => state.isPremium);
 
@@ -49,16 +54,16 @@ export function ChiefCard() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   card: {
     marginHorizontal: 20,
     marginBottom: 4,
 
-    backgroundColor: "#1e293b",
+    backgroundColor: colors.surface,
 
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#fbbf24",
+    borderColor: colors.gold,
 
     padding: 16,
 
@@ -84,13 +89,13 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    color: "#fbbf24",
+    color: colors.gold,
     fontSize: 18,
     fontWeight: "800",
   },
 
   subtitle: {
-    color: "#94a3b8",
+    color: colors.textSecondary,
     marginTop: 4,
     fontSize: 13,
   },
@@ -101,12 +106,12 @@ const styles = StyleSheet.create({
   },
 
   feature: {
-    color: "#f1f5f9",
+    color: colors.textPrimary,
     fontSize: 13,
   },
 
   button: {
-    backgroundColor: "#fbbf24",
+    backgroundColor: colors.gold,
 
     marginTop: 16,
 
@@ -118,7 +123,7 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: "#0f172a",
+    color: colors.textDark,
     fontWeight: "800",
     fontSize: 15,
   },
@@ -126,7 +131,7 @@ const styles = StyleSheet.create({
   activeBadge: {
     marginTop: 16,
 
-    backgroundColor: "rgba(251,191,36,0.12)",
+    backgroundColor: `${colors.gold}1F`,
 
     borderWidth: 1,
     borderColor: "#fbbf24",

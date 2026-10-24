@@ -619,7 +619,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     alignSelf: "flex-start",
     paddingVertical: 4,
   },
-  policyLinkText: { color: GOLD, fontSize: 12, fontWeight: "700" },
+  policyLinkText: { color: colors.gold, fontSize: 12, fontWeight: "700" },
 
   pressed: { opacity: 0.82 },
   disabled: { opacity: 0.5 },

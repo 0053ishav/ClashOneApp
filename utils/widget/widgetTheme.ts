@@ -1,5 +1,11 @@
+import { Appearance } from "react-native";
 import { storage } from "@/storage/mmkv";
-import { getHomeColors, type ColorScheme, type HomeColors } from "@/theme/home";
+import {
+  getHomeColors,
+  resolveColorScheme,
+  type ColorScheme,
+  type HomeColors,
+} from "@/theme/home";
 
 const COLOR_SCHEME_STORAGE_KEY = "appearance.colorScheme";
 

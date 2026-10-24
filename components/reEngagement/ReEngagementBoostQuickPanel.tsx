@@ -1,3 +1,6 @@
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
+import { useMemo } from "react";
 import type { ReEngagementBoostSettings } from "@/types/reEngagementBoost";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { ENV } from "@/config/env";
@@ -119,6 +122,8 @@ function NumericField({
   maxLength?: number;
   accessibilityLabel: string;
 }) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
@@ -146,6 +151,8 @@ function DurationEditor({
   parts: DurationParts;
   onChange: (next: DurationParts) => void;
 }) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const fields: { key: keyof DurationParts; label: string; maxLength: number }[] = [
     { key: "days", label: "Days", maxLength: 7 },
     { key: "hours", label: "Hours", maxLength: 2 },
@@ -186,6 +193,8 @@ function BoostEditor({
   onDurationChange: (next: DurationParts) => void;
   remainingSeconds: number;
 }) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.boostCard}>
       <View style={styles.boostHeader}>
@@ -239,6 +248,8 @@ export function ReEngagementBoostButton({
   disabled?: boolean;
   expanded?: boolean;
 }) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <Pressable
       accessibilityRole="button"
@@ -275,6 +286,8 @@ export function ReEngagementBoostQuickPanel({
   onSave,
   onDelete,
 }: ReEngagementBoostQuickPanelProps) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [now, setNow] = useState(Date.now());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [builderPercent, setBuilderPercent] = useState("0");
@@ -397,13 +410,13 @@ export function ReEngagementBoostQuickPanel({
                 onPress={onClose}
                 style={styles.closeButton}
               >
-                <Ionicons name="close" size={19} color="#94a3b8" />
+                <Ionicons name="close" size={19} color={colors.textSecondary} />
               </Pressable>
             </View>
 
             {loading ? (
               <View style={styles.stateRow}>
-                <ActivityIndicator size="small" color="#fbbf24" />
+                <ActivityIndicator size="small" color={colors.gold} />
                 <Text style={styles.stateText}>Loading saved boosts…</Text>
               </View>
             ) : loadFailed || !settings ? (
@@ -453,7 +466,7 @@ export function ReEngagementBoostQuickPanel({
                     pressed && !saving && styles.pressed,
                   ]}
                 >
-                  <Ionicons name="trash-outline" size={16} color="#f87171" />
+                  <Ionicons name="trash-outline" size={16} color={colors.danger} />
                   <Text style={styles.deleteButtonText}>Delete boosts</Text>
                 </Pressable>
 
@@ -473,7 +486,7 @@ export function ReEngagementBoostQuickPanel({
                     <ActivityIndicator size="small" color="#0f172a" />
                   ) : (
                     <>
-                      <Ionicons name="checkmark-circle-outline" size={18} color="#0f172a" />
+                      <Ionicons name="checkmark-circle-outline" size={18} color={colors.textDark} />
                       <Text style={styles.saveButtonText}>Save boosts</Text>
                     </>
                   )}
@@ -490,7 +503,7 @@ export function ReEngagementBoostQuickPanel({
         message="This removes both saved boosts for the current account. This cannot be undone."
         confirmText="Delete"
         destructive
-        variant="dark"
+        variant="default"
         onCancel={() => setShowDeleteConfirm(false)}
         onConfirm={() => void handleDelete()}
       />
@@ -498,7 +511,7 @@ export function ReEngagementBoostQuickPanel({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   triggerIconImage: { width: 28, height: 28 },
   modalHeaderIconImage: { width: 32, height: 32 },
   boostIconImage: { width: 28, height: 28 },
@@ -513,7 +526,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(251,191,36,0.24)",
   },
   triggerExpanded: {
-    borderColor: "#fbbf24",
+    borderColor: colors.gold,
     backgroundColor: "rgba(251,191,36,0.15)",
   },
   disabled: { opacity: 0.4 },
@@ -531,9 +544,9 @@ const styles = StyleSheet.create({
     maxWidth: 520,
     maxHeight: "94%",
     borderRadius: 22,
-    backgroundColor: "#0f172a",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: colors.border,
     overflow: "hidden",
   },
   scroll: { flexGrow: 0 },
@@ -550,21 +563,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   headerText: { flex: 1, gap: 2 },
-  modalTitle: { color: "#f8fafc", fontSize: 19, fontWeight: "800" },
-  modalSubtitle: { color: "#94a3b8", fontSize: 12, fontWeight: "600" },
+  modalTitle: { color: colors.textPrimary, fontSize: 19, fontWeight: "800" },
+  modalSubtitle: { color: colors.textSecondary, fontSize: 12, fontWeight: "600" },
   closeButton: {
     width: 34,
     height: 34,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 10,
-    backgroundColor: "#1e293b",
+    backgroundColor: colors.surfaceRaised,
   },
   boostCard: {
     paddingVertical: 10,
     gap: 9,
     borderBottomWidth: 1,
-    borderBottomColor: "#263449",
+    borderBottomColor: colors.border,
   },
   boostHeader: { flexDirection: "row", alignItems: "center", gap: 9 },
   boostIcon: {
@@ -576,41 +589,41 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(251,191,36,0.10)",
   },
   boostHeaderText: { flex: 1, gap: 2 },
-  boostTitle: { color: "#f1f5f9", fontSize: 14, fontWeight: "800" },
-  remainingText: { color: "#cbd5e1", fontSize: 12, fontWeight: "700" },
+  boostTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: "800" },
+  remainingText: { color: colors.textSecondary, fontSize: 12, fontWeight: "700" },
   percentRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  sectionLabel: { color: "#cbd5e1", fontSize: 12, fontWeight: "700" },
+  sectionLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: "700" },
   percentInputWrap: {
     width: 88,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 10,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: colors.border,
     borderRadius: 9,
-    backgroundColor: "#0b1220",
+    backgroundColor: colors.background,
   },
   percentInput: {
     flex: 1,
-    color: "#f8fafc",
+    color: colors.textPrimary,
     fontSize: 16,
     fontWeight: "800",
     paddingVertical: 7,
     textAlign: "right",
   },
-  percentSuffix: { color: "#94a3b8", fontSize: 14, fontWeight: "700", marginLeft: 4 },
+  percentSuffix: { color: colors.textSecondary, fontSize: 14, fontWeight: "700", marginLeft: 4 },
   durationRow: { flexDirection: "row", gap: 7 },
   field: { flex: 1, gap: 5 },
-  fieldLabel: { color: "#94a3b8", fontSize: 10, fontWeight: "700" },
+  fieldLabel: { color: colors.textSecondary, fontSize: 10, fontWeight: "700" },
   input: {
-    color: "#f8fafc",
-    backgroundColor: "#0b1220",
+    color: colors.textPrimary,
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: colors.border,
     borderRadius: 9,
     textAlign: "center",
     fontSize: 14,
@@ -619,15 +632,15 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   stateRow: { alignItems: "center", gap: 10, paddingVertical: 24 },
-  stateText: { color: "#94a3b8", fontSize: 12 },
-  errorText: { color: "#fca5a5", fontSize: 12, textAlign: "center" },
+  stateText: { color: colors.textSecondary, fontSize: 12 },
+  errorText: { color: colors.danger, fontSize: 12, textAlign: "center" },
   retryButton: {
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 9,
-    backgroundColor: "#1e293b",
+    backgroundColor: colors.surfaceRaised,
   },
-  retryText: { color: "#fbbf24", fontWeight: "800", fontSize: 12 },
+  retryText: { color: colors.gold, fontWeight: "800", fontSize: 12 },
   deleteButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -647,8 +660,8 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 13,
     borderRadius: 12,
-    backgroundColor: "#fbbf24",
+    backgroundColor: colors.gold,
   },
   saveButtonDisabled: { opacity: 0.45 },
-  saveButtonText: { color: "#0f172a", fontSize: 13, fontWeight: "900" },
+  saveButtonText: { color: colors.textDark, fontSize: 13, fontWeight: "900" },
 });

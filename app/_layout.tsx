@@ -384,6 +384,7 @@ export default Sentry.wrap(function RootLayout() {
   if (bootStage !== BootStage.Ready && bootStage !== BootStage.Fatal) {
     return (
       <View style={[styles.container, styles.loadingOverlay]}>
+        <StatusBar style={colorScheme === "light" ? "dark" : "light"} backgroundColor={colors.background} />
         <View style={styles.loadingContent}>
           <View style={styles.imageWrapper}>
             <Image
@@ -445,6 +446,7 @@ export default Sentry.wrap(function RootLayout() {
   if (bootStage === BootStage.Fatal) {
     return (
       <View style={[styles.container, styles.loadingOverlay]}>
+        <StatusBar style={colorScheme === "light" ? "dark" : "light"} backgroundColor={colors.background} />
         {retryCount >= 2 && (
           <Pressable
             style={styles.supportButton}
@@ -454,7 +456,7 @@ export default Sentry.wrap(function RootLayout() {
             <Ionicons
               name="chatbubble-ellipses-outline"
               size={22}
-              color="#94a3b8"
+              color={colors.textMuted}
             />
           </Pressable>
         )}
@@ -600,7 +602,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
 
   loadingOverlay: {
     flex: 1,
-    backgroundColor: "#0f172a",
+    backgroundColor: colors.background,
   },
 
   loadingContent: {
@@ -705,7 +707,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   },
 
   stageActive: {
-    backgroundColor: "#fbbf24",
+    backgroundColor: colors.gold,
   },
 
   stageText: {
@@ -718,7 +720,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   },
 
   stageActiveText: {
-    color: "#fbbf24",
+    color: colors.gold,
     fontWeight: "700",
   },
 
@@ -729,11 +731,11 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: colors.border,
   },
 
   errorCardTitle: {
-    color: colors.textBright,
+    color: colors.textPrimary,
     fontWeight: "700",
     marginBottom: 14,
     fontSize: 14,
@@ -744,12 +746,12 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   },
 
   errorLabel: {
-    color: "#94a3b8",
+    color: colors.textSecondary,
     fontSize: 12,
   },
 
   errorValue: {
-    color: "#f8fafc",
+    color: colors.textPrimary,
     marginTop: 2,
     fontSize: 13,
   },

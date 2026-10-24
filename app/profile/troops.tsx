@@ -526,7 +526,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "800",
-    color: GOLD,
+    color: colors.gold,
     letterSpacing: -0.5,
   },
 
@@ -573,7 +573,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   },
 
   villageTabTextActive: {
-    color: GOLD,
+    color: colors.gold,
   },
 
   // ── Overview ────────────────────────────────────────────
@@ -724,7 +724,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   },
 
   segmentTextActive: {
-    color: GOLD,
+    color: colors.gold,
     fontWeight: "700",
   },
 
@@ -756,7 +756,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   clearText: {
     fontSize: 12,
     fontWeight: "700",
-    color: GOLD,
+    color: colors.gold,
   },
 
   // ── States ──────────────────────────────────────────────
@@ -796,7 +796,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     alignItems: "center",
     gap: 8,
     marginTop: 20,
-    backgroundColor: GOLD,
+    backgroundColor: colors.gold,
     paddingHorizontal: 18,
     paddingVertical: 11,
     borderRadius: 12,
@@ -848,6 +848,6 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   emptyButtonText: {
     fontSize: 13,
     fontWeight: "700",
-    color: GOLD,
+    color: colors.gold,
   },
 });

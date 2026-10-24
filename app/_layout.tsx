@@ -660,7 +660,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     left: 0,
     right: 0,
     height: 50,
-    backgroundColor: "#0f172a",
+    backgroundColor: colors.background,
     opacity: 0.8,
   },
 
@@ -758,7 +758,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
 
   retryButton: {
     marginTop: 22,
-    backgroundColor: "#fbbf24",
+    backgroundColor: colors.gold,
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 30,
@@ -778,7 +778,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   },
 
   supportActionText: {
-    color: "#94a3b8",
+    color: colors.textSecondary,
     fontWeight: "600",
   },
 
@@ -796,7 +796,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   },
 
   dotActive: {
-    backgroundColor: "#fbbf24",
+    backgroundColor: colors.gold,
     width: 20,
   },
 });

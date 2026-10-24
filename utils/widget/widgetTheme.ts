@@ -12,6 +12,10 @@ const COLOR_SCHEME_STORAGE_KEY = "appearance.colorScheme";
 /** Resolve the persisted app theme for Android widget rendering. */
 export function getWidgetColors(): HomeColors {
   const saved = storage.getString(COLOR_SCHEME_STORAGE_KEY);
-  const scheme: ColorScheme = saved === "light" ? "light" : "dark";
+  const preference: ColorScheme =
+    saved === "light" || saved === "dark" || saved === "system"
+      ? saved
+      : "dark";
+  const scheme = resolveColorScheme(preference, Appearance.getColorScheme());
   return getHomeColors(scheme);
 }

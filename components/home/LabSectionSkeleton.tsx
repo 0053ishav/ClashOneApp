@@ -1,7 +1,12 @@
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
+import { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 
 export function LabSectionSkeleton() {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.container}>
       <View style={styles.sectionHeader}>
@@ -32,7 +37,7 @@ export function LabSectionSkeleton() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   container: {
     marginTop: 18,
   },
@@ -45,13 +50,13 @@ const styles = StyleSheet.create({
     width: 85,
     height: 11,
     borderRadius: 6,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
   },
 
   card: {
     minHeight: 82,
     borderRadius: 16,
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     padding: 12,
     flexDirection: "row",
     alignItems: "center",
@@ -61,7 +66,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 14,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
   },
 
   content: {
@@ -73,14 +78,14 @@ const styles = StyleSheet.create({
     width: "65%",
     height: 12,
     borderRadius: 6,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
   },
 
   level: {
     width: 70,
     height: 17,
     borderRadius: 9,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
     marginTop: 8,
   },
 
@@ -95,14 +100,14 @@ const styles = StyleSheet.create({
     width: 55,
     height: 9,
     borderRadius: 5,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
   },
 
   progress: {
     flex: 1,
     height: 5,
     borderRadius: 3,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
   },
 
   status: {
@@ -115,13 +120,13 @@ const styles = StyleSheet.create({
     width: 42,
     height: 10,
     borderRadius: 5,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
   },
 
   statusLineSmall: {
     width: 30,
     height: 8,
     borderRadius: 4,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
   },
 });

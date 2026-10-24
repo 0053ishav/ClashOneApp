@@ -12,7 +12,9 @@ interface ThemeState {
 
 function readColorScheme(): ColorScheme {
   const saved = storage.getString(COLOR_SCHEME_STORAGE_KEY);
-  return saved === "light" ? "light" : "dark";
+  return saved === "light" || saved === "dark" || saved === "system"
+    ? saved
+    : "dark";
 }
 
 /**

@@ -117,9 +117,9 @@ export default function MagicItemsScreen() {
           accessibilityRole="button"
           accessibilityLabel="Go back"
           onPress={() => router.back()}
-          style={styles.backButton}
+          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
         >
-          <Ionicons name="arrow-back" size={21} color={colors.textBright} />
+          <Ionicons name="arrow-back" size={21} color={colors.textPrimary} />
         </Pressable>
         <View style={styles.headerText}>
           <Text style={styles.title}>Magic Items</Text>
@@ -129,7 +129,7 @@ export default function MagicItemsScreen() {
           accessibilityRole="button"
           accessibilityLabel="Refresh inventory"
           onPress={() => void loadInventory()}
-          style={styles.refreshButton}
+          style={({ pressed }) => [styles.refreshButton, pressed && styles.pressed]}
         >
           <Ionicons name="refresh" size={19} color={colors.textSecondary} />
         </Pressable>
@@ -154,7 +154,7 @@ export default function MagicItemsScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.notice}>
-            <Ionicons name="information-circle-outline" size={18} color={colors.bluePale} />
+            <Ionicons name="information-circle-outline" size={18} color={colors.blue} />
             <Text style={styles.noticeText}>
               Quantities are tracked manually and saved separately for each account.
             </Text>
@@ -220,7 +220,7 @@ export default function MagicItemsScreen() {
                           pressed && styles.pressed,
                         ]}
                       >
-                        <Ionicons name="remove" size={17} color={colors.textBright} />
+                        <Ionicons name="remove" size={17} color={colors.textPrimary} />
                       </Pressable>
                       <Text style={styles.quantity}>{quantity}</Text>
                       <Pressable
@@ -237,7 +237,7 @@ export default function MagicItemsScreen() {
                         {isSaving ? (
                           <ActivityIndicator size="small" color={colors.gold} />
                         ) : (
-                          <Ionicons name="add" size={17} color={colors.textBright} />
+                          <Ionicons name="add" size={17} color={colors.textPrimary} />
                         )}
                       </Pressable>
                     </View>
@@ -253,108 +253,129 @@ export default function MagicItemsScreen() {
   );
 }
 
-const createStyles = (colors: HomeColors) => StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.textDark },
-  header: {
-    minHeight: 64,
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surfaceRaised,
-  },
-  backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.surfaceRaised,
-  },
-  headerText: { flex: 1, marginLeft: 12 },
-  title: { fontSize: 20, fontWeight: "800", color: colors.textBright },
-  subtitle: { marginTop: 3, fontSize: 11, color: colors.textSecondary },
-  refreshButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  content: { padding: 16, paddingBottom: 28 },
-  notice: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 9,
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: colors.surfaceRaised,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 18,
-  },
-  noticeText: { flex: 1, color: colors.bluePale, fontSize: 12, lineHeight: 17 },
-  group: { marginBottom: 20 },
-  groupTitle: {
-    marginBottom: 9,
-    color: colors.gold,
-    fontSize: 13,
-    fontWeight: "800",
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-  },
-  itemCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    padding: 11,
-    marginBottom: 8,
-    borderRadius: 14,
-    backgroundColor: colors.surfaceDark,
-    borderWidth: 1,
-    borderColor: colors.surfaceRaised,
-  },
-  itemIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    backgroundColor: colors.textDark,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  itemIcon: { width: 39, height: 39 },
-  itemInfo: { flex: 1, minWidth: 0 },
-  itemName: { fontSize: 12, fontWeight: "800", color: colors.textBright },
-  itemDescription: { marginTop: 3, fontSize: 10, lineHeight: 14, color: colors.textSecondary },
-  villageText: { marginTop: 4, fontSize: 9, color: colors.textMuted },
-  quantityControl: { alignItems: "center", gap: 4 },
-  quantityButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.borderStrong,
-  },
-  quantity: {
-    minWidth: 22,
-    textAlign: "center",
-    fontSize: 13,
-    fontWeight: "800",
-    color: colors.textBright,
-  },
-  disabled: { opacity: 0.35 },
-  pressed: { opacity: 0.65 },
-  emptyState: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 32,
-  },
-  emptyTitle: { marginTop: 12, color: colors.textBright, fontSize: 16, fontWeight: "800" },
-  emptyBody: { marginTop: 7, color: colors.textSecondary, textAlign: "center", lineHeight: 20 },
-  loading: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10 },
-  muted: { color: colors.textSecondary, fontSize: 12 },
-  bottomSpacer: { height: 20 },
-});
+const createStyles = (colors: HomeColors) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.background },
+    header: {
+      minHeight: 64,
+      paddingHorizontal: 16,
+      flexDirection: "row",
+      alignItems: "center",
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    backButton: {
+      width: 38,
+      height: 38,
+      borderRadius: 12,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.surfaceRaised,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    headerText: { flex: 1, marginLeft: 12 },
+    title: { fontSize: 20, fontWeight: "800", color: colors.textPrimary },
+    subtitle: { marginTop: 3, fontSize: 11, color: colors.textSecondary },
+    refreshButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.surfaceRaised,
+    },
+    content: { padding: 16, paddingBottom: 28 },
+    notice: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 9,
+      padding: 12,
+      borderRadius: 12,
+      backgroundColor: colors.surfaceRaised,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 18,
+    },
+    noticeText: { flex: 1, color: colors.textSecondary, fontSize: 12, lineHeight: 17 },
+    group: { marginBottom: 20 },
+    groupTitle: {
+      marginBottom: 9,
+      color: colors.gold,
+      fontSize: 13,
+      fontWeight: "800",
+      letterSpacing: 0.6,
+      textTransform: "uppercase",
+    },
+    itemCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      padding: 11,
+      marginBottom: 8,
+      borderRadius: 14,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    itemIconWrap: {
+      width: 48,
+      height: 48,
+      borderRadius: 12,
+      borderWidth: 1,
+      backgroundColor: colors.surfaceRaised,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    itemIcon: { width: 39, height: 39 },
+    itemInfo: { flex: 1, minWidth: 0 },
+    itemName: { fontSize: 12, fontWeight: "800", color: colors.textPrimary },
+    itemDescription: {
+      marginTop: 3,
+      fontSize: 10,
+      lineHeight: 14,
+      color: colors.textSecondary,
+    },
+    villageText: { marginTop: 4, fontSize: 9, color: colors.textMuted },
+    quantityControl: { alignItems: "center", gap: 4 },
+    quantityButton: {
+      width: 28,
+      height: 28,
+      borderRadius: 8,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.surfaceRaised,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    quantity: {
+      minWidth: 22,
+      textAlign: "center",
+      fontSize: 13,
+      fontWeight: "800",
+      color: colors.textPrimary,
+    },
+    disabled: { opacity: 0.35 },
+    pressed: { opacity: 0.65 },
+    emptyState: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 32,
+    },
+    emptyTitle: {
+      marginTop: 12,
+      color: colors.textPrimary,
+      fontSize: 16,
+      fontWeight: "800",
+    },
+    emptyBody: {
+      marginTop: 7,
+      color: colors.textSecondary,
+      textAlign: "center",
+      lineHeight: 20,
+    },
+    loading: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10 },
+    muted: { color: colors.textSecondary, fontSize: 12 },
+    bottomSpacer: { height: 20 },
+  });

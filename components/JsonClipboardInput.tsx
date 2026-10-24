@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import * as Clipboard from "expo-clipboard";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -38,6 +40,8 @@ export function JsonClipboardInput({
   onPasteError,
   disabled = false,
 }: JsonClipboardInputProps) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [isPasting, setIsPasting] = useState(false);
   const status = getJsonInputStatus(value);
 
@@ -89,7 +93,7 @@ export function JsonClipboardInput({
               (disabled || !value) && styles.disabled,
             ]}
           >
-            <Ionicons name="refresh-outline" size={16} color="#fca5a5" />
+            <Ionicons name="refresh-outline" size={16} color={colors.dangerLight} />
             <Text style={styles.resetText}>Reset</Text>
           </Pressable>
           <Pressable
@@ -104,7 +108,7 @@ export function JsonClipboardInput({
             ]}
           >
             {isPasting ? (
-              <ActivityIndicator color="#fbbf24" size="small" />
+              <ActivityIndicator color={colors.gold} size="small" />
             ) : (
               <Ionicons name="clipboard-outline" size={20} color="#fbbf24" />
             )}
@@ -124,7 +128,7 @@ export function JsonClipboardInput({
           autoCorrect={false}
           spellCheck={false}
           placeholder="Paste or type your village JSON here..."
-          placeholderTextColor="#64748b"
+          placeholderTextColor={colors.textMuted}
           style={styles.preview}
         />
       </View>
@@ -134,7 +138,7 @@ export function JsonClipboardInput({
           <Ionicons
             name={status === "valid" ? "checkmark-circle" : "alert-circle"}
             size={15}
-            color={status === "valid" ? "#4ade80" : "#fbbf24"}
+            color={status === "valid" ? colors.success : colors.gold}
           />
           <Text
             style={
@@ -155,15 +159,15 @@ export function JsonClipboardInput({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   container: {
     marginHorizontal: 0,
     padding: 14,
     gap: 12,
     borderRadius: 18,
-    backgroundColor: "#131e30",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#2b3850",
+    borderColor: colors.borderMuted,
   },
   header: {
     flexDirection: "row",
@@ -180,12 +184,12 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   title: {
-    color: "#f8fafc",
+    color: colors.textBright,
     fontSize: 14,
     fontWeight: "800",
   },
   hint: {
-    color: "#8493aa",
+    color: colors.textSecondary,
     fontSize: 11,
     lineHeight: 16,
   },
@@ -204,15 +208,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#35435a",
-    backgroundColor: "#1a2639",
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surfaceRaised,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 5,
   },
   resetText: {
-    color: "#fca5a5",
+    color: colors.dangerLight,
     fontSize: 11,
     fontWeight: "700",
   },
@@ -222,12 +226,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#35435a",
     borderRadius: 13,
-    backgroundColor: "#0b1220",
+    backgroundColor: colors.background,
     overflow: "hidden",
   },
   preview: {
     height: 154,
-    color: "#dbe4f0",
+    color: colors.textPrimary,
     paddingHorizontal: 13,
     paddingVertical: 12,
     fontSize: 12,
@@ -241,12 +245,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   validStatus: {
-    color: "#4ade80",
+    color: colors.success,
     fontSize: 12,
     fontWeight: "600",
   },
   pendingStatus: {
-    color: "#fbbf24",
+    color: colors.gold,
     fontSize: 12,
     fontWeight: "600",
   },

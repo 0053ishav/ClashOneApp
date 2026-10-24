@@ -604,6 +604,7 @@ Update now for the best experience.`}
  */
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const colors = useHomeColors();
+  const colorScheme = useThemeStore((state) => state.colorScheme);
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   useEffect(() => {
@@ -613,7 +614,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   return (
     <View style={[styles.container, styles.loadingOverlay, styles.boundaryContainer]}>
       <StatusBar
-        style={useThemeStore.getState().colorScheme === "light" ? "dark" : "light"}
+        style={colorScheme === "light" ? "dark" : "light"}
         backgroundColor={colors.background}
       />
       <View style={styles.boundaryContent}>

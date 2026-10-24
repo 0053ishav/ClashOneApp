@@ -342,6 +342,8 @@ export default function AchievementsScreen() {
 const AchievementCard = React.memo(function AchievementCard({
   achievement,
 }: any) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const rawPercent = (achievement.value / achievement.target) * 100;
 
   const progress = Math.min(rawPercent, 100);

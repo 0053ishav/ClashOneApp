@@ -1875,7 +1875,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "rgba(148,163,184,0.4)",
+    backgroundColor: `${colors.textMuted}66`,
   },
 
   connectButton: {

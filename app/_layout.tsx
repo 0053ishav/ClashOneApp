@@ -1,4 +1,6 @@
 import { ConfirmModal } from "@/components/ConfirmModal";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import { SupportModal } from "@/components/SupportModal";
 import { initDatabase } from "@/db/initDatabase";
 import { configureNotifications } from "@/engine/notifications/notificationEngine";
@@ -32,7 +34,7 @@ import * as Sentry from "@sentry/react-native";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
 import { Redirect, Stack, usePathname, useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 Sentry.init({
@@ -90,6 +92,8 @@ type BootError = {
 };
 
 export default Sentry.wrap(function RootLayout() {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const loadActiveAccount = useAccountStore((s) => s.loadActiveAccount);
 
   const [bootStage, setBootStage] = useState(BootStage.Initializing);
@@ -584,10 +588,10 @@ Update now for the best experience.`}
   );
 });
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f172a",
+    backgroundColor: colors.background,
   },
 
   loadingOverlay: {
@@ -612,9 +616,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(30,41,59,0.85)",
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: colors.borderStrong,
   },
 
   imageWrapper: {
@@ -662,13 +666,13 @@ const styles = StyleSheet.create({
   loadingTitle: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#fbbf24",
+    color: colors.gold,
     letterSpacing: 0.5,
   },
 
   loadingMessage: {
     fontSize: 13,
-    color: "#94a3b8",
+    color: colors.textSecondary,
     fontWeight: "500",
   },
 
@@ -688,12 +692,12 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#334155",
+    backgroundColor: colors.slateMuted,
     marginRight: 12,
   },
 
   stageCompleted: {
-    backgroundColor: "#22c55e",
+    backgroundColor: colors.success,
   },
 
   stageActive: {
@@ -701,12 +705,12 @@ const styles = StyleSheet.create({
   },
 
   stageText: {
-    color: "#64748b",
+    color: colors.textMuted,
     fontSize: 14,
   },
 
   stageCompletedText: {
-    color: "#cbd5e1",
+    color: colors.textPrimary,
   },
 
   stageActiveText: {
@@ -717,7 +721,7 @@ const styles = StyleSheet.create({
   errorCard: {
     marginTop: 24,
     width: "100%",
-    backgroundColor: "#1e293b",
+    backgroundColor: colors.surface,
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
@@ -725,7 +729,7 @@ const styles = StyleSheet.create({
   },
 
   errorCardTitle: {
-    color: "#f8fafc",
+    color: colors.textBright,
     fontWeight: "700",
     marginBottom: 14,
     fontSize: 14,
@@ -755,7 +759,7 @@ const styles = StyleSheet.create({
   },
 
   retryText: {
-    color: "#0f172a",
+    color: colors.textDark,
     fontWeight: "800",
     fontSize: 15,
   },
@@ -782,7 +786,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "rgba(148, 163, 184, 0.4)",
+    backgroundColor: `${colors.textMuted}66`,
   },
 
   dotActive: {

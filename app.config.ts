@@ -38,6 +38,10 @@ function resolveVariant(value: string | undefined): AppVariant {
 export default ({ config }: ConfigContext): ExpoConfig => {
   const variant = resolveVariant(process.env.APP_VARIANT);
   const selected = VARIANTS[variant];
+  const appIcon =
+    variant === "development"
+      ? "./assets/images/dev-icon.png"
+      : baseConfig.icon;
   // app.json is validated by Expo at runtime; JSON imports widen literal values
   // (for example, "portrait" to string), so restore Expo's config type here.
   const baseConfig = appJson.expo as ExpoConfig;
@@ -47,7 +51,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     slug: baseConfig.slug,
     name: selected.name,
-    icon: baseConfig.icon,
+    icon: appIcon,
     android: {
       ...baseConfig.android,
       ...config.android,
@@ -55,6 +59,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       adaptiveIcon: {
         ...(baseConfig.android?.adaptiveIcon ?? {}),
         ...config.android?.adaptiveIcon,
+        foregroundImage: appIcon,
       },
     },
     extra: {

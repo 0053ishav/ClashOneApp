@@ -1,6 +1,7 @@
 "use no memo";
 
 import React from "react";
+import { getWidgetColors } from "@/utils/widget/widgetTheme";
 import {
   ColorProp,
   FlexWidget,
@@ -28,6 +29,7 @@ export function UpcomingUpgradesWidget(props: {
   rows: Row[];
   updatedAt?: number;
 }) {
+  const colors = getWidgetColors();
   const visible = props.rows.slice(0, 20);
 
   const total = props.rows.length;
@@ -38,7 +40,7 @@ export function UpcomingUpgradesWidget(props: {
       style={{
         width: "match_parent",
         height: "match_parent",
-        backgroundColor: "#0f172a",
+        backgroundColor: colors.surface,
         borderRadius: 16,
         flexDirection: "row",
       }}
@@ -83,7 +85,7 @@ export function UpcomingUpgradesWidget(props: {
             <TextWidget
               text="Upcoming Upgrades"
               style={{
-                color: "#f8fafc",
+                color: colors.textBright,
                 fontSize: 18,
                 fontWeight: "700",
               }}
@@ -128,7 +130,7 @@ export function UpcomingUpgradesWidget(props: {
             <TextWidget
               text="Upgrade"
               style={{
-                color: "#64748b",
+                color: colors.textMuted,
                 fontSize: 9,
                 fontWeight: "700",
               }}
@@ -144,7 +146,7 @@ export function UpcomingUpgradesWidget(props: {
             <TextWidget
               text="ETA"
               style={{
-                color: "#64748b",
+                color: colors.textMuted,
                 fontSize: 9,
                 fontWeight: "700",
               }}
@@ -183,7 +185,7 @@ export function UpcomingUpgradesWidget(props: {
             <TextWidget
               text="No Active Upgrades"
               style={{
-                color: "#f8fafc",
+                color: colors.textBright,
                 fontSize: 15,
                 fontWeight: "700",
               }}
@@ -192,7 +194,7 @@ export function UpcomingUpgradesWidget(props: {
             <TextWidget
               text="All builders, lab and pets are free"
               style={{
-                color: "#64748b",
+                color: colors.textMuted,
                 fontSize: 10,
               }}
             />
@@ -295,7 +297,7 @@ export function UpcomingUpgradesWidget(props: {
                         <TextWidget
                           text={row.entity}
                           style={{
-                            color: "#f1f5f9",
+                            color: colors.textPrimary,
                             fontSize: 12,
                             fontWeight: "700",
                           }}
@@ -396,7 +398,7 @@ export function UpcomingUpgradesWidget(props: {
             <TextWidget
               text={`+${total - visible.length} more upgrades`}
               style={{
-                color: "#64748b",
+                color: colors.textMuted,
                 fontSize: 8,
               }}
             />

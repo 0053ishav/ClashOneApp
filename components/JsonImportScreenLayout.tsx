@@ -95,7 +95,7 @@ import { JsonClipboardInput, type ClipboardPasteError } from "@/components/JsonC
 
 //         <View style={styles.exportSection}>
 //           <View style={styles.sectionHeading}>
-//             <View style={styles.sectionIcon}><Ionicons name="document-text-outline" size={18} color="#fbbf24" /></View>
+//             <View style={styles.sectionIcon}><Ionicons name="document-text-outline" size={18} color={colors.gold} /></View>
 //             <View style={styles.sectionHeadingText}>
 //               <Text style={styles.sectionTitle}>{exportTitle}</Text>
 //               <Text style={styles.sectionSubtitle}>{exportSubtitle}</Text>
@@ -111,16 +111,16 @@ import { JsonClipboardInput, type ClipboardPasteError } from "@/components/JsonC
 //             ))}
 //           </View>
 //           <Pressable accessibilityRole="button" disabled={isImporting} style={({ pressed }) => [styles.openGameButton, pressed && styles.pressed, isImporting && styles.disabled]} onPress={openClashSettings}>
-//             <Ionicons name="game-controller-outline" size={18} color="#fbbf24" />
+//             <Ionicons name="game-controller-outline" size={18} color={colors.gold} />
 //             <Text style={styles.openGameButtonText}>Open Clash of Clans</Text>
-//             <Ionicons name="arrow-up-right-box" size={16} color="#fbbf24" />
+//             <Ionicons name="arrow-up-right-box" size={16} color={colors.gold} />
 //           </Pressable>
 //           </View>
 //         </View>
 
 //         <View style={styles.importSection}>
 //           <View style={styles.sectionHeading}>
-//             <View style={styles.sectionIcon}><Ionicons name="clipboard-outline" size={18} color="#fbbf24" /></View>
+//             <View style={styles.sectionIcon}><Ionicons name="clipboard-outline" size={18} color={colors.gold} /></View>
 //             <View style={styles.sectionHeadingText}>
 //               <Text style={styles.sectionTitle}>{pasteTitle}</Text>
 //               <Text style={styles.sectionSubtitle}>{pasteSubtitle}</Text>
@@ -142,7 +142,7 @@ import { JsonClipboardInput, type ClipboardPasteError } from "@/components/JsonC
 //             <Text style={styles.disclaimerText}>Clash One is not affiliated with, endorsed, sponsored, or approved by Supercell.</Text>
 //             <Pressable accessibilityRole="link" onPress={() => Linking.openURL("https://supercell.com/en/fan-content-policy/")} style={({ pressed }) => [styles.policyLink, pressed && styles.pressed]}>
 //               <Text style={styles.policyLinkText}>Read the Fan Content Policy</Text>
-//               <Ionicons name="open-outline" size={14} color="#fbbf24" />
+//               <Ionicons name="open-outline" size={14} color={colors.gold} />
 //             </Pressable>
 //           </View>
 //         ) : null}
@@ -162,14 +162,14 @@ import { JsonClipboardInput, type ClipboardPasteError } from "@/components/JsonC
 //   topBarTitle: { color: colors.textBright, fontSize: 20, fontWeight: "800" },
 //   headerIcon: { width: 48, height: 48, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: `${colors.gold}1A`, borderWidth: 1, borderColor: "rgba(251,191,36,0.22)" },
 //   intro: { gap: 8 },
-//   title: { color: "#f8fafc", fontSize: 25, lineHeight: 31, fontWeight: "800", letterSpacing: -0.5 },
+//   title: { color: colors.textBright, fontSize: 25, lineHeight: 31, fontWeight: "800", letterSpacing: -0.5 },
 //   description: { color: "#9aa8bd", fontSize: 14, lineHeight: 21 },
 //   exportSection: { gap: 14 },
 //   exportCard: { padding: 16, borderRadius: 20, backgroundColor: "#131e30", borderWidth: 1, borderColor: "#26344a", gap: 15 },
 //   sectionHeading: { flexDirection: "row", alignItems: "center", gap: 11 },
 //   sectionIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: "rgba(251,191,36,0.12)", alignItems: "center", justifyContent: "center" },
 //   sectionHeadingText: { flex: 1, gap: 3 },
-//   sectionTitle: { color: "#f8fafc", fontSize: 15, fontWeight: "700" },
+//   sectionTitle: { color: colors.textBright, fontSize: 15, fontWeight: "700" },
 //   sectionSubtitle: { color: colors.textSecondary, fontSize: 12, lineHeight: 17 },
 //   steps: { gap: 12 },
 //   stepRow: { flexDirection: "row", alignItems: "center", gap: 11 },
@@ -185,7 +185,7 @@ import { JsonClipboardInput, type ClipboardPasteError } from "@/components/JsonC
 //   cancelButton: { minHeight: 42, alignItems: "center", justifyContent: "center" },
 //   cancelText: { color: colors.textSecondary, fontSize: 13, fontWeight: "600" },
 //   disclaimerSection: { paddingHorizontal: 2, paddingTop: 2, gap: 6 },
-//   disclaimerTitle: { color: "#8493aa", fontSize: 11, fontWeight: "800", letterSpacing: 0.8, textTransform: "uppercase" },
+//   disclaimerTitle: { color: colors.textSecondary, fontSize: 11, fontWeight: "800", letterSpacing: 0.8, textTransform: "uppercase" },
 //   disclaimerText: { color: colors.textMuted, fontSize: 11, lineHeight: 16 },
 //   policyLink: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", paddingVertical: 4 },
 //   policyLinkText: { color: "#fbbf24", fontSize: 12, fontWeight: "700" },
@@ -297,7 +297,7 @@ export function JsonImportScreenLayout({
             <Text style={styles.topBarTitle}>{headerTitle}</Text>
           </View>
           <View style={styles.headerIcon}>
-            <Ionicons name={headerIcon} size={21} color="#fbbf24" />
+            <Ionicons name={headerIcon} size={21} color={colors.gold} />
           </View>
         </View>
 
@@ -322,7 +322,7 @@ export function JsonImportScreenLayout({
                 <Ionicons
                   name="document-text-outline"
                   size={17}
-                  color="#fbbf24"
+                  color={colors.gold}
                 />
                 <Text style={styles.sectionTitle}>{exportTitle}</Text>
               </View>
@@ -350,12 +350,12 @@ export function JsonImportScreenLayout({
                 <Ionicons
                   name="game-controller-outline"
                   size={18}
-                  color="#fbbf24"
+                  color={colors.gold}
                 />
                 <Text style={styles.openGameButtonText}>
                   Open Clash of Clans
                 </Text>
-                <Ionicons name="open-outline" size={16} color="#fbbf24" />
+                <Ionicons name="open-outline" size={16} color={colors.gold} />
               </Pressable>
             </View>
           </View>
@@ -369,7 +369,7 @@ export function JsonImportScreenLayout({
             </View>
             <View style={styles.stageBody}>
               <View style={styles.stageHeading}>
-                <Ionicons name="clipboard-outline" size={17} color="#fbbf24" />
+                <Ionicons name="clipboard-outline" size={17} color={colors.gold} />
                 <Text style={styles.sectionTitle}>{pasteTitle}</Text>
               </View>
               <Text style={styles.sectionSubtitle}>{pasteSubtitle}</Text>
@@ -397,9 +397,9 @@ export function JsonImportScreenLayout({
                   <ActivityIndicator color={colors.textDark} />
                 ) : (
                   <>
-                    <Ionicons name="sync-outline" size={19} color="#1a1203" />
+                    <Ionicons name="sync-outline" size={19} color={colors.textDark} />
                     <Text style={styles.primaryButtonText}>{actionLabel}</Text>
-                    <Ionicons name="arrow-forward" size={18} color="#1a1203" />
+                    <Ionicons name="arrow-forward" size={18} color={colors.textDark} />
                   </>
                 )}
               </Pressable>
@@ -442,7 +442,7 @@ export function JsonImportScreenLayout({
               <Text style={styles.policyLinkText}>
                 Read the Fan Content Policy
               </Text>
-              <Ionicons name="open-outline" size={14} color="#fbbf24" />
+              <Ionicons name="open-outline" size={14} color={colors.gold} />
             </Pressable>
           </View>
         ) : null}
@@ -475,7 +475,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     borderColor: colors.border,
   },
   topBarText: { flex: 1, gap: 2 },
-  eyebrow: { color: "#8493aa", fontSize: 12, fontWeight: "600" },
+  eyebrow: { color: colors.textSecondary, fontSize: 12, fontWeight: "600" },
   topBarTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: "800" },
   headerIcon: {
     width: 40,
@@ -491,13 +491,13 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   // Intro
   intro: { gap: 10 },
   title: {
-    color: "#f8fafc",
+    color: colors.textBright,
     fontSize: 30,
     lineHeight: 35,
     fontWeight: "900",
     letterSpacing: -0.8,
   },
-  description: { color: "#94a3b8", fontSize: 15, lineHeight: 22 },
+  description: { color: colors.textSecondary, fontSize: 15, lineHeight: 22 },
 
   // Flow
   flow: { gap: 0 },
@@ -524,13 +524,13 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   stageBodyGap: { paddingBottom: 26 },
   stageHeading: { flexDirection: "row", alignItems: "center", gap: 8 },
   sectionTitle: {
-    color: "#f8fafc",
+    color: colors.textBright,
     fontSize: 17,
     fontWeight: "800",
     flexShrink: 1,
   },
   sectionSubtitle: {
-    color: "#8493aa",
+    color: colors.textSecondary,
     fontSize: 13,
     lineHeight: 19,
     marginBottom: 8,
@@ -553,7 +553,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     lineHeight: 19,
     fontWeight: "800",
   },
-  stepText: { flex: 1, color: "#cbd5e1", fontSize: 13, lineHeight: 19 },
+  stepText: { flex: 1, color: colors.textPrimary, fontSize: 13, lineHeight: 19 },
   openGameButton: {
     minHeight: 48,
     marginTop: 8,
@@ -600,7 +600,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  cancelText: { color: "#94a3b8", fontSize: 14, fontWeight: "600" },
+  cancelText: { color: colors.textSecondary, fontSize: 14, fontWeight: "600" },
 
   // Disclaimer
   disclaimerSection: {
@@ -611,8 +611,8 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     borderColor: colors.borderMuted,
     gap: 6,
   },
-  disclaimerTitle: { color: "#8493aa", fontSize: 12, fontWeight: "700" },
-  disclaimerText: { color: "#64748b", fontSize: 12, lineHeight: 17 },
+  disclaimerTitle: { color: colors.textSecondary, fontSize: 12, fontWeight: "700" },
+  disclaimerText: { color: colors.textMuted, fontSize: 12, lineHeight: 17 },
   policyLink: {
     flexDirection: "row",
     alignItems: "center",

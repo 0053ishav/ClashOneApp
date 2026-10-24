@@ -53,7 +53,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ...config.android,
       package: selected.androidPackage,
       adaptiveIcon: {
-        ...baseConfig.android.adaptiveIcon,
+        ...(baseConfig.android?.adaptiveIcon ?? {}),
         ...config.android?.adaptiveIcon,
       },
     },

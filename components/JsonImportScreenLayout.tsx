@@ -10,7 +10,9 @@
 //   View,
 // } from "react-native";
 // import { SafeAreaView } from "react-native-safe-area-context";
-// import { JsonClipboardInput, type ClipboardPasteError } from "@/components/JsonClipboardInput";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
+import { useMemo } from "react";
 
 // type IconName = ComponentProps<typeof Ionicons>["name"];
 
@@ -81,7 +83,7 @@
 //             <Text style={styles.topBarTitle}>{headerTitle}</Text>
 //           </View>
 //           <View style={styles.headerIcon}>
-//             <Ionicons name={headerIcon} size={22} color="#fbbf24" />
+//             <Ionicons name={headerIcon} size={22} color={colors.gold} />
 //           </View>
 //         </View>
 
@@ -92,7 +94,7 @@
 
 //         <View style={styles.exportSection}>
 //           <View style={styles.sectionHeading}>
-//             <View style={styles.sectionIcon}><Ionicons name="document-text-outline" size={18} color="#fbbf24" /></View>
+//             <View style={styles.sectionIcon}><Ionicons name="document-text-outline" size={18} color={colors.gold} /></View>
 //             <View style={styles.sectionHeadingText}>
 //               <Text style={styles.sectionTitle}>{exportTitle}</Text>
 //               <Text style={styles.sectionSubtitle}>{exportSubtitle}</Text>
@@ -108,16 +110,16 @@
 //             ))}
 //           </View>
 //           <Pressable accessibilityRole="button" disabled={isImporting} style={({ pressed }) => [styles.openGameButton, pressed && styles.pressed, isImporting && styles.disabled]} onPress={openClashSettings}>
-//             <Ionicons name="game-controller-outline" size={18} color="#fbbf24" />
+//             <Ionicons name="game-controller-outline" size={18} color={colors.gold} />
 //             <Text style={styles.openGameButtonText}>Open Clash of Clans</Text>
-//             <Ionicons name="arrow-up-right-box" size={16} color="#fbbf24" />
+//             <Ionicons name="arrow-up-right-box" size={16} color={colors.gold} />
 //           </Pressable>
 //           </View>
 //         </View>
 
 //         <View style={styles.importSection}>
 //           <View style={styles.sectionHeading}>
-//             <View style={styles.sectionIcon}><Ionicons name="clipboard-outline" size={18} color="#fbbf24" /></View>
+//             <View style={styles.sectionIcon}><Ionicons name="clipboard-outline" size={18} color={colors.gold} /></View>
 //             <View style={styles.sectionHeadingText}>
 //               <Text style={styles.sectionTitle}>{pasteTitle}</Text>
 //               <Text style={styles.sectionSubtitle}>{pasteSubtitle}</Text>
@@ -139,7 +141,7 @@
 //             <Text style={styles.disclaimerText}>Clash One is not affiliated with, endorsed, sponsored, or approved by Supercell.</Text>
 //             <Pressable accessibilityRole="link" onPress={() => Linking.openURL("https://supercell.com/en/fan-content-policy/")} style={({ pressed }) => [styles.policyLink, pressed && styles.pressed]}>
 //               <Text style={styles.policyLinkText}>Read the Fan Content Policy</Text>
-//               <Ionicons name="open-outline" size={14} color="#fbbf24" />
+//               <Ionicons name="open-outline" size={14} color={colors.gold} />
 //             </Pressable>
 //           </View>
 //         ) : null}
@@ -156,23 +158,23 @@
 //   backButton: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "#172033", borderWidth: 1, borderColor: "#2b3850" },
 //   topBarText: { flex: 1, gap: 3 },
 //   eyebrow: { color: "#fbbf24", fontSize: 10, fontWeight: "800", letterSpacing: 1.4 },
-//   topBarTitle: { color: "#f8fafc", fontSize: 20, fontWeight: "800" },
-//   headerIcon: { width: 48, height: 48, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(251,191,36,0.1)", borderWidth: 1, borderColor: "rgba(251,191,36,0.22)" },
+//   topBarTitle: { color: colors.textBright, fontSize: 20, fontWeight: "800" },
+//   headerIcon: { width: 48, height: 48, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: `${colors.gold}1A`, borderWidth: 1, borderColor: "rgba(251,191,36,0.22)" },
 //   intro: { gap: 8 },
-//   title: { color: "#f8fafc", fontSize: 25, lineHeight: 31, fontWeight: "800", letterSpacing: -0.5 },
+//   title: { color: colors.textBright, fontSize: 25, lineHeight: 31, fontWeight: "800", letterSpacing: -0.5 },
 //   description: { color: "#9aa8bd", fontSize: 14, lineHeight: 21 },
 //   exportSection: { gap: 14 },
 //   exportCard: { padding: 16, borderRadius: 20, backgroundColor: "#131e30", borderWidth: 1, borderColor: "#26344a", gap: 15 },
 //   sectionHeading: { flexDirection: "row", alignItems: "center", gap: 11 },
 //   sectionIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: "rgba(251,191,36,0.12)", alignItems: "center", justifyContent: "center" },
 //   sectionHeadingText: { flex: 1, gap: 3 },
-//   sectionTitle: { color: "#f8fafc", fontSize: 15, fontWeight: "700" },
-//   sectionSubtitle: { color: "#8493aa", fontSize: 12, lineHeight: 17 },
+//   sectionTitle: { color: colors.textBright, fontSize: 15, fontWeight: "700" },
+//   sectionSubtitle: { color: colors.textSecondary, fontSize: 12, lineHeight: 17 },
 //   steps: { gap: 12 },
 //   stepRow: { flexDirection: "row", alignItems: "center", gap: 11 },
 //   stepNumber: { width: 25, height: 25, borderRadius: 9, alignItems: "center", justifyContent: "center", backgroundColor: "#26344a" },
 //   stepNumberText: { color: "#fbbf24", fontSize: 12, fontWeight: "800" },
-//   stepText: { flex: 1, color: "#cbd5e1", fontSize: 13, lineHeight: 19 },
+//   stepText: { flex: 1, color: colors.textPrimary, fontSize: 13, lineHeight: 19 },
 //   openGameButton: { minHeight: 48, borderRadius: 14, borderWidth: 1, borderColor: "rgba(251,191,36,0.35)", backgroundColor: "rgba(251,191,36,0.07)", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, paddingHorizontal: 14, marginTop: 1 },
 //   openGameButtonText: { color: "#fbbf24", fontSize: 14, fontWeight: "700", flex: 1 },
 //   importSection: { gap: 14 },
@@ -180,10 +182,10 @@
 //   primaryButtonPressed: { opacity: 0.86, transform: [{ scale: 0.99 }] },
 //   primaryButtonText: { color: "#172033", fontSize: 15, fontWeight: "800", flex: 1, textAlign: "center" },
 //   cancelButton: { minHeight: 42, alignItems: "center", justifyContent: "center" },
-//   cancelText: { color: "#94a3b8", fontSize: 13, fontWeight: "600" },
+//   cancelText: { color: colors.textSecondary, fontSize: 13, fontWeight: "600" },
 //   disclaimerSection: { paddingHorizontal: 2, paddingTop: 2, gap: 6 },
-//   disclaimerTitle: { color: "#8493aa", fontSize: 11, fontWeight: "800", letterSpacing: 0.8, textTransform: "uppercase" },
-//   disclaimerText: { color: "#64748b", fontSize: 11, lineHeight: 16 },
+//   disclaimerTitle: { color: colors.textSecondary, fontSize: 11, fontWeight: "800", letterSpacing: 0.8, textTransform: "uppercase" },
+//   disclaimerText: { color: colors.textMuted, fontSize: 11, lineHeight: 16 },
 //   policyLink: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", paddingVertical: 4 },
 //   policyLinkText: { color: "#fbbf24", fontSize: 12, fontWeight: "700" },
 //   pressed: { opacity: 0.82 },
@@ -255,6 +257,9 @@ export function JsonImportScreenLayout({
   showDisclaimer = false,
   footer,
 }: JsonImportScreenLayoutProps) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const openClashSettings = async () => {
     try {
       await Linking.openURL(
@@ -284,14 +289,14 @@ export function JsonImportScreenLayout({
               pressed && styles.pressed,
             ]}
           >
-            <Ionicons name="chevron-back" size={22} color="#f1f5f9" />
+            <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
           </Pressable>
           <View style={styles.topBarText}>
             <Text style={styles.eyebrow}>{headerEyebrow}</Text>
             <Text style={styles.topBarTitle}>{headerTitle}</Text>
           </View>
           <View style={styles.headerIcon}>
-            <Ionicons name={headerIcon} size={21} color="#fbbf24" />
+            <Ionicons name={headerIcon} size={21} color={colors.gold} />
           </View>
         </View>
 
@@ -316,7 +321,7 @@ export function JsonImportScreenLayout({
                 <Ionicons
                   name="document-text-outline"
                   size={17}
-                  color="#fbbf24"
+                  color={colors.gold}
                 />
                 <Text style={styles.sectionTitle}>{exportTitle}</Text>
               </View>
@@ -344,12 +349,12 @@ export function JsonImportScreenLayout({
                 <Ionicons
                   name="game-controller-outline"
                   size={18}
-                  color="#fbbf24"
+                  color={colors.gold}
                 />
                 <Text style={styles.openGameButtonText}>
                   Open Clash of Clans
                 </Text>
-                <Ionicons name="open-outline" size={16} color="#fbbf24" />
+                <Ionicons name="open-outline" size={16} color={colors.gold} />
               </Pressable>
             </View>
           </View>
@@ -363,7 +368,7 @@ export function JsonImportScreenLayout({
             </View>
             <View style={styles.stageBody}>
               <View style={styles.stageHeading}>
-                <Ionicons name="clipboard-outline" size={17} color="#fbbf24" />
+                <Ionicons name="clipboard-outline" size={17} color={colors.gold} />
                 <Text style={styles.sectionTitle}>{pasteTitle}</Text>
               </View>
               <Text style={styles.sectionSubtitle}>{pasteSubtitle}</Text>
@@ -388,12 +393,12 @@ export function JsonImportScreenLayout({
                 onPress={onSync}
               >
                 {isImporting ? (
-                  <ActivityIndicator color="#1a1203" />
+                  <ActivityIndicator color={colors.textDark} />
                 ) : (
                   <>
-                    <Ionicons name="sync-outline" size={19} color="#1a1203" />
+                    <Ionicons name="sync-outline" size={19} color={colors.textDark} />
                     <Text style={styles.primaryButtonText}>{actionLabel}</Text>
-                    <Ionicons name="arrow-forward" size={18} color="#1a1203" />
+                    <Ionicons name="arrow-forward" size={18} color={colors.textDark} />
                   </>
                 )}
               </Pressable>
@@ -436,7 +441,7 @@ export function JsonImportScreenLayout({
               <Text style={styles.policyLinkText}>
                 Read the Fan Content Policy
               </Text>
-              <Ionicons name="open-outline" size={14} color="#fbbf24" />
+              <Ionicons name="open-outline" size={14} color={colors.gold} />
             </Pressable>
           </View>
         ) : null}
@@ -446,11 +451,8 @@ export function JsonImportScreenLayout({
   );
 }
 
-const GOLD = "#fbbf24";
-const INK = "#1a1203";
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#0a0f1a" },
+const createStyles = (colors: HomeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
   container: {
     flexGrow: 1,
     paddingTop: 12,
@@ -467,13 +469,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#121a2b",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#222d44",
+    borderColor: colors.border,
   },
   topBarText: { flex: 1, gap: 2 },
-  eyebrow: { color: "#8493aa", fontSize: 12, fontWeight: "600" },
-  topBarTitle: { color: "#f1f5f9", fontSize: 18, fontWeight: "800" },
+  eyebrow: { color: colors.textSecondary, fontSize: 12, fontWeight: "600" },
+  topBarTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: "800" },
   headerIcon: {
     width: 40,
     height: 40,
@@ -482,19 +484,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "rgba(251,191,36,0.1)",
     borderWidth: 1,
-    borderColor: "rgba(251,191,36,0.25)",
+    borderColor: `${colors.gold}40`,
   },
 
   // Intro
   intro: { gap: 10 },
   title: {
-    color: "#f8fafc",
+    color: colors.textBright,
     fontSize: 30,
     lineHeight: 35,
     fontWeight: "900",
     letterSpacing: -0.8,
   },
-  description: { color: "#94a3b8", fontSize: 15, lineHeight: 22 },
+  description: { color: colors.textSecondary, fontSize: 15, lineHeight: 22 },
 
   // Flow
   flow: { gap: 0 },
@@ -506,28 +508,28 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: GOLD,
+    backgroundColor: colors.gold,
   },
-  nodeText: { color: INK, fontSize: 14, fontWeight: "900" },
+  nodeText: { color: colors.textDark, fontSize: 14, fontWeight: "900" },
   railLine: {
     flex: 1,
     width: 2,
     marginTop: 6,
     marginBottom: 6,
     borderRadius: 1,
-    backgroundColor: "rgba(251,191,36,0.28)",
+    backgroundColor: `${colors.gold}47`,
   },
   stageBody: { flex: 1, gap: 6, paddingTop: 4 },
   stageBodyGap: { paddingBottom: 26 },
   stageHeading: { flexDirection: "row", alignItems: "center", gap: 8 },
   sectionTitle: {
-    color: "#f8fafc",
+    color: colors.textBright,
     fontSize: 17,
     fontWeight: "800",
     flexShrink: 1,
   },
   sectionSubtitle: {
-    color: "#8493aa",
+    color: colors.textSecondary,
     fontSize: 13,
     lineHeight: 19,
     marginBottom: 8,
@@ -537,34 +539,34 @@ const styles = StyleSheet.create({
   stepsPanel: {
     padding: 14,
     borderRadius: 16,
-    backgroundColor: "#111a2b",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#202c43",
+    borderColor: colors.borderMuted,
     gap: 11,
   },
   stepRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   stepIndex: {
     width: 18,
-    color: GOLD,
+    color: colors.gold,
     fontSize: 13,
     lineHeight: 19,
     fontWeight: "800",
   },
-  stepText: { flex: 1, color: "#cbd5e1", fontSize: 13, lineHeight: 19 },
+  stepText: { flex: 1, color: colors.textPrimary, fontSize: 13, lineHeight: 19 },
   openGameButton: {
     minHeight: 48,
     marginTop: 8,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "rgba(251,191,36,0.4)",
-    backgroundColor: "rgba(251,191,36,0.08)",
+    borderColor: `${colors.gold}66`,
+    backgroundColor: `${colors.gold}14`,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 9,
     paddingHorizontal: 14,
   },
-  openGameButtonText: { color: GOLD, fontSize: 14, fontWeight: "700", flex: 1 },
+  openGameButtonText: { color: colors.gold, fontSize: 14, fontWeight: "700", flex: 1 },
 
   // Stage 2 content
   inputWrap: { borderRadius: 16, overflow: "hidden" },
@@ -573,12 +575,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderRadius: 16,
     paddingHorizontal: 18,
-    backgroundColor: GOLD,
+    backgroundColor: colors.gold,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    shadowColor: GOLD,
+    shadowColor: colors.gold,
     shadowOpacity: 0.25,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 6 },
@@ -586,7 +588,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonPressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
   primaryButtonText: {
-    color: INK,
+    color: colors.textDark,
     fontSize: 16,
     fontWeight: "800",
     flex: 1,
@@ -597,19 +599,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  cancelText: { color: "#94a3b8", fontSize: 14, fontWeight: "600" },
+  cancelText: { color: colors.textSecondary, fontSize: 14, fontWeight: "600" },
 
   // Disclaimer
   disclaimerSection: {
     padding: 14,
     borderRadius: 14,
-    backgroundColor: "#0e1524",
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: "#1a2438",
+    borderColor: colors.borderMuted,
     gap: 6,
   },
-  disclaimerTitle: { color: "#8493aa", fontSize: 12, fontWeight: "700" },
-  disclaimerText: { color: "#64748b", fontSize: 12, lineHeight: 17 },
+  disclaimerTitle: { color: colors.textSecondary, fontSize: 12, fontWeight: "700" },
+  disclaimerText: { color: colors.textMuted, fontSize: 12, lineHeight: 17 },
   policyLink: {
     flexDirection: "row",
     alignItems: "center",
@@ -617,7 +619,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     paddingVertical: 4,
   },
-  policyLinkText: { color: GOLD, fontSize: 12, fontWeight: "700" },
+  policyLinkText: { color: colors.gold, fontSize: 12, fontWeight: "700" },
 
   pressed: { opacity: 0.82 },
   disabled: { opacity: 0.5 },

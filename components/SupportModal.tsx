@@ -1,5 +1,6 @@
 import { ENV } from "@/config/env";
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import { requestGalleryPermission } from "@/services/images/imagePicker";
 import { convertImagesToBase64 } from "@/services/images/supportAttachmentService";
 import { track } from "@/utils/analytics/analytics";
@@ -10,7 +11,7 @@ import * as Clipboard from "expo-clipboard";
 import * as Crypto from "expo-crypto";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Modal,
   Platform,
@@ -39,6 +40,8 @@ const CATEGORIES = [
 ];
 
 export function SupportModal({ visible, onClose, debugInfo }: Props) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [category, setCategory] = useState("Bug Report");
 
   const [message, setMessage] = useState("");
@@ -143,7 +146,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                 <Text style={styles.title}>Support & Feedback</Text>
 
                 <Pressable onPress={onClose} hitSlop={12}>
-                  <Ionicons name="close" size={24} color={HOME_COLORS.textSecondary} />
+                  <Ionicons name="close" size={24} color={colors.textSecondary} />
                 </Pressable>
               </View>
 
@@ -179,7 +182,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
               value={subject}
               onChangeText={setSubject}
               placeholder="Short summary"
-              placeholderTextColor={HOME_COLORS.textMuted}
+              placeholderTextColor={colors.textMuted}
               style={styles.input}
             /> */}
 
@@ -192,7 +195,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                 autoCapitalize="none"
                 autoCorrect={false}
                 placeholder="you@example.com"
-                placeholderTextColor={HOME_COLORS.textMuted}
+                placeholderTextColor={colors.textMuted}
                 style={styles.input}
               />
 
@@ -203,12 +206,12 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                 value={message}
                 onChangeText={setMessage}
                 placeholder="Describe the issue or feedback..."
-                placeholderTextColor={HOME_COLORS.textMuted}
+                placeholderTextColor={colors.textMuted}
                 style={styles.messageInput}
               />
               <Text
                 style={{
-                  color: HOME_COLORS.textMuted,
+                  color: colors.textMuted,
                   fontSize: 12,
                   marginTop: 6,
                   textAlign: "right",
@@ -220,7 +223,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
               {message.trim().length > 0 && (
                 <Text
                   style={{
-                    color: message.trim().length < 10 ? HOME_COLORS.orange : HOME_COLORS.success,
+                    color: message.trim().length < 10 ? colors.orange : colors.success,
                     fontSize: 12,
                     marginTop: 4,
                     textAlign: "right",
@@ -239,7 +242,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                 onPress={pickImages}
                 disabled={attachments.length >= 3}
               >
-                <Ionicons name="image-outline" size={18} color={HOME_COLORS.gold} />
+                <Ionicons name="image-outline" size={18} color={colors.gold} />
 
                 <Text style={styles.attachText}>
                   {attachments.length >= 3
@@ -274,7 +277,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                           )
                         }
                       >
-                        <Ionicons name="close" size={12} color={HOME_COLORS.white} />
+                        <Ionicons name="close" size={12} color={colors.white} />
                       </Pressable>
                     </View>
                   ))}
@@ -296,7 +299,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                   <Ionicons
                     name={includeDebugInfo ? "checkbox" : "square-outline"}
                     size={22}
-                    color={HOME_COLORS.gold}
+                    color={colors.gold}
                   />
 
                   <Text style={styles.checkboxText}>
@@ -311,7 +314,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                   <Ionicons
                     name="document-text-outline"
                     size={18}
-                    color={HOME_COLORS.gold}
+                    color={colors.gold}
                   />
 
                   <Text style={styles.debugText}>
@@ -323,7 +326,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                   style={styles.debugButton}
                   onPress={() => Clipboard.setStringAsync(debugInfo)}
                 >
-                  <Ionicons name="copy-outline" size={18} color={HOME_COLORS.gold} />
+                  <Ionicons name="copy-outline" size={18} color={colors.gold} />
 
                   <Text style={styles.debugText}>
                     Copy Diagnostic Information
@@ -338,7 +341,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                 <Ionicons
                   name={consentGiven ? "checkbox" : "square-outline"}
                   size={22}
-                  color={HOME_COLORS.gold}
+                  color={colors.gold}
                 />
 
                 <Text style={styles.checkboxText}>
@@ -396,7 +399,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                   marginTop: 24,
                   paddingTop: 20,
                   borderTopWidth: 1,
-                  borderTopColor: HOME_COLORS.surfaceRaised,
+                  borderTopColor: colors.surfaceRaised,
                 }}
               >
                 <Text style={styles.aboutTitle}>Clash One</Text>
@@ -407,7 +410,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
 
                 <Text
                   style={{
-                    color: HOME_COLORS.textMuted,
+                    color: colors.textMuted,
                     fontSize: 11,
                     marginTop: 4,
                   }}
@@ -416,7 +419,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                 </Text>
                 <Text
                   style={{
-                    color: HOME_COLORS.textMuted,
+                    color: colors.textMuted,
                     fontSize: 10,
                     marginTop: 4,
                   }}
@@ -465,7 +468,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
             <Text style={styles.title}>Diagnostic Information</Text>
 
             <Pressable onPress={() => setShowDebugInfo(false)}>
-              <Ionicons name="close" size={24} color={HOME_COLORS.textSecondary} />
+              <Ionicons name="close" size={24} color={colors.textSecondary} />
             </Pressable>
           </View>
           <ScrollView>
@@ -476,7 +479,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
             style={styles.debugButton}
             onPress={() => Clipboard.setStringAsync(debugInfo)}
           >
-            <Ionicons name="copy-outline" size={18} color={HOME_COLORS.gold} />
+            <Ionicons name="copy-outline" size={18} color={colors.gold} />
 
             <Text style={styles.debugText}>Copy Diagnostic Information</Text>
           </Pressable>
@@ -486,7 +489,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.6)",
@@ -494,7 +497,7 @@ const styles = StyleSheet.create({
   },
 
   container: {
-    backgroundColor: HOME_COLORS.background,
+    backgroundColor: colors.background,
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
     height: "88%",
@@ -502,8 +505,8 @@ const styles = StyleSheet.create({
     paddingTop: 22,
     paddingBottom: 32,
     borderWidth: 1,
-    borderColor: HOME_COLORS.border,
-    shadowColor: HOME_COLORS.black,
+    borderColor: colors.border,
+    shadowColor: colors.black,
     shadowOpacity: 0.24,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: -5 },
@@ -520,7 +523,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "900",
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     letterSpacing: -0.4,
     flexShrink: 1,
     marginRight: 12,
@@ -529,7 +532,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: "700",
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     marginBottom: 8,
     marginTop: 16,
   },
@@ -538,13 +541,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
     padding: 16,
     borderRadius: 16,
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: HOME_COLORS.border,
+    borderColor: colors.border,
   },
 
   privacyText: {
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 13,
     lineHeight: 20,
   },
@@ -556,21 +559,21 @@ const styles = StyleSheet.create({
     marginTop: 18,
     padding: 14,
     borderRadius: 14,
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: HOME_COLORS.border,
+    borderColor: colors.border,
   },
 
   checkboxText: {
     flex: 1,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 13,
     lineHeight: 20,
   },
 
   debugContainer: {
     flex: 1,
-    backgroundColor: HOME_COLORS.background,
+    backgroundColor: colors.background,
     paddingHorizontal: 20,
     paddingTop: 56,
     paddingBottom: 24,
@@ -587,11 +590,11 @@ const styles = StyleSheet.create({
     marginTop: 18,
     padding: 14,
     borderRadius: 12,
-    backgroundColor: HOME_COLORS.surfaceDark,
+    backgroundColor: colors.surfaceDark,
     borderWidth: 1,
-    borderColor: HOME_COLORS.surfaceRaised,
+    borderColor: colors.surfaceRaised,
 
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 12,
     lineHeight: 18,
     fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
@@ -610,20 +613,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
 
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderStrong,
+    borderColor: colors.borderStrong,
 
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
   },
 
   attachText: {
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     fontSize: 13,
     fontWeight: "600",
   },
 
   attachmentCount: {
     marginTop: 8,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 12,
     textAlign: "center",
   },
@@ -649,57 +652,57 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: HOME_COLORS.danger,
+    backgroundColor: colors.danger,
     alignItems: "center",
     justifyContent: "center",
     zIndex: 10,
     borderWidth: 2,
-    borderColor: HOME_COLORS.background,
+    borderColor: colors.background,
   },
 
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
     marginRight: 10,
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderStrong,
+    borderColor: colors.borderStrong,
   },
 
   chipActive: {
-    backgroundColor: HOME_COLORS.gold,
-    borderColor: HOME_COLORS.gold,
+    backgroundColor: colors.gold,
+    borderColor: colors.gold,
   },
 
   chipText: {
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 12,
     fontWeight: "600",
   },
 
   chipTextActive: {
-    color: HOME_COLORS.background,
+    color: colors.background,
     fontWeight: "700",
   },
 
   input: {
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderStrong,
-    color: HOME_COLORS.textBright,
+    borderColor: colors.borderStrong,
+    color: colors.textBright,
     paddingHorizontal: 14,
     paddingVertical: 14,
     fontSize: 14,
   },
 
   messageInput: {
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderStrong,
-    color: HOME_COLORS.textBright,
+    borderColor: colors.borderStrong,
+    color: colors.textBright,
     paddingHorizontal: 14,
     paddingTop: 14,
     minHeight: 140,
@@ -717,14 +720,14 @@ const styles = StyleSheet.create({
   },
 
   guidelineTitle: {
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     fontWeight: "700",
     fontSize: 13,
     marginBottom: 8,
   },
 
   guidelineText: {
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 12,
     lineHeight: 18,
     marginBottom: 4,
@@ -739,23 +742,23 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderStrong,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surfaceRaised,
   },
 
   debugText: {
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     fontSize: 13,
     fontWeight: "600",
   },
 
   sendButton: {
     marginTop: 20,
-    backgroundColor: HOME_COLORS.gold,
+    backgroundColor: colors.gold,
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
-    shadowColor: HOME_COLORS.gold,
+    shadowColor: colors.gold,
     shadowOpacity: 0.18,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
@@ -763,7 +766,7 @@ const styles = StyleSheet.create({
   },
 
   sendText: {
-    color: HOME_COLORS.background,
+    color: colors.background,
     fontSize: 15,
     fontWeight: "800",
   },
@@ -775,7 +778,7 @@ const styles = StyleSheet.create({
   },
 
   cancelText: {
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 14,
     fontWeight: "600",
   },
@@ -783,12 +786,12 @@ const styles = StyleSheet.create({
   aboutTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: HOME_COLORS.gold,
+    color: colors.gold,
   },
 
   aboutVersion: {
     fontSize: 12,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "600",
   },
 });

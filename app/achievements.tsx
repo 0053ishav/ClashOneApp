@@ -1,4 +1,5 @@
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import { fetchFullPlayer } from "@/services/clashApi";
 import { useAccountStore } from "@/stores/accountStore";
 import { PlayerFull } from "@/types/playerFull";
@@ -51,6 +52,8 @@ function isCompleted(value: number, target: number, stars: number) {
 }
 
 export default function AchievementsScreen() {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -147,7 +150,7 @@ export default function AchievementsScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={HOME_COLORS.gold} />
+        <ActivityIndicator size="large" color={colors.gold} />
       </View>
     );
   }
@@ -182,7 +185,7 @@ export default function AchievementsScreen() {
           <>
             <View style={styles.header}>
               <Pressable onPress={() => router.back()}>
-                <Ionicons name="chevron-back" size={24} color={HOME_COLORS.gold} />
+                <Ionicons name="chevron-back" size={24} color={colors.gold} />
               </Pressable>
 
               <Text style={styles.headerTitle}>Achievements</Text>
@@ -191,11 +194,11 @@ export default function AchievementsScreen() {
             </View>
 
             <View style={styles.searchContainer}>
-              <Ionicons name="search" size={16} color={HOME_COLORS.textMuted} />
+              <Ionicons name="search" size={16} color={colors.textMuted} />
 
               <TextInput
                 placeholder="Search achievements..."
-                placeholderTextColor={HOME_COLORS.textMuted}
+                placeholderTextColor={colors.textMuted}
                 value={search}
                 onChangeText={setSearch}
                 style={styles.searchInput}
@@ -208,7 +211,7 @@ export default function AchievementsScreen() {
                   accessibilityRole="button"
                   onPress={() => setSearch("")}
                 >
-                  <Ionicons name="close-circle" size={18} color={HOME_COLORS.textMuted} />
+                  <Ionicons name="close-circle" size={18} color={colors.textMuted} />
                 </Pressable>
               )}
             </View>
@@ -290,7 +293,7 @@ export default function AchievementsScreen() {
                     <Ionicons
                       name={filter.icon as any}
                       size={14}
-                      color={active ? HOME_COLORS.gold : HOME_COLORS.textMuted}
+                      color={active ? colors.gold : colors.textMuted}
                     />
 
                     <Text
@@ -319,11 +322,11 @@ export default function AchievementsScreen() {
               paddingVertical: 40,
             }}
           >
-            <Ionicons name="search" size={40} color={HOME_COLORS.textMuted} />
+            <Ionicons name="search" size={40} color={colors.textMuted} />
 
             <Text
               style={{
-                color: HOME_COLORS.textSecondary,
+                color: colors.textSecondary,
                 marginTop: 10,
               }}
             >
@@ -339,6 +342,8 @@ export default function AchievementsScreen() {
 const AchievementCard = React.memo(function AchievementCard({
   achievement,
 }: any) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const rawPercent = (achievement.value / achievement.target) * 100;
 
   const progress = Math.min(rawPercent, 100);
@@ -370,7 +375,7 @@ const AchievementCard = React.memo(function AchievementCard({
               key={i}
               name={i <= achievement.stars ? "star" : "star-outline"}
               size={15}
-              color={HOME_COLORS.gold}
+              color={colors.gold}
             />
           ))}
         </View>
@@ -403,7 +408,7 @@ const AchievementCard = React.memo(function AchievementCard({
 
       {completed && (
         <View style={styles.completedBadge}>
-          <Ionicons name="checkmark-circle" size={14} color={HOME_COLORS.success} />
+          <Ionicons name="checkmark-circle" size={14} color={colors.success} />
 
           <Text style={styles.completedBadgeText}>Completed</Text>
         </View>
@@ -412,10 +417,10 @@ const AchievementCard = React.memo(function AchievementCard({
   );
 });
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: HOME_COLORS.background,
+    backgroundColor: colors.background,
   },
 
   villageBadge: {
@@ -429,11 +434,11 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginTop: 6,
     borderWidth: 1,
-    borderColor: HOME_COLORS.border,
+    borderColor: colors.border,
   },
 
   villageBadgeText: {
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 11,
     fontWeight: "600",
   },
@@ -458,7 +463,7 @@ const styles = StyleSheet.create({
   },
 
   progressBadgeText: {
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     fontSize: 11,
     fontWeight: "700",
   },
@@ -473,7 +478,7 @@ const styles = StyleSheet.create({
 
   progressFill: {
     height: "100%",
-    backgroundColor: HOME_COLORS.gold,
+    backgroundColor: colors.gold,
     borderRadius: 999,
   },
 
@@ -492,7 +497,7 @@ const styles = StyleSheet.create({
   },
 
   completedBadgeText: {
-    color: HOME_COLORS.success,
+    color: colors.success,
     fontSize: 12,
     fontWeight: "600",
   },
@@ -500,7 +505,7 @@ const styles = StyleSheet.create({
   center: {
     flex: 1,
     justifyContent: "center",
-    backgroundColor: HOME_COLORS.background,
+    backgroundColor: colors.background,
   },
 
   scrollContent: {
@@ -518,16 +523,16 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     letterSpacing: -0.4,
   },
 
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: HOME_COLORS.border,
+    borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -537,7 +542,7 @@ const styles = StyleSheet.create({
 
   searchInput: {
     flex: 1,
-    color: HOME_COLORS.textBright,
+    color: colors.textBright,
     fontSize: 14,
     fontWeight: "500",
   },
@@ -556,9 +561,9 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: HOME_COLORS.border,
+    borderColor: colors.border,
   },
 
   filterButtonActive: {
@@ -568,49 +573,49 @@ const styles = StyleSheet.create({
   filterButtonText: {
     fontSize: 12,
     fontWeight: "600",
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
   },
 
   filterButtonTextActive: {
-    color: HOME_COLORS.gold,
+    color: colors.gold,
   },
   summaryCard: {
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
     marginBottom: 14,
 
     borderWidth: 1,
-    borderColor: HOME_COLORS.border,
+    borderColor: colors.border,
   },
 
   summaryTitle: {
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 12,
   },
 
   summaryValue: {
-    color: HOME_COLORS.white,
+    color: colors.white,
     fontSize: 28,
     fontWeight: "700",
     marginTop: 4,
   },
 
   summaryPercent: {
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     marginTop: 8,
     fontWeight: "600",
   },
 
   resultsText: {
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
     fontSize: 12,
     fontWeight: "600",
     marginBottom: 12,
   },
 
   progressText: {
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     fontWeight: "700",
     fontSize: 12,
   },
@@ -620,7 +625,7 @@ const styles = StyleSheet.create({
   },
 
   dropdownLabel: {
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
     fontSize: 11,
     fontWeight: "700",
     textTransform: "uppercase",
@@ -628,9 +633,9 @@ const styles = StyleSheet.create({
   },
 
   villageChip: {
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: HOME_COLORS.border,
+    borderColor: colors.border,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
@@ -641,24 +646,24 @@ const styles = StyleSheet.create({
   },
 
   villageChipText: {
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 12,
     fontWeight: "600",
   },
 
   villageChipTextActive: {
-    color: HOME_COLORS.gold,
+    color: colors.gold,
   },
 
   bigNumber: {
-    color: HOME_COLORS.white,
+    color: colors.white,
     fontSize: 32,
     fontWeight: "800",
     marginTop: 8,
   },
 
   percent: {
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     marginBottom: 12,
     fontWeight: "700",
   },
@@ -673,21 +678,21 @@ const styles = StyleSheet.create({
 
   fill: {
     height: "100%",
-    backgroundColor: HOME_COLORS.gold,
+    backgroundColor: colors.gold,
     borderRadius: 999,
   },
 
   starText: {
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     marginTop: 10,
   },
 
   card: {
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: HOME_COLORS.border,
+    borderColor: colors.border,
   },
 
   cardTop: {
@@ -696,13 +701,13 @@ const styles = StyleSheet.create({
   },
 
   name: {
-    color: HOME_COLORS.textBright,
+    color: colors.textBright,
     fontWeight: "700",
     fontSize: 14,
   },
 
   info: {
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     marginTop: 4,
     marginBottom: 6,
     fontSize: 12,
@@ -710,7 +715,7 @@ const styles = StyleSheet.create({
   },
 
   completionInfo: {
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
     fontSize: 12,
     marginTop: 8,
   },

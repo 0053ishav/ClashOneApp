@@ -1,5 +1,6 @@
 import { ENV } from "@/config/env";
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import { PlayerFull } from "@/types/playerFull";
 import { EntityRecord } from "@/types/upgrade";
 import {
@@ -9,10 +10,9 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Platform, StyleSheet, Text, View } from "react-native";
+import { useMemo } from "react";
 import { XPBadge } from "../XPBadge";
 
-const HOME = HOME_COLORS.blue;
-const BUILDER = HOME_COLORS.purpleStrong;
 const MONO = Platform.select({ ios: "Menlo", default: "monospace" });
 
 export default function ProfileHeroCard({
@@ -24,6 +24,10 @@ export default function ProfileHeroCard({
   helpers: EntityRecord[];
   guardians: EntityRecord[];
 }) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const HOME = colors.blue;
+  const BUILDER = colors.purpleStrong;
   const hasLabels = !!data.labels && data.labels.length > 0;
   const hasHelpers = helpers.length > 0;
   const hasGuardians = guardians.length > 0;
@@ -51,7 +55,7 @@ export default function ProfileHeroCard({
               <Ionicons
                 name={warReady ? "flame" : "pause"}
                 size={11}
-                color={warReady ? HOME_COLORS.success : HOME_COLORS.danger}
+                color={warReady ? colors.success : colors.danger}
               />
               <Text
                 style={[
@@ -126,7 +130,7 @@ export default function ProfileHeroCard({
             <View style={styles.villageHeaderText}>
               <Text style={[styles.villageLabel, { color: HOME }]}>Home</Text>
               <Text
-                style={[styles.villageLeagueName, { color: HOME_COLORS.bluePale }]}
+                style={[styles.villageLeagueName, { color: colors.bluePale }]}
                 numberOfLines={2}
               >
                 {data.leagueTier?.name ?? data.league?.name ?? "Unranked"}
@@ -185,7 +189,7 @@ export default function ProfileHeroCard({
                   Builder
                 </Text>
                 <Text
-                  style={[styles.villageLeagueName, { color: HOME_COLORS.purplePale }]}
+                  style={[styles.villageLeagueName, { color: colors.purplePale }]}
                   numberOfLines={2}
                 >
                   {data.builderBaseLeague?.name ?? "Unranked"}
@@ -210,7 +214,7 @@ export default function ProfileHeroCard({
           </View>
         ) : (
           <View style={[styles.villageCard, styles.villageCardBuilderEmpty]}>
-            <Ionicons name="construct-outline" size={20} color={HOME_COLORS.slate} />
+            <Ionicons name="construct-outline" size={20} color={colors.slate} />
             <Text style={styles.villageEmptyText}>No Builder Base</Text>
           </View>
         )}
@@ -259,7 +263,7 @@ export default function ProfileHeroCard({
           {hasHelpers && (
             <View style={styles.extrasRow}>
               <View style={styles.caption}>
-                <Ionicons name="hammer" size={13} color={HOME_COLORS.orange} />
+                <Ionicons name="hammer" size={13} color={colors.orange} />
                 <Text style={styles.captionText}>Helpers</Text>
               </View>
 
@@ -283,7 +287,7 @@ export default function ProfileHeroCard({
           {hasGuardians && (
             <View style={styles.extrasRow}>
               <View style={styles.caption}>
-                <Ionicons name="shield" size={13} color={HOME_COLORS.cyan} />
+                <Ionicons name="shield" size={13} color={colors.cyan} />
                 <Text style={styles.captionText}>Guardians</Text>
               </View>
 
@@ -307,7 +311,7 @@ export default function ProfileHeroCard({
           {hasLabels && (
             <View style={styles.extrasRow}>
               <View style={styles.caption}>
-                <Ionicons name="pricetag" size={13} color={HOME_COLORS.purpleLight} />
+                <Ionicons name="pricetag" size={13} color={colors.purpleLight} />
                 <Text style={styles.captionText}>Labels</Text>
               </View>
 
@@ -334,14 +338,14 @@ export default function ProfileHeroCard({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   container: {
-    backgroundColor: HOME_COLORS.surfaceDark,
+    backgroundColor: colors.surfaceDark,
     borderRadius: 20,
     padding: 14,
     gap: 10,
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderStrong,
+    borderColor: colors.borderStrong,
     marginBottom: 12,
   },
 
@@ -359,7 +363,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 22,
     fontWeight: "800",
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     letterSpacing: -0.5,
   },
   tagRow: {
@@ -376,7 +380,7 @@ const styles = StyleSheet.create({
   },
   tag: {
     fontSize: 11,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "600",
     fontFamily: MONO,
   },
@@ -404,10 +408,10 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   warTextIn: {
-    color: HOME_COLORS.success,
+    color: colors.success,
   },
   warTextOut: {
-    color: HOME_COLORS.danger,
+    color: colors.danger,
   },
 
   // Hall badges: compact pills stacked on the right
@@ -437,7 +441,7 @@ const styles = StyleSheet.create({
   hallLevel: {
     fontSize: 12,
     fontWeight: "800",
-    color: HOME_COLORS.gold,
+    color: colors.gold,
   },
 
   // ── Dual village ────────────────────────────────────────
@@ -446,7 +450,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderStrong,
+    borderColor: colors.borderStrong,
   },
   villageCard: {
     flex: 1,
@@ -527,7 +531,7 @@ const styles = StyleSheet.create({
   trophyText: {
     fontSize: 19,
     fontWeight: "800",
-    color: HOME_COLORS.textBright,
+    color: colors.textBright,
     letterSpacing: -0.4,
   },
   bestRow: {
@@ -537,7 +541,7 @@ const styles = StyleSheet.create({
   },
   bestText: {
     fontSize: 11,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "500",
   },
   smallLeagueIcon: {
@@ -546,7 +550,7 @@ const styles = StyleSheet.create({
   },
   villageEmptyText: {
     fontSize: 12,
-    color: HOME_COLORS.slate,
+    color: colors.slate,
     fontWeight: "500",
   },
 
@@ -581,7 +585,7 @@ const styles = StyleSheet.create({
   clanName: {
     fontSize: 14,
     fontWeight: "800",
-    color: HOME_COLORS.greenBright,
+    color: colors.greenBright,
     letterSpacing: -0.2,
   },
   clanMeta: {
@@ -598,17 +602,17 @@ const styles = StyleSheet.create({
   clanLevelText: {
     fontSize: 10,
     fontWeight: "700",
-    color: HOME_COLORS.success,
+    color: colors.success,
   },
   clanRole: {
     fontSize: 11,
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
     fontWeight: "600",
     flexShrink: 1,
   },
   clanTag: {
     fontSize: 10,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "600",
     fontFamily: MONO,
   },
@@ -638,7 +642,7 @@ const styles = StyleSheet.create({
   captionText: {
     fontSize: 12,
     fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
   },
   chip: {
     flexDirection: "row",
@@ -665,16 +669,16 @@ const styles = StyleSheet.create({
   helperLevel: {
     fontSize: 12,
     fontWeight: "800",
-    color: HOME_COLORS.orangeLight,
+    color: colors.orangeLight,
   },
   guardianLevel: {
     fontSize: 12,
     fontWeight: "800",
-    color: HOME_COLORS.cyanBright,
+    color: colors.cyanBright,
   },
   labelText: {
     fontSize: 11,
     fontWeight: "600",
-    color: HOME_COLORS.purpleLight,
+    color: colors.purpleLight,
   },
 });

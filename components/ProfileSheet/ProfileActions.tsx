@@ -1,4 +1,6 @@
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
+import { useMemo } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -15,13 +17,18 @@ export default function ProfileActions({
   onSetting,
   onOpenProfile,
 }: ProfileActionsProps) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.container}>
       <ActionRow
         label="Sync profile"
         description="Update from Clash API"
         icon="sync"
-        color={HOME_COLORS.gold}
+        color={colors.gold}
+        colors={colors}
+        styles={styles}
         onPress={onSync}
       />
 
@@ -29,7 +36,9 @@ export default function ProfileActions({
         label="Full profile"
         description="View all details"
         icon="person"
-        color={HOME_COLORS.blue}
+        color={colors.blue}
+        colors={colors}
+        styles={styles}
         onPress={onOpenProfile}
       />
 
@@ -37,7 +46,9 @@ export default function ProfileActions({
         label="Settings"
         description="App preferences"
         icon="settings"
-        color={HOME_COLORS.dangerLight}
+        color={colors.dangerLight}
+        colors={colors}
+        styles={styles}
         onPress={onSetting}
         last
       />
@@ -52,6 +63,8 @@ interface ActionRowProps {
   color: string;
   onPress: () => void;
   last?: boolean;
+  colors: HomeColors;
+  styles: ReturnType<typeof createStyles>;
 }
 
 function ActionRow({
@@ -61,6 +74,8 @@ function ActionRow({
   color,
   onPress,
   last,
+  colors,
+  styles,
 }: ActionRowProps) {
   return (
     <Pressable
@@ -83,17 +98,18 @@ function ActionRow({
         <Text style={styles.description}>{description}</Text>
       </View>
 
-      <Ionicons name="chevron-forward" size={18} color={HOME_COLORS.textMuted} />
+      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: HomeColors) {
+  return StyleSheet.create({
   container: {
-    backgroundColor: HOME_COLORS.surfaceDark,
+    backgroundColor: colors.surfaceDark,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderStrong,
+    borderColor: colors.borderStrong,
     overflow: "hidden",
   },
 
@@ -107,11 +123,11 @@ const styles = StyleSheet.create({
 
   rowDivider: {
     borderBottomWidth: 1,
-    borderBottomColor: HOME_COLORS.borderMuted,
+    borderBottomColor: colors.borderMuted,
   },
 
   rowPressed: {
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
   },
 
   iconChip: {
@@ -130,12 +146,13 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
   },
 
   description: {
     fontSize: 11,
-    color: HOME_COLORS.textMuted,
+    color: colors.textMuted,
     fontWeight: "500",
   },
-});
+  });
+}

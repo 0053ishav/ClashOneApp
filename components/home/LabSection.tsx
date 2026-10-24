@@ -1,5 +1,6 @@
 import { MagicItemTimeSaved } from "@/components/home/MagicItemActivitySummary";
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import { ProgressionEmptyState } from "@/components/home/ProgressionEmptyState";
 import { ENV } from "@/config/env";
 import { Village } from "@/types/entity";
@@ -11,6 +12,7 @@ import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useMemo } from "react";
 
 export function LabSection({
   village,
@@ -25,6 +27,8 @@ export function LabSection({
   onAddPress?: () => void;
   onPress?: (lab: Upgrade) => void;
 }) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const isNormalBusy = !!labNormal && !labNormal.isCompleted;
   const isGoblinBusy = !!labGoblin && !labGoblin.isCompleted;
 
@@ -71,7 +75,7 @@ export function LabSection({
               pressed && styles.addIconButtonPressed,
             ]}
           >
-            <Ionicons name="add-circle" size={22} color={HOME_COLORS.cyanBright} />
+            <Ionicons name="add-circle" size={22} color={colors.cyanBright} />
           </Pressable>
         )}
       </View>
@@ -103,7 +107,7 @@ export function LabSection({
           icon="flask-outline"
           title="No research in progress"
           description="Your Laboratory is ready for the next troop or spell upgrade."
-          accentColor={HOME_COLORS.blue}
+          accentColor={colors.blue}
         />
       )}
     </View>
@@ -123,6 +127,8 @@ function LabCard({
   isGoblin?: boolean;
   onPress?: (lab: Upgrade) => void;
 }) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const now = Date.now();
 
   const progress = calculateProgress(lab.startTime, lab.endTime);
@@ -210,7 +216,7 @@ function LabCard({
 
                     {lab.recurrentHelper && (
                       <View style={styles.recurrentBadge}>
-                        <Ionicons name="repeat" size={10} color={HOME_COLORS.gold} />
+                        <Ionicons name="repeat" size={10} color={colors.gold} />
                       </View>
                     )}
                   </View>
@@ -255,7 +261,7 @@ function LabCard({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   container: {
     marginTop: 24,
     paddingHorizontal: 16,
@@ -287,7 +293,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
   },
 
   statusDot: {
@@ -297,11 +303,11 @@ const styles = StyleSheet.create({
   },
 
   labDotBusy: {
-    backgroundColor: HOME_COLORS.cyan,
+    backgroundColor: colors.cyan,
   },
 
   dotFree: {
-    backgroundColor: HOME_COLORS.success,
+    backgroundColor: colors.success,
   },
 
   addIconButton: {
@@ -316,7 +322,7 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 14,
     overflow: "visible",
-    shadowColor: HOME_COLORS.black,
+    shadowColor: colors.black,
     shadowOpacity: 0.25,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
@@ -325,7 +331,7 @@ const styles = StyleSheet.create({
   },
 
   labCard: {
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
   },
 
   goblinCard: {
@@ -340,12 +346,12 @@ const styles = StyleSheet.create({
   },
 
   cardContent: {
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     paddingVertical: 12,
     paddingHorizontal: 12,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: HOME_COLORS.border,
+    borderColor: colors.border,
     gap: 10,
   },
 
@@ -357,7 +363,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
 
-    backgroundColor: HOME_COLORS.cyan,
+    backgroundColor: colors.cyan,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -365,13 +371,13 @@ const styles = StyleSheet.create({
   },
 
   goblinBadge: {
-    backgroundColor: HOME_COLORS.success,
+    backgroundColor: colors.success,
   },
 
   builderBadgeText: {
     fontSize: 11,
     fontWeight: "700",
-    color: HOME_COLORS.textDark,
+    color: colors.textDark,
   },
 
   goblinBadgeIcon: {
@@ -435,7 +441,7 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 15,
     fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
     flex: 1,
   },
 
@@ -456,7 +462,7 @@ const styles = StyleSheet.create({
   levelText: {
     fontSize: 11,
     fontWeight: "600",
-    color: HOME_COLORS.cyan,
+    color: colors.cyan,
   },
 
   helperRow: {
@@ -479,14 +485,14 @@ const styles = StyleSheet.create({
   helperText: {
     marginLeft: 4,
     fontSize: 11,
-    color: HOME_COLORS.gold,
+    color: colors.gold,
     fontWeight: "600",
   },
 
   helperSaved: {
     marginLeft: 4,
     fontSize: 10,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
   },
 
   timeRow: {
@@ -501,16 +507,16 @@ const styles = StyleSheet.create({
   },
 
   labTime: {
-    color: HOME_COLORS.cyanBright,
+    color: colors.cyanBright,
   },
 
   goblinLabTime: {
-    color: HOME_COLORS.success,
+    color: colors.success,
   },
 
   totalTime: {
     fontSize: 11,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "500",
   },
 
@@ -524,25 +530,25 @@ const styles = StyleSheet.create({
   progressBar: {
     height: "100%",
     borderRadius: 2,
-    backgroundColor: HOME_COLORS.progress,
+    backgroundColor: colors.progress,
   },
 
   labProgressBar: {
-    backgroundColor: HOME_COLORS.progress,
+    backgroundColor: colors.progress,
   },
 
   goblinProgress: {
-    backgroundColor: HOME_COLORS.progress,
+    backgroundColor: colors.progress,
   },
 
   emptyCard: {
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 16,
     padding: 22,
     alignItems: "center",
     gap: 12,
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderMuted,
+    borderColor: colors.borderMuted,
     borderStyle: "dashed",
   },
 
@@ -557,7 +563,7 @@ const styles = StyleSheet.create({
 
   emptyText: {
     fontSize: 14,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "500",
   },
 
@@ -582,6 +588,6 @@ const styles = StyleSheet.create({
   },
 
   labEmptyText: {
-    color: HOME_COLORS.cyanBright,
+    color: colors.cyanBright,
   },
 });

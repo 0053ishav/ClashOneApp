@@ -1,5 +1,6 @@
 import { MagicItemTimeSaved } from "@/components/home/MagicItemActivitySummary";
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import { ProgressionEmptyState } from "@/components/home/ProgressionEmptyState";
 import { ENV } from "@/config/env";
 import { Upgrade } from "@/types/upgrade";
@@ -10,6 +11,7 @@ import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useMemo } from "react";
 
 export function PetSection({
   pet,
@@ -23,6 +25,8 @@ export function PetSection({
   onAddPress?: () => void;
   onPress?: (pet: Upgrade) => void;
 }) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const activePet = pet;
   const isUnlocked = townHall >= 14;
   const isBusy = !!activePet;
@@ -77,7 +81,7 @@ export function PetSection({
               pressed && styles.addIconButtonPressed,
             ]}
           >
-            <Ionicons name="add-circle" size={22} color={HOME_COLORS.purpleLight} />
+            <Ionicons name="add-circle" size={22} color={colors.purpleLight} />
           </Pressable>
         )}
       </View>
@@ -162,14 +166,14 @@ export function PetSection({
           icon="paw"
           title="No pet upgrading"
           description="Your Pet House is ready when you are."
-          accentColor={HOME_COLORS.purpleLight}
+          accentColor={colors.purpleLight}
         />
       ) : null}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   container: {
     marginTop: 24,
     paddingHorizontal: 16,
@@ -201,7 +205,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
   },
 
   statusDot: {
@@ -211,15 +215,15 @@ const styles = StyleSheet.create({
   },
 
   petDotBusy: {
-    backgroundColor: HOME_COLORS.purple,
+    backgroundColor: colors.purple,
   },
 
   labDotBusy: {
-    backgroundColor: HOME_COLORS.cyan,
+    backgroundColor: colors.cyan,
   },
 
   dotFree: {
-    backgroundColor: HOME_COLORS.success,
+    backgroundColor: colors.success,
   },
 
   addIconButton: {
@@ -232,7 +236,7 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    shadowColor: HOME_COLORS.black,
+    shadowColor: colors.black,
     shadowOpacity: 0.25,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
@@ -247,14 +251,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 10,
     borderRadius: 14,
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     // borderWidth: 1,
-    // borderColor: HOME_COLORS.border,
+    // borderColor: colors.border,
     gap: 10,
   },
 
   petBadge: {
-    backgroundColor: HOME_COLORS.purple,
+    backgroundColor: colors.purple,
     position: "absolute",
     top: -8,
     right: 0,
@@ -271,7 +275,7 @@ const styles = StyleSheet.create({
   petBadgeText: {
     fontSize: 11,
     fontWeight: "700",
-    color: HOME_COLORS.textDark,
+    color: colors.textDark,
   },
 
   upgradeMain: {
@@ -330,7 +334,7 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 15,
     fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
     flex: 1,
   },
 
@@ -351,7 +355,7 @@ const styles = StyleSheet.create({
   levelText: {
     fontSize: 11,
     fontWeight: "600",
-    color: HOME_COLORS.purpleLight,
+    color: colors.purpleLight,
   },
 
   remainingTime: {
@@ -360,16 +364,16 @@ const styles = StyleSheet.create({
   },
 
   petTime: {
-    color: HOME_COLORS.purpleLight,
+    color: colors.purpleLight,
   },
 
   labTime: {
-    color: HOME_COLORS.cyanBright,
+    color: colors.cyanBright,
   },
 
   totalTime: {
     fontSize: 11,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "500",
   },
 
@@ -386,21 +390,21 @@ const styles = StyleSheet.create({
   },
 
   petProgressBar: {
-    backgroundColor: HOME_COLORS.progress,
+    backgroundColor: colors.progress,
   },
 
   labProgressBar: {
-    backgroundColor: HOME_COLORS.progress,
+    backgroundColor: colors.progress,
   },
 
   emptyCard: {
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 16,
     padding: 22,
     alignItems: "center",
     gap: 12,
     borderWidth: 1,
-    borderColor: HOME_COLORS.borderMuted,
+    borderColor: colors.borderMuted,
     borderStyle: "dashed",
   },
 
@@ -415,7 +419,7 @@ const styles = StyleSheet.create({
 
   emptyText: {
     fontSize: 14,
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "500",
   },
 
@@ -444,10 +448,10 @@ const styles = StyleSheet.create({
   },
 
   petEmptyText: {
-    color: HOME_COLORS.purpleLight,
+    color: colors.purpleLight,
   },
 
   labEmptyText: {
-    color: HOME_COLORS.cyanBright,
+    color: colors.cyanBright,
   },
 });

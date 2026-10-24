@@ -1,3 +1,6 @@
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
+import { useMemo } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
 interface ConfirmModalProps {
@@ -23,6 +26,9 @@ export function ConfirmModal({
   destructive = false,
   variant = "default",
 }: ConfirmModalProps) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <Modal transparent visible={visible} animationType="fade">
       <View style={[styles.overlay, variant === "dark" && styles.darkOverlay]}>
@@ -69,7 +75,7 @@ export function ConfirmModal({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
@@ -80,7 +86,7 @@ const styles = StyleSheet.create({
 
   modal: {
     width: "100%",
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.surface,
     borderRadius: 20,
     padding: 20,
   },
@@ -100,12 +106,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 8,
-    color: "#1f2328",
+    color: colors.textPrimary,
   },
 
   message: {
     fontSize: 14,
-    color: "#6b7280",
+    color: colors.textSecondary,
     marginBottom: 20,
   },
 
@@ -144,7 +150,7 @@ const styles = StyleSheet.create({
 
   confirmText: {
     fontWeight: "700",
-    color: "#000",
+    color: colors.textDark,
   },
 
   darkConfirmButton: {
@@ -153,11 +159,11 @@ const styles = StyleSheet.create({
   darkConfirmText: { color: "#0f172a" },
 
   destructiveButton: {
-    backgroundColor: "#fee2e2",
+    backgroundColor: `${colors.danger}1F`,
   },
 
   destructiveText: {
-    color: "#b91c1c",
+    color: colors.danger,
   },
 
   darkDestructiveButton: {

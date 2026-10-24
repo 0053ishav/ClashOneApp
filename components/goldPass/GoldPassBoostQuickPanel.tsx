@@ -1,4 +1,7 @@
 import { ENV } from "@/config/env";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
+import { useMemo } from "react";
 import type {
   GoldPassBoostPercent,
   GoldPassBoostSettings,
@@ -48,6 +51,8 @@ export function GoldPassBoostButton({
   compact = false,
   expanded = false,
 }: GoldPassBoostButtonProps) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <Pressable
       accessibilityRole="button"
@@ -107,6 +112,8 @@ function PercentageChoices({
   saving: boolean;
   onSelect: (percent: GoldPassBoostPercent) => void;
 }) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.percentageChoices}>
       {PERCENTAGES.map((percent) => {
@@ -156,6 +163,8 @@ function BoostSelector({
   saving: boolean;
   onSelect: (percent: GoldPassBoostPercent) => void;
 }) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.boostColumn}>
       <View style={styles.boostHeader}>
@@ -193,6 +202,8 @@ export function GoldPassBoostQuickPanel({
   onSetBuilder,
   onSetResearch,
 }: GoldPassBoostQuickPanelProps) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const builder = settings?.builderBoostPercent ?? 0;
   const research = settings?.researchBoostPercent ?? 0;
   const selectedForBoth: GoldPassBoostPercent | null =
@@ -245,7 +256,7 @@ export function GoldPassBoostQuickPanel({
                   pressed && styles.pressed,
                 ]}
               >
-                <Ionicons name="close" size={18} color="#94a3b8" />
+                <Ionicons name="close" size={18} color={colors.textSecondary} />
               </Pressable>
             </View>
 
@@ -257,7 +268,7 @@ export function GoldPassBoostQuickPanel({
 
             {loading ? (
               <View style={styles.stateRow}>
-                <ActivityIndicator size="small" color="#fbbf24" />
+                <ActivityIndicator size="small" color={colors.gold} />
                 <Text style={styles.stateText}>Loading saved boosts…</Text>
               </View>
             ) : loadFailed || !settings ? (
@@ -291,7 +302,7 @@ export function GoldPassBoostQuickPanel({
                         Apply one percentage to Builder and Research.
                       </Text>
                     </View>
-                    {saving && <ActivityIndicator size="small" color="#fbbf24" />}
+                    {saving && <ActivityIndicator size="small" color={colors.gold} />}
                   </View>
                   <PercentageChoices
                     label="both boosts"
@@ -349,7 +360,7 @@ export function GoldPassBoostQuickPanel({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   trigger: {
     width: 40,
     height: 40,
@@ -364,8 +375,8 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 9,
-    backgroundColor: "#111c2e",
-    borderColor: "#263449",
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.border,
   },
   triggerIcon: { width: 29, height: 29 },
   triggerIconCompact: { width: 25, height: 25 },
@@ -376,16 +387,16 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(2, 6, 23, 0.78)",
+    backgroundColor: "rgba(2, 6, 23, 0.55)",
   },
   modalCard: {
     width: "100%",
     maxWidth: 420,
     maxHeight: "88%",
     borderRadius: 20,
-    backgroundColor: "#0f172a",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: colors.border,
     overflow: "hidden",
     elevation: 24,
     shadowColor: "#000",
@@ -398,25 +409,25 @@ const styles = StyleSheet.create({
   modalHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
   headerPassIcon: { width: 42, height: 42 },
   headerCopy: { flex: 1, gap: 3 },
-  modalTitle: { color: "#f8fafc", fontSize: 18, fontWeight: "900" },
-  modalSubtitle: { color: "#94a3b8", fontSize: 11, fontWeight: "600" },
+  modalTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: "900" },
+  modalSubtitle: { color: colors.textSecondary, fontSize: 11, fontWeight: "600" },
   closeButton: {
     width: 34,
     height: 34,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 10,
-    backgroundColor: "#1e293b",
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: colors.border,
   },
-  description: { color: "#94a3b8", fontSize: 11, lineHeight: 16 },
+  description: { color: colors.textSecondary, fontSize: 11, lineHeight: 16 },
   setBothCard: {
     padding: 11,
     borderRadius: 13,
-    backgroundColor: "#172238",
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: colors.border,
     gap: 10,
   },
   setBothHeader: {
@@ -426,9 +437,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   setBothText: { flex: 1, minWidth: 0, gap: 3 },
-  setBothTitle: { color: "#f1f5f9", fontSize: 13, fontWeight: "800" },
-  setBothSubtitle: { color: "#94a3b8", fontSize: 10, lineHeight: 14 },
-  sectionDivider: { height: StyleSheet.hairlineWidth, backgroundColor: "#27364d" },
+  setBothTitle: { color: colors.textPrimary, fontSize: 13, fontWeight: "800" },
+  setBothSubtitle: { color: colors.textSecondary, fontSize: 10, lineHeight: 14 },
+  sectionDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
   boostSelectorsRow: {
     flexDirection: "row",
     alignItems: "stretch",
@@ -443,14 +454,14 @@ const styles = StyleSheet.create({
   },
   boostColumnDivider: {
     width: StyleSheet.hairlineWidth,
-    backgroundColor: "#27364d",
+    backgroundColor: colors.border,
     marginVertical: 3,
   },
   boostIcon: { width: 34, height: 34 },
   boostHeader: { flexDirection: "row", alignItems: "center", gap: 7, minHeight: 38 },
   boostHeaderText: { flex: 1, minWidth: 0, gap: 3 },
   boostLabel: { color: "#e2e8f0", fontSize: 11, fontWeight: "800" },
-  boostHelper: { color: "#64748b", fontSize: 9 },
+  boostHelper: { color: colors.textSecondary, fontSize: 9 },
   percentageChoices: {
     flexDirection: "row",
     alignItems: "stretch",
@@ -465,22 +476,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 1,
     borderRadius: 7,
-    backgroundColor: "#0b1425",
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: colors.border,
   },
   percentageChoiceSelected: {
-    backgroundColor: "#fbbf24",
-    borderColor: "#fbbf24",
+    backgroundColor: colors.gold,
+    borderColor: colors.gold,
   },
   choiceDisabled: { opacity: 0.55 },
   percentageChoiceText: {
-    color: "#cbd5e1",
+    color: colors.textSecondary,
     fontSize: 9,
     fontWeight: "800",
   },
   percentageChoiceTextSelected: {
-    color: "#0f172a",
+    color: colors.textDark,
     fontWeight: "900",
   },
   stateRow: {
@@ -490,15 +501,15 @@ const styles = StyleSheet.create({
     gap: 9,
     paddingVertical: 6,
   },
-  stateText: { color: "#cbd5e1", fontSize: 11 },
-  errorText: { flex: 1, color: "#fca5a5", fontSize: 11, lineHeight: 16 },
+  stateText: { color: colors.textSecondary, fontSize: 11 },
+  errorText: { flex: 1, color: colors.danger, fontSize: 11, lineHeight: 16 },
   retryButton: {
     paddingHorizontal: 11,
     paddingVertical: 8,
     borderRadius: 9,
-    backgroundColor: "#1e293b",
+    backgroundColor: colors.surfaceRaised,
   },
-  retryText: { color: "#fbbf24", fontSize: 11, fontWeight: "800" },
+  retryText: { color: colors.gold, fontSize: 11, fontWeight: "800" },
   footer: {
     flexDirection: "row",
     alignItems: "center",
@@ -506,7 +517,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingTop: 3,
   },
-  footerHint: { flex: 1, color: "#64748b", fontSize: 10, lineHeight: 14 },
+  footerHint: { flex: 1, color: colors.textSecondary, fontSize: 10, lineHeight: 14 },
   doneButton: {
     minWidth: 78,
     minHeight: 38,
@@ -514,8 +525,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 10,
-    backgroundColor: "#fbbf24",
+    backgroundColor: colors.gold,
   },
-  doneButtonText: { color: "#0f172a", fontSize: 12, fontWeight: "900" },
+  doneButtonText: { color: colors.textDark, fontSize: 12, fontWeight: "900" },
   pressed: { opacity: 0.65 },
 });

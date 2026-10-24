@@ -1,4 +1,6 @@
 import { ConfirmModal } from "@/components/ConfirmModal";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import { SupportModal } from "@/components/SupportModal";
 import { initDatabase } from "@/db/initDatabase";
 import { configureNotifications } from "@/engine/notifications/notificationEngine";
@@ -20,6 +22,7 @@ import { buildSupportInfo } from "@/services/supportDebugInfo";
 import { isOnboardingComplete } from "@/storage/appConfig";
 import { syncEntities } from "@/storage/syncEntities";
 import { useAccountStore } from "@/stores/accountStore";
+import { useThemeStore } from "@/stores/themeStore";
 import { useHammerJamStore } from "@/stores/hammerJamStore";
 import { setSessionSource, track } from "@/utils/analytics/analytics";
 import { log } from "@/utils/logger";
@@ -31,8 +34,9 @@ import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import * as Sentry from "@sentry/react-native";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
+import { StatusBar } from "expo-status-bar";
 import { Redirect, Stack, usePathname, useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 Sentry.init({
@@ -90,6 +94,9 @@ type BootError = {
 };
 
 export default Sentry.wrap(function RootLayout() {
+  const colors = useHomeColors();
+  const colorScheme = useThemeStore((state) => state.colorScheme);
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const loadActiveAccount = useAccountStore((s) => s.loadActiveAccount);
 
   const [bootStage, setBootStage] = useState(BootStage.Initializing);
@@ -377,6 +384,7 @@ export default Sentry.wrap(function RootLayout() {
   if (bootStage !== BootStage.Ready && bootStage !== BootStage.Fatal) {
     return (
       <View style={[styles.container, styles.loadingOverlay]}>
+        <StatusBar style={colorScheme === "light" ? "dark" : "light"} backgroundColor={colors.background} />
         <View style={styles.loadingContent}>
           <View style={styles.imageWrapper}>
             <Image
@@ -438,6 +446,7 @@ export default Sentry.wrap(function RootLayout() {
   if (bootStage === BootStage.Fatal) {
     return (
       <View style={[styles.container, styles.loadingOverlay]}>
+        <StatusBar style={colorScheme === "light" ? "dark" : "light"} backgroundColor={colors.background} />
         {retryCount >= 2 && (
           <Pressable
             style={styles.supportButton}
@@ -447,7 +456,7 @@ export default Sentry.wrap(function RootLayout() {
             <Ionicons
               name="chatbubble-ellipses-outline"
               size={22}
-              color="#94a3b8"
+              color={colors.textMuted}
             />
           </Pressable>
         )}
@@ -534,6 +543,7 @@ export default Sentry.wrap(function RootLayout() {
       <BottomSheetModalProvider>
         <RemoteConfigProvider>
           <>
+            <StatusBar style={colorScheme === "light" ? "dark" : "light"} backgroundColor={colors.background} />
             <Stack
               screenOptions={{
                 headerShown: false,
@@ -584,15 +594,15 @@ Update now for the best experience.`}
   );
 });
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f172a",
+    backgroundColor: colors.background,
   },
 
   loadingOverlay: {
     flex: 1,
-    backgroundColor: "#0f172a",
+    backgroundColor: colors.background,
   },
 
   loadingContent: {
@@ -612,9 +622,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(30,41,59,0.85)",
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: colors.borderStrong,
   },
 
   imageWrapper: {
@@ -650,7 +660,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 50,
-    backgroundColor: "#0f172a",
+    backgroundColor: colors.background,
     opacity: 0.8,
   },
 
@@ -662,13 +672,13 @@ const styles = StyleSheet.create({
   loadingTitle: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#fbbf24",
+    color: colors.gold,
     letterSpacing: 0.5,
   },
 
   loadingMessage: {
     fontSize: 13,
-    color: "#94a3b8",
+    color: colors.textSecondary,
     fontWeight: "500",
   },
 
@@ -688,44 +698,44 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#334155",
+    backgroundColor: colors.slateMuted,
     marginRight: 12,
   },
 
   stageCompleted: {
-    backgroundColor: "#22c55e",
+    backgroundColor: colors.success,
   },
 
   stageActive: {
-    backgroundColor: "#fbbf24",
+    backgroundColor: colors.gold,
   },
 
   stageText: {
-    color: "#64748b",
+    color: colors.textMuted,
     fontSize: 14,
   },
 
   stageCompletedText: {
-    color: "#cbd5e1",
+    color: colors.textPrimary,
   },
 
   stageActiveText: {
-    color: "#fbbf24",
+    color: colors.gold,
     fontWeight: "700",
   },
 
   errorCard: {
     marginTop: 24,
     width: "100%",
-    backgroundColor: "#1e293b",
+    backgroundColor: colors.surface,
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: colors.border,
   },
 
   errorCardTitle: {
-    color: "#f8fafc",
+    color: colors.textPrimary,
     fontWeight: "700",
     marginBottom: 14,
     fontSize: 14,
@@ -736,26 +746,26 @@ const styles = StyleSheet.create({
   },
 
   errorLabel: {
-    color: "#94a3b8",
+    color: colors.textSecondary,
     fontSize: 12,
   },
 
   errorValue: {
-    color: "#f8fafc",
+    color: colors.textPrimary,
     marginTop: 2,
     fontSize: 13,
   },
 
   retryButton: {
     marginTop: 22,
-    backgroundColor: "#fbbf24",
+    backgroundColor: colors.gold,
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 30,
   },
 
   retryText: {
-    color: "#0f172a",
+    color: colors.textDark,
     fontWeight: "800",
     fontSize: 15,
   },
@@ -768,7 +778,7 @@ const styles = StyleSheet.create({
   },
 
   supportActionText: {
-    color: "#94a3b8",
+    color: colors.textSecondary,
     fontWeight: "600",
   },
 
@@ -782,11 +792,11 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "rgba(148, 163, 184, 0.4)",
+    backgroundColor: `${colors.textMuted}66`,
   },
 
   dotActive: {
-    backgroundColor: "#fbbf24",
+    backgroundColor: colors.gold,
     width: 20,
   },
 });

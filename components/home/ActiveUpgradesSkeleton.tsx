@@ -1,7 +1,12 @@
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
+import { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 
 export function ActiveUpgradesSkeleton() {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.container}>
       <View style={styles.sectionHeader}>
@@ -43,7 +48,7 @@ export function ActiveUpgradesSkeleton() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   container: {
     marginTop: 18,
   },
@@ -59,21 +64,21 @@ const styles = StyleSheet.create({
     width: 105,
     height: 11,
     borderRadius: 6,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
   },
 
   countBadge: {
     width: 24,
     height: 20,
     borderRadius: 10,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
   },
 
   card: {
     minHeight: 88,
     marginBottom: 8,
     borderRadius: 16,
-    backgroundColor: HOME_COLORS.surface,
+    backgroundColor: colors.surface,
     overflow: "hidden",
     flexDirection: "row",
   },
@@ -82,7 +87,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 10,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
     marginLeft: 10,
     marginTop: 14,
   },
@@ -102,7 +107,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
   },
 
   info: {
@@ -115,14 +120,14 @@ const styles = StyleSheet.create({
     width: "65%",
     height: 12,
     borderRadius: 6,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
   },
 
   level: {
     width: 72,
     height: 18,
     borderRadius: 9,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
   },
 
   timer: {
@@ -135,20 +140,20 @@ const styles = StyleSheet.create({
     width: 55,
     height: 12,
     borderRadius: 6,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
   },
 
   timerTotal: {
     width: 42,
     height: 9,
     borderRadius: 5,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
   },
 
   progressTrack: {
     height: 5,
     borderRadius: 3,
-    backgroundColor: HOME_COLORS.surfaceRaised,
+    backgroundColor: colors.surfaceRaised,
     marginTop: 10,
     overflow: "hidden",
   },
@@ -157,6 +162,6 @@ const styles = StyleSheet.create({
     width: "45%",
     height: "100%",
     borderRadius: 3,
-    backgroundColor: HOME_COLORS.borderStrong,
+    backgroundColor: colors.borderStrong,
   },
 });

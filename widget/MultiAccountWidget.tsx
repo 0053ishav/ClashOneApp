@@ -3,6 +3,7 @@
 import { MultiWidgetItem } from "@/types/widgetTypes";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
 import React from "react";
+import { getWidgetColors } from "@/utils/widget/widgetTheme";
 import {
   ColorProp,
   FlexWidget,
@@ -42,6 +43,7 @@ function getColor(u: ReturnType<typeof getUrgency>) {
 // ---------- FALLBACK SCREENS ----------
 
 function renderNoAccounts(): React.ReactNode {
+  const colors = getWidgetColors();
   return (
     <FlexWidget
       clickAction="OPEN_URI"
@@ -49,7 +51,7 @@ function renderNoAccounts(): React.ReactNode {
       style={{
         width: "match_parent",
         height: "match_parent",
-        backgroundColor: "#0f172a",
+        backgroundColor: colors.surface,
         borderRadius: 16,
         flexDirection: "column",
         alignItems: "center",
@@ -78,7 +80,7 @@ function renderNoAccounts(): React.ReactNode {
       <TextWidget
         text="No Accounts"
         style={{
-          color: "#f1f5f9",
+          color: colors.textPrimary,
           fontSize: 13,
           fontWeight: "700",
         }}
@@ -88,7 +90,7 @@ function renderNoAccounts(): React.ReactNode {
       <TextWidget
         text="Open app to add accounts"
         style={{
-          color: "#475569",
+          color: colors.textSecondary,
           fontSize: 10,
           fontWeight: "500",
           marginTop: 4,
@@ -100,12 +102,13 @@ function renderNoAccounts(): React.ReactNode {
 }
 
 function renderNoCache(totalAccounts: number): React.ReactNode {
+  const colors = getWidgetColors();
   return (
     <FlexWidget
       style={{
         width: "match_parent",
         height: "match_parent",
-        backgroundColor: "#0f172a",
+        backgroundColor: colors.surface,
         borderRadius: 16,
         flexDirection: "row",
       }}
@@ -165,7 +168,7 @@ function renderNoCache(totalAccounts: number): React.ReactNode {
             <TextWidget
               text="Builders"
               style={{
-                color: "#f1f5f9",
+                color: colors.textPrimary,
                 fontSize: 13,
                 fontWeight: "700",
                 marginBottom: 2,
@@ -242,7 +245,7 @@ function renderNoCache(totalAccounts: number): React.ReactNode {
             <TextWidget
               text="⚠ No data cached"
               style={{
-                color: "#475569",
+                color: colors.textSecondary,
                 fontSize: 8,
                 fontWeight: "500",
               }}
@@ -256,12 +259,13 @@ function renderNoCache(totalAccounts: number): React.ReactNode {
 }
 
 function renderError(): React.ReactNode {
+  const colors = getWidgetColors();
   return (
     <FlexWidget
       style={{
         width: "match_parent",
         height: "match_parent",
-        backgroundColor: "#0f172a",
+        backgroundColor: colors.surface,
         borderRadius: 16,
         flexDirection: "row",
       }}
@@ -319,7 +323,7 @@ function renderError(): React.ReactNode {
             <TextWidget
               text="Widget Error"
               style={{
-                color: "#f1f5f9",
+                color: colors.textPrimary,
                 fontSize: 13,
                 fontWeight: "700",
                 marginBottom: 2,
@@ -364,6 +368,7 @@ function renderError(): React.ReactNode {
 }
 
 function renderUpsellCard(totalAccounts?: number): React.ReactNode {
+  const colors = getWidgetColors();
   const hidden = Math.max(0, (totalAccounts ?? 3) - 2);
 
   return (
@@ -405,7 +410,7 @@ function renderUpsellCard(totalAccounts?: number): React.ReactNode {
       <TextWidget
         text="Unlock Pro"
         style={{
-          color: "#94a3b8",
+          color: colors.textSecondary,
           fontSize: 9,
           marginTop: 1,
         }}
@@ -436,6 +441,7 @@ function renderUpsellCard(totalAccounts?: number): React.ReactNode {
 }
 
 function renderAddAccountCard(totalAccounts?: number): React.ReactNode {
+  const colors = getWidgetColors();
   return (
     <FlexWidget
       clickAction="OPEN_URI"
@@ -486,7 +492,7 @@ function renderAddAccountCard(totalAccounts?: number): React.ReactNode {
       <TextWidget
         text="Track multiple accounts"
         style={{
-          color: "#94a3b8",
+          color: colors.textSecondary,
           fontSize: 8,
           marginTop: 1,
         }}
@@ -518,6 +524,7 @@ function renderAddAccountCard(totalAccounts?: number): React.ReactNode {
 
 // ---------- CARD ----------
 function renderCard(item: MultiWidgetItem): React.ReactNode {
+  const colors = getWidgetColors();
   const { tag, data } = item;
 
   const urgency = getUrgency(data);
@@ -536,7 +543,7 @@ function renderCard(item: MultiWidgetItem): React.ReactNode {
       style={{
         width: "match_parent",
         height: "match_parent",
-        backgroundColor: "#0f172a",
+        backgroundColor: colors.surface,
         borderRadius: 12,
         flexDirection: "row",
         overflow: "hidden",
@@ -641,7 +648,7 @@ function renderCard(item: MultiWidgetItem): React.ReactNode {
               <TextWidget
                 text={data.title}
                 style={{
-                  color: "#f1f5f9",
+                  color: colors.textPrimary,
                   fontSize: 10,
                   fontWeight: "600",
                 }}
@@ -815,7 +822,7 @@ function renderCard(item: MultiWidgetItem): React.ReactNode {
                     : "⚠ No data"
                 }
                 style={{
-                  color: "#475569",
+                  color: colors.textSecondary,
                   fontSize: 8,
                   fontWeight: "500",
                 }}
@@ -836,6 +843,7 @@ export function MultiAccountWidget({
   error,
   isPremium,
 }: Props) {
+  const colors = getWidgetColors();
   if (error) return renderError();
 
   // No accounts added at all
@@ -868,7 +876,7 @@ export function MultiAccountWidget({
 
         borderRadius: 16,
         padding: 4,
-        backgroundColor: "#0f172a",
+        backgroundColor: colors.surface,
       }}
     >
       {visibleAccounts.map((acc) => (

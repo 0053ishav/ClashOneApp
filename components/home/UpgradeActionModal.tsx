@@ -737,6 +737,7 @@ export function UpgradeActionModal({
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Supercharge costs</Text>
                 <DetailRow
+                  colors={colors}
               styles={styles}
                   label="Current charge cost"
                   value={formatGameCost(superchargeProgression.nextCost)}
@@ -744,6 +745,7 @@ export function UpgradeActionModal({
                   valueColor={resourceColor}
                 />
                 <DetailRow
+                  colors={colors}
               styles={styles}
                   label="Next charge duration"
                   value={
@@ -753,6 +755,7 @@ export function UpgradeActionModal({
                   }
                 />
                 <DetailRow
+                  colors={colors}
               styles={styles}
                   label="Future charge cost"
                   value={formatGameCost(superchargeProgression.totalCost)}
@@ -760,6 +763,7 @@ export function UpgradeActionModal({
                   valueColor={resourceColor}
                 />
                 <DetailRow
+                  colors={colors}
               styles={styles}
                   label="Future charge levels"
                   value={String(superchargeProgression.remainingLevels)}
@@ -855,6 +859,7 @@ export function UpgradeActionModal({
             <Text style={styles.sectionTitle}>Next upgrade</Text>
 
             <DetailRow
+                  colors={colors}
               styles={styles}
               icon="cash-outline"
               label="Cost"
@@ -868,6 +873,7 @@ export function UpgradeActionModal({
             />
 
             <DetailRow
+                  colors={colors}
               styles={styles}
               icon="time-outline"
               label="Duration"
@@ -879,6 +885,7 @@ export function UpgradeActionModal({
             />
 
             <DetailRow
+                  colors={colors}
               styles={styles}
               icon="home-outline"
               label={
@@ -896,6 +903,7 @@ export function UpgradeActionModal({
 
             {upgrade.village === "home" && requiredLabLevel != null && (
               <DetailRow
+                  colors={colors}
               styles={styles}
                 icon="flask-outline"
                 label="Required Lab"
@@ -906,6 +914,7 @@ export function UpgradeActionModal({
 
             {hasXp && (
               <DetailRow
+                  colors={colors}
               styles={styles}
                 icon="star-outline"
                 label="XP"
@@ -922,6 +931,7 @@ export function UpgradeActionModal({
 
             {craftedProgression && (
               <DetailRow
+                  colors={colors}
               styles={styles}
                 icon="diamond-outline"
                 label="Sparky Stones"
@@ -1000,6 +1010,7 @@ export function UpgradeActionModal({
 
               return (
                 <DetailRow
+                  colors={colors}
               styles={styles}
                   key={path}
                   icon="stats-chart-outline"
@@ -1030,6 +1041,7 @@ export function UpgradeActionModal({
             </Text>
 
             <DetailRow
+                  colors={colors}
               styles={styles}
               icon="layers-outline"
               label="Levels remaining"
@@ -1037,6 +1049,7 @@ export function UpgradeActionModal({
             />
 
             <DetailRow
+                  colors={colors}
               styles={styles}
               icon="wallet-outline"
               label="Total cost"
@@ -1046,6 +1059,7 @@ export function UpgradeActionModal({
             />
 
             <DetailRow
+                  colors={colors}
               styles={styles}
               icon="hourglass-outline"
               label="Total time"
@@ -1138,6 +1152,7 @@ export function UpgradeActionModal({
  */
 
 function DetailRow({
+  colors,
   styles,
   icon,
   label,
@@ -1145,6 +1160,7 @@ function DetailRow({
   valueIconUri,
   valueColor,
 }: {
+  colors: HomeColors;
   styles: ReturnType<typeof createStyles>;
   icon?: keyof typeof Ionicons.glyphMap;
   label: string;

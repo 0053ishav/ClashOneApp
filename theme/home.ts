@@ -84,9 +84,14 @@ export const LIGHT_HOME_COLORS = {
   purpleLight: "#A78BFA",
 } as const;
 
-export type HomeColors = {
-  readonly [Key in keyof typeof HOME_COLORS]: string;
-};
+/**
+ * Preserve each palette's literal color values. Android widget styles accept
+ * ColorProp rather than arbitrary strings, so widening tokens to string
+ * prevents valid theme colors from type-checking.
+ */
+export type HomeColors =
+  | typeof HOME_COLORS
+  | typeof LIGHT_HOME_COLORS;
 
 export type ColorScheme = "dark" | "light";
 

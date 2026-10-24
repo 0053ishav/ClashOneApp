@@ -93,8 +93,20 @@ export type HomeColors =
   | typeof HOME_COLORS
   | typeof LIGHT_HOME_COLORS;
 
-export type ColorScheme = "dark" | "light";
+export type ColorScheme = "system" | "dark" | "light";
+export type ResolvedColorScheme = Exclude<ColorScheme, "system">;
 
-export function getHomeColors(scheme: ColorScheme): HomeColors {
+export function getHomeColors(scheme: ResolvedColorScheme): HomeColors {
   return scheme === "light" ? LIGHT_HOME_COLORS : HOME_COLORS;
+}
+
+export function resolveColorScheme(
+  preference: ColorScheme,
+  systemScheme: ResolvedColorScheme | null | undefined,
+): ResolvedColorScheme {
+  if (preference !== "system") {
+    return preference;
+  }
+
+  return systemScheme === "light" ? "light" : "dark";
 }

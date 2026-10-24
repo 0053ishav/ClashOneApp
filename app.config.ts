@@ -38,7 +38,9 @@ function resolveVariant(value: string | undefined): AppVariant {
 export default ({ config }: ConfigContext): ExpoConfig => {
   const variant = resolveVariant(process.env.APP_VARIANT);
   const selected = VARIANTS[variant];
-  const baseConfig = appJson.expo;
+  // app.json is validated by Expo at runtime; JSON imports widen literal values
+  // (for example, "portrait" to string), so restore Expo's config type here.
+  const baseConfig = appJson.expo as ExpoConfig;
 
   return {
     ...baseConfig,

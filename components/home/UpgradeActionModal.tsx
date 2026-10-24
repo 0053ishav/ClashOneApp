@@ -738,7 +738,7 @@ export function UpgradeActionModal({
                 <Text style={styles.sectionTitle}>Supercharge costs</Text>
                 <DetailRow
                   colors={colors}
-              styles={styles}
+                  styles={styles}
                   label="Current charge cost"
                   value={formatGameCost(superchargeProgression.nextCost)}
                   valueIconUri={resourceIcon}
@@ -746,7 +746,7 @@ export function UpgradeActionModal({
                 />
                 <DetailRow
                   colors={colors}
-              styles={styles}
+                  styles={styles}
                   label="Next charge duration"
                   value={
                     superchargeProgression.nextUpgradeTime != null
@@ -756,7 +756,7 @@ export function UpgradeActionModal({
                 />
                 <DetailRow
                   colors={colors}
-              styles={styles}
+                  styles={styles}
                   label="Future charge cost"
                   value={formatGameCost(superchargeProgression.totalCost)}
                   valueIconUri={resourceIcon}
@@ -764,7 +764,7 @@ export function UpgradeActionModal({
                 />
                 <DetailRow
                   colors={colors}
-              styles={styles}
+                  styles={styles}
                   label="Future charge levels"
                   value={String(superchargeProgression.remainingLevels)}
                 />
@@ -860,7 +860,7 @@ export function UpgradeActionModal({
 
             <DetailRow
                   colors={colors}
-              styles={styles}
+                  styles={styles}
               icon="cash-outline"
               label="Cost"
               value={
@@ -874,7 +874,7 @@ export function UpgradeActionModal({
 
             <DetailRow
                   colors={colors}
-              styles={styles}
+                  styles={styles}
               icon="time-outline"
               label="Duration"
               value={
@@ -886,7 +886,7 @@ export function UpgradeActionModal({
 
             <DetailRow
                   colors={colors}
-              styles={styles}
+                  styles={styles}
               icon="home-outline"
               label={
                 upgrade.village === "builderBase"
@@ -904,7 +904,7 @@ export function UpgradeActionModal({
             {upgrade.village === "home" && requiredLabLevel != null && (
               <DetailRow
                   colors={colors}
-              styles={styles}
+                  styles={styles}
                 icon="flask-outline"
                 label="Required Lab"
                 value={String(requiredLabLevel)}
@@ -915,7 +915,7 @@ export function UpgradeActionModal({
             {hasXp && (
               <DetailRow
                   colors={colors}
-              styles={styles}
+                  styles={styles}
                 icon="star-outline"
                 label="XP"
                 value={
@@ -932,7 +932,7 @@ export function UpgradeActionModal({
             {craftedProgression && (
               <DetailRow
                   colors={colors}
-              styles={styles}
+                  styles={styles}
                 icon="diamond-outline"
                 label="Sparky Stones"
                 value={formatNumber(craftedProgression.sparkyStones)}
@@ -1011,7 +1011,7 @@ export function UpgradeActionModal({
               return (
                 <DetailRow
                   colors={colors}
-              styles={styles}
+                  styles={styles}
                   key={path}
                   icon="stats-chart-outline"
                   label={label}
@@ -1042,7 +1042,7 @@ export function UpgradeActionModal({
 
             <DetailRow
                   colors={colors}
-              styles={styles}
+                  styles={styles}
               icon="layers-outline"
               label="Levels remaining"
               value={String(progression.remainingLevels)}
@@ -1050,7 +1050,7 @@ export function UpgradeActionModal({
 
             <DetailRow
                   colors={colors}
-              styles={styles}
+                  styles={styles}
               icon="wallet-outline"
               label="Total cost"
               value={formatGameCost(progression.remainingCost)}
@@ -1060,7 +1060,7 @@ export function UpgradeActionModal({
 
             <DetailRow
                   colors={colors}
-              styles={styles}
+                  styles={styles}
               icon="hourglass-outline"
               label="Total time"
               value={formatDuration(progression.remainingUpgradeTime)}

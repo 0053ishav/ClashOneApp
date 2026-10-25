@@ -40,7 +40,9 @@ import { Redirect, Stack, usePathname, useRouter, type ErrorBoundaryProps } from
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-// Fade the native splash into the app instead of switching abruptly.
+// Keep the native splash visible until React has committed the first themed frame.
+// The app preference is read synchronously from MMKV by themeStore/useHomeColors.
+void SplashScreen.preventAutoHideAsync();
 SplashScreen.setOptions({ duration: 800, fade: true });
 
 Sentry.init({
@@ -118,6 +120,11 @@ export default Sentry.wrap(function RootLayout() {
   const [retryCount, setRetryCount] = useState(0);
   const [showSupport, setShowSupport] = useState(false);
   const [debugInfo, setDebugInfo] = useState("");
+
+  // Reveal the app only after its first frame has the persisted app theme applied.
+  useEffect(() => {
+    void SplashScreen.hideAsync();
+  }, []);
 
   const bootStageLabel = {
     [BootStage.Initializing]: "Initializing...",

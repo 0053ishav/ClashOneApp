@@ -144,7 +144,7 @@ export function UpgradeActionModal({
    * -------------------------------------------------------
    */
 
-  const formatDuration = (seconds: number) => {
+  const formatDuration = (seconds?: number) => {
     if (!seconds) {
       return "—";
     }

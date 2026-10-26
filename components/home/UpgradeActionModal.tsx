@@ -434,7 +434,7 @@ export function UpgradeActionModal({
   const currentSuperchargeStats =
     currentSuperchargeLevel > 0
       ? superchargeData?.supercharge?.[currentSuperchargeLevel]?.stats
-      : superchargeData?.levels[upgrade.currentLevel ?? 0]?.stats;
+      : progression?.currentStats;
   const nextSuperchargeStats =
     nextSuperchargeLevel != null
       ? superchargeData?.supercharge?.[nextSuperchargeLevel]?.stats
@@ -1064,7 +1064,7 @@ export function UpgradeActionModal({
             PROGRESSION TO MAX
         ====================================================== */}
 
-        {progression && (
+        {(progression || (isSupercharge && superchargeProgression)) && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
               {isSupercharge
@@ -1082,7 +1082,7 @@ export function UpgradeActionModal({
               value={String(
                 isSupercharge
                   ? superchargeProgression?.remainingLevels ?? 0
-                  : progression.remainingLevels,
+                  : progression?.remainingLevels ?? 0,
               )}
             />
 
@@ -1094,7 +1094,7 @@ export function UpgradeActionModal({
               value={formatGameCost(
                 isSupercharge
                   ? superchargeProgression?.totalCost
-                  : progression.remainingCost,
+                  : progression?.remainingCost,
               )}
               valueIconUri={resourceIcon}
               valueColor={resourceColor}
@@ -1108,7 +1108,7 @@ export function UpgradeActionModal({
               value={formatDuration(
                 isSupercharge
                   ? superchargeProgression?.totalUpgradeTime
-                  : progression.remainingUpgradeTime,
+                  : progression?.remainingUpgradeTime,
               )}
             />
           </View>

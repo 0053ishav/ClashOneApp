@@ -38,7 +38,11 @@ import { StatusBar } from "expo-status-bar";
 import { Redirect, Stack, usePathname, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import * as SplashScreen from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+// Keep the native splash visible until React has committed the first themed frame.
+// The app preference is read synchronously from MMKV by themeStore/useHomeColors.
+void SplashScreen.preventAutoHideAsync();
 Sentry.init({
   dsn: "https://d2e012e1209309eb649f09114ae454a6@o4511557895258112.ingest.us.sentry.io/4511557898272768",
 
@@ -114,6 +118,11 @@ export default Sentry.wrap(function RootLayout() {
   const [retryCount, setRetryCount] = useState(0);
   const [showSupport, setShowSupport] = useState(false);
   const [debugInfo, setDebugInfo] = useState("");
+
+  // Reveal the app only after its first frame has the persisted app theme applied.
+  useEffect(() => {
+    void SplashScreen.hideAsync();
+  }, []);
 
   const bootStageLabel = {
     [BootStage.Initializing]: "Initializing...",

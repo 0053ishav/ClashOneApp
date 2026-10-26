@@ -31,13 +31,16 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#0e1c3e",
+          "backgroundColor": "#FFFFFF",
           "dark": {
             "backgroundColor": "#0e1c3e"
           },
           "android": {
             "image": "./assets/images/splash-icon.png",
-            "backgroundColor": "#0e1c3e"
+            "backgroundColor": "#FFFFFF",
+            "dark": {
+              "backgroundColor": "#0e1c3e"
+            }
           }
         }
       ],
@@ -104,7 +107,7 @@
               "resizeMode": "horizontal",
               "previewImage": "./assets/images/widget/pet.png",
               "updatePeriodMillis": 1800000
-            }            
+            }
           ]
         }
       ],

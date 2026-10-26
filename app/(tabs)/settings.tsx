@@ -72,6 +72,7 @@ import {
   Modal,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Switch,
   Text,
@@ -916,7 +917,7 @@ export default function SettingsScreen() {
                       pressed && styles.pressed,
                     ]}
                   >
-                    <Ionicons name="remove" size={18} color="#f1f5f9" />
+                    <Ionicons name="remove" size={18} color={colors.textPrimary} />
                   </Pressable>
 
                   <Text style={styles.stepValue}>{localBuilderCount}</Text>
@@ -936,7 +937,7 @@ export default function SettingsScreen() {
                       pressed && styles.pressed,
                     ]}
                   >
-                    <Ionicons name="add" size={18} color="#f1f5f9" />
+                    <Ionicons name="add" size={18} color={colors.textPrimary} />
                   </Pressable>
                 </View>
               }
@@ -1178,6 +1179,50 @@ export default function SettingsScreen() {
             />
           </Section>
         )}
+
+        {/* ── Share & review ── */}
+        <Section title="Share & review">
+          <Row
+            icon="share-social-outline"
+            iconColor="#38bdf8"
+            title="Share Clash One"
+            subtitle="Tell your friends about the app"
+            chevron
+            onPress={async () => {
+              if (!ENV.APP_LINK) {
+                Alert.alert("App link unavailable", "The app store link hasn't been configured yet.");
+                return;
+              }
+
+              try {
+                await Share.share({
+                  message: `Check out Clash One, the Clash of Clans companion app: ${ENV.APP_LINK}`,
+                });
+              } catch {
+                Alert.alert("Couldn't share app", "Please try sharing Clash One again.");
+              }
+            }}
+          />
+          <Row
+            icon="star-outline"
+            iconColor={GOLD}
+            title="Rate Clash One"
+            subtitle="Enjoying the app? Leave a review"
+            chevron
+            onPress={async () => {
+              if (!ENV.APP_LINK) {
+                Alert.alert("App link unavailable", "The app store link hasn't been configured yet.");
+                return;
+              }
+
+              try {
+                await Linking.openURL(ENV.APP_LINK);
+              } catch {
+                Alert.alert("Couldn't open Play Store", "Please try opening the app listing again.");
+              }
+            }}
+          />
+        </Section>
 
         {/* ── Support ── */}
         <Section title="Support">

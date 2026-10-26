@@ -428,6 +428,10 @@ export function UpgradeActionModal({
    */
 
   const isSupercharge = upgrade.upgradeKind === "SUPERCHARGE";
+  const isFullySupercharged =
+    isSupercharge &&
+    superchargeProgression != null &&
+    superchargeProgression.currentLevel >= superchargeProgression.maxLevel;
   const currentSuperchargeLevel = upgrade.currentSuperchargeLevel ?? 0;
   const nextSuperchargeLevel =
     upgrade.nextSuperchargeLevel ?? superchargeProgression?.nextLevel;
@@ -867,20 +871,23 @@ export function UpgradeActionModal({
             MAX STATUS
         ====================================================== */}
 
-        {progression && isMaxLevel && (
+        {(progression && isMaxLevel) || isFullySupercharged ? (
           <View style={styles.maxStatus}>
             <Ionicons name="checkmark-circle" size={17} color={colors.textSecondary} />
 
             <View>
-              <Text style={styles.maxStatusTitle}>Max level reached</Text>
+              <Text style={styles.maxStatusTitle}>
+                {isFullySupercharged ? "Fully Supercharged" : "Max level reached"}
+              </Text>
 
               <Text style={styles.maxStatusSubtitle}>
-                This {upgrade.isCrafted ? "module" : "entity"} is fully
-                upgraded.
+                {isFullySupercharged
+                  ? "All available Supercharge levels are complete."
+                  : `This ${upgrade.isCrafted ? "module" : "entity"} is fully upgraded.`}
               </Text>
             </View>
           </View>
-        )}
+        ) : null}
 
         {/* =====================================================
             NEXT UPGRADE

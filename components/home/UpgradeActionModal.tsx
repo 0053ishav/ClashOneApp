@@ -697,18 +697,18 @@ export function UpgradeActionModal({
             )}
 
             <Text style={styles.levelLabel}>
-              {upgrade.upgradeKind === "SUPERCHARGE"
-                ? "NEXT CHARGE"
-                : isMaxLevel
-                  ? "STATUS"
+              {isMaxLevel || isFullySupercharged
+                ? "STATUS"
+                : upgrade.upgradeKind === "SUPERCHARGE"
+                  ? "NEXT CHARGE"
                   : "NEXT"}
             </Text>
 
             <Text style={styles.nextLevelNumber}>
-              {upgrade.upgradeKind === "SUPERCHARGE"
-                ? (upgrade.nextSuperchargeLevel ?? "—")
-                : isMaxLevel
-                  ? "MAX"
+              {isMaxLevel || isFullySupercharged
+                ? "MAX"
+                : upgrade.upgradeKind === "SUPERCHARGE"
+                  ? (upgrade.nextSuperchargeLevel ?? "—")
                   : (nextLevel ?? "—")}
             </Text>
           </View>

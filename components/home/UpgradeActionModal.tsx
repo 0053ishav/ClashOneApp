@@ -788,15 +788,30 @@ export function UpgradeActionModal({
                   colors={colors}
                   styles={styles}
                   label="Future charge cost"
-                  value={formatGameCost(superchargeProgression.totalCost)}
-                  valueIconUri={resourceIcon}
+                  value={
+                    superchargeProgression.remainingLevels === 0 &&
+                    superchargeProgression.nextLevel != null
+                      ? "None remaining"
+                      : formatGameCost(superchargeProgression.totalCost)
+                  }
+                  valueIconUri={
+                    superchargeProgression.remainingLevels === 0 &&
+                    superchargeProgression.nextLevel != null
+                      ? undefined
+                      : resourceIcon
+                  }
                   valueColor={resourceColor}
                 />
                 <DetailRow
                   colors={colors}
                   styles={styles}
                   label="Future charge levels"
-                  value={String(superchargeProgression.remainingLevels)}
+                  value={
+                    superchargeProgression.remainingLevels === 0 &&
+                    superchargeProgression.nextLevel != null
+                      ? "Final charge in progress"
+                      : String(superchargeProgression.remainingLevels)
+                  }
                 />
               </View>
             )}
@@ -1086,11 +1101,17 @@ export function UpgradeActionModal({
               styles={styles}
               icon="layers-outline"
               label={isSupercharge ? "Supercharges remaining" : "Levels remaining"}
-              value={String(
-                isSupercharge
-                  ? superchargeProgression?.remainingLevels ?? 0
-                  : progression?.remainingLevels ?? 0,
-              )}
+              value={
+                isSupercharge &&
+                superchargeProgression?.remainingLevels === 0 &&
+                superchargeProgression.nextLevel != null
+                  ? "Final charge in progress"
+                  : String(
+                      isSupercharge
+                        ? superchargeProgression?.remainingLevels ?? 0
+                        : progression?.remainingLevels ?? 0,
+                    )
+              }
             />
 
             <DetailRow
@@ -1098,12 +1119,24 @@ export function UpgradeActionModal({
               styles={styles}
               icon="wallet-outline"
               label={isSupercharge ? "Future charge cost" : "Total cost"}
-              value={formatGameCost(
-                isSupercharge
-                  ? superchargeProgression?.totalCost
-                  : progression?.remainingCost,
-              )}
-              valueIconUri={resourceIcon}
+              value={
+                isSupercharge &&
+                superchargeProgression?.remainingLevels === 0 &&
+                superchargeProgression.nextLevel != null
+                  ? "None remaining"
+                  : formatGameCost(
+                      isSupercharge
+                        ? superchargeProgression?.totalCost
+                        : progression?.remainingCost,
+                    )
+              }
+              valueIconUri={
+                isSupercharge &&
+                superchargeProgression?.remainingLevels === 0 &&
+                superchargeProgression.nextLevel != null
+                  ? undefined
+                  : resourceIcon
+              }
               valueColor={resourceColor}
             />
 
@@ -1112,11 +1145,17 @@ export function UpgradeActionModal({
               styles={styles}
               icon="hourglass-outline"
               label={isSupercharge ? "Future charge time" : "Total time"}
-              value={formatDuration(
-                isSupercharge
-                  ? superchargeProgression?.totalUpgradeTime
-                  : progression?.remainingUpgradeTime,
-              )}
+              value={
+                isSupercharge &&
+                superchargeProgression?.remainingLevels === 0 &&
+                superchargeProgression.nextLevel != null
+                  ? "None remaining"
+                  : formatDuration(
+                      isSupercharge
+                        ? superchargeProgression?.totalUpgradeTime
+                        : progression?.remainingUpgradeTime,
+                    )
+              }
             />
           </View>
         )}

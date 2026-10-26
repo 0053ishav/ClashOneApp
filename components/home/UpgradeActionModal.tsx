@@ -372,6 +372,18 @@ export function UpgradeActionModal({
       ? resolveHallIcon(upgrade.village, progression.requiredHallLevel)
       : undefined;
 
+  const hallLevel = progression?.currentHallLevel;
+  const availableSuperchargeLevel =
+    upgrade.upgradeKind === "SUPERCHARGE" && hallLevel != null
+      ? Math.max(
+          0,
+          ...Object.entries(superchargeData?.supercharge ?? {})
+            .filter(([, levelData]) => levelData.hallLevel <= hallLevel)
+            .map(([level]) => Number(level))
+            .filter(Number.isFinite),
+        )
+      : undefined;
+
   // The target level owns the laboratory requirement (e.g. Giant 12 → 13
   // requires Laboratory 15). Keep this lookup tied to the next level's data.
   const nextLevelData =
@@ -415,12 +427,26 @@ export function UpgradeActionModal({
    * -------------------------------------------------------
    */
 
-  const currentStats = flattenProgressionStats(progression?.currentStats);
+  const isSupercharge = upgrade.upgradeKind === "SUPERCHARGE";
+  const currentSuperchargeLevel = upgrade.currentSuperchargeLevel ?? 0;
+  const nextSuperchargeLevel =
+    upgrade.nextSuperchargeLevel ?? superchargeProgression?.nextLevel;
+  const currentSuperchargeStats =
+    currentSuperchargeLevel > 0
+      ? superchargeData?.supercharge?.[currentSuperchargeLevel]?.stats
+      : superchargeData?.levels[upgrade.currentLevel ?? 0]?.stats;
+  const nextSuperchargeStats =
+    nextSuperchargeLevel != null
+      ? superchargeData?.supercharge?.[nextSuperchargeLevel]?.stats
+      : undefined;
+
+  const currentStats = flattenProgressionStats(
+    isSupercharge ? currentSuperchargeStats : progression?.currentStats,
+  );
   const nextStatsByPath = new Map(
-    flattenProgressionStats(progression?.nextStats).map((stat) => [
-      stat.path,
-      stat.value,
-    ]),
+    flattenProgressionStats(
+      isSupercharge ? nextSuperchargeStats : progression?.nextStats,
+    ).map((stat) => [stat.path, stat.value]),
   );
   const hasStats = currentStats.length > 0;
 
@@ -806,25 +832,31 @@ export function UpgradeActionModal({
                 </Text>
 
                 <Text style={styles.hallAvailabilityValue}>
-                  {craftedProgression
-                    ? craftedProgression.isMaxLevel
-                      ? `${craftedProgression.moduleName} · MAX LEVEL`
-                      : `${craftedProgression.moduleName} → Level ${achievableLevel}`
-                    : `Level ${achievableLevel ?? "—"}`}
+                  {isSupercharge
+                    ? `Supercharge level ${availableSuperchargeLevel ?? "—"} available`
+                    : craftedProgression
+                      ? craftedProgression.isMaxLevel
+                        ? `${craftedProgression.moduleName} · MAX LEVEL`
+                        : `${craftedProgression.moduleName} → Level ${achievableLevel}`
+                      : `Level ${achievableLevel ?? "—"}`}
                 </Text>
 
                 <Text style={styles.hallAvailabilityHall}>
-                  {craftedProgression
-                    ? craftedProgression.defenseName
-                    : "Maximum available level"}
+                  {isSupercharge
+                    ? "Maximum Supercharge level available at this Hall"
+                    : craftedProgression
+                      ? craftedProgression.defenseName
+                      : "Maximum available level"}
                 </Text>
               </View>
 
-              {maxLevel != null && (
+              {(isSupercharge ? superchargeProgression?.maxLevel : maxLevel) != null && (
                 <View style={styles.maxLevel}>
                   <Text style={styles.levelLabel}>MAX</Text>
 
-                  <Text style={styles.maxLevelText}>{maxLevel}</Text>
+                  <Text style={styles.maxLevelText}>
+                    {isSupercharge ? superchargeProgression?.maxLevel : maxLevel}
+                  </Text>
                 </View>
               )}
             </View>
@@ -1035,35 +1067,49 @@ export function UpgradeActionModal({
         {progression && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              {craftedProgression
-                ? "Module progression to max"
-                : "Overall progression"}
+              {isSupercharge
+                ? "Supercharge progression"
+                : craftedProgression
+                  ? "Module progression to max"
+                  : "Overall progression"}
             </Text>
 
             <DetailRow
-                  colors={colors}
-                  styles={styles}
+              colors={colors}
+              styles={styles}
               icon="layers-outline"
-              label="Levels remaining"
-              value={String(progression.remainingLevels)}
+              label={isSupercharge ? "Supercharges remaining" : "Levels remaining"}
+              value={String(
+                isSupercharge
+                  ? superchargeProgression?.remainingLevels ?? 0
+                  : progression.remainingLevels,
+              )}
             />
 
             <DetailRow
-                  colors={colors}
-                  styles={styles}
+              colors={colors}
+              styles={styles}
               icon="wallet-outline"
-              label="Total cost"
-              value={formatGameCost(progression.remainingCost)}
+              label={isSupercharge ? "Future charge cost" : "Total cost"}
+              value={formatGameCost(
+                isSupercharge
+                  ? superchargeProgression?.totalCost
+                  : progression.remainingCost,
+              )}
               valueIconUri={resourceIcon}
               valueColor={resourceColor}
             />
 
             <DetailRow
-                  colors={colors}
-                  styles={styles}
+              colors={colors}
+              styles={styles}
               icon="hourglass-outline"
-              label="Total time"
-              value={formatDuration(progression.remainingUpgradeTime)}
+              label={isSupercharge ? "Future charge time" : "Total time"}
+              value={formatDuration(
+                isSupercharge
+                  ? superchargeProgression?.totalUpgradeTime
+                  : progression.remainingUpgradeTime,
+              )}
             />
           </View>
         )}

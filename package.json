@@ -89,7 +89,7 @@
   "jest": {
     "preset": "jest-expo",
     "moduleNameMapper": {
-      "^@/(.*)$": ["<rootDir>/$1"]
+      "^@/(.*)$": "<rootDir>/$1"
     }
   }
 }

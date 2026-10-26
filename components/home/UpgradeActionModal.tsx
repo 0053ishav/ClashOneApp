@@ -777,7 +777,7 @@ export function UpgradeActionModal({
                 <DetailRow
                   colors={colors}
                   styles={styles}
-                  label="Next charge duration"
+                  label="Current charge duration"
                   value={
                     superchargeProgression.nextUpgradeTime != null
                       ? formatDuration(superchargeProgression.nextUpgradeTime)

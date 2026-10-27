@@ -120,16 +120,16 @@ export function resolveEntityIcon(
 
   const level = options?.level;
 
+  // Super Troops are nested variants, not independent numeric entities.
+  if (options?.isSuperTroop) {
+    return entity.superTroop?.icon ?? entity.icon ?? FALLBACK_ICON;
+  }
+
   // Troop cards can use a stable icon asset independent of the troop's level.
   // The CDN uses "home" and "builder" namespaces for the two villages.
   if (options?.useTroopIcon && type === "troop") {
     const villagePath = village === "builderBase" ? "builder" : "home";
     return `${ENV.CDN_BASE}/v2/${villagePath}/troops/${entityId}/icon.png`;
-  }
-
-  // Super Troops are nested variants, not independent numeric entities.
-  if (options?.isSuperTroop) {
-    return entity.superTroop?.icon ?? entity.icon ?? FALLBACK_ICON;
   }
 
   /*

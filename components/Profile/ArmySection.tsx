@@ -8,6 +8,8 @@ import { useRouter } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 import { useMemo } from "react";
 import EntityCard from "../EntityCard";
+import ProgressionBreakdownSheet, { type ProgressionBreakdownSheetRef } from "@/components/Profile/ProgressionBreakdownSheet";
+import { useRef } from "react";
 
 interface ArmyEntity {
   dataId: number;
@@ -26,8 +28,18 @@ export default function ArmySection({ data }: { data: PlayerFull }) {
   const GOLD = colors.gold;
   const BUILDER = colors.purpleStrong;
   const router = useRouter();
+  const progressionSheetRef = useRef<ProgressionBreakdownSheetRef>(null);
 
   const army = parseArmy(data);
+  const progressionCategories = [
+    { key: "home-troops", title: "Home Troops", items: army.home.troops },
+    { key: "super-troops", title: "Super Troops", items: army.home.superTroops },
+    { key: "heroes", title: "Heroes", items: army.home.heroes },
+    { key: "pets", title: "Pets", items: army.home.pets },
+    { key: "siege-machines", title: "Siege Machines", items: army.home.siegeMachines },
+    { key: "builder-troops", title: "Builder Base Troops", items: army.builderBase.troops },
+    { key: "builder-heroes", title: "Builder Base Heroes", items: army.builderBase.heroes },
+  ];
 
   const homeCount =
     (army.home.troops?.length ?? 0) +
@@ -46,6 +58,7 @@ export default function ArmySection({ data }: { data: PlayerFull }) {
 
   return (
     <View style={styles.container}>
+      <ProgressionBreakdownSheet ref={progressionSheetRef} categories={progressionCategories} />
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.iconWrapper}>
@@ -61,11 +74,8 @@ export default function ArmySection({ data }: { data: PlayerFull }) {
           title="Home troops"
           icon="flash"
           count={army.home.troops.length}
-          onViewAll={
-            army.home.troops.length > TROOP_PREVIEW_LIMIT
-              ? () => router.push("/profile/troops")
-              : undefined
-          }
+          onViewAll={() => router.push("/profile/troops")}
+          onPressHeader={() => progressionSheetRef.current?.present("home-troops")}
         >
           <Grid items={army.home.troops.slice(0, TROOP_PREVIEW_LIMIT)} />
         </EntitySection>
@@ -76,6 +86,7 @@ export default function ArmySection({ data }: { data: PlayerFull }) {
           title="Super Troops"
           icon="flash"
           count={army.home.superTroops.length}
+          onPressHeader={() => progressionSheetRef.current?.present("super-troops")}
         >
           <Grid items={army.home.superTroops} />
         </EntitySection>
@@ -86,13 +97,14 @@ export default function ArmySection({ data }: { data: PlayerFull }) {
           title="Heroes"
           icon="person"
           count={army.home.heroes.length}
+          onPressHeader={() => progressionSheetRef.current?.present("heroes")}
         >
           <Grid items={army.home.heroes} />
         </EntitySection>
       )}
 
       {army.home.pets.length > 0 && (
-        <EntitySection title="Pets" icon="paw" count={army.home.pets.length}>
+        <EntitySection title="Pets" icon="paw" count={army.home.pets.length} onPressHeader={() => progressionSheetRef.current?.present("pets")}>
           <Grid items={army.home.pets} />
         </EntitySection>
       )}
@@ -102,6 +114,7 @@ export default function ArmySection({ data }: { data: PlayerFull }) {
           title="Siege machines"
           icon="hammer"
           count={army.home.siegeMachines.length}
+          onPressHeader={() => progressionSheetRef.current?.present("siege-machines")}
         >
           <Grid items={army.home.siegeMachines} />
         </EntitySection>
@@ -112,6 +125,7 @@ export default function ArmySection({ data }: { data: PlayerFull }) {
           title="Builder base troops"
           icon="construct"
           count={army.builderBase.troops.length}
+          onPressHeader={() => progressionSheetRef.current?.present("builder-troops")}
           accent={BUILDER}
         >
           <Grid items={army.builderBase.troops} />
@@ -123,6 +137,7 @@ export default function ArmySection({ data }: { data: PlayerFull }) {
           title="Builder base heroes"
           icon="person"
           count={army.builderBase.heroes.length}
+          onPressHeader={() => progressionSheetRef.current?.present("builder-heroes")}
           accent={BUILDER}
         >
           <Grid items={army.builderBase.heroes} />

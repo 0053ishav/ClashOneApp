@@ -32,6 +32,13 @@ interface Troop {
 }
 
 type Filter = "all" | "maxed" | "upgradable";
+type TroopCategory = "home" | "superTroops" | "builderBase";
+
+const TROOP_CATEGORIES: { key: TroopCategory; label: string }[] = [
+  { key: "home", label: "Home Village" },
+  { key: "superTroops", label: "Super Troops" },
+  { key: "builderBase", label: "Builder Base" },
+];
 
 
 const FILTERS: { key: Filter; label: string }[] = [
@@ -49,12 +56,13 @@ export default function TroopsScreen() {
   const router = useRouter();
   const { profile } = usePlayerProfile();
 
-  const [troopsByVillage, setTroopsByVillage] = useState<Record<PlayerVillage, Troop[]>>({
+  const [troopsByCategory, setTroopsByCategory] = useState<Record<TroopCategory, Troop[]>>({
     home: [],
+    superTroops: [],
     builderBase: [],
   });
-  const [village, setVillage] = useState<PlayerVillage>("home");
-  const troops = troopsByVillage[village];
+  const [category, setCategory] = useState<TroopCategory>("home");
+  const troops = troopsByCategory[category];
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,8 +104,9 @@ export default function TroopsScreen() {
           status: getUpgradeStatus(entity.level, entity.maxLevel),
         }));
 
-      setTroopsByVillage({
+      setTroopsByCategory({
         home: toTroops(parsed.home.troops),
+        superTroops: toTroops(parsed.home.superTroops),
         builderBase: toTroops(parsed.builderBase.troops),
       });
     } catch (err) {
@@ -251,20 +260,17 @@ export default function TroopsScreen() {
               <View style={styles.headerSpacer} />
             </View>
 
-            {/* Village selector */}
+            {/* Troop category selector */}
             <View style={styles.villageSelector}>
-              {([
-                { key: "home", label: "Home Village" },
-                { key: "builderBase", label: "Builder Base" },
-              ] as const).map((option) => {
-                const active = village === option.key;
+              {TROOP_CATEGORIES.map((option) => {
+                const active = category === option.key;
 
                 return (
                   <Pressable
                     key={option.key}
                     accessibilityRole="button"
                     accessibilityState={{ selected: active }}
-                    onPress={() => setVillage(option.key)}
+                    onPress={() => setCategory(option.key)}
                     style={[
                       styles.villageTab,
                       active && styles.villageTabActive,
@@ -284,7 +290,7 @@ export default function TroopsScreen() {
                         active && styles.villageTabTextActive,
                       ]}
                     >
-                      {troopsByVillage[option.key].length}
+                      {troopsByCategory[option.key].length}
                     </Text>
                   </Pressable>
                 );
@@ -356,7 +362,7 @@ export default function TroopsScreen() {
               />
 
               <TextInput
-                placeholder={village === "home" ? "Search Home Village troops" : "Search Builder Base troops"}
+                placeholder={`Search ${TROOP_CATEGORIES.find((option) => option.key === category)?.label ?? "troops"}`}
                 placeholderTextColor={colors.textMuted}
                 value={search}
                 onChangeText={setSearch}
@@ -418,7 +424,7 @@ export default function TroopsScreen() {
             {/* Results */}
             <View style={styles.resultsRow}>
               <Text style={styles.resultsText}>
-                {filtered.length} {village === "home" ? "Home Village" : "Builder Base"} troop{filtered.length !== 1 ? "s" : ""}
+                {filtered.length} {TROOP_CATEGORIES.find((option) => option.key === category)?.label ?? "Troops"} troop{filtered.length !== 1 ? "s" : ""}
               </Text>
 
               {hasActiveFilters && (
@@ -454,9 +460,11 @@ export default function TroopsScreen() {
             <Text style={styles.emptySubtext}>
               {hasActiveFilters
                 ? "Nothing matches your search or filter."
-                : village === "home"
+                : category === "home"
                   ? "There are no Home Village troops to show yet."
-                  : "There are no Builder Base troops to show yet."}
+                  : category === "superTroops"
+                    ? "No Super Troops were returned for this player. Check the player data and entity mappings if you expect to see some."
+                    : "There are no Builder Base troops to show yet."}
             </Text>
 
             {hasActiveFilters && (

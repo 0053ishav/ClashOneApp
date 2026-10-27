@@ -1,21 +1,38 @@
 import type { PlayerEntityLevel, PlayerFull, PlayerVillage } from "@/types/playerFull";
 import { getEntity, getEntityId } from "@/utils/getEntity";
 import { useEntityStore } from "@/stores/entityStore";
+import { ProgressionQueries } from "@/services/progression/progressionQueries";
 
 export interface ParsedArmyEntity extends PlayerEntityLevel {
   dataId: number;
   isSuperTroop?: boolean;
 }
 
-function attachId(entity: PlayerEntityLevel): ParsedArmyEntity {
+function attachId(
+  entity: PlayerEntityLevel,
+  playerTroops: PlayerEntityLevel[],
+): ParsedArmyEntity {
+  const entityStore = useEntityStore.getState();
   const id = getEntityId(entity.name, entity.village);
-  const isSuperTroop = useEntityStore.getState().isSuperTroop(entity.name, entity.village);
+  const isSuperTroop = entityStore.isSuperTroop(entity.name, entity.village);
+  const parent = id == null ? undefined : entityStore.getEntity(id);
+  const progression = id == null ? undefined : ProgressionQueries.getProgression(id);
+  const regularTroop = isSuperTroop
+    ? playerTroops.find((candidate) =>
+        candidate.village === entity.village &&
+        candidate.name.trim().toLowerCase() === parent?.name.en.trim().toLowerCase()
+      )
+    : undefined;
+  const level = isSuperTroop ? (regularTroop?.level ?? entity.level) : entity.level;
+  const maxLevel = isSuperTroop
+    ? (progression?.superTroop?.maxLevel ?? parent?.superTroop?.maxLevel ?? entity.maxLevel)
+    : entity.maxLevel;
 
   if (__DEV__ && id === null) {
     console.warn("Missing entity mapping:", entity.name, entity.village);
   }
 
-  return { ...entity, dataId: id ?? -1, ...(isSuperTroop ? { isSuperTroop: true } : {}) };
+  return { ...entity, level, maxLevel, dataId: id ?? -1, ...(isSuperTroop ? { isSuperTroop: true } : {}) };
 }
 
 function isResolved<T extends ParsedArmyEntity>(entity: T): entity is T & { dataId: number } {
@@ -34,7 +51,8 @@ export interface ParsedArmy {
 }
 
 export function parseArmy(data: PlayerFull): ParsedArmy {
-  const mappedTroops = (data.troops ?? []).map(attachId);
+  const playerTroops = data.troops ?? [];
+  const mappedTroops = playerTroops.map((troop) => attachId(troop, playerTroops));
   const mappedHeroes = (data.heroes ?? []).map(attachId);
   const validTroops = mappedTroops.filter(isResolved);
   const validHeroes = mappedHeroes.filter(isResolved);

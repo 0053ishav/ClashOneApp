@@ -15,6 +15,7 @@ interface ResolveEntityIconOptions {
   type?: EntityType;
   subType?: string;
   level?: number;
+  isSuperTroop?: boolean;
   isCrafted?: boolean;
   moduleId?: number;
   craftedModuleLevels?: Record<number, number>;
@@ -116,6 +117,11 @@ export function resolveEntityIcon(
     entity.subType;
 
   const level = options?.level;
+
+  // Super Troops are nested variants, not independent numeric entities.
+  if (options?.isSuperTroop) {
+    return entity.superTroop?.icon ?? entity.icon ?? FALLBACK_ICON;
+  }
 
   /*
    * No level means use the metadata icon. Invalid non-positive levels use

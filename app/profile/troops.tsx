@@ -29,6 +29,7 @@ interface Troop {
   maxLevel: number;
   status: "max" | "near" | "mid" | "low";
   village: PlayerVillage;
+  isSuperTroop?: boolean;
 }
 
 type Filter = "all" | "maxed" | "upgradable";
@@ -101,6 +102,7 @@ export default function TroopsScreen() {
           level: entity.level,
           maxLevel: entity.maxLevel,
           village: entity.village,
+          isSuperTroop: entity.isSuperTroop,
           status: getUpgradeStatus(entity.level, entity.maxLevel),
         }));
 
@@ -446,6 +448,7 @@ export default function TroopsScreen() {
             maxLevel={item.maxLevel}
             dataId={item.dataId}
             village={item.village}
+            isSuperTroop={item.isSuperTroop}
             fillContainer
           />
         )}

@@ -6,10 +6,9 @@ import { parseArmy } from "@/utils/profile/parseArmy";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import EntityCard from "../EntityCard";
 import ProgressionBreakdownSheet, { type ProgressionBreakdownSheetRef } from "@/components/Profile/ProgressionBreakdownSheet";
-import { useRef } from "react";
 
 interface ArmyEntity {
   dataId: number;

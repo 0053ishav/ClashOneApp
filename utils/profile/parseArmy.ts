@@ -27,6 +27,7 @@ function isResolved<T extends ParsedArmyEntity>(
 export interface ParsedArmy {
   home: {
     troops: ParsedArmyEntity[];
+    superTroops: ParsedArmyEntity[];
     pets: ParsedArmyEntity[];
     siegeMachines: ParsedArmyEntity[];
     heroes: ParsedArmyEntity[];
@@ -49,6 +50,11 @@ export function parseArmy(data: PlayerFull): ParsedArmy {
     return entity.type === "troop" && entity.subType !== "SUPER_TROOP";
   });
 
+  const superTroops = validTroops.filter((troop) => {
+    const entity = getEntity(troop.dataId);
+    return entity.type === "troop" && entity.subType === "SUPER_TROOP";
+  });
+
   const pets = validTroops.filter(
     (troop) => getEntity(troop.dataId).type === "pet",
   );
@@ -67,6 +73,7 @@ export function parseArmy(data: PlayerFull): ParsedArmy {
   return {
     home: {
       troops: inVillage(troops, "home"),
+      superTroops: inVillage(superTroops, "home"),
       pets: inVillage(pets, "home"),
       siegeMachines: inVillage(siegeMachines, "home"),
       heroes: inVillage(heroes, "home"),

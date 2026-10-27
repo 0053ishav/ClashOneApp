@@ -68,6 +68,13 @@ export default function EntityCard({
           }}
         />
 
+        {!isMax && remaining > 0 && compact && (
+          <View style={styles.compactRemainingBadge}>
+            <Ionicons name="trending-up" size={7} color={progressColor} />
+            <Text style={[styles.compactRemainingText, { color: progressColor }]}>{remaining}</Text>
+          </View>
+        )}
+
         <View
           style={[
             styles.levelBadge,
@@ -198,6 +205,30 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   cardImageCompact: {
     width: "100%",
     height: "100%",
+  },
+
+  compactRemainingBadge: {
+    position: "absolute",
+    top: 2,
+    right: 2,
+    minWidth: 15,
+    height: 13,
+    paddingHorizontal: 2,
+    borderRadius: 4,
+    backgroundColor: "#111827",
+    borderWidth: 1,
+    borderColor: "rgba(245, 196, 81, 0.65)",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 1,
+  },
+
+  compactRemainingText: {
+    fontSize: 8,
+    lineHeight: 10,
+    fontWeight: "900",
+    fontVariant: ["tabular-nums"],
   },
 
   levelBadge: {

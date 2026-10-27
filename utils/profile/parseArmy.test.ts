@@ -106,6 +106,8 @@ describe("Builder Base village normalization", () => {
     ]);
     expect(parsed.home.superTroops[0]?.dataId).toBe(1001);
     expect(parsed.home.superTroops[0]?.isSuperTroop).toBe(true);
+    expect(parsed.home.superTroops[0]?.level).toBe(10);
+    expect(parsed.home.superTroops[0]?.maxLevel).toBe(12);
     expect(useEntityStore.getState().isSuperTroop("Super Barbarian", "home")).toBe(true);
     expect(useEntityStore.getState().isSuperTroop("Barbarian", "home")).toBe(false);
     expect(parsed.builderBase.troops.map((troop) => troop.name)).toEqual([

@@ -28,8 +28,6 @@ export const useEntityStore = create<EntityStore>((set, get) => ({
     set((state) => {
       const mapped: Record<number, EntityData> = {};
       const byName: Record<string, number> = {};
-      const superTroopNames = new Set<string>();
-
       for (const entity of entities) {
         if (!entity.name?.en) {
           console.warn("[EntityStore] Invalid entity name", entity);
@@ -47,20 +45,13 @@ export const useEntityStore = create<EntityStore>((set, get) => ({
         mapped[normalizedEntity.id] = normalizedEntity;
         byName[entityNameKey(normalizedEntity.name.en, village)] = normalizedEntity.id;
         if (normalizedEntity.superTroop?.name?.en) {
-          const key = entityNameKey(normalizedEntity.superTroop.name.en, village);
-          byName[key] = normalizedEntity.id;
-          superTroopNames.add(key);
+          byName[entityNameKey(normalizedEntity.superTroop.name.en, village)] = normalizedEntity.id;
         }
       }
-
       return {
         entitiesById: { ...state.entitiesById, ...mapped },
         entitiesByName: { ...state.entitiesByName, ...byName },
-        superTroopNamesByKey: {
-          ...(state as EntityStore & { superTroopNamesByKey?: Record<string, true> }).superTroopNamesByKey,
-          ...Object.fromEntries([...superTroopNames].map((key) => [key, true])),
-        },
-      } as Partial<EntityStore>;
+      };
     }),
   getEntity: (id) => get().entitiesById[id],
   getEntityId: (name, village = "home") =>

@@ -15,6 +15,7 @@ interface ArmyEntity {
   level: number;
   maxLevel: number;
   village: PlayerVillage;
+  isSuperTroop?: boolean;
 }
 
 const TROOP_PREVIEW_LIMIT = 6;
@@ -144,6 +145,7 @@ function Grid({ items }: { items: ArmyEntity[] }) {
           level={item.level}
           maxLevel={item.maxLevel}
           village={item.village}
+          isSuperTroop={item.isSuperTroop}
           compact
         />
       ))}

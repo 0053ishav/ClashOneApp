@@ -12,7 +12,6 @@ import { MagicItemTimeSaved } from "@/components/home/MagicItemActivitySummary";
 import { ENV } from "@/config/env";
 import type { ProgressionApplicationResult } from "@/engine/progression/models";
 import type { Village } from "@/types/entity";
-import { ResourceType } from "@/types/resource";
 import type { Upgrade } from "@/types/upgrade";
 import { flattenProgressionStats } from "@/utils/flattenProgressionStats";
 import { resolveResourceIcon } from "@/utils/icons/resolveResourceIcon";

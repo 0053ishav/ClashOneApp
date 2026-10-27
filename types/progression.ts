@@ -78,10 +78,16 @@ export interface ProgressionData {
   /** Optional CDN image ranges; normal is the image level to render. */
   images?: ProgressionImageRange[];
   maxHallLevel: number;
-  levels: Record<
-    number,
-    ProgressionLevel
-  >;
+  levels: Record<number, ProgressionLevel>;
+  /** Variant progression nested under its regular troop's numeric ID. */
+  superTroop?: {
+    id: string;
+    name: string;
+    regularLevelRequired: number;
+    maxLevel: number;
+    maxHallLevel?: number;
+    levels: Record<number, ProgressionLevel>;
+  };
 
   combat?: Record<
     string,

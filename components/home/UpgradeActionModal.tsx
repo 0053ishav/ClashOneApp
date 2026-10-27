@@ -20,6 +20,7 @@ import { ProgressionQueries } from "@/services/progression/progressionQueries";
 import { calculateSuperchargeProgression } from "@/engine/progression/operations/calculateSuperchargeProgression";
 import { resolveUpgradeIcon } from "@/utils/icons/resolveUpgradeIcon";
 import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
+import { getResourceColor } from "@/components/ResourceCost";
 import type { HomeColors } from "@/theme/home";
 import { useHomeColors } from "@/theme/useHomeColors";
 
@@ -233,31 +234,7 @@ export function UpgradeActionModal({
     return upgrade.village === "builderBase" ? "Builder Base" : "Home Village";
   };
 
-  const getResourceColor = (resource?: ResourceType) => {
-    switch (resource) {
-      case ResourceType.GOLD:
-      case ResourceType.BUILDER_GOLD:
-        return "#facc15";
 
-      case ResourceType.ELIXIR:
-        return "#d946ef";
-
-      case ResourceType.DARK_ELIXIR:
-        return "#a78bfa";
-
-      case ResourceType.BUILDER_ELIXIR:
-        return "#fb923c";
-
-      case ResourceType.GEMS:
-        return "#22d3ee";
-
-      case ResourceType.SEASON_POINTS:
-        return "#f59e0b";
-
-      default:
-        return colors.textSecondary;
-    }
-  };
 
   /*
    * -------------------------------------------------------
@@ -361,7 +338,7 @@ export function UpgradeActionModal({
     resourceType != null ? resolveResourceIcon(resourceType) : undefined;
 
   const resourceColor =
-    resourceType != null ? getResourceColor(resourceType) : undefined;
+    resourceType != null ? getResourceColor(resourceType, colors) : undefined;
 
   /*
    * -------------------------------------------------------

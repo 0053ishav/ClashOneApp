@@ -30,6 +30,7 @@ export default function ArmySection({ data }: { data: PlayerFull }) {
 
   const homeCount =
     (army.home.troops?.length ?? 0) +
+    (army.home.superTroops?.length ?? 0) +
     (army.home.heroes?.length ?? 0) +
     (army.home.pets?.length ?? 0) +
     (army.home.siegeMachines?.length ?? 0);
@@ -66,6 +67,16 @@ export default function ArmySection({ data }: { data: PlayerFull }) {
           }
         >
           <Grid items={army.home.troops.slice(0, TROOP_PREVIEW_LIMIT)} />
+        </EntitySection>
+      )}
+
+      {army.home.superTroops.length > 0 && (
+        <EntitySection
+          title="Super Troops"
+          icon="flash"
+          count={army.home.superTroops.length}
+        >
+          <Grid items={army.home.superTroops} />
         </EntitySection>
       )}
 

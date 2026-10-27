@@ -18,6 +18,8 @@ interface EntityCardProps {
   village?: Village;
   /** Fill a FlatList column instead of using the three-column flex-wrap layout. */
   fillContainer?: boolean;
+  /** Dense icon-only tile for grouped profile sections. */
+  compact?: boolean;
 }
 
 export default function EntityCard({
@@ -28,6 +30,7 @@ export default function EntityCard({
   onPress,
   village,
   fillContainer = false,
+  compact = false,
 }: EntityCardProps) {
   const colors = useHomeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -37,11 +40,12 @@ export default function EntityCard({
   const isMax = status === "max";
 
   const content = (
-    <View style={styles.card}>
+    <View style={[styles.card, compact && styles.cardCompact]}>
       <View
         style={[
           styles.artwork,
           isMax ? styles.artworkMaxed : styles.artworkDefault,
+          compact && styles.artworkCompact,
         ]}
       >
         <Image
@@ -52,7 +56,7 @@ export default function EntityCard({
               village ? { village, level } : undefined,
             ),
           }}
-          style={styles.cardImage}
+          style={[styles.cardImage, compact && styles.cardImageCompact]}
           contentFit="contain"
           allowDownscaling={false}
           cachePolicy="memory-disk"
@@ -62,19 +66,22 @@ export default function EntityCard({
           style={[
             styles.levelBadge,
             isMax ? styles.levelBadgeMaxed : styles.levelBadgeDefault,
+            compact && styles.levelBadgeCompact,
           ]}
         >
-          <Text style={[styles.levelText, isMax && styles.levelTextMaxed]}>
+          <Text style={[styles.levelText, isMax && styles.levelTextMaxed, compact && styles.levelTextCompact]}>
             {level}
           </Text>
         </View>
       </View>
 
-      <Text style={styles.cardName} numberOfLines={1}>
-        {name}
-      </Text>
+      {!compact && (
+        <Text style={styles.cardName} numberOfLines={1}>
+          {name}
+        </Text>
+      )}
 
-      {!isMax && remaining > 0 && (
+      {!compact && !isMax && remaining > 0 && (
         <View
           style={[
             styles.remainingBadge,
@@ -92,7 +99,7 @@ export default function EntityCard({
 
   if (!onPress) {
     return (
-      <View style={fillContainer ? styles.pressableFill : styles.pressable}>
+      <View style={compact ? styles.pressableCompact : fillContainer ? styles.pressableFill : styles.pressable}>
         {content}
       </View>
     );
@@ -108,7 +115,7 @@ export default function EntityCard({
       }
       onPress={onPress}
       style={({ pressed }) => [
-        fillContainer ? styles.pressableFill : styles.pressable,
+        compact ? styles.pressableCompact : fillContainer ? styles.pressableFill : styles.pressable,
         pressed && styles.pressablePressed,
       ]}
     >
@@ -126,6 +133,10 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     width: "31.5%",
   },
 
+  pressableCompact: {
+    width: "15.5%",
+  },
+
   pressablePressed: {
     opacity: 0.88,
   },
@@ -135,6 +146,11 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     alignItems: "center",
     gap: 5,
     paddingBottom: 2,
+  },
+
+  cardCompact: {
+    gap: 0,
+    paddingBottom: 0,
   },
 
   artwork: {
@@ -151,6 +167,13 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     padding: 3,
   },
 
+  artworkCompact: {
+    maxWidth: 58,
+    borderRadius: 6,
+    borderWidth: 1,
+    padding: 1,
+  },
+
   artworkDefault: {
     borderColor: "#53657e",
   },
@@ -162,6 +185,11 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   },
 
   cardImage: {
+    width: "100%",
+    height: "100%",
+  },
+
+  cardImageCompact: {
     width: "100%",
     height: "100%",
   },
@@ -180,6 +208,16 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
     borderColor: colors.borderStrong,
+  },
+
+  levelBadgeCompact: {
+    left: 1,
+    bottom: 1,
+    minWidth: 15,
+    height: 14,
+    paddingHorizontal: 2,
+    borderRadius: 3,
+    borderWidth: 1,
   },
 
   levelBadgeDefault: {
@@ -210,6 +248,11 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     color: colors.textDark,
     fontSize: 11,
     lineHeight: 13,
+  },
+
+  levelTextCompact: {
+    fontSize: 9,
+    lineHeight: 11,
   },
 
 

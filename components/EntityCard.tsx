@@ -54,6 +54,7 @@ export default function EntityCard({
           }}
           style={styles.cardImage}
           contentFit="contain"
+          allowDownscaling={false}
           cachePolicy="memory-disk"
         />
 
@@ -132,47 +133,49 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   card: {
     width: "100%",
     alignItems: "center",
-    gap: 4,
-    paddingBottom: 1,
+    gap: 5,
+    paddingBottom: 2,
   },
 
   artwork: {
     width: "100%",
     aspectRatio: 1,
-    maxWidth: 92,
+    maxWidth: 88,
     position: "relative",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-    borderRadius: 5,
+    borderRadius: 9,
     borderWidth: 1.5,
-    backgroundColor: colors.surfaceRaised,
+    backgroundColor: "#263449",
+    padding: 3,
   },
 
   artworkDefault: {
-    borderColor: colors.borderStrong,
+    borderColor: "#53657e",
   },
 
   artworkMaxed: {
     borderColor: colors.gold,
     borderWidth: 2,
+    backgroundColor: "#3b3527",
   },
 
   cardImage: {
-    width: "88%",
-    height: "88%",
+    width: "100%",
+    height: "100%",
   },
 
   levelBadge: {
     position: "absolute",
-    left: 3,
-    bottom: 3,
-    minWidth: 20,
-    height: 18,
+    left: 4,
+    bottom: 4,
+    minWidth: 22,
+    height: 20,
     paddingHorizontal: 4,
     flexDirection: "row",
     gap: 2,
-    borderRadius: 4,
+    borderRadius: 5,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
@@ -180,10 +183,10 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   },
 
   levelBadgeDefault: {
-    backgroundColor: colors.surface,
-    borderRadius: 3,
+    backgroundColor: "#1b2637",
+    borderRadius: 5,
     minWidth: 22,
-    height: 21,
+    height: 20,
   },
 
   levelBadgeMaxed: {

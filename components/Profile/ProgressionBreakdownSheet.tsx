@@ -4,6 +4,8 @@ import { useHomeColors } from "@/theme/useHomeColors";
 import { ProgressionQueries } from "@/services/progression/progressionQueries";
 import { ResourceType } from "@/types/resource";
 import { ResourceIcon, getResourceColor } from "@/components/ResourceCost";
+import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
@@ -158,6 +160,14 @@ const ProgressionBreakdownSheet = forwardRef<ProgressionBreakdownSheetRef, Props
                   const detail = summarize([item]);
                   return (
                     <View key={`${category.key}-${item.dataId}-${item.village}-${item.name}`} style={styles.entityRow}>
+                      <Image
+                        accessibilityLabel={item.name}
+                        source={{ uri: resolveEntityIcon(item.dataId, { village: item.village, level: item.level, isSuperTroop: item.isSuperTroop }) }}
+                        style={styles.entityIcon}
+                        contentFit="contain"
+                        cachePolicy="memory-disk"
+                        transition={120}
+                      />
                       <View style={styles.entityCopy}>
                         <Text style={styles.entityName}>{item.name}</Text>
                         <Text style={styles.muted}>Level {item.level}/{item.maxLevel} · {remaining} levels left</Text>
@@ -212,6 +222,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   categoryTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: "800" },
   muted: { color: colors.textSecondary, fontSize: 11 },
   entityRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.borderStrong },
+  entityIcon: { width: 42, height: 42, borderRadius: 9, backgroundColor: colors.surfaceRaised },
   entityCopy: { flex: 1, gap: 4 },
   entityName: { color: colors.textPrimary, fontSize: 13, fontWeight: "700" },
   entityCost: { alignItems: "flex-end", gap: 3 },

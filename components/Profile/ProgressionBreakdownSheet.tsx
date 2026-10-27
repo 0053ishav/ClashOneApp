@@ -84,8 +84,8 @@ const ProgressionBreakdownSheet = forwardRef<ProgressionBreakdownSheetRef, Props
     const visibleCategories = selectedCategory
       ? categories.filter((category) => category.key === selectedCategory)
       : categories;
-    const allItems = categories.flatMap((category) => category.items);
-    const overall = summarize(allItems);
+    const visibleItems = visibleCategories.flatMap((category) => category.items);
+    const overall = summarize(visibleItems);
 
     const renderBackdrop = (props: React.ComponentProps<typeof BottomSheetBackdrop>) => (
       <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} opacity={0.55} pressBehavior="close" />
@@ -134,7 +134,7 @@ const ProgressionBreakdownSheet = forwardRef<ProgressionBreakdownSheetRef, Props
 
           {visibleCategories.map((category) => {
             const summary = summarize(category.items);
-            const isExpanded = expanded.includes(category.key) || selectedCategory != null;
+            const isExpanded = expanded.includes(category.key);
             return (
               <View key={category.key} style={styles.category}>
                 <Pressable

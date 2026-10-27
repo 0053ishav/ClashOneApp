@@ -20,6 +20,7 @@ interface EntityCardProps {
   fillContainer?: boolean;
   /** Dense icon-only tile for grouped profile sections. */
   compact?: boolean;
+  isSuperTroop?: boolean;
 }
 
 export default function EntityCard({
@@ -31,6 +32,7 @@ export default function EntityCard({
   village,
   fillContainer = false,
   compact = false,
+  isSuperTroop = false,
 }: EntityCardProps) {
   const colors = useHomeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -53,7 +55,7 @@ export default function EntityCard({
           source={{
             uri: resolveEntityIcon(
               dataId,
-              village ? { village, level } : undefined,
+              village ? { village, level, isSuperTroop } : { level, isSuperTroop },
             ),
           }}
           style={[styles.cardImage, compact && styles.cardImageCompact]}

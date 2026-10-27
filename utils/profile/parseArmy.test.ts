@@ -38,6 +38,14 @@ describe("Builder Base village normalization", () => {
         village: "builder",
       },
       {
+        id: 1002,
+        slug: "super-barbarian",
+        name: { en: "Super Barbarian" },
+        type: "troop",
+        subType: "SUPER_TROOP",
+        village: "home",
+      },
+      {
         id: 4002,
         slug: "battle-machine",
         name: { en: "Battle Machine" },
@@ -73,6 +81,12 @@ describe("Builder Base village normalization", () => {
           maxLevel: 20,
           village: "builderBase",
         },
+        {
+          name: "Super Barbarian",
+          level: 10,
+          maxLevel: 12,
+          village: "home",
+        },
       ],
       heroes: [
         {
@@ -89,6 +103,9 @@ describe("Builder Base village normalization", () => {
     expect(useEntityStore.getState().getEntityId("Raged Barbarian", "builderBase")).toBe(4001);
     expect(useEntityStore.getState().getEntity(4001)?.village).toBe("builderBase");
     expect(parsed.home.troops.map((troop) => troop.name)).toEqual(["Barbarian"]);
+    expect(parsed.home.superTroops.map((troop) => troop.name)).toEqual([
+      "Super Barbarian",
+    ]);
     expect(parsed.builderBase.troops.map((troop) => troop.name)).toEqual([
       "Raged Barbarian",
     ]);

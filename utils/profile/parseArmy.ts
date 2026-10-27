@@ -53,7 +53,7 @@ export interface ParsedArmy {
 export function parseArmy(data: PlayerFull): ParsedArmy {
   const playerTroops = data.troops ?? [];
   const mappedTroops = playerTroops.map((troop) => attachId(troop, playerTroops));
-  const mappedHeroes = (data.heroes ?? []).map(attachId);
+  const mappedHeroes = (data.heroes ?? []).map((hero) => attachId(hero));
   const validTroops = mappedTroops.filter(isResolved);
   const validHeroes = mappedHeroes.filter(isResolved);
 

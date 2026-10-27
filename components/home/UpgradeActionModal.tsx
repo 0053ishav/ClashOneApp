@@ -6,6 +6,7 @@ import {
 } from "@gorhom/bottom-sheet";
 import React from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { MagicItemTimeSaved } from "@/components/home/MagicItemActivitySummary";
 import { ENV } from "@/config/env";
@@ -58,6 +59,7 @@ export function UpgradeActionModal({
   onUseBook,
 }: UpgradeActionModalProps) {
   const colors = useHomeColors();
+  const insets = useSafeAreaInsets();
   const styles = React.useMemo(() => createStyles(colors), [colors]);
   const bottomSheetRef = React.useRef<BottomSheetModal>(null);
 
@@ -522,7 +524,10 @@ export function UpgradeActionModal({
       enableDynamicSizing={false}
     >
       <BottomSheetScrollView
-        contentContainerStyle={styles.contentContainer}
+        contentContainerStyle={[
+          styles.contentContainer,
+          { paddingBottom: insets.bottom + 24 },
+        ]}
         showsVerticalScrollIndicator={false}
         bounces={false}
       >

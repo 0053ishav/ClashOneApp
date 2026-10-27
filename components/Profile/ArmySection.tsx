@@ -144,6 +144,7 @@ function Grid({ items }: { items: ArmyEntity[] }) {
           level={item.level}
           maxLevel={item.maxLevel}
           village={item.village}
+          compact
         />
       ))}
     </View>
@@ -201,6 +202,6 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: 5,
   },
 });

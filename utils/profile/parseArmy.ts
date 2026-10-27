@@ -10,7 +10,7 @@ export interface ParsedArmyEntity extends PlayerEntityLevel {
 
 function attachId(
   entity: PlayerEntityLevel,
-  playerTroops: PlayerEntityLevel[],
+  playerTroops: PlayerEntityLevel[] = [],
 ): ParsedArmyEntity {
   const entityStore = useEntityStore.getState();
   const id = getEntityId(entity.name, entity.village);

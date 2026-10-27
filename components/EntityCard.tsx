@@ -6,7 +6,7 @@ import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import type { Village } from "@/types/entity";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { useMemo, useState } from "react";
 
 interface EntityCardProps {
@@ -41,9 +41,13 @@ export default function EntityCard({
   const remaining = Math.max(0, maxLevel - level);
   const isMax = status === "max";
   const [failedSuperIconKey, setFailedSuperIconKey] = useState<string | null>(null);
+  const [imageLoading, setImageLoading] = useState(true);
   const superIconKey = `${dataId}:${level}:${isSuperTroop}`;
   const useSuperTroopIcon = isSuperTroop && failedSuperIconKey !== superIconKey;
-  const iconOptions = village ? { village, level, isSuperTroop: useSuperTroopIcon } : { level, isSuperTroop: useSuperTroopIcon };
+  const iconOptions = village
+    ? { village, level, isSuperTroop: useSuperTroopIcon, useTroopIcon: true }
+    : { level, isSuperTroop: useSuperTroopIcon, useTroopIcon: true };
+  const iconUri = resolveEntityIcon(dataId, iconOptions);
 
   const content = (
     <View style={[styles.card, compact && styles.cardCompact]}>
@@ -56,17 +60,23 @@ export default function EntityCard({
       >
         <Image
           accessibilityLabel={name}
-          source={{
-            uri: resolveEntityIcon(dataId, iconOptions),
-          }}
+          source={{ uri: iconUri }}
           style={[styles.cardImage, compact && styles.cardImageCompact]}
           contentFit="contain"
           allowDownscaling={false}
           cachePolicy="memory-disk"
+          onLoadStart={() => setImageLoading(true)}
+          onLoad={() => setImageLoading(false)}
           onError={() => {
+            setImageLoading(false);
             if (isSuperTroop && useSuperTroopIcon) setFailedSuperIconKey(superIconKey);
           }}
         />
+        {imageLoading && (
+          <View pointerEvents="none" style={styles.imageLoadingOverlay}>
+            <ActivityIndicator size="small" color={colors.textSecondary} />
+          </View>
+        )}
 
         {!isMax && remaining > 0 && compact && (
           <View style={styles.compactRemainingBadge}>
@@ -205,6 +215,13 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   cardImageCompact: {
     width: "100%",
     height: "100%",
+  },
+
+  imageLoadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(17, 24, 39, 0.35)",
   },
 
   compactRemainingBadge: {

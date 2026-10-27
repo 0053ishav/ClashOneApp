@@ -23,18 +23,22 @@ interface Props {
   categories: ProgressionCategory[];
 }
 
-const RESOURCE_LABELS: Record<number, string> = {
-  [ResourceType.GOLD]: "Gold",
-  [ResourceType.ELIXIR]: "Elixir",
-  [ResourceType.DARK_ELIXIR]: "Dark Elixir",
-  [ResourceType.BUILDER_GOLD]: "Builder Gold",
-  [ResourceType.BUILDER_ELIXIR]: "Builder Elixir",
-  [ResourceType.GOLD_OR_ELIXIR]: "Gold / Elixir",
-  [ResourceType.BUILDER_GOLD_OR_ELIXIR]: "Builder Gold / Elixir",
-  [ResourceType.GEMS]: "Gems",
-  [ResourceType.SEASON_POINTS]: "Season Points",
-  [ResourceType.ORE]: "Ore",
+const RESOURCE_PRESENTATION: Record<number, { label: string; icon: React.ComponentProps<typeof Ionicons>["name"]; color: string }> = {
+  [ResourceType.GOLD]: { label: "Gold", icon: "logo-bitcoin", color: "#FBBF24" },
+  [ResourceType.ELIXIR]: { label: "Elixir", icon: "water", color: "#D946EF" },
+  [ResourceType.DARK_ELIXIR]: { label: "Dark Elixir", icon: "water", color: "#A78BFA" },
+  [ResourceType.BUILDER_GOLD]: { label: "Builder Gold", icon: "logo-bitcoin", color: "#F59E0B" },
+  [ResourceType.BUILDER_ELIXIR]: { label: "Builder Elixir", icon: "water", color: "#FB7185" },
+  [ResourceType.GEMS]: { label: "Gems", icon: "diamond", color: "#34D399" },
+  [ResourceType.SEASON_POINTS]: { label: "Season Points", icon: "trophy", color: "#FBBF24" },
+  [ResourceType.ORE]: { label: "Ore", icon: "diamond", color: "#60A5FA" },
+  [ResourceType.GOLD_OR_ELIXIR]: { label: "Gold / Elixir", icon: "swap-horizontal", color: "#FBBF24" },
+  [ResourceType.BUILDER_GOLD_OR_ELIXIR]: { label: "Builder Gold / Elixir", icon: "swap-horizontal", color: "#F59E0B" },
 };
+
+function getResourcePresentation(resource: number) {
+  return RESOURCE_PRESENTATION[resource] ?? { label: "Resource", icon: "cube-outline" as const, color: "#94A3B8" };
+}
 
 function formatCost(value: number): string {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
@@ -126,8 +130,13 @@ const ProgressionBreakdownSheet = forwardRef<ProgressionBreakdownSheetRef, Props
               <Text style={styles.muted}>Cost data is unavailable for these entities.</Text>
             ) : Array.from(overall.costs.entries()).map(([resource, cost]) => (
               <View key={resource} style={styles.costRow}>
-                <Text style={styles.costLabel}>{RESOURCE_LABELS[resource] ?? "Resource"}</Text>
-                <Text style={styles.costValue}>{formatCost(cost)}</Text>
+                <View style={styles.resourceLabelGroup}>
+                  <View style={[styles.resourceIcon, { backgroundColor: getResourcePresentation(resource).color + "20" }]}>
+                    <Ionicons name={getResourcePresentation(resource).icon} size={15} color={getResourcePresentation(resource).color} />
+                  </View>
+                  <Text style={[styles.costLabel, { color: getResourcePresentation(resource).color }]}>{getResourcePresentation(resource).label}</Text>
+                </View>
+                <Text style={[styles.costValue, { color: getResourcePresentation(resource).color }]}>{formatCost(cost)}</Text>
               </View>
             ))}
           </View>
@@ -160,7 +169,10 @@ const ProgressionBreakdownSheet = forwardRef<ProgressionBreakdownSheetRef, Props
                       </View>
                       <View style={styles.entityCost}>
                         {Array.from(detail.costs.entries()).map(([resource, cost]) => (
-                          <Text key={resource} style={styles.entityCostText}>{formatCost(cost)} {RESOURCE_LABELS[resource] ?? ""}</Text>
+                          <View key={resource} style={styles.entityResourceCost}>
+                            <Ionicons name={getResourcePresentation(resource).icon} size={11} color={getResourcePresentation(resource).color} />
+                            <Text style={[styles.entityCostText, { color: getResourcePresentation(resource).color }]}>{formatCost(cost)}</Text>
+                          </View>
                         ))}
                         {remaining === 0 && <Text style={styles.maxedText}>MAX</Text>}
                       </View>
@@ -196,7 +208,9 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   costCard: { backgroundColor: colors.surfaceRaised, borderRadius: 14, padding: 14, gap: 10 },
   sectionTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: "800" },
   costRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  costLabel: { color: colors.textSecondary, fontSize: 13 },
+  resourceLabelGroup: { flexDirection: "row", alignItems: "center", gap: 8 },
+  resourceIcon: { width: 28, height: 28, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  costLabel: { color: colors.textSecondary, fontSize: 13, fontWeight: "700" },
   costValue: { color: colors.gold, fontSize: 15, fontWeight: "800", fontVariant: ["tabular-nums"] },
   category: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderStrong },
   categoryHeader: { minHeight: 58, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
@@ -207,6 +221,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   entityCopy: { flex: 1, gap: 4 },
   entityName: { color: colors.textPrimary, fontSize: 13, fontWeight: "700" },
   entityCost: { alignItems: "flex-end", gap: 3 },
+  entityResourceCost: { flexDirection: "row", alignItems: "center", gap: 4 },
   entityCostText: { color: colors.gold, fontSize: 11, fontWeight: "700" },
   maxedText: { color: colors.success, fontSize: 10, fontWeight: "900" },
   disclaimer: { color: colors.textMuted, fontSize: 10, lineHeight: 15 },

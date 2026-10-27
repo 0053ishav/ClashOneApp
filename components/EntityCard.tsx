@@ -7,7 +7,7 @@ import type { Village } from "@/types/entity";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 interface EntityCardProps {
   dataId: number;
@@ -40,13 +40,10 @@ export default function EntityCard({
   const progressColor = getProgressColor(status);
   const remaining = Math.max(0, maxLevel - level);
   const isMax = status === "max";
-  const [superIconFailed, setSuperIconFailed] = useState(false);
-
-  useEffect(() => {
-    setSuperIconFailed(false);
-  }, [dataId, isSuperTroop, level]);
-
-  const iconOptions = village ? { village, level, isSuperTroop: isSuperTroop && !superIconFailed } : { level, isSuperTroop: isSuperTroop && !superIconFailed };
+  const [failedSuperIconKey, setFailedSuperIconKey] = useState<string | null>(null);
+  const superIconKey = `${dataId}:${level}:${isSuperTroop}`;
+  const useSuperTroopIcon = isSuperTroop && failedSuperIconKey !== superIconKey;
+  const iconOptions = village ? { village, level, isSuperTroop: useSuperTroopIcon } : { level, isSuperTroop: useSuperTroopIcon };
 
   const content = (
     <View style={[styles.card, compact && styles.cardCompact]}>
@@ -67,7 +64,7 @@ export default function EntityCard({
           allowDownscaling={false}
           cachePolicy="memory-disk"
           onError={() => {
-            if (isSuperTroop && !superIconFailed) setSuperIconFailed(true);
+            if (isSuperTroop && useSuperTroopIcon) setFailedSuperIconKey(superIconKey);
           }}
         />
 

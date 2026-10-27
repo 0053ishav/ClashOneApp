@@ -20,8 +20,6 @@ interface ArmyEntity {
   isSuperTroop?: boolean;
 }
 
-const TROOP_PREVIEW_LIMIT = 6;
-
 export default function ArmySection({ data }: { data: PlayerFull }) {
   const colors = useHomeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -77,7 +75,7 @@ export default function ArmySection({ data }: { data: PlayerFull }) {
           onViewAll={() => router.push("/profile/troops")}
           onPressHeader={() => progressionSheetRef.current?.present("home-troops")}
         >
-          <Grid items={army.home.troops.slice(0, TROOP_PREVIEW_LIMIT)} />
+          <Grid items={army.home.troops} />
         </EntitySection>
       )}
 

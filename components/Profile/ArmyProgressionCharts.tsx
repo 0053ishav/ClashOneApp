@@ -12,6 +12,8 @@ interface Props {
   mode: ChartMode;
   colors: HomeColors;
   onSelectMode: (mode: ChartMode) => void;
+  selectedBucket: LevelBucket["key"] | null;
+  onSelectBucket: (bucket: LevelBucket["key"] | null) => void;
 }
 
 interface LevelBucket {
@@ -31,6 +33,8 @@ export default function ArmyProgressionCharts({
   mode,
   colors,
   onSelectMode,
+  selectedBucket,
+  onSelectBucket,
 }: Props) {
   const buckets = useMemo<LevelBucket[]>(() => {
     const result: LevelBucket[] = [
@@ -110,6 +114,34 @@ export default function ArmyProgressionCharts({
                   );
                 })}
               </Svg>
+              <View style={styles.filters}>
+                {buckets.map((bucket) => {
+                  const selected = selectedBucket === bucket.key;
+                  return (
+                    <Pressable
+                      key={bucket.key}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      onPress={() => onSelectBucket(selected ? null : bucket.key)}
+                      style={[
+                        styles.filterChip,
+                        {
+                          borderColor: selected ? bucket.color : colors.borderStrong,
+                          backgroundColor: selected ? colors.surfaceDark : "transparent",
+                        },
+                      ]}
+                    >
+                      <View style={[styles.filterDot, { backgroundColor: bucket.color }]} />
+                      <Text style={[styles.filterText, { color: colors.textPrimary }]}>
+                        {bucket.label} · {bucket.count}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <Text style={[styles.filterHint, { color: colors.textSecondary }]}>
+                {selectedBucket ? "Showing matching entities below. Tap the selected filter to clear it." : "Tap a category to see exactly which entities need attention below."}
+              </Text>
               <View style={[styles.insight, { backgroundColor: colors.surfaceDark }]}>
                 <View style={[styles.insightDot, { backgroundColor: colors.success }]} />
                 <Text style={[styles.insightText, { color: colors.textSecondary }]}>
@@ -152,6 +184,11 @@ const styles = StyleSheet.create({
   totalBadge: { minWidth: 52, paddingVertical: 6, paddingHorizontal: 9, borderRadius: 11, alignItems: "center" },
   totalValue: { fontSize: 18, fontWeight: "900", fontVariant: ["tabular-nums"] },
   totalLabel: { fontSize: 9, fontWeight: "700" },
+  filters: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  filterChip: { flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1, borderRadius: 10, paddingHorizontal: 9, paddingVertical: 8 },
+  filterDot: { width: 7, height: 7, borderRadius: 4 },
+  filterText: { fontSize: 10, fontWeight: "700" },
+  filterHint: { fontSize: 10, lineHeight: 14 },
   insight: { flexDirection: "row", alignItems: "flex-start", gap: 8, padding: 10, borderRadius: 10 },
   insightDot: { width: 7, height: 7, borderRadius: 4, marginTop: 4 },
   insightText: { flex: 1, fontSize: 11, lineHeight: 16 },

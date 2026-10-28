@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import Svg, { Circle, Line, Rect, Text as SvgText } from "react-native-svg";
+import Svg, { Circle, G, Line, Rect, Text as SvgText } from "react-native-svg";
 import type { ParsedArmyEntity } from "@/utils/profile/parseArmy";
 import type { HomeColors } from "@/theme/home";
 
@@ -100,12 +100,12 @@ export default function ArmyProgressionCharts({
                   const y = 28 + index * BAR_GAP;
                   const barWidth = (bucket.count / maxCount) * 142;
                   return (
-                    <g key={bucket.key}>
+                    <G key={bucket.key}>
                       <SvgText x={0} y={y + 4} fill={colors.textSecondary} fontSize={10} fontWeight="600">{bucket.label}</SvgText>
                       <Rect x={120} y={y - BAR_HEIGHT / 2} width={150} height={BAR_HEIGHT} rx={6} fill={colors.surfaceDark} />
                       <Rect x={120} y={y - BAR_HEIGHT / 2} width={barWidth} height={BAR_HEIGHT} rx={6} fill={bucket.color} />
                       <SvgText x={Math.min(286, 126 + barWidth)} y={y + 4} fill={colors.textPrimary} fontSize={11} fontWeight="700">{String(bucket.count)}</SvgText>
-                    </g>
+                    </G>
                   );
                 })}
               </Svg>

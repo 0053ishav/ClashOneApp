@@ -83,12 +83,13 @@ function getRadarValues(items: ParsedArmyEntity[]): number[] {
 }
 
 function RadarProgressChart({ items, colors }: { items: ParsedArmyEntity[]; colors: HomeColors }) {
-  const width = 320;
-  const height = 226;
+  const width = 340;
+  const height = 244;
   const centerX = width / 2;
-  const centerY = 108;
+  const centerY = 112;
   const radius = 72;
   const values = getRadarValues(items);
+  const averageCompletion = values.length === 0 ? 0 : Math.round(values.reduce((sum, value) => sum + value, 0) / values.length * 100);
   const pointAt = (index: number, value: number) => {
     const angle = (-Math.PI / 2) + (index * 2 * Math.PI) / RADAR_AXES.length;
     return {
@@ -112,13 +113,17 @@ function RadarProgressChart({ items, colors }: { items: ParsedArmyEntity[]; colo
           <Text style={[styles.radarTitle, { color: colors.textPrimary }]}>Army profile</Text>
           <Text style={[styles.radarSubtitle, { color: colors.textSecondary }]}>Average level completion by unit type</Text>
         </View>
-        <Ionicons name="sparkles" size={17} color={colors.gold} />
+        <View style={[styles.radarScore, { borderColor: colors.borderStrong, backgroundColor: colors.surfaceRaised }]}>
+          <Text style={[styles.radarScoreValue, { color: colors.gold }]}>{averageCompletion}%</Text>
+          <Text style={[styles.radarScoreLabel, { color: colors.textSecondary }]}>AVG</Text>
+        </View>
       </View>
       <Svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}>
         <Defs>
           <LinearGradient id="armyRadarFill" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={colors.gold} stopOpacity="0.62" />
-            <Stop offset="1" stopColor={colors.cyan} stopOpacity="0.28" />
+            <Stop offset="0" stopColor={colors.gold} stopOpacity="0.68" />
+            <Stop offset="0.55" stopColor={colors.cyan} stopOpacity="0.38" />
+            <Stop offset="1" stopColor={colors.cyan} stopOpacity="0.16" />
           </LinearGradient>
         </Defs>
         {[0.25, 0.5, 0.75, 1].map((scale) => (
@@ -126,9 +131,9 @@ function RadarProgressChart({ items, colors }: { items: ParsedArmyEntity[]; colo
             key={scale}
             points={polygonPoints(scale)}
             fill="none"
-            stroke={colors.borderStrong}
-            strokeWidth={1}
-            opacity={0.8}
+            stroke={scale === 1 ? colors.cyan : colors.borderStrong}
+            strokeWidth={scale === 1 ? 1.2 : 1}
+            opacity={scale === 1 ? 0.55 : 0.7}
           />
         ))}
         {RADAR_AXES.map((axis, index) => {
@@ -145,26 +150,25 @@ function RadarProgressChart({ items, colors }: { items: ParsedArmyEntity[]; colo
             />
           );
         })}
-        <Polygon points={dataPolygon} fill="url(#armyRadarFill)" stroke={colors.gold} strokeWidth={2} strokeLinejoin="round" />
+        <Polygon points={dataPolygon} fill="url(#armyRadarFill)" stroke={colors.cyan} strokeWidth={2.5} strokeLinejoin="round" />
         {dataPoints.map((point, index) => (
-          <Circle key={RADAR_AXES[index].key} cx={point.x} cy={point.y} r={3.5} fill={colors.gold} stroke={colors.surfaceDark} strokeWidth={1.5} />
+          <g key={RADAR_AXES[index].key}>
+            <Circle cx={point.x} cy={point.y} r={6} fill={colors.cyan} fillOpacity={0.18} />
+            <Circle cx={point.x} cy={point.y} r={3.5} fill={colors.gold} stroke={colors.surfaceDark} strokeWidth={1.5} />
+          </g>
         ))}
         {RADAR_AXES.map((axis, index) => {
-          const point = pointAt(index, 1.28);
+          const point = pointAt(index, 1.34);
           const anchor = point.x < centerX - 8 ? "end" : point.x > centerX + 8 ? "start" : "middle";
           return (
-            <SvgText
-              key={axis.key}
-              x={point.x}
-              y={point.y}
-              fill={colors.textSecondary}
-              fontSize={10}
-              fontWeight="600"
-              textAnchor={anchor}
-              alignmentBaseline="middle"
-            >
-              {axis.label}
-            </SvgText>
+            <g key={axis.key}>
+              <SvgText x={point.x} y={point.y - 3} fill={colors.textPrimary} fontSize={10} fontWeight="700" textAnchor={anchor} alignmentBaseline="middle">
+                {axis.label}
+              </SvgText>
+              <SvgText x={point.x} y={point.y + 9} fill={colors.cyan} fontSize={9} fontWeight="800" textAnchor={anchor} alignmentBaseline="middle">
+                {`${Math.round(values[index] * 100)}%`}
+              </SvgText>
+            </g>
           );
         })}
       </Svg>
@@ -186,6 +190,7 @@ export default function ArmyProgressionCharts({
 }: Props) {
   const [gridWidth, setGridWidth] = useState(0);
   const [selectedEntityKey, setSelectedEntityKey] = useState<string | null>(null);
+  const [overviewView, setOverviewView] = useState<"radar" | "grid">("radar");
 
   const buckets = useMemo<LevelBucket[]>(() => {
     const result: LevelBucket[] = [
@@ -295,7 +300,20 @@ export default function ArmyProgressionCharts({
                   <View style={[styles.completionFill, { width: `${overallCompletion}%`, backgroundColor: colors.success }]} />
                 </View>
               </View>
-              <RadarProgressChart items={items} colors={colors} />
+              <View style={[styles.overviewSwitch, { backgroundColor: colors.surfaceDark, borderColor: colors.borderStrong }]}>
+                <Pressable accessibilityRole="tab" accessibilityState={{ selected: overviewView === "radar" }} onPress={() => setOverviewView("radar")} style={[styles.overviewTab, overviewView === "radar" && { backgroundColor: colors.surfaceRaised }]}>
+                  <Ionicons name="analytics-outline" size={14} color={overviewView === "radar" ? colors.gold : colors.textSecondary} />
+                  <Text style={[styles.overviewTabText, { color: overviewView === "radar" ? colors.textPrimary : colors.textSecondary }]}>Radar</Text>
+                </Pressable>
+                <Pressable accessibilityRole="tab" accessibilityState={{ selected: overviewView === "grid" }} onPress={() => setOverviewView("grid")} style={[styles.overviewTab, overviewView === "grid" && { backgroundColor: colors.surfaceRaised }]}>
+                  <Ionicons name="grid-outline" size={14} color={overviewView === "grid" ? colors.gold : colors.textSecondary} />
+                  <Text style={[styles.overviewTabText, { color: overviewView === "grid" ? colors.textPrimary : colors.textSecondary }]}>Grid</Text>
+                </Pressable>
+              </View>
+              {overviewView === "radar" ? (
+                <RadarProgressChart items={items} colors={colors} />
+              ) : (
+                <>
               <View
                 accessibilityLabel={`${gridEntities.length} units arranged by level progress`}
                 onLayout={(event) => {
@@ -411,6 +429,8 @@ export default function ArmyProgressionCharts({
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
               </Pressable>
+                </>
+              )}
             </>
           )}
         </View>
@@ -450,11 +470,17 @@ const styles = StyleSheet.create({
   completionValue: { fontSize: 11, fontWeight: "900", fontVariant: ["tabular-nums"] },
   completionTrack: { height: 7, borderRadius: 6, overflow: "hidden" },
   completionFill: { height: "100%", borderRadius: 6 },
+  overviewSwitch: { flexDirection: "row", alignSelf: "stretch", padding: 4, borderRadius: 12, borderWidth: 1, gap: 4 },
+  overviewTab: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 35, borderRadius: 9, paddingHorizontal: 12 },
+  overviewTabText: { fontSize: 11, fontWeight: "800" },
   radarCard: { borderWidth: 1, borderRadius: 16, padding: 12, gap: 4, overflow: "hidden" },
   radarHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
   radarHeaderCopy: { flex: 1, gap: 3 },
   radarTitle: { fontSize: 13, fontWeight: "900" },
   radarSubtitle: { fontSize: 10, lineHeight: 14 },
+  radarScore: { minWidth: 52, alignItems: "center", justifyContent: "center", borderWidth: 1, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 5 },
+  radarScoreValue: { fontSize: 15, fontWeight: "900", fontVariant: ["tabular-nums"] },
+  radarScoreLabel: { fontSize: 8, fontWeight: "900", letterSpacing: 1 },
   radarFooter: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 2 },
   radarLegendDot: { width: 6, height: 6, borderRadius: 3 },
   radarFooterText: { flex: 1, fontSize: 9, lineHeight: 13 },

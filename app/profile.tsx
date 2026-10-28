@@ -5,6 +5,10 @@ import StatsGrid from "@/components/Profile/StatsGrid";
 import ProfileHeroCard from "@/components/Profile/ProfileHeroCard";
 import ProgressSection from "@/components/Profile/ProgressSection";
 import { fetchFullPlayer } from "@/services/clashApi";
+import {
+  getCachedPlayerProfile,
+  saveCachedPlayerProfile,
+} from "@/services/playerProfileCacheService";
 import { getEntities } from "@/services/entityService";
 import { useAccountStore } from "@/stores/accountStore";
 import { PlayerFull } from "@/types/playerFull";
@@ -12,7 +16,7 @@ import { EntityRecord } from "@/types/upgrade";
 import { getSessionSource, track } from "@/utils/analytics/analytics";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useState , useMemo } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -41,53 +45,95 @@ export default function ProfileScreen() {
     track("screen_view", { screen: "profile" });
   }, []);
 
-  const loadProfile = useCallback(async () => {
+  const loadRequestId = useRef(0);
+
+  const loadProfile = useCallback(async (forceRefresh = false) => {
+    const requestId = ++loadRequestId.current;
+    const playerTag = activeTag;
+
     try {
       setLoading(true);
       setError(null);
 
-      if (!activeTag) {
+      if (!playerTag) {
+        setData(null);
+        setEntities([]);
         setError("No player tag found");
         return;
       }
+
+      // Read local SQLite first. A cached profile prevents an automatic network
+      // request whenever this screen mounts or the active account changes.
+      if (!forceRefresh) {
+        const cached = await getCachedPlayerProfile(playerTag);
+        if (requestId !== loadRequestId.current) return;
+
+        if (cached) {
+          setData(cached.profile);
+          const entityData = await getEntities(playerTag);
+          if (requestId === loadRequestId.current) {
+            setEntities(entityData);
+          }
+          return;
+        }
+      }
+
       track("player_fetching", {
         source: getSessionSource(),
-        trigger: "profile_screen",
+        trigger: forceRefresh ? "profile_refresh" : "profile_cache_miss",
       });
 
-      const playerData = await fetchFullPlayer(activeTag);
-      const entityData = await getEntities(activeTag);
+      const playerData = await fetchFullPlayer(playerTag);
+      if (requestId !== loadRequestId.current) return;
+
+      setData(playerData);
+
+      // A cache write failure should not discard a successful live API response.
+      try {
+        await saveCachedPlayerProfile(playerTag, playerData);
+      } catch (cacheError) {
+        console.warn("Failed to cache player profile:", cacheError);
+      }
+
+      const entityData = await getEntities(playerTag);
+      if (requestId !== loadRequestId.current) return;
 
       track("player_fetching_success", {
         source: getSessionSource(),
-        trigger: "profile_screen",
+        trigger: forceRefresh ? "profile_refresh" : "profile_cache_miss",
       });
 
-      setData(playerData);
       setEntities(entityData);
     } catch (err) {
+      if (requestId !== loadRequestId.current) return;
+
       track("player_fetching_failed", {
         source: getSessionSource(),
-        trigger: "profile_screen",
+        trigger: forceRefresh ? "profile_refresh" : "profile_screen",
         error: err,
       });
       setError(err instanceof Error ? err.message : "Failed to load profile");
       console.error("Profile load error:", err);
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestId.current) {
+        setLoading(false);
+      }
     }
   }, [activeTag]);
 
   useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
+    setData(null);
+    setEntities([]);
+    setError(null);
+    void loadProfile();
+  }, [activeTag, loadProfile]);
 
   const onRefresh = async () => {
     track("profile_refresh", {
       source: getSessionSource(),
     });
     setRefreshing(true);
-    await loadProfile();
+    await loadProfile(true);
     setRefreshing(false);
   };
 
@@ -102,7 +148,7 @@ export default function ProfileScreen() {
     );
   }
 
-  if (error || !data) {
+  if (!data) {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <View style={styles.errorIcon}>

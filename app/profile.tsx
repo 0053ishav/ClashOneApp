@@ -37,6 +37,7 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [profileUpdatedAt, setProfileUpdatedAt] = useState<number | null>(null);
 
   const activeTag = useAccountStore((s) => s.activeTag);
   const [entities, setEntities] = useState<EntityRecord[]>([]);
@@ -58,6 +59,7 @@ export default function ProfileScreen() {
       if (!playerTag) {
         setData(null);
         setEntities([]);
+        setProfileUpdatedAt(null);
         setError("No player tag found");
         return;
       }
@@ -70,6 +72,7 @@ export default function ProfileScreen() {
 
         if (cached) {
           setData(cached.profile);
+          setProfileUpdatedAt(cached.updatedAt);
           const entityData = await getEntities(playerTag);
           if (requestId === loadRequestId.current) {
             setEntities(entityData);
@@ -91,7 +94,9 @@ export default function ProfileScreen() {
       // A cache write failure should not discard a successful live API response.
       try {
         await saveCachedPlayerProfile(playerTag, playerData);
+        setProfileUpdatedAt(Date.now());
       } catch (cacheError) {
+        setProfileUpdatedAt(null);
         console.warn("Failed to cache player profile:", cacheError);
       }
 
@@ -124,6 +129,7 @@ export default function ProfileScreen() {
   useEffect(() => {
     setData(null);
     setEntities([]);
+    setProfileUpdatedAt(null);
     setError(null);
     void loadProfile();
   }, [activeTag, loadProfile]);
@@ -255,8 +261,18 @@ export default function ProfileScreen() {
         <ProgressSection data={data} />
 
         <View style={styles.footer}>
-          <Ionicons name="checkmark-circle" size={13} color={colors.success} />
-          <Text style={styles.footerText}>Synced from Clash of Clans API</Text>
+          <Ionicons
+            name={error ? "alert-circle" : "checkmark-circle"}
+            size={13}
+            color={error ? colors.danger : colors.success}
+          />
+          <Text style={styles.footerText}>
+            {error
+              ? "Refresh failed; showing saved profile"
+              : profileUpdatedAt
+                ? `Saved profile · ${new Date(profileUpdatedAt).toLocaleString()}`
+                : "Synced from Clash of Clans API"}
+          </Text>
         </View>
       </ScrollView>
     </View>

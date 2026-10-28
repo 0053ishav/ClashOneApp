@@ -91,7 +91,7 @@ const ProgressionBreakdownSheet = forwardRef<ProgressionBreakdownSheetRef, Props
       dismiss: () => sheetRef.current?.dismiss(),
     }), []);
 
-    const { visibleCategories, allVisibleItems, sortedCategories, visibleItems, overall } = useMemo(() => {
+    const { allVisibleItems, sortedCategories, overall } = useMemo(() => {
       const visibleCategories = selectedCategory
         ? categories.filter((category) => category.key === selectedCategory)
         : categories;
@@ -133,7 +133,7 @@ const ProgressionBreakdownSheet = forwardRef<ProgressionBreakdownSheetRef, Props
         }),
       }));
       const visibleItems = sortedCategories.flatMap((category) => category.items);
-      return { visibleCategories, allVisibleItems, sortedCategories, visibleItems, overall: summarize(visibleItems) };
+      return { allVisibleItems, sortedCategories, overall: summarize(visibleItems) };
     }, [categories, selectedCategory, selectedBucket, sortMode]);
 
     useEffect(() => {

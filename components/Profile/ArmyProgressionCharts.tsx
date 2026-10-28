@@ -94,7 +94,12 @@ export default function ArmyProgressionCharts({
 
   const total = items.length;
   const maxedCount = buckets[0].count;
+  const remainingLevels = gridEntities.reduce((sum, entity) => sum + entity.remainingLevels, 0);
+  const totalPossibleLevels = gridEntities.reduce((sum, entity) => sum + Math.max(0, entity.maxLevel), 0);
   const readiness = total === 0 ? 0 : Math.round((maxedCount / total) * 100);
+  const overallCompletion = totalPossibleLevels === 0
+    ? 0
+    : Math.round((gridEntities.reduce((sum, entity) => sum + Math.max(0, Math.min(entity.level, entity.maxLevel)), 0) / totalPossibleLevels) * 100);
   const columns = gridWidth > 0
     ? Math.max(1, Math.min(MAX_COLUMNS, Math.floor((gridWidth + GRID_GAP) / (MIN_CELL_WIDTH + GRID_GAP))))
     : MAX_COLUMNS;
@@ -135,15 +140,11 @@ export default function ArmyProgressionCharts({
             <View style={styles.heroCopy}>
               <Text style={[styles.eyebrow, { color: colors.textSecondary }]}>ARMY READINESS</Text>
               <Text style={[styles.heroTitle, { color: colors.textPrimary }]}>
-                {total === 0 ? "No data yet" : readiness === 100 ? "Army mastered" : readiness >= 60 ? "Looking strong" : "Room to grow"}
+                {total === 0 ? "No data yet" : `${remainingLevels} levels to go`}
               </Text>
               <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
-                {total === 0 ? "Add progression data to see your readiness." : `${maxedCount} of ${total} units maxed`}
+                {total === 0 ? "Add progression data to see your army status." : `${maxedCount} of ${total} units maxed · ${readiness}% readiness`}
               </Text>
-            </View>
-            <View style={[styles.scoreRing, { borderColor: colors.gold, backgroundColor: colors.surfaceDark }]}>
-              <Text style={[styles.scoreValue, { color: colors.gold }]}>{readiness}<Text style={styles.scoreUnit}>%</Text></Text>
-              <Text style={[styles.scoreCaption, { color: colors.textSecondary }]}>MAXED</Text>
             </View>
           </View>
 
@@ -151,6 +152,15 @@ export default function ArmyProgressionCharts({
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No army progression data is available for this category.</Text>
           ) : (
             <>
+              <View style={styles.completionBlock}>
+                <View style={styles.completionLabels}>
+                  <Text style={[styles.completionLabel, { color: colors.textSecondary }]}>Level completion</Text>
+                  <Text style={[styles.completionValue, { color: colors.textPrimary }]}>{overallCompletion}%</Text>
+                </View>
+                <View style={[styles.completionTrack, { backgroundColor: colors.surfaceDark }]}>
+                  <View style={[styles.completionFill, { width: `${overallCompletion}%`, backgroundColor: colors.success }]} />
+                </View>
+              </View>
               <View
                 accessibilityLabel={`${gridEntities.length} units arranged by level progress`}
                 onLayout={(event) => {
@@ -295,10 +305,12 @@ const styles = StyleSheet.create({
   eyebrow: { fontSize: 9, fontWeight: "900", letterSpacing: 1.4 },
   heroTitle: { fontSize: 19, fontWeight: "900", letterSpacing: -0.5 },
   heroSubtitle: { fontSize: 11, lineHeight: 16 },
-  scoreRing: { width: 76, height: 76, borderWidth: 2, borderRadius: 38, alignItems: "center", justifyContent: "center", gap: 1 },
-  scoreValue: { fontSize: 23, fontWeight: "900", fontVariant: ["tabular-nums"] },
-  scoreUnit: { fontSize: 12, fontWeight: "800" },
-  scoreCaption: { fontSize: 8, fontWeight: "900", letterSpacing: 0.8 },
+  completionBlock: { gap: 7 },
+  completionLabels: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  completionLabel: { fontSize: 11, fontWeight: "700" },
+  completionValue: { fontSize: 11, fontWeight: "900", fontVariant: ["tabular-nums"] },
+  completionTrack: { height: 7, borderRadius: 6, overflow: "hidden" },
+  completionFill: { height: "100%", borderRadius: 6 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: GRID_GAP },
   cell: { borderWidth: 1, borderRadius: 4, overflow: "hidden", justifyContent: "flex-end" },
   cellFill: { position: "absolute", left: 0, right: 0, bottom: 0, borderRadius: 2 },

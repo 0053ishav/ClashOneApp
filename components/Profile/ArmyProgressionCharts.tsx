@@ -161,14 +161,14 @@ function RadarProgressChart({ items, colors }: { items: ParsedArmyEntity[]; colo
           const point = pointAt(index, 1.34);
           const anchor = point.x < centerX - 8 ? "end" : point.x > centerX + 8 ? "start" : "middle";
           return (
-            <g key={axis.key}>
+            <G key={axis.key}>
               <SvgText x={point.x} y={point.y - 3} fill={colors.textPrimary} fontSize={10} fontWeight="700" textAnchor={anchor} alignmentBaseline="middle">
                 {axis.label}
               </SvgText>
               <SvgText x={point.x} y={point.y + 9} fill={colors.cyan} fontSize={9} fontWeight="800" textAnchor={anchor} alignmentBaseline="middle">
                 {`${Math.round(values[index] * 100)}%`}
               </SvgText>
-            </g>
+            </G>
           );
         })}
       </Svg>

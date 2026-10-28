@@ -16,9 +16,44 @@ function normalizePlayerTag(playerTag: string): string {
   return normalizedTag;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Treat the SQLite JSON column as untrusted input. TypeScript types do not
+ * validate data that was serialized by an older app version or corrupted on disk.
+ */
+function isPlayerFull(value: unknown, expectedTag: string): value is PlayerFull {
+  if (!isRecord(value)) return false;
+
+  const requiredStringFields = ["tag", "name"] as const;
+  if (!requiredStringFields.every((key) => typeof value[key] === "string")) {
+    return false;
+  }
+
+  if (normalizePlayerTag(value.tag as string) !== expectedTag) return false;
+
+  const requiredNumberFields = [
+    "expLevel",
+    "townHallLevel",
+    "trophies",
+    "bestTrophies",
+    "attackWins",
+    "defenseWins",
+    "warStars",
+    "donations",
+    "donationsReceived",
+  ] as const;
+
+  return requiredNumberFields.every(
+    (key) => typeof value[key] === "number" && Number.isFinite(value[key]),
+  );
+}
+
 /**
  * Read the latest locally cached profile for a player.
- * Cache keys are normalized so casing/whitespace differences cannot split accounts.
+ * Cache keys and embedded tags are normalized to prevent account mismatches.
  */
 export async function getCachedPlayerProfile(
   playerTag: string,
@@ -41,12 +76,14 @@ export async function getCachedPlayerProfile(
   }
 
   try {
-    return {
-      profile: JSON.parse(row.profile_json) as PlayerFull,
-      updatedAt: row.updated_at,
-    };
+    const parsed: unknown = JSON.parse(row.profile_json);
+    if (!isPlayerFull(parsed, normalizedTag) || !Number.isFinite(row.updated_at)) {
+      return null;
+    }
+
+    return { profile: parsed, updatedAt: row.updated_at };
   } catch {
-    // A corrupt cache entry is treated as a miss and replaced on the next fetch.
+    // Invalid or corrupt cache entries are misses and will be replaced by a fetch.
     return null;
   }
 }
@@ -57,6 +94,10 @@ export async function saveCachedPlayerProfile(
   profile: PlayerFull,
 ): Promise<void> {
   const normalizedTag = normalizePlayerTag(playerTag);
+  if (!isPlayerFull(profile, normalizedTag)) {
+    throw new Error("INVALID_PLAYER_PROFILE");
+  }
+
   const db = await getDB();
 
   await db.runAsync(

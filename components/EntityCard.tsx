@@ -275,7 +275,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   },
 
   levelBadgeDefault: {
-    backgroundColor: "#1b2637",
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 5,
     minWidth: 22,
     height: 20,

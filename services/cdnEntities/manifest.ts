@@ -9,7 +9,7 @@ export class ManifestFetchError extends Error {
   readonly status: number | null;
   readonly retryAfterMs: number | null;
 
-  constructor(message: string, options: { status?: number; retryAfterMs?: number } = {}) {
+  constructor(message: string, options: { status?: number | null; retryAfterMs?: number | null } = {}) {
     super(message);
     this.name = "ManifestFetchError";
     this.status = options.status ?? null;
@@ -20,6 +20,7 @@ export class ManifestFetchError extends Error {
 let cachedManifest: { value: Manifest; expiresAt: number } | null = null;
 let inFlightRequest: Promise<Manifest> | null = null;
 let retryNotBefore = 0;
+let retryStatus: number | null = null;
 
 function parseRetryAfter(value: string | null, now: number): number | null {
   if (!value) return null;
@@ -57,7 +58,7 @@ export async function fetchManifest(): Promise<Manifest> {
     const retryAfterMs = retryNotBefore - now;
     throw new ManifestFetchError(
       `Manifest request is cooling down; retry in ${Math.ceil(retryAfterMs / 1000)}s`,
-      { status: 429, retryAfterMs },
+      { status: retryStatus, retryAfterMs },
     );
   }
 
@@ -67,6 +68,7 @@ export async function fetchManifest(): Promise<Manifest> {
       response = await fetch(`${ENV.BACKEND}/v2/manifest`);
     } catch (error) {
       retryNotBefore = Date.now() + NETWORK_FAILURE_COOLDOWN_MS;
+      retryStatus = null;
       throw new ManifestFetchError(
         `Failed to fetch manifest: network error${error instanceof Error ? `: ${error.message}` : ""}`,
       );
@@ -81,6 +83,7 @@ export async function fetchManifest(): Promise<Manifest> {
 
       if (retryAfterMs !== null) {
         retryNotBefore = nowAtFailure + retryAfterMs;
+        retryStatus = response.status;
       }
 
       throw new ManifestFetchError(
@@ -103,6 +106,7 @@ export async function fetchManifest(): Promise<Manifest> {
       expiresAt: Date.now() + MANIFEST_CACHE_TTL_MS,
     };
     retryNotBefore = 0;
+    retryStatus = null;
     return manifest;
   })();
 
@@ -120,4 +124,5 @@ export async function fetchManifest(): Promise<Manifest> {
 export function invalidateManifestCache(): void {
   cachedManifest = null;
   retryNotBefore = 0;
+  retryStatus = null;
 }

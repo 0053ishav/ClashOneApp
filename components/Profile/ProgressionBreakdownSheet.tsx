@@ -5,6 +5,7 @@ import { ProgressionQueries } from "@/services/progression/progressionQueries";
 import { ResourceType } from "@/types/resource";
 import { ResourceIcon, getResourceColor } from "@/components/ResourceCost";
 import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
+import ArmyProgressionCharts from "@/components/Profile/ArmyProgressionCharts";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from "@gorhom/bottom-sheet";
@@ -74,6 +75,7 @@ const ProgressionBreakdownSheet = forwardRef<ProgressionBreakdownSheetRef, Props
     const sheetRef = useRef<BottomSheetModal>(null);
     const [expanded, setExpanded] = useState<string[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [chartMode, setChartMode] = useState<"distribution" | "history">("distribution");
 
     useImperativeHandle(ref, () => ({
       present: (categoryKey) => {
@@ -123,6 +125,8 @@ const ProgressionBreakdownSheet = forwardRef<ProgressionBreakdownSheetRef, Props
               <Text style={styles.summaryValue}>{overall.remainingEntities}</Text>
             </View>
           </View>
+          <ArmyProgressionCharts items={visibleItems} mode={chartMode} colors={colors} onSelectMode={setChartMode} />
+
           <View style={styles.costCard}>
             <Text style={styles.sectionTitle}>Estimated total cost</Text>
             {overall.costs.size === 0 ? (

@@ -5,10 +5,7 @@ import { useEntityStore } from "@/stores/entityStore";
 import type { EntityType, Village } from "@/types/entity";
 import { calculateCraftedDefenseTotalLevel } from "./calculateCraftedDefenseTotalLevel";
 import { resolveCraftedDefenseIconLevel } from "./resolveCraftedDefenseIconLevel";
-import {
-  resolveProgressionIconLevel,
-  type ProgressionImageRange,
-} from "./resolveProgressionIconLevel";
+import { resolveProgressionIconLevelOrFirst } from "./resolveProgressionIconLevel";
 
 export const FALLBACK_ICON =
   "https://cdn.clashwidget.online/entities/fallbacks/fallback.png";
@@ -18,6 +15,9 @@ interface ResolveEntityIconOptions {
   type?: EntityType;
   subType?: string;
   level?: number;
+  isSuperTroop?: boolean;
+  /** Use the level-independent troop icon asset instead of a level-specific image. */
+  useTroopIcon?: boolean;
   isCrafted?: boolean;
   moduleId?: number;
   craftedModuleLevels?: Record<number, number>;
@@ -47,6 +47,14 @@ const BUILDER_ICON_CATEGORIES: Partial<
   troop: "troops",
 };
 
+function resolveLevelBasedIconLevel(entityId: number, level: number): number {
+  const progression = ProgressionQueries.getProgression(entityId);
+  return (
+    resolveProgressionIconLevelOrFirst(level, progression?.images) ??
+    level
+  );
+}
+
 export function resolveEntityIcon(
   entityId: number,
   options?: ResolveEntityIconOptions,
@@ -73,7 +81,7 @@ export function resolveEntityIcon(
           )
         : options.level;
 
-    if (totalLevel == null) {
+    if (totalLevel == null || !Number.isFinite(totalLevel) || totalLevel <= 0) {
       return FALLBACK_ICON;
     }
 
@@ -110,11 +118,23 @@ export function resolveEntityIcon(
     options?.subType ??
     entity.subType;
 
-  const level =
-    options?.level;
+  const level = options?.level;
+
+  // Super Troops are nested variants, not independent numeric entities.
+  if (options?.isSuperTroop) {
+    return entity.superTroop?.icon ?? entity.icon ?? FALLBACK_ICON;
+  }
+
+  // Troop cards can use a stable icon asset independent of the troop's level.
+  // The CDN uses "home" and "builder" namespaces for the two villages.
+  if (options?.useTroopIcon && type === "troop") {
+    const villagePath = village === "builderBase" ? "builder" : "home";
+    return `${ENV.CDN_BASE}/v2/${villagePath}/troops/${entityId}/icon.png`;
+  }
 
   /*
-   * No level means use the metadata icon.
+   * No level means use the metadata icon. Invalid non-positive levels use
+   * the first level image rather than generating a /0.png or negative URL.
    */
   if (level == null) {
     return (
@@ -123,51 +143,33 @@ export function resolveEntityIcon(
     );
   }
 
+  const safeLevel =
+    Number.isFinite(level) && level > 0
+      ? level
+      : 1;
+
   /*
    * Town Hall
-   *
-   * Metadata:
-   * type    = building
-   * subType = TOWNHALL
-   *
-   * CDN:
-   * /v2/home/townhalls/{level}.png
    */
   if (
     village === "home" &&
     subType === "TOWNHALL"
   ) {
-    return `${ENV.CDN_BASE}/v2/home/townhalls/${level}.png`;
+    return `${ENV.CDN_BASE}/v2/home/townhalls/${safeLevel}.png`;
   }
 
   /*
    * Builder Hall
-   *
-   * Metadata:
-   * type    = building
-   * subType = BUILDERHALL
-   * village = builder
-   *
-   * App uses "builderBase" for the village.
-   *
-   * CDN:
-   * /v2/builder/builderhall/{level}.png
    */
   if (
     village === "builderBase" &&
     subType === "BUILDERHALL"
   ) {
-    return `${ENV.CDN_BASE}/v2/builder/builderhalls/${level}.png`;
+    return `${ENV.CDN_BASE}/v2/builder/builderhalls/${safeLevel}.png`;
   }
 
   /*
-   * Home Heroes
-   *
-   * Heroes have a single icon per entity.
-   * They do not have level-specific images.
-   *
-   * CDN:
-   * /v2/home/heroes/{entityId}/icon.png
+   * Heroes have a single icon per entity, independent of level.
    */
   if (
     village === "home" &&
@@ -176,12 +178,6 @@ export function resolveEntityIcon(
     return `${ENV.CDN_BASE}/v2/home/heroes/${entityId}/icon.png`;
   }
 
-  /*
-   * Builder Heroes
-   *
-   * CDN:
-   * /v2/builder/heroes/{entityId}/icon.png
-   */
   if (
     village === "builderBase" &&
     type === "hero"
@@ -190,13 +186,7 @@ export function resolveEntityIcon(
   }
 
   /*
-   * Home Pets & Guardians.
-   *
-   * Pets and Guardians have a single level-independent icon.
-   * Their CDN image is always 1.png.
-   *
-   * CDN:
-   * /v2/home/{category}/{entityId}/1.png
+   * Home pets, guardians and spells have a single level-independent icon.
    */
   if (
     village === "home" &&
@@ -210,48 +200,32 @@ export function resolveEntityIcon(
   }
 
   /*
-   * Normal Home entities.
+   * Home entities use progression image ranges when available. If the level
+   * is outside the configured ranges, use the first valid configured image.
    */
   if (village === "home") {
-    const category =
-      HOME_ICON_CATEGORIES[type];
+    const category = HOME_ICON_CATEGORIES[type];
+
     if (category) {
-      return `${ENV.CDN_BASE}/v2/home/${category}/${entityId}/${level}.png`;
+      const iconLevel = resolveLevelBasedIconLevel(entityId, safeLevel);
+      return `${ENV.CDN_BASE}/v2/home/${category}/${entityId}/${iconLevel}.png`;
     }
   }
 
   /*
-   * Normal Builder Base entities.
+   * Builder Base entities use the same range resolution as Home entities.
    */
   if (village === "builderBase") {
     const category = BUILDER_ICON_CATEGORIES[type];
 
     if (category) {
-      if (type === "troop") {
-        /*
-         * Troop progression may define image ranges without those ranges
-         * being part of the shared ProgressionData domain type.
-         */
-        const progression = ProgressionQueries.getProgression(entityId) as
-          | { images?: ProgressionImageRange[] }
-          | undefined;
-        const iconLevel = resolveProgressionIconLevel(
-          level,
-          progression?.images,
-        );
-
-        if (iconLevel != null) {
-          return `${ENV.CDN_BASE}/v2/builder/${category}/${entityId}/${iconLevel}.png`;
-        }
-      }
-
-      return `${ENV.CDN_BASE}/v2/builder/${category}/${entityId}/${level}.png`;
+      const iconLevel = resolveLevelBasedIconLevel(entityId, safeLevel);
+      return `${ENV.CDN_BASE}/v2/builder/${category}/${entityId}/${iconLevel}.png`;
     }
   }
 
   /*
-   * Unknown category:
-   * fall back to metadata icon.
+   * Unknown category: fall back to metadata icon.
    */
   return (
     entity.icon ??

@@ -6,12 +6,12 @@ import {
 } from "@gorhom/bottom-sheet";
 import React from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { MagicItemTimeSaved } from "@/components/home/MagicItemActivitySummary";
 import { ENV } from "@/config/env";
 import type { ProgressionApplicationResult } from "@/engine/progression/models";
 import type { Village } from "@/types/entity";
-import { ResourceType } from "@/types/resource";
 import type { Upgrade } from "@/types/upgrade";
 import { flattenProgressionStats } from "@/utils/flattenProgressionStats";
 import { resolveResourceIcon } from "@/utils/icons/resolveResourceIcon";
@@ -19,6 +19,7 @@ import { ProgressionQueries } from "@/services/progression/progressionQueries";
 import { calculateSuperchargeProgression } from "@/engine/progression/operations/calculateSuperchargeProgression";
 import { resolveUpgradeIcon } from "@/utils/icons/resolveUpgradeIcon";
 import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
+import { getResourceColor } from "@/components/ResourceCost";
 import type { HomeColors } from "@/theme/home";
 import { useHomeColors } from "@/theme/useHomeColors";
 
@@ -58,6 +59,7 @@ export function UpgradeActionModal({
   onUseBook,
 }: UpgradeActionModalProps) {
   const colors = useHomeColors();
+  const insets = useSafeAreaInsets();
   const styles = React.useMemo(() => createStyles(colors), [colors]);
   const bottomSheetRef = React.useRef<BottomSheetModal>(null);
 
@@ -144,7 +146,7 @@ export function UpgradeActionModal({
    * -------------------------------------------------------
    */
 
-  const formatDuration = (seconds: number) => {
+  const formatDuration = (seconds?: number) => {
     if (!seconds) {
       return "—";
     }
@@ -231,31 +233,7 @@ export function UpgradeActionModal({
     return upgrade.village === "builderBase" ? "Builder Base" : "Home Village";
   };
 
-  const getResourceColor = (resource?: ResourceType) => {
-    switch (resource) {
-      case ResourceType.GOLD:
-      case ResourceType.BUILDER_GOLD:
-        return "#facc15";
 
-      case ResourceType.ELIXIR:
-        return "#d946ef";
-
-      case ResourceType.DARK_ELIXIR:
-        return "#a78bfa";
-
-      case ResourceType.BUILDER_ELIXIR:
-        return "#fb923c";
-
-      case ResourceType.GEMS:
-        return "#22d3ee";
-
-      case ResourceType.SEASON_POINTS:
-        return "#f59e0b";
-
-      default:
-        return colors.textSecondary;
-    }
-  };
 
   /*
    * -------------------------------------------------------
@@ -359,7 +337,7 @@ export function UpgradeActionModal({
     resourceType != null ? resolveResourceIcon(resourceType) : undefined;
 
   const resourceColor =
-    resourceType != null ? getResourceColor(resourceType) : undefined;
+    resourceType != null ? getResourceColor(resourceType, colors) : undefined;
 
   /*
    * -------------------------------------------------------
@@ -370,6 +348,18 @@ export function UpgradeActionModal({
   const hallIcon =
     progression?.requiredHallLevel != null
       ? resolveHallIcon(upgrade.village, progression.requiredHallLevel)
+      : undefined;
+
+  const hallLevel = progression?.currentHallLevel;
+  const availableSuperchargeLevel =
+    upgrade.upgradeKind === "SUPERCHARGE" && hallLevel != null
+      ? Math.max(
+          0,
+          ...Object.entries(superchargeData?.supercharge ?? {})
+            .filter(([, levelData]) => levelData.hallLevel <= hallLevel)
+            .map(([level]) => Number(level))
+            .filter(Number.isFinite),
+        )
       : undefined;
 
   // The target level owns the laboratory requirement (e.g. Giant 12 → 13
@@ -415,12 +405,30 @@ export function UpgradeActionModal({
    * -------------------------------------------------------
    */
 
-  const currentStats = flattenProgressionStats(progression?.currentStats);
+  const isSupercharge = upgrade.upgradeKind === "SUPERCHARGE";
+  const isFullySupercharged =
+    isSupercharge &&
+    superchargeProgression != null &&
+    superchargeProgression.currentLevel >= superchargeProgression.maxLevel;
+  const currentSuperchargeLevel = upgrade.currentSuperchargeLevel ?? 0;
+  const nextSuperchargeLevel =
+    upgrade.nextSuperchargeLevel ?? superchargeProgression?.nextLevel;
+  const currentSuperchargeStats =
+    currentSuperchargeLevel > 0
+      ? superchargeData?.supercharge?.[currentSuperchargeLevel]?.stats
+      : progression?.currentStats;
+  const nextSuperchargeStats =
+    nextSuperchargeLevel != null
+      ? superchargeData?.supercharge?.[nextSuperchargeLevel]?.stats
+      : undefined;
+
+  const currentStats = flattenProgressionStats(
+    isSupercharge ? currentSuperchargeStats : progression?.currentStats,
+  );
   const nextStatsByPath = new Map(
-    flattenProgressionStats(progression?.nextStats).map((stat) => [
-      stat.path,
-      stat.value,
-    ]),
+    flattenProgressionStats(
+      isSupercharge ? nextSuperchargeStats : progression?.nextStats,
+    ).map((stat) => [stat.path, stat.value]),
   );
   const hasStats = currentStats.length > 0;
 
@@ -492,7 +500,10 @@ export function UpgradeActionModal({
       enableDynamicSizing={false}
     >
       <BottomSheetScrollView
-        contentContainerStyle={styles.contentContainer}
+        contentContainerStyle={[
+          styles.contentContainer,
+          { paddingBottom: insets.bottom + 24 },
+        ]}
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
@@ -667,18 +678,18 @@ export function UpgradeActionModal({
             )}
 
             <Text style={styles.levelLabel}>
-              {upgrade.upgradeKind === "SUPERCHARGE"
-                ? "NEXT CHARGE"
-                : isMaxLevel
-                  ? "STATUS"
+              {isMaxLevel || isFullySupercharged
+                ? "STATUS"
+                : upgrade.upgradeKind === "SUPERCHARGE"
+                  ? "NEXT CHARGE"
                   : "NEXT"}
             </Text>
 
             <Text style={styles.nextLevelNumber}>
-              {upgrade.upgradeKind === "SUPERCHARGE"
-                ? (upgrade.nextSuperchargeLevel ?? "—")
-                : isMaxLevel
-                  ? "MAX"
+              {isMaxLevel || isFullySupercharged
+                ? "MAX"
+                : upgrade.upgradeKind === "SUPERCHARGE"
+                  ? (upgrade.nextSuperchargeLevel ?? "—")
                   : (nextLevel ?? "—")}
             </Text>
           </View>
@@ -747,7 +758,7 @@ export function UpgradeActionModal({
                 <DetailRow
                   colors={colors}
                   styles={styles}
-                  label="Next charge duration"
+                  label="Current charge duration"
                   value={
                     superchargeProgression.nextUpgradeTime != null
                       ? formatDuration(superchargeProgression.nextUpgradeTime)
@@ -758,15 +769,30 @@ export function UpgradeActionModal({
                   colors={colors}
                   styles={styles}
                   label="Future charge cost"
-                  value={formatGameCost(superchargeProgression.totalCost)}
-                  valueIconUri={resourceIcon}
+                  value={
+                    superchargeProgression.remainingLevels === 0 &&
+                    superchargeProgression.nextLevel != null
+                      ? "None remaining"
+                      : formatGameCost(superchargeProgression.totalCost)
+                  }
+                  valueIconUri={
+                    superchargeProgression.remainingLevels === 0 &&
+                    superchargeProgression.nextLevel != null
+                      ? undefined
+                      : resourceIcon
+                  }
                   valueColor={resourceColor}
                 />
                 <DetailRow
                   colors={colors}
                   styles={styles}
                   label="Future charge levels"
-                  value={String(superchargeProgression.remainingLevels)}
+                  value={
+                    superchargeProgression.remainingLevels === 0 &&
+                    superchargeProgression.nextLevel != null
+                      ? "Final charge in progress"
+                      : String(superchargeProgression.remainingLevels)
+                  }
                 />
               </View>
             )}
@@ -806,25 +832,31 @@ export function UpgradeActionModal({
                 </Text>
 
                 <Text style={styles.hallAvailabilityValue}>
-                  {craftedProgression
-                    ? craftedProgression.isMaxLevel
-                      ? `${craftedProgression.moduleName} · MAX LEVEL`
-                      : `${craftedProgression.moduleName} → Level ${achievableLevel}`
-                    : `Level ${achievableLevel ?? "—"}`}
+                  {isSupercharge
+                    ? `Supercharge level ${availableSuperchargeLevel ?? "—"} available`
+                    : craftedProgression
+                      ? craftedProgression.isMaxLevel
+                        ? `${craftedProgression.moduleName} · MAX LEVEL`
+                        : `${craftedProgression.moduleName} → Level ${achievableLevel}`
+                      : `Level ${achievableLevel ?? "—"}`}
                 </Text>
 
                 <Text style={styles.hallAvailabilityHall}>
-                  {craftedProgression
-                    ? craftedProgression.defenseName
-                    : "Maximum available level"}
+                  {isSupercharge
+                    ? "Maximum Supercharge level available at this Hall"
+                    : craftedProgression
+                      ? craftedProgression.defenseName
+                      : "Maximum available level"}
                 </Text>
               </View>
 
-              {maxLevel != null && (
+              {(isSupercharge ? superchargeProgression?.maxLevel : maxLevel) != null && (
                 <View style={styles.maxLevel}>
                   <Text style={styles.levelLabel}>MAX</Text>
 
-                  <Text style={styles.maxLevelText}>{maxLevel}</Text>
+                  <Text style={styles.maxLevelText}>
+                    {isSupercharge ? superchargeProgression?.maxLevel : maxLevel}
+                  </Text>
                 </View>
               )}
             </View>
@@ -835,20 +867,23 @@ export function UpgradeActionModal({
             MAX STATUS
         ====================================================== */}
 
-        {progression && isMaxLevel && (
+        {(progression && isMaxLevel) || isFullySupercharged ? (
           <View style={styles.maxStatus}>
             <Ionicons name="checkmark-circle" size={17} color={colors.textSecondary} />
 
             <View>
-              <Text style={styles.maxStatusTitle}>Max level reached</Text>
+              <Text style={styles.maxStatusTitle}>
+                {isFullySupercharged ? "Fully Supercharged" : "Max level reached"}
+              </Text>
 
               <Text style={styles.maxStatusSubtitle}>
-                This {upgrade.isCrafted ? "module" : "entity"} is fully
-                upgraded.
+                {isFullySupercharged
+                  ? "All available Supercharge levels are complete."
+                  : `This ${upgrade.isCrafted ? "module" : "entity"} is fully upgraded.`}
               </Text>
             </View>
           </View>
-        )}
+        ) : null}
 
         {/* =====================================================
             NEXT UPGRADE
@@ -1032,38 +1067,76 @@ export function UpgradeActionModal({
             PROGRESSION TO MAX
         ====================================================== */}
 
-        {progression && (
+        {(progression || (isSupercharge && superchargeProgression)) && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              {craftedProgression
-                ? "Module progression to max"
-                : "Overall progression"}
+              {isSupercharge
+                ? "Supercharge progression"
+                : craftedProgression
+                  ? "Module progression to max"
+                  : "Overall progression"}
             </Text>
 
             <DetailRow
-                  colors={colors}
-                  styles={styles}
+              colors={colors}
+              styles={styles}
               icon="layers-outline"
-              label="Levels remaining"
-              value={String(progression.remainingLevels)}
+              label={isSupercharge ? "Supercharges remaining" : "Levels remaining"}
+              value={
+                isSupercharge &&
+                superchargeProgression?.remainingLevels === 0 &&
+                superchargeProgression.nextLevel != null
+                  ? "Final charge in progress"
+                  : String(
+                      isSupercharge
+                        ? superchargeProgression?.remainingLevels ?? 0
+                        : progression?.remainingLevels ?? 0,
+                    )
+              }
             />
 
             <DetailRow
-                  colors={colors}
-                  styles={styles}
+              colors={colors}
+              styles={styles}
               icon="wallet-outline"
-              label="Total cost"
-              value={formatGameCost(progression.remainingCost)}
-              valueIconUri={resourceIcon}
+              label={isSupercharge ? "Future charge cost" : "Total cost"}
+              value={
+                isSupercharge &&
+                superchargeProgression?.remainingLevels === 0 &&
+                superchargeProgression.nextLevel != null
+                  ? "None remaining"
+                  : formatGameCost(
+                      isSupercharge
+                        ? superchargeProgression?.totalCost
+                        : progression?.remainingCost,
+                    )
+              }
+              valueIconUri={
+                isSupercharge &&
+                superchargeProgression?.remainingLevels === 0 &&
+                superchargeProgression.nextLevel != null
+                  ? undefined
+                  : resourceIcon
+              }
               valueColor={resourceColor}
             />
 
             <DetailRow
-                  colors={colors}
-                  styles={styles}
+              colors={colors}
+              styles={styles}
               icon="hourglass-outline"
-              label="Total time"
-              value={formatDuration(progression.remainingUpgradeTime)}
+              label={isSupercharge ? "Future charge time" : "Total time"}
+              value={
+                isSupercharge &&
+                superchargeProgression?.remainingLevels === 0 &&
+                superchargeProgression.nextLevel != null
+                  ? "None remaining"
+                  : formatDuration(
+                      isSupercharge
+                        ? superchargeProgression?.totalUpgradeTime
+                        : progression?.remainingUpgradeTime,
+                    )
+              }
             />
           </View>
         )}

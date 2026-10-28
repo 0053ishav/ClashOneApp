@@ -12,6 +12,7 @@ interface EntitySectionProps {
   count: number;
   children: React.ReactNode;
   onViewAll?: () => void;
+  onPressHeader?: () => void;
   accent?: string;
 }
 
@@ -21,12 +22,19 @@ export default function EntitySection({
   count,
   children,
   onViewAll,
+  onPressHeader,
   accent = GOLD,
 }: EntitySectionProps) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
+        <Pressable
+          accessibilityRole={onPressHeader ? "button" : undefined}
+          accessibilityLabel={onPressHeader ? "View " + title + " progression details" : undefined}
+          onPress={onPressHeader}
+          disabled={!onPressHeader}
+          style={styles.headerLeft}
+        >
           {icon && (
             <View style={[styles.iconChip, { backgroundColor: accent + "1f" }]}>
               <Ionicons name={icon} size={14} color={accent} />
@@ -36,7 +44,8 @@ export default function EntitySection({
           <View style={styles.countBadge}>
             <Text style={styles.countText}>{count}</Text>
           </View>
-        </View>
+          {onPressHeader && <Ionicons name="chevron-down" size={14} color={accent} />}
+        </Pressable>
 
         {onViewAll && (
           <Pressable

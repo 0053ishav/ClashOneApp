@@ -1,6 +1,15 @@
 import { ResourceType } from "./resource";
 
 /**
+ * Inclusive progression-level ranges that map to a valid CDN icon level.
+ */
+export interface ProgressionImageRange {
+  from: number;
+  to: number;
+  normal: number;
+}
+
+/**
  * Progression manifest
  */
 export interface ProgressionManifest {
@@ -66,11 +75,19 @@ export interface ProgressionData {
   scMaxLevel?: number;
   /** Supercharge progression keyed by target charge level (e.g. "1", "2"). */
   supercharge?: Record<number, ProgressionLevel>;
+  /** Optional CDN image ranges; normal is the image level to render. */
+  images?: ProgressionImageRange[];
   maxHallLevel: number;
-  levels: Record<
-    number,
-    ProgressionLevel
-  >;
+  levels: Record<number, ProgressionLevel>;
+  /** Variant progression nested under its regular troop's numeric ID. */
+  superTroop?: {
+    id: string;
+    name: string;
+    regularLevelRequired: number;
+    maxLevel: number;
+    maxHallLevel?: number;
+    levels: Record<number, ProgressionLevel>;
+  };
 
   combat?: Record<
     string,

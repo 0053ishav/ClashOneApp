@@ -2,36 +2,33 @@ import type { EntityMetadataVillage, EntityType, SubType, Village } from "./enti
 
 export interface EntityLevel {
   level: number;
-
   icon: string;
+  name?: { en: string };
+}
 
-  name?: {
-    en: string;
-  };
+export interface SuperTroopVariant {
+  /** Stable metadata key; Super Troops reuse their regular troop's numeric ID. */
+  id: string;
+  name: { en: string };
+  icon: string;
+  regularLevelRequired?: number;
+  maxLevel?: number;
+  levels?: Record<string, EntityLevel>;
 }
 
 export interface EntityData {
   id: number;
-
   slug: string;
-
   type: EntityType;
-
   village: Village;
-
   subType?: SubType;
-
   resource?: string;
-
   icon?: string;
-
   tags?: string[];
-
-  name: {
-    en: string;
-  };
-
+  name: { en: string };
   levels?: Record<string, EntityLevel>;
+  /** Variant metadata attached to the regular troop, not a separate API entity. */
+  superTroop?: SuperTroopVariant;
 }
 
 export interface EntityManifest {

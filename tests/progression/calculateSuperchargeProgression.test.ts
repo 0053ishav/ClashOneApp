@@ -46,6 +46,19 @@ describe("calculateSuperchargeProgression", () => {
     });
   });
 
+  it("shows zero future charges while the final charge is already in progress", () => {
+    expect(calculateSuperchargeProgression(data, 2, { inProgressLevel: 3 })).toEqual({
+      currentLevel: 2,
+      nextLevel: 3,
+      maxLevel: 3,
+      remainingLevels: 0,
+      nextCost: 3_000,
+      nextUpgradeTime: 10_800,
+      totalCost: 0,
+      totalUpgradeTime: 0,
+    });
+  });
+
   it("returns no next upgrade and zero remaining cost when fully charged", () => {
     expect(calculateSuperchargeProgression(data, 3)).toEqual({
       currentLevel: 3,

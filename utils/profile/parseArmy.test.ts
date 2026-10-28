@@ -29,6 +29,12 @@ describe("Builder Base village normalization", () => {
         name: { en: "Barbarian" },
         type: "troop",
         village: "home",
+        icon: "https://cdn.clashwidget.online/v2/home/troops/4000000/1.png",
+        superTroop: {
+          id: "super-barbarian",
+          name: { en: "Super Barbarian" },
+          icon: "https://cdn.clashwidget.online/v2/home/troops/4000000/super.png",
+        },
       },
       {
         id: 4001,
@@ -73,6 +79,12 @@ describe("Builder Base village normalization", () => {
           maxLevel: 20,
           village: "builderBase",
         },
+        {
+          name: "Super Barbarian",
+          level: 10,
+          maxLevel: 12,
+          village: "home",
+        },
       ],
       heroes: [
         {
@@ -89,6 +101,15 @@ describe("Builder Base village normalization", () => {
     expect(useEntityStore.getState().getEntityId("Raged Barbarian", "builderBase")).toBe(4001);
     expect(useEntityStore.getState().getEntity(4001)?.village).toBe("builderBase");
     expect(parsed.home.troops.map((troop) => troop.name)).toEqual(["Barbarian"]);
+    expect(parsed.home.superTroops.map((troop) => troop.name)).toEqual([
+      "Super Barbarian",
+    ]);
+    expect(parsed.home.superTroops[0]?.dataId).toBe(1001);
+    expect(parsed.home.superTroops[0]?.isSuperTroop).toBe(true);
+    expect(parsed.home.superTroops[0]?.level).toBe(10);
+    expect(parsed.home.superTroops[0]?.maxLevel).toBe(12);
+    expect(useEntityStore.getState().isSuperTroop("Super Barbarian", "home")).toBe(true);
+    expect(useEntityStore.getState().isSuperTroop("Barbarian", "home")).toBe(false);
     expect(parsed.builderBase.troops.map((troop) => troop.name)).toEqual([
       "Raged Barbarian",
     ]);

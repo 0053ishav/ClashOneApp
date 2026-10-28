@@ -40,6 +40,18 @@ const MAX_REFRESH_INTERVAL_MS =
 const RETRY_INTERVAL_MS =
   30 * 60 * 1000; // 30 minutes
 
+function parseRetryAfterMs(value: string | null, now: number): number | null {
+  if (!value) return null;
+
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return Math.ceil(seconds * 1000);
+  }
+
+  const retryAt = Date.parse(value);
+  return Number.isFinite(retryAt) ? Math.max(0, retryAt - now) : null;
+}
+
 const CONFIG_URL =
   `${ENV.BACKEND}/v2/events/goblin-config`;
 
@@ -149,12 +161,19 @@ async function fetchRemoteConfig(): Promise<void> {
   }
 
   isFetching = true;
+  let retryDelayMs = RETRY_INTERVAL_MS;
 
   try {
     const response =
       await fetch(CONFIG_URL);
 
     if (!response.ok) {
+      if (response.status === 429) {
+        retryDelayMs = parseRetryAfterMs(
+          response.headers.get("Retry-After"),
+          Date.now(),
+        ) ?? RETRY_INTERVAL_MS;
+      }
       throw new Error(
         `HTTP ${response.status}: ${response.statusText}`,
       );
@@ -213,7 +232,7 @@ async function fetchRemoteConfig(): Promise<void> {
      */
     nextRetryTime =
       Date.now() +
-      RETRY_INTERVAL_MS;
+      retryDelayMs;
   } finally {
     isFetching = false;
   }

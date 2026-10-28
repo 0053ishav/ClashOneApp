@@ -8,6 +8,7 @@ import type {
   ExternalEntityData,
 } from "@/types/entities";
 import { ResourceType } from "@/types/resource";
+import { fetchJson } from "@/services/http/fetchJson";
 
 const API =
   `${process.env.EXPO_PUBLIC_BACKEND_URL}/v2`;
@@ -35,23 +36,15 @@ export async function fetchCategory(
 > {
   const slug = getCategorySlug(category);
 
-  const res = await fetch(
-    `${API}/metadata/${slug}`,
-  );
+  const data = await fetchJson<unknown>(`${API}/metadata/${slug}`);
 
-  if (!res.ok) {
-    throw new Error(
-      `Failed to fetch metadata category: ${category}`,
-    );
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error(`Invalid metadata payload for category: ${category}`);
   }
-
-  const data = await res.json();
 
   if (category === "craftedDefenses") {
-    return data;
+    return data as CraftedDefenseMetadataPayload;
   }
 
-  return Object.values(
-    data,
-  ) as ExternalEntityData[];
+  return Object.values(data) as ExternalEntityData[];
 }

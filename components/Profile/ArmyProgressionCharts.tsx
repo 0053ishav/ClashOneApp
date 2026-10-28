@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import type { ComponentProps } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { ParsedArmyEntity } from "@/utils/profile/parseArmy";
@@ -21,7 +22,7 @@ interface LevelBucket {
   description: string;
   count: number;
   color: string;
-  icon: React.ComponentProps<typeof Ionicons>["name"];
+  icon: ComponentProps<typeof Ionicons>["name"];
 }
 
 export default function ArmyProgressionCharts({
@@ -198,7 +199,7 @@ const styles = StyleSheet.create({
   scoreValue: { fontSize: 23, fontWeight: "900", fontVariant: ["tabular-nums"] },
   scoreUnit: { fontSize: 12, fontWeight: "800" },
   scoreCaption: { fontSize: 8, fontWeight: "900", letterSpacing: 0.8 },
-  distributionTrack: { height: 10, flexDirection: "row", borderRadius: 6, overflow: "hidden", gap: 3 },
+  distributionTrack: { height: 10, flexDirection: "row", borderRadius: 6, overflow: "hidden" },
   statsGrid: { flexDirection: "row", gap: 8 },
   statCard: { flex: 1, minWidth: 0, borderWidth: 1, borderRadius: 14, padding: 10, gap: 5 },
   statHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 3 },

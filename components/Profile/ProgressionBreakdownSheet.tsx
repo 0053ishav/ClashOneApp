@@ -5,10 +5,11 @@ import { ProgressionQueries } from "@/services/progression/progressionQueries";
 import { ResourceType } from "@/types/resource";
 import { ResourceIcon, getResourceColor } from "@/components/ResourceCost";
 import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
+import ArmyProgressionCharts from "@/components/Profile/ArmyProgressionCharts";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from "@gorhom/bottom-sheet";
-import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export interface ProgressionCategory {
@@ -74,21 +75,71 @@ const ProgressionBreakdownSheet = forwardRef<ProgressionBreakdownSheetRef, Props
     const sheetRef = useRef<BottomSheetModal>(null);
     const [expanded, setExpanded] = useState<string[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [chartMode, setChartMode] = useState<"distribution" | "history">("distribution");
+    const [selectedBucket, setSelectedBucket] = useState<"maxed" | "nearMax" | "upgrade" | null>(null);
+    const [sortMode, setSortMode] = useState<"levels" | "closest" | "cost">("levels");
 
     useImperativeHandle(ref, () => ({
       present: (categoryKey) => {
         setSelectedCategory(categoryKey ?? null);
+        setSelectedBucket(null);
+        setSortMode("levels");
+        setChartMode("distribution");
         setExpanded(categoryKey ? [categoryKey] : []);
         sheetRef.current?.present();
       },
       dismiss: () => sheetRef.current?.dismiss(),
     }), []);
 
-    const visibleCategories = selectedCategory
-      ? categories.filter((category) => category.key === selectedCategory)
-      : categories;
-    const visibleItems = visibleCategories.flatMap((category) => category.items);
-    const overall = summarize(visibleItems);
+    const { allVisibleItems, sortedCategories, overall } = useMemo(() => {
+      const visibleCategories = selectedCategory
+        ? categories.filter((category) => category.key === selectedCategory)
+        : categories;
+      const allVisibleItems = visibleCategories.flatMap((category) => category.items);
+      const matchesBucket = (item: ParsedArmyEntity) => {
+        if (selectedBucket === null) return true;
+        const remaining = Math.max(0, item.maxLevel - item.level);
+        if (selectedBucket === "maxed") return remaining === 0;
+        if (selectedBucket === "nearMax") return remaining > 0 && remaining <= 2;
+        return remaining > 2;
+      };
+      const filteredCategories = visibleCategories
+        .map((category) => ({ ...category, items: category.items.filter(matchesBucket) }))
+        .filter((category) => category.items.length > 0);
+
+      // Compute each entity's estimated cost once; never perform progression lookups inside sort comparisons.
+      const entityCost = new Map<string, number>();
+      if (sortMode === "cost") {
+        for (const item of allVisibleItems) {
+          const key = `${item.dataId}-${item.village}-${item.name}`;
+          const totalCost = Array.from(summarize([item]).costs.values())
+            .reduce((sum, value) => sum + value, 0);
+          entityCost.set(key, totalCost);
+        }
+      }
+
+      const sortedCategories = filteredCategories.map((category) => ({
+        ...category,
+        items: [...category.items].sort((a, b) => {
+          const remainingA = Math.max(0, a.maxLevel - a.level);
+          const remainingB = Math.max(0, b.maxLevel - b.level);
+          if (sortMode === "closest") return remainingA - remainingB || a.name.localeCompare(b.name);
+          if (sortMode === "cost") {
+            const costA = entityCost.get(`${a.dataId}-${a.village}-${a.name}`) ?? 0;
+            const costB = entityCost.get(`${b.dataId}-${b.village}-${b.name}`) ?? 0;
+            return costB - costA || remainingB - remainingA || a.name.localeCompare(b.name);
+          }
+          return remainingB - remainingA || a.name.localeCompare(b.name);
+        }),
+      }));
+      const visibleItems = sortedCategories.flatMap((category) => category.items);
+      return { allVisibleItems, sortedCategories, overall: summarize(visibleItems) };
+    }, [categories, selectedCategory, selectedBucket, sortMode]);
+
+    useEffect(() => {
+      if (selectedBucket === null) return;
+      setExpanded(sortedCategories.map((category) => category.key));
+    }, [selectedBucket, sortedCategories]);
 
     const renderBackdrop = (props: React.ComponentProps<typeof BottomSheetBackdrop>) => (
       <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} opacity={0.55} pressBehavior="close" />
@@ -123,6 +174,16 @@ const ProgressionBreakdownSheet = forwardRef<ProgressionBreakdownSheetRef, Props
               <Text style={styles.summaryValue}>{overall.remainingEntities}</Text>
             </View>
           </View>
+          <ArmyProgressionCharts
+            items={allVisibleItems}
+            allowRadar={selectedCategory === null}
+            mode={chartMode}
+            colors={colors}
+            onSelectMode={setChartMode}
+            selectedBucket={selectedBucket}
+            onSelectBucket={setSelectedBucket}
+          />
+
           <View style={styles.costCard}>
             <Text style={styles.sectionTitle}>Estimated total cost</Text>
             {overall.costs.size === 0 ? (
@@ -138,7 +199,39 @@ const ProgressionBreakdownSheet = forwardRef<ProgressionBreakdownSheetRef, Props
             ))}
           </View>
 
-          {visibleCategories.map((category) => {
+          <View style={styles.sortControls}>
+            <Text style={styles.muted}>Sort by</Text>
+            {([
+              { key: "levels", label: "Most levels left" },
+              { key: "closest", label: "Closest to max" },
+              { key: "cost", label: "Highest cost" },
+            ] as const).map((option) => {
+              const selected = sortMode === option.key;
+              return (
+                <Pressable
+                  key={option.key}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  onPress={() => setSortMode(option.key)}
+                  style={[styles.sortChip, selected && styles.sortChipSelected]}
+                >
+                  <Text style={[styles.sortChipText, selected && styles.sortChipTextSelected]}>{option.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          {sortedCategories.length === 0 ? (
+            <View style={styles.emptyFilter}>
+              <Text style={styles.muted}>
+                {selectedBucket ? "No entities match this level category." : "No entities to show."}
+              </Text>
+              {selectedBucket !== null && (
+                <Pressable onPress={() => setSelectedBucket(null)} accessibilityRole="button">
+                  <Text style={[styles.clearFilter, { color: colors.gold }]}>Clear filter</Text>
+                </Pressable>
+              )}
+            </View>
+          ) : sortedCategories.map((category) => {
             const summary = summarize(category.items);
             const isExpanded = expanded.includes(category.key);
             return (
@@ -216,6 +309,13 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   resourceLabelGroup: { flexDirection: "row", alignItems: "center", gap: 8 },
   costLabel: { color: colors.textSecondary, fontSize: 13, fontWeight: "700" },
   costValue: { color: colors.gold, fontSize: 15, fontWeight: "800", fontVariant: ["tabular-nums"] },
+  sortControls: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6 },
+  sortChip: { borderWidth: 1, borderColor: colors.borderStrong, borderRadius: 9, paddingHorizontal: 8, paddingVertical: 7 },
+  sortChipSelected: { backgroundColor: colors.surfaceRaised, borderColor: colors.gold },
+  sortChipText: { color: colors.textSecondary, fontSize: 10, fontWeight: "700" },
+  sortChipTextSelected: { color: colors.gold },
+  emptyFilter: { backgroundColor: colors.surfaceRaised, borderRadius: 12, padding: 14, gap: 8 },
+  clearFilter: { fontSize: 12, fontWeight: "800" },
   category: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderStrong },
   categoryHeader: { minHeight: 58, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   categoryCopy: { flex: 1, gap: 4 },

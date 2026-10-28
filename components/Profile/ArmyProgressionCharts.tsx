@@ -11,6 +11,7 @@ type ChartMode = "distribution" | "history";
 
 interface Props {
   items: ParsedArmyEntity[];
+  allowRadar: boolean;
   mode: ChartMode;
   colors: HomeColors;
   onSelectMode: (mode: ChartMode) => void;
@@ -182,6 +183,7 @@ function RadarProgressChart({ items, colors }: { items: ParsedArmyEntity[]; colo
 
 export default function ArmyProgressionCharts({
   items,
+  allowRadar,
   mode,
   colors,
   onSelectMode,
@@ -300,7 +302,7 @@ export default function ArmyProgressionCharts({
                   <View style={[styles.completionFill, { width: `${overallCompletion}%`, backgroundColor: colors.success }]} />
                 </View>
               </View>
-              <View style={[styles.overviewSwitch, { backgroundColor: colors.surfaceDark, borderColor: colors.borderStrong }]}>
+              {allowRadar && <View style={[styles.overviewSwitch, { backgroundColor: colors.surfaceDark, borderColor: colors.borderStrong }]}>
                 <Pressable accessibilityRole="tab" accessibilityState={{ selected: overviewView === "grid" }} onPress={() => setOverviewView("grid")} style={[styles.overviewTab, overviewView === "grid" && { backgroundColor: colors.surfaceRaised }]}>
                   <Ionicons name="grid-outline" size={14} color={overviewView === "grid" ? colors.gold : colors.textSecondary} />
                   <Text style={[styles.overviewTabText, { color: overviewView === "grid" ? colors.textPrimary : colors.textSecondary }]}>Grid</Text>
@@ -309,8 +311,8 @@ export default function ArmyProgressionCharts({
                   <Ionicons name="analytics-outline" size={14} color={overviewView === "radar" ? colors.gold : colors.textSecondary} />
                   <Text style={[styles.overviewTabText, { color: overviewView === "radar" ? colors.textPrimary : colors.textSecondary }]}>Radar</Text>
                 </Pressable>
-              </View>
-              {overviewView === "radar" ? (
+              </View>}
+              {allowRadar && overviewView === "radar" ? (
                 <RadarProgressChart items={items} colors={colors} />
               ) : (
                 <>

@@ -176,7 +176,7 @@ export default function ProfileScreen() {
         </Text>
         <Pressable
           accessibilityRole="button"
-          onPress={loadProfile}
+          onPress={() => void loadProfile()}
           style={({ pressed }) => [
             styles.retryButton,
             pressed && styles.pressed,

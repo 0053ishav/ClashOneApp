@@ -38,17 +38,22 @@ const profile: PlayerFull = {
   donationsReceived: 150,
 };
 
+function setupCachedRow(value: unknown, updatedAt = 1234) {
+  const db = setupDatabase();
+  db.getFirstAsync.mockResolvedValue({
+    profile_json: JSON.stringify(value),
+    updated_at: updatedAt,
+  });
+  return db;
+}
+
 describe("player profile cache service", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   it("reads a profile using a normalized player tag", async () => {
-    const db = setupDatabase();
-    db.getFirstAsync.mockResolvedValue({
-      profile_json: JSON.stringify(profile),
-      updated_at: 1234,
-    });
+    const db = setupCachedRow(profile);
 
     await expect(getCachedPlayerProfile("  #abc123 ")).resolves.toEqual({
       profile,
@@ -68,12 +73,39 @@ describe("player profile cache service", () => {
     await expect(getCachedPlayerProfile("#ABC123")).resolves.toBeNull();
   });
 
-  it("treats malformed cached JSON as a cache miss", async () => {
+  it("treats malformed JSON as a cache miss", async () => {
     const db = setupDatabase();
     db.getFirstAsync.mockResolvedValue({
       profile_json: "{invalid",
       updated_at: 1234,
     });
+
+    await expect(getCachedPlayerProfile("#ABC123")).resolves.toBeNull();
+  });
+
+  it.each([
+    null,
+    [],
+    {},
+    { ...profile, trophies: "5000" },
+    { ...profile, name: null },
+    { ...profile, warStars: Number.POSITIVE_INFINITY },
+  ])(
+    "rejects cached data that does not match the player profile domain (%p)",
+    async (cachedValue) => {
+      setupCachedRow(cachedValue);
+      await expect(getCachedPlayerProfile("#ABC123")).resolves.toBeNull();
+    },
+  );
+
+  it("rejects a cached profile whose embedded tag belongs to another account", async () => {
+    setupCachedRow({ ...profile, tag: "#OTHER1" });
+
+    await expect(getCachedPlayerProfile("#ABC123")).resolves.toBeNull();
+  });
+
+  it("rejects a cached profile with an invalid saved timestamp", async () => {
+    setupCachedRow(profile, Number.NaN);
 
     await expect(getCachedPlayerProfile("#ABC123")).resolves.toBeNull();
   });
@@ -87,6 +119,15 @@ describe("player profile cache service", () => {
       expect.stringContaining("ON CONFLICT(player_tag) DO UPDATE"),
       ["#ABC123", JSON.stringify(profile), expect.any(Number)],
     );
+  });
+
+  it("refuses to persist a profile for a different player tag", async () => {
+    setupDatabase();
+
+    await expect(
+      saveCachedPlayerProfile("#ABC123", { ...profile, tag: "#OTHER1" }),
+    ).rejects.toThrow("INVALID_PLAYER_PROFILE");
+    expect(mockGetDB).not.toHaveBeenCalled();
   });
 
   it("rejects an empty tag before accessing SQLite", async () => {

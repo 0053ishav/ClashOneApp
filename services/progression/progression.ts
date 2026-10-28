@@ -5,6 +5,7 @@
 
 import { getCategorySlug } from "@/config/categorySlugs";
 import { ProgressionData } from "@/types/progression";
+import { fetchJson } from "@/services/http/fetchJson";
 
 
 const API =
@@ -15,23 +16,15 @@ export async function fetchProgressionCategory(
 ) {
   const slug = getCategorySlug(category);
 
-  const res = await fetch(
-    `${API}/progression/${slug}`,
-  );
+  const data = await fetchJson<unknown>(`${API}/progression/${slug}`);
 
-  if (!res.ok) {
-    throw new Error(
-      `Failed to fetch progression category: ${category}`,
-    );
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error(`Invalid progression payload for category: ${category}`);
   }
-
-  const data = await res.json();
 
   /**
    * Backend returns as Object keyed by entity ID.
    * Flatten into an array for hydration.
    */
-  return Object.values(
-    data,
-  ) as ProgressionData[];
+  return Object.values(data) as ProgressionData[];
 }

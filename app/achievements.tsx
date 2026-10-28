@@ -2,7 +2,7 @@ import type { HomeColors } from "@/theme/home";
 import { useHomeColors } from "@/theme/useHomeColors";
 import { getPlayerProfileSnapshot } from "@/services/playerProfileRepository";
 import { useAccountStore } from "@/stores/accountStore";
-import { PlayerFull } from "@/types/playerFull";
+import type { PlayerFull } from "@/types/playerFull";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";

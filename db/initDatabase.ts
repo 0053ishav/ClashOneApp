@@ -336,6 +336,19 @@ async function migrateDatabase() {
     version = 10;
   }
 
+  // V11 - Cache the latest fetched player profile locally per player tag.
+  if (version < 11) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS player_profile_cache (
+        player_tag TEXT PRIMARY KEY,
+        profile_json TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+    `);
+    await setSchemaVersion(db, 11);
+    version = 11;
+  }
+
   // log("✅ Database ready. Version:", version);
 
   // Debug only

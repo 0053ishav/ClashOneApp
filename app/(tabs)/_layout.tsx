@@ -26,6 +26,12 @@ const TABS: {
 }[] = [
   { name: "index", title: "Home", active: "home", inactive: "home-outline" },
   {
+    name: "profile",
+    title: "Profile",
+    active: "person",
+    inactive: "person-outline",
+  },
+  {
     name: "settings",
     title: "Settings",
     active: "settings",

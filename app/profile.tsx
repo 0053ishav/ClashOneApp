@@ -94,9 +94,13 @@ export default function ProfileScreen() {
       // A cache write failure should not discard a successful live API response.
       try {
         await saveCachedPlayerProfile(playerTag, playerData);
-        setProfileUpdatedAt(Date.now());
+        if (requestId === loadRequestId.current) {
+          setProfileUpdatedAt(Date.now());
+        }
       } catch (cacheError) {
-        setProfileUpdatedAt(null);
+        if (requestId === loadRequestId.current) {
+          setProfileUpdatedAt(null);
+        }
         console.warn("Failed to cache player profile:", cacheError);
       }
 
@@ -268,7 +272,7 @@ export default function ProfileScreen() {
           />
           <Text style={styles.footerText}>
             {error
-              ? "Refresh failed; showing saved profile"
+              ? "Showing saved profile; latest update unavailable"
               : profileUpdatedAt
                 ? `Saved profile · ${new Date(profileUpdatedAt).toLocaleString()}`
                 : "Synced from Clash of Clans API"}

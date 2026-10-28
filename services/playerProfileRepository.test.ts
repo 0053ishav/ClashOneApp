@@ -44,7 +44,7 @@ const profile: PlayerFull = {
 describe("player profile repository", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockSaveCachedPlayerProfile.mockResolvedValue();
+    mockSaveCachedPlayerProfile.mockResolvedValue(undefined);
   });
 
   it("returns the cached full profile without fetching the network", async () => {

@@ -76,10 +76,13 @@ const ProgressionBreakdownSheet = forwardRef<ProgressionBreakdownSheetRef, Props
     const [expanded, setExpanded] = useState<string[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [chartMode, setChartMode] = useState<"distribution" | "history">("distribution");
+    const [selectedBucket, setSelectedBucket] = useState<"maxed" | "nearMax" | "upgrade" | null>(null);
 
     useImperativeHandle(ref, () => ({
       present: (categoryKey) => {
         setSelectedCategory(categoryKey ?? null);
+        setSelectedBucket(null);
+        setChartMode("distribution");
         setExpanded(categoryKey ? [categoryKey] : []);
         sheetRef.current?.present();
       },
@@ -89,7 +92,18 @@ const ProgressionBreakdownSheet = forwardRef<ProgressionBreakdownSheetRef, Props
     const visibleCategories = selectedCategory
       ? categories.filter((category) => category.key === selectedCategory)
       : categories;
-    const visibleItems = visibleCategories.flatMap((category) => category.items);
+    const allVisibleItems = visibleCategories.flatMap((category) => category.items);
+    const matchesBucket = (item: ParsedArmyEntity) => {
+      if (selectedBucket === null) return true;
+      const remaining = Math.max(0, item.maxLevel - item.level);
+      if (selectedBucket === "maxed") return remaining === 0;
+      if (selectedBucket === "nearMax") return remaining > 0 && remaining <= 2;
+      return remaining > 2;
+    };
+    const filteredCategories = visibleCategories
+      .map((category) => ({ ...category, items: category.items.filter(matchesBucket) }))
+      .filter((category) => category.items.length > 0);
+    const visibleItems = filteredCategories.flatMap((category) => category.items);
     const overall = summarize(visibleItems);
 
     const renderBackdrop = (props: React.ComponentProps<typeof BottomSheetBackdrop>) => (
@@ -125,7 +139,14 @@ const ProgressionBreakdownSheet = forwardRef<ProgressionBreakdownSheetRef, Props
               <Text style={styles.summaryValue}>{overall.remainingEntities}</Text>
             </View>
           </View>
-          <ArmyProgressionCharts items={visibleItems} mode={chartMode} colors={colors} onSelectMode={setChartMode} />
+          <ArmyProgressionCharts
+            items={allVisibleItems}
+            mode={chartMode}
+            colors={colors}
+            onSelectMode={setChartMode}
+            selectedBucket={selectedBucket}
+            onSelectBucket={setSelectedBucket}
+          />
 
           <View style={styles.costCard}>
             <Text style={styles.sectionTitle}>Estimated total cost</Text>
@@ -142,7 +163,18 @@ const ProgressionBreakdownSheet = forwardRef<ProgressionBreakdownSheetRef, Props
             ))}
           </View>
 
-          {visibleCategories.map((category) => {
+          {filteredCategories.length === 0 ? (
+            <View style={styles.emptyFilter}>
+              <Text style={styles.muted}>
+                {selectedBucket ? "No entities match this level category." : "No entities to show."}
+              </Text>
+              {selectedBucket !== null && (
+                <Pressable onPress={() => setSelectedBucket(null)} accessibilityRole="button">
+                  <Text style={[styles.clearFilter, { color: colors.gold }]}>Clear filter</Text>
+                </Pressable>
+              )}
+            </View>
+          ) : filteredCategories.map((category) => {
             const summary = summarize(category.items);
             const isExpanded = expanded.includes(category.key);
             return (
@@ -220,6 +252,8 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   resourceLabelGroup: { flexDirection: "row", alignItems: "center", gap: 8 },
   costLabel: { color: colors.textSecondary, fontSize: 13, fontWeight: "700" },
   costValue: { color: colors.gold, fontSize: 15, fontWeight: "800", fontVariant: ["tabular-nums"] },
+  emptyFilter: { backgroundColor: colors.surfaceRaised, borderRadius: 12, padding: 14, gap: 8 },
+  clearFilter: { fontSize: 12, fontWeight: "800" },
   category: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderStrong },
   categoryHeader: { minHeight: 58, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   categoryCopy: { flex: 1, gap: 4 },

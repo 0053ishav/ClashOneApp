@@ -91,36 +91,48 @@ const ProgressionBreakdownSheet = forwardRef<ProgressionBreakdownSheetRef, Props
       dismiss: () => sheetRef.current?.dismiss(),
     }), []);
 
-    const visibleCategories = selectedCategory
-      ? categories.filter((category) => category.key === selectedCategory)
-      : categories;
-    const allVisibleItems = visibleCategories.flatMap((category) => category.items);
-    const matchesBucket = (item: ParsedArmyEntity) => {
-      if (selectedBucket === null) return true;
-      const remaining = Math.max(0, item.maxLevel - item.level);
-      if (selectedBucket === "maxed") return remaining === 0;
-      if (selectedBucket === "nearMax") return remaining > 0 && remaining <= 2;
-      return remaining > 2;
-    };
-    const filteredCategories = visibleCategories
-      .map((category) => ({ ...category, items: category.items.filter(matchesBucket) }))
-      .filter((category) => category.items.length > 0);
-    const sortedCategories = useMemo(() => filteredCategories.map((category) => ({
-      ...category,
-      items: [...category.items].sort((a, b) => {
-        const remainingA = Math.max(0, a.maxLevel - a.level);
-        const remainingB = Math.max(0, b.maxLevel - b.level);
-        if (sortMode === "closest") return remainingA - remainingB || a.name.localeCompare(b.name);
-        if (sortMode === "cost") {
-          const costA = Array.from(summarize([a]).costs.values()).reduce((sum, value) => sum + value, 0);
-          const costB = Array.from(summarize([b]).costs.values()).reduce((sum, value) => sum + value, 0);
-          return costB - costA || remainingB - remainingA || a.name.localeCompare(b.name);
-        }
-        return remainingB - remainingA || a.name.localeCompare(b.name);
-      }),
-    })), [filteredCategories, sortMode]);
-    const visibleItems = sortedCategories.flatMap((category) => category.items);
-    const overall = useMemo(() => summarize(visibleItems), [visibleItems]);
+    const { visibleCategories, allVisibleItems, sortedCategories, visibleItems, overall } = useMemo(() => {
+      const visibleCategories = selectedCategory
+        ? categories.filter((category) => category.key === selectedCategory)
+        : categories;
+      const allVisibleItems = visibleCategories.flatMap((category) => category.items);
+      const matchesBucket = (item: ParsedArmyEntity) => {
+        if (selectedBucket === null) return true;
+        const remaining = Math.max(0, item.maxLevel - item.level);
+        if (selectedBucket === "maxed") return remaining === 0;
+        if (selectedBucket === "nearMax") return remaining > 0 && remaining <= 2;
+        return remaining > 2;
+      };
+      const filteredCategories = visibleCategories
+        .map((category) => ({ ...category, items: category.items.filter(matchesBucket) }))
+        .filter((category) => category.items.length > 0);
+
+      // Compute each entity's estimated cost once; never perform progression lookups inside sort comparisons.
+      const entityCost = new Map<string, number>();
+      for (const item of allVisibleItems) {
+        const key = `${item.dataId}-${item.village}-${item.name}`;
+        const totalCost = Array.from(summarize([item]).costs.values())
+          .reduce((sum, value) => sum + value, 0);
+        entityCost.set(key, totalCost);
+      }
+
+      const sortedCategories = filteredCategories.map((category) => ({
+        ...category,
+        items: [...category.items].sort((a, b) => {
+          const remainingA = Math.max(0, a.maxLevel - a.level);
+          const remainingB = Math.max(0, b.maxLevel - b.level);
+          if (sortMode === "closest") return remainingA - remainingB || a.name.localeCompare(b.name);
+          if (sortMode === "cost") {
+            const costA = entityCost.get(`${a.dataId}-${a.village}-${a.name}`) ?? 0;
+            const costB = entityCost.get(`${b.dataId}-${b.village}-${b.name}`) ?? 0;
+            return costB - costA || remainingB - remainingA || a.name.localeCompare(b.name);
+          }
+          return remainingB - remainingA || a.name.localeCompare(b.name);
+        }),
+      }));
+      const visibleItems = sortedCategories.flatMap((category) => category.items);
+      return { visibleCategories, allVisibleItems, sortedCategories, visibleItems, overall: summarize(visibleItems) };
+    }, [categories, selectedCategory, selectedBucket, sortMode]);
 
     useEffect(() => {
       if (selectedBucket === null) return;

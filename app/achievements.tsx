@@ -656,7 +656,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   },
 
   bigNumber: {
-    color: colors.white,
+    color: colors.textPrimary,
     fontSize: 32,
     fontWeight: "800",
     marginTop: 8,

@@ -161,6 +161,24 @@ export default function ArmyProgressionCharts({
                   <View style={[styles.completionFill, { width: `${overallCompletion}%`, backgroundColor: colors.success }]} />
                 </View>
               </View>
+              {selectedBucket !== null && (
+                <View style={styles.filterStatus} accessibilityLiveRegion="polite">
+                  <Ionicons name="eye-outline" size={13} color={buckets.find((bucket) => bucket.key === selectedBucket)?.color ?? colors.gold} />
+                  <Text style={[styles.filterStatusText, { color: colors.textSecondary }]}>
+                    Highlighting {buckets.find((bucket) => bucket.key === selectedBucket)?.label.toLowerCase()} · other units dimmed
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => {
+                      setSelectedEntityKey(null);
+                      onSelectBucket(null);
+                    }}
+                    hitSlop={8}
+                  >
+                    <Text style={[styles.clearFilterText, { color: colors.gold }]}>Clear</Text>
+                  </Pressable>
+                </View>
+              )}
               <View
                 accessibilityLabel={`${gridEntities.length} units arranged by level progress`}
                 onLayout={(event) => {
@@ -233,7 +251,10 @@ export default function ArmyProgressionCharts({
                       key={bucket.key}
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
-                      onPress={() => onSelectBucket(selected ? null : bucket.key)}
+                      onPress={() => {
+                        setSelectedEntityKey(null);
+                        onSelectBucket(selected ? null : bucket.key);
+                      }}
                       style={[
                         styles.filterPill,
                         {
@@ -311,6 +332,9 @@ const styles = StyleSheet.create({
   completionValue: { fontSize: 11, fontWeight: "900", fontVariant: ["tabular-nums"] },
   completionTrack: { height: 7, borderRadius: 6, overflow: "hidden" },
   completionFill: { height: "100%", borderRadius: 6 },
+  filterStatus: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 20 },
+  filterStatusText: { flex: 1, fontSize: 10, lineHeight: 14 },
+  clearFilterText: { fontSize: 10, fontWeight: "900" },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: GRID_GAP },
   cell: { borderWidth: 1, borderRadius: 4, overflow: "hidden", justifyContent: "flex-end" },
   cellFill: { position: "absolute", left: 0, right: 0, bottom: 0, borderRadius: 2 },

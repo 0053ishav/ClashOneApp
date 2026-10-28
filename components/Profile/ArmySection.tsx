@@ -5,7 +5,7 @@ import type { PlayerFull, PlayerVillage } from "@/types/playerFull";
 import { parseArmy } from "@/utils/profile/parseArmy";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useMemo, useRef } from "react";
 import EntityCard from "../EntityCard";
 import ProgressionBreakdownSheet, { type ProgressionBreakdownSheetRef } from "@/components/Profile/ProgressionBreakdownSheet";
@@ -63,7 +63,18 @@ export default function ArmySection({ data }: { data: PlayerFull }) {
           </View>
           <Text style={styles.title}>Army</Text>
         </View>
-        <Text style={styles.total}>{total} units</Text>
+        <View style={styles.headerActions}>
+          <Text style={styles.total}>{total} units</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open overall army progression"
+            onPress={() => progressionSheetRef.current?.present()}
+            style={styles.overviewButton}
+          >
+            <Ionicons name="stats-chart-outline" size={14} color={GOLD} />
+            <Text style={styles.overviewButtonText}>Overview</Text>
+          </Pressable>
+        </View>
       </View>
 
       {army.home.troops.length > 0 && (
@@ -207,10 +218,34 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     letterSpacing: -0.2,
   },
 
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
   total: {
     fontSize: 12,
     fontWeight: "600",
     color: colors.textSecondary,
+  },
+
+  overviewButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surfaceRaised,
+  },
+
+  overviewButtonText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: colors.textPrimary,
   },
 
   grid: {

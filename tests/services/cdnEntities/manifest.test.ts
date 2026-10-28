@@ -30,7 +30,7 @@ function response(status: number, body: unknown, headers: Record<string, string>
 }
 
 describe("fetchManifest", () => {
-  const originalFetch = global.fetch;
+  const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
     jest.useRealTimers();
@@ -39,61 +39,61 @@ describe("fetchManifest", () => {
   });
 
   afterAll(() => {
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
   });
 
   it("coalesces concurrent calls into one request", async () => {
     let resolveFetch!: (value: Response) => void;
-    global.fetch = jest.fn(() => new Promise<Response>((resolve) => {
+    globalThis.fetch = jest.fn(() => new Promise<Response>((resolve) => {
       resolveFetch = resolve;
     })) as jest.Mock;
 
     const first = fetchManifest();
     const second = fetchManifest();
-    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
 
     resolveFetch(response(200, manifest));
     await expect(Promise.all([first, second])).resolves.toEqual([manifest, manifest]);
   });
 
   it("reuses a successful manifest during the cache TTL", async () => {
-    global.fetch = jest.fn().mockResolvedValue(response(200, manifest)) as jest.Mock;
+    globalThis.fetch = jest.fn().mockResolvedValue(response(200, manifest)) as jest.Mock;
 
     await fetchManifest();
     await fetchManifest();
 
-    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
   });
 
   it("does not permanently cache a failed request", async () => {
     jest.useFakeTimers();
-    global.fetch = jest.fn()
+    globalThis.fetch = jest.fn()
       .mockResolvedValueOnce(response(503, {}))
       .mockResolvedValueOnce(response(200, manifest)) as jest.Mock;
 
     await expect(fetchManifest()).rejects.toMatchObject({ status: 503 });
     jest.advanceTimersByTime(15_001);
     await expect(fetchManifest()).resolves.toEqual(manifest);
-    expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
   });
 
   it("honors Retry-After and does not immediately repeat a 429 request", async () => {
     jest.useFakeTimers();
-    global.fetch = jest.fn()
+    globalThis.fetch = jest.fn()
       .mockResolvedValueOnce(response(429, {}, { "Retry-After": "10" }))
       .mockResolvedValueOnce(response(200, manifest)) as jest.Mock;
 
     await expect(fetchManifest()).rejects.toMatchObject({ status: 429, retryAfterMs: 10_000 });
     await expect(fetchManifest()).rejects.toMatchObject({ status: 429, retryAfterMs: 10_000 });
-    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
 
     jest.advanceTimersByTime(10_001);
     await expect(fetchManifest()).resolves.toEqual(manifest);
-    expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
   });
 
   it("distinguishes network failure from an HTTP 429", async () => {
-    global.fetch = jest.fn().mockRejectedValue(new Error("offline")) as jest.Mock;
+    globalThis.fetch = jest.fn().mockRejectedValue(new Error("offline")) as jest.Mock;
 
     await expect(fetchManifest()).rejects.toBeInstanceOf(ManifestFetchError);
     try {
@@ -101,7 +101,7 @@ describe("fetchManifest", () => {
     } catch (error) {
       expect(error).toMatchObject({ status: null });
     }
-    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
     expect(ENV.BACKEND).toBe("https://clashwidget.online");
   });
 });

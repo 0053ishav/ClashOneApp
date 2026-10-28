@@ -176,6 +176,7 @@ const ProgressionBreakdownSheet = forwardRef<ProgressionBreakdownSheetRef, Props
           </View>
           <ArmyProgressionCharts
             items={allVisibleItems}
+            allowRadar={selectedCategory === null}
             mode={chartMode}
             colors={colors}
             onSelectMode={setChartMode}

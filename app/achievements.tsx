@@ -1,14 +1,15 @@
 import type { HomeColors } from "@/theme/home";
 import { useHomeColors } from "@/theme/useHomeColors";
-import { fetchFullPlayer } from "@/services/clashApi";
+import { getPlayerProfileSnapshot } from "@/services/playerProfileRepository";
 import { useAccountStore } from "@/stores/accountStore";
 import { PlayerFull } from "@/types/playerFull";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  RefreshControl,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -60,8 +61,10 @@ export default function AchievementsScreen() {
   const activeTag = useAccountStore((s) => s.activeTag);
 
   const [data, setData] = useState<PlayerFull | null>(null);
-
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const loadRequestId = useRef(0);
 
   const [statusFilter, setStatusFilter] = useState<AchievementFilter>("ALL");
 
@@ -69,20 +72,44 @@ export default function AchievementsScreen() {
 
   const [search, setSearch] = useState("");
 
-  const load = useCallback(async () => {
-    if (!activeTag) return;
+  const load = useCallback(async (forceRefresh = false) => {
+    const requestId = ++loadRequestId.current;
+    const playerTag = activeTag;
 
     try {
-      const player = await fetchFullPlayer(activeTag);
+      setError(null);
+      if (!playerTag) {
+        setData(null);
+        setError("No player tag found");
+        return;
+      }
 
-      setData(player);
+      const snapshot = await getPlayerProfileSnapshot(playerTag, { forceRefresh });
+      if (requestId !== loadRequestId.current) return;
+      setData(snapshot.profile);
+    } catch (err) {
+      if (requestId === loadRequestId.current) {
+        setError(err instanceof Error ? err.message : "Failed to load achievements");
+      }
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestId.current) setLoading(false);
     }
   }, [activeTag]);
 
   useEffect(() => {
-    load();
+    setData(null);
+    setError(null);
+    setLoading(true);
+    void load();
+  }, [activeTag, load]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await load(true);
+    } finally {
+      setRefreshing(false);
+    }
   }, [load]);
 
   const achievements = useMemo(() => data?.achievements ?? [], [data]);
@@ -147,10 +174,21 @@ export default function AchievementsScreen() {
     };
   }, [achievements]);
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.gold} />
+      </View>
+    );
+  }
+
+  if (!data && error) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.resultsText}>{error}</Text>
+        <Pressable accessibilityRole="button" onPress={() => void load()} style={styles.filterButton}>
+          <Text style={styles.filterButtonText}>Try again</Text>
+        </Pressable>
       </View>
     );
   }
@@ -167,6 +205,13 @@ export default function AchievementsScreen() {
        
       </ScrollView> */}
       <FlatList
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.gold}
+          />
+        }
         data={filteredAchievements}
         keyExtractor={(item, index) => `${item.village}-${item.name}-${index}`}
         renderItem={({ item }) => <AchievementCard achievement={item} />}

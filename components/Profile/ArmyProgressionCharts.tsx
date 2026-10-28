@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import Svg, { Circle, G, Line, Rect, Text as SvgText } from "react-native-svg";
+import Svg, { G, Line, Rect, Text as SvgText } from "react-native-svg";
+import { Ionicons } from "@expo/vector-icons";
 import type { ParsedArmyEntity } from "@/utils/profile/parseArmy";
 import type { HomeColors } from "@/theme/home";
 
@@ -123,17 +124,7 @@ export default function ArmyProgressionCharts({
       ) : (
         <View style={[styles.card, styles.historyCard, { backgroundColor: colors.surfaceRaised, borderColor: colors.borderStrong }]}>
           <View style={[styles.historyIcon, { backgroundColor: colors.surfaceDark }]}>
-            <Svg width={58} height={46} viewBox="0 0 58 46}>
-              <Line x1={5} y1={39} x2={53} y2={39} stroke={colors.borderStrong} strokeWidth={1.5} />
-              <Line x1={5} y1={7} x2={5} y2={39} stroke={colors.borderStrong} strokeWidth={1.5} />
-              <Line x1={10} y1={32} x2={22} y2={25} stroke={colors.cyan} strokeWidth={2.5} strokeLinecap="round" />
-              <Line x1={22} y1={25} x2={34} y2={28} stroke={colors.cyan} strokeWidth={2.5} strokeLinecap="round" />
-              <Line x1={34} y1={28} x2={48} y2={11} stroke={colors.cyan} strokeWidth={2.5} strokeLinecap="round" />
-              <Circle cx={10} cy={32} r={3} fill={colors.cyan} />
-              <Circle cx={22} cy={25} r={3} fill={colors.cyan} />
-              <Circle cx={34} cy={28} r={3} fill={colors.cyan} />
-              <Circle cx={48} cy={11} r={3} fill={colors.cyan} />
-            </Svg>
+            <Ionicons name="analytics-outline" size={34} color={colors.cyan} />
           </View>
           <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Your progress story starts here</Text>
           <Text style={[styles.historyCopy, { color: colors.textSecondary }]}>

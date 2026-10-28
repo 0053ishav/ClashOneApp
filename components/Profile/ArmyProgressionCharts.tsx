@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import type { ComponentProps } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Svg, { Circle, Defs, LinearGradient, Line, Polygon, Stop, Text as SvgText } from "react-native-svg";
+import { getEntity } from "@/utils/getEntity";
 import type { ParsedArmyEntity } from "@/utils/profile/parseArmy";
 import type { HomeColors } from "@/theme/home";
 
@@ -40,6 +42,138 @@ function getEntityBucket(remainingLevels: number): LevelBucket["key"] {
   if (remainingLevels === 0) return "maxed";
   if (remainingLevels <= 2) return "nearMax";
   return "upgrade";
+}
+
+const RADAR_AXES = [
+  { key: "troop", label: "Troops" },
+  { key: "hero", label: "Heroes" },
+  { key: "pet", label: "Pets" },
+  { key: "siege", label: "Siege" },
+  { key: "super", label: "Super" },
+  { key: "builder", label: "Builder Base" },
+] as const;
+
+type RadarAxisKey = typeof RADAR_AXES[number]["key"];
+
+function getRadarValues(items: ParsedArmyEntity[]): number[] {
+  const grouped = new Map<RadarAxisKey, number[]>();
+  for (const axis of RADAR_AXES) grouped.set(axis.key, []);
+
+  for (const item of items) {
+    const entityType = getEntity(item.dataId).type;
+    let key: RadarAxisKey | null = null;
+    if (item.village === "builderBase") key = "builder";
+    else if (item.isSuperTroop) key = "super";
+    else if (entityType === "troop") key = "troop";
+    else if (entityType === "hero") key = "hero";
+    else if (entityType === "pet") key = "pet";
+    else if (entityType === "siege") key = "siege";
+
+    if (key && item.maxLevel > 0) {
+      grouped.get(key)?.push(Math.max(0, Math.min(1, item.level / item.maxLevel)));
+    }
+  }
+
+  return RADAR_AXES.map(({ key }) => {
+    const values = grouped.get(key) ?? [];
+    return values.length === 0
+      ? 0
+      : values.reduce((sum, value) => sum + value, 0) / values.length;
+  });
+}
+
+function RadarProgressChart({ items, colors }: { items: ParsedArmyEntity[]; colors: HomeColors }) {
+  const width = 320;
+  const height = 226;
+  const centerX = width / 2;
+  const centerY = 108;
+  const radius = 72;
+  const values = getRadarValues(items);
+  const pointAt = (index: number, value: number) => {
+    const angle = (-Math.PI / 2) + (index * 2 * Math.PI) / RADAR_AXES.length;
+    return {
+      x: centerX + Math.cos(angle) * radius * value,
+      y: centerY + Math.sin(angle) * radius * value,
+    };
+  };
+  const polygonPoints = (scale: number) => RADAR_AXES
+    .map((_, index) => {
+      const point = pointAt(index, scale);
+      return `${point.x},${point.y}`;
+    })
+    .join(" ");
+  const dataPoints = values.map((value, index) => pointAt(index, value));
+  const dataPolygon = dataPoints.map((point) => `${point.x},${point.y}`).join(" ");
+
+  return (
+    <View style={[styles.radarCard, { backgroundColor: colors.surfaceDark, borderColor: colors.borderStrong }]}>
+      <View style={styles.radarHeader}>
+        <View style={styles.radarHeaderCopy}>
+          <Text style={[styles.radarTitle, { color: colors.textPrimary }]}>Army profile</Text>
+          <Text style={[styles.radarSubtitle, { color: colors.textSecondary }]}>Average level completion by unit type</Text>
+        </View>
+        <Ionicons name="sparkles" size={17} color={colors.gold} />
+      </View>
+      <Svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}>
+        <Defs>
+          <LinearGradient id="armyRadarFill" x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0" stopColor={colors.gold} stopOpacity="0.62" />
+            <Stop offset="1" stopColor={colors.cyan} stopOpacity="0.28" />
+          </LinearGradient>
+        </Defs>
+        {[0.25, 0.5, 0.75, 1].map((scale) => (
+          <Polygon
+            key={scale}
+            points={polygonPoints(scale)}
+            fill="none"
+            stroke={colors.borderStrong}
+            strokeWidth={1}
+            opacity={0.8}
+          />
+        ))}
+        {RADAR_AXES.map((axis, index) => {
+          const point = pointAt(index, 1);
+          return (
+            <Line
+              key={axis.key}
+              x1={centerX}
+              y1={centerY}
+              x2={point.x}
+              y2={point.y}
+              stroke={colors.borderStrong}
+              strokeWidth={1}
+            />
+          );
+        })}
+        <Polygon points={dataPolygon} fill="url(#armyRadarFill)" stroke={colors.gold} strokeWidth={2} strokeLinejoin="round" />
+        {dataPoints.map((point, index) => (
+          <Circle key={RADAR_AXES[index].key} cx={point.x} cy={point.y} r={3.5} fill={colors.gold} stroke={colors.surfaceDark} strokeWidth={1.5} />
+        ))}
+        {RADAR_AXES.map((axis, index) => {
+          const point = pointAt(index, 1.28);
+          const anchor = point.x < centerX - 8 ? "end" : point.x > centerX + 8 ? "start" : "middle";
+          return (
+            <SvgText
+              key={axis.key}
+              x={point.x}
+              y={point.y}
+              fill={colors.textSecondary}
+              fontSize={10}
+              fontWeight="600"
+              textAnchor={anchor}
+              alignmentBaseline="middle"
+            >
+              {axis.label}
+            </SvgText>
+          );
+        })}
+      </Svg>
+      <View style={styles.radarFooter}>
+        <View style={[styles.radarLegendDot, { backgroundColor: colors.gold }]} />
+        <Text style={[styles.radarFooterText, { color: colors.textSecondary }]}>Shape shows average level completion · empty categories remain at 0%</Text>
+      </View>
+    </View>
+  );
 }
 
 export default function ArmyProgressionCharts({
@@ -161,6 +295,7 @@ export default function ArmyProgressionCharts({
                   <View style={[styles.completionFill, { width: `${overallCompletion}%`, backgroundColor: colors.success }]} />
                 </View>
               </View>
+              <RadarProgressChart items={items} colors={colors} />
               <View
                 accessibilityLabel={`${gridEntities.length} units arranged by level progress`}
                 onLayout={(event) => {
@@ -315,6 +450,14 @@ const styles = StyleSheet.create({
   completionValue: { fontSize: 11, fontWeight: "900", fontVariant: ["tabular-nums"] },
   completionTrack: { height: 7, borderRadius: 6, overflow: "hidden" },
   completionFill: { height: "100%", borderRadius: 6 },
+  radarCard: { borderWidth: 1, borderRadius: 16, padding: 12, gap: 4, overflow: "hidden" },
+  radarHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  radarHeaderCopy: { flex: 1, gap: 3 },
+  radarTitle: { fontSize: 13, fontWeight: "900" },
+  radarSubtitle: { fontSize: 10, lineHeight: 14 },
+  radarFooter: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 2 },
+  radarLegendDot: { width: 6, height: 6, borderRadius: 3 },
+  radarFooterText: { flex: 1, fontSize: 9, lineHeight: 13 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: GRID_GAP },
   cell: { borderWidth: 1, borderRadius: 4, overflow: "hidden", justifyContent: "flex-end" },
   cellFill: { position: "absolute", left: 0, right: 0, bottom: 0, borderRadius: 2 },

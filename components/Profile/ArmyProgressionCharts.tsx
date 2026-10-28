@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { ComponentProps } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import Svg, { Circle, Defs, LinearGradient, Line, Polygon, Stop, Text as SvgText } from "react-native-svg";
+import Svg, { Circle, Defs, G, LinearGradient, Line, Polygon, Stop, Text as SvgText } from "react-native-svg";
 import { getEntity } from "@/utils/getEntity";
 import type { ParsedArmyEntity } from "@/utils/profile/parseArmy";
 import type { HomeColors } from "@/theme/home";
@@ -152,10 +152,10 @@ function RadarProgressChart({ items, colors }: { items: ParsedArmyEntity[]; colo
         })}
         <Polygon points={dataPolygon} fill="url(#armyRadarFill)" stroke={colors.cyan} strokeWidth={2.5} strokeLinejoin="round" />
         {dataPoints.map((point, index) => (
-          <g key={RADAR_AXES[index].key}>
+          <G key={RADAR_AXES[index].key}>
             <Circle cx={point.x} cy={point.y} r={6} fill={colors.cyan} fillOpacity={0.18} />
             <Circle cx={point.x} cy={point.y} r={3.5} fill={colors.gold} stroke={colors.surfaceDark} strokeWidth={1.5} />
-          </g>
+          </G>
         ))}
         {RADAR_AXES.map((axis, index) => {
           const point = pointAt(index, 1.34);

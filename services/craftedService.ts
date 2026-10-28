@@ -35,8 +35,11 @@ export async function ensureCraftedLoaded(): Promise<void> {
   if (now < retryNotBefore) return;
 
   const request = (async (): Promise<void> => {
+    let receivedResponse = false;
+
     try {
       const res = await fetch(CRAFTED_URL);
+      receivedResponse = true;
 
       if (!res.ok) {
         if (res.status === 429) {
@@ -44,7 +47,10 @@ export async function ensureCraftedLoaded(): Promise<void> {
             parseRetryAfterMs(res.headers.get("Retry-After"), Date.now())
             ?? DEFAULT_RATE_LIMIT_COOLDOWN_MS
           );
+        } else if (res.status >= 500) {
+          retryNotBefore = Date.now() + NETWORK_FAILURE_COOLDOWN_MS;
         }
+
         throw new Error(`Failed crafted fetch: HTTP ${res.status}`);
       }
 
@@ -55,11 +61,10 @@ export async function ensureCraftedLoaded(): Promise<void> {
       retryNotBefore = 0;
       console.log("✅ Crafted loaded");
     } catch (error) {
-      if (!(error instanceof Error && error.message.startsWith("Failed crafted fetch: HTTP 429"))) {
-        // Avoid immediate loops on network failures and non-429 transient errors.
-        if (retryNotBefore <= Date.now()) {
-          retryNotBefore = Date.now() + NETWORK_FAILURE_COOLDOWN_MS;
-        }
+      if (!receivedResponse && retryNotBefore <= Date.now()) {
+        // Network failures get a short cooldown; HTTP status handling above
+        // owns the cooldown policy for responses from the backend.
+        retryNotBefore = Date.now() + NETWORK_FAILURE_COOLDOWN_MS;
       }
 
       console.warn("❌ Crafted load failed", error);

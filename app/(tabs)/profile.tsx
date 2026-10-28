@@ -15,7 +15,6 @@ import { PlayerFull } from "@/types/playerFull";
 import { EntityRecord } from "@/types/upgrade";
 import { getSessionSource, track } from "@/utils/analytics/analytics";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import {
   ActivityIndicator,
@@ -32,7 +31,6 @@ export default function ProfileScreen() {
   const colors = useHomeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const [data, setData] = useState<PlayerFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -212,17 +210,7 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-            onPress={() => router.back()}
-            style={({ pressed }) => [
-              styles.backButton,
-              pressed && styles.pressed,
-            ]}
-          >
-            <Ionicons name="chevron-back" size={20} color={colors.textBright} />
-          </Pressable>
+          <View style={styles.headerSpacer} />
 
           <Text style={styles.headerTitle}>Profile</Text>
 

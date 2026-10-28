@@ -109,11 +109,13 @@ const ProgressionBreakdownSheet = forwardRef<ProgressionBreakdownSheetRef, Props
 
       // Compute each entity's estimated cost once; never perform progression lookups inside sort comparisons.
       const entityCost = new Map<string, number>();
-      for (const item of allVisibleItems) {
-        const key = `${item.dataId}-${item.village}-${item.name}`;
-        const totalCost = Array.from(summarize([item]).costs.values())
-          .reduce((sum, value) => sum + value, 0);
-        entityCost.set(key, totalCost);
+      if (sortMode === "cost") {
+        for (const item of allVisibleItems) {
+          const key = `${item.dataId}-${item.village}-${item.name}`;
+          const totalCost = Array.from(summarize([item]).costs.values())
+            .reduce((sum, value) => sum + value, 0);
+          entityCost.set(key, totalCost);
+        }
       }
 
       const sortedCategories = filteredCategories.map((category) => ({

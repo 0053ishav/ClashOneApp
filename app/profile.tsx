@@ -67,17 +67,23 @@ export default function ProfileScreen() {
       // Read local SQLite first. A cached profile prevents an automatic network
       // request whenever this screen mounts or the active account changes.
       if (!forceRefresh) {
-        const cached = await getCachedPlayerProfile(playerTag);
-        if (requestId !== loadRequestId.current) return;
+        try {
+          const cached = await getCachedPlayerProfile(playerTag);
+          if (requestId !== loadRequestId.current) return;
 
-        if (cached) {
-          setData(cached.profile);
-          setProfileUpdatedAt(cached.updatedAt);
-          const entityData = await getEntities(playerTag);
-          if (requestId === loadRequestId.current) {
-            setEntities(entityData);
+          if (cached) {
+            setData(cached.profile);
+            setProfileUpdatedAt(cached.updatedAt);
+            const entityData = await getEntities(playerTag);
+            if (requestId === loadRequestId.current) {
+              setEntities(entityData);
+            }
+            return;
           }
-          return;
+        } catch (cacheReadError) {
+          // The cache is an optimization: a local read failure must not block
+          // the existing live profile fetch path.
+          console.warn("Failed to read cached player profile:", cacheReadError);
         }
       }
 

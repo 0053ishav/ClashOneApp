@@ -190,7 +190,7 @@ export default function ArmyProgressionCharts({
 }: Props) {
   const [gridWidth, setGridWidth] = useState(0);
   const [selectedEntityKey, setSelectedEntityKey] = useState<string | null>(null);
-  const [overviewView, setOverviewView] = useState<"radar" | "grid">("radar");
+  const [overviewView, setOverviewView] = useState<"radar" | "grid">("grid");
 
   const buckets = useMemo<LevelBucket[]>(() => {
     const result: LevelBucket[] = [
@@ -301,13 +301,13 @@ export default function ArmyProgressionCharts({
                 </View>
               </View>
               <View style={[styles.overviewSwitch, { backgroundColor: colors.surfaceDark, borderColor: colors.borderStrong }]}>
-                <Pressable accessibilityRole="tab" accessibilityState={{ selected: overviewView === "radar" }} onPress={() => setOverviewView("radar")} style={[styles.overviewTab, overviewView === "radar" && { backgroundColor: colors.surfaceRaised }]}>
-                  <Ionicons name="analytics-outline" size={14} color={overviewView === "radar" ? colors.gold : colors.textSecondary} />
-                  <Text style={[styles.overviewTabText, { color: overviewView === "radar" ? colors.textPrimary : colors.textSecondary }]}>Radar</Text>
-                </Pressable>
                 <Pressable accessibilityRole="tab" accessibilityState={{ selected: overviewView === "grid" }} onPress={() => setOverviewView("grid")} style={[styles.overviewTab, overviewView === "grid" && { backgroundColor: colors.surfaceRaised }]}>
                   <Ionicons name="grid-outline" size={14} color={overviewView === "grid" ? colors.gold : colors.textSecondary} />
                   <Text style={[styles.overviewTabText, { color: overviewView === "grid" ? colors.textPrimary : colors.textSecondary }]}>Grid</Text>
+                </Pressable>
+                <Pressable accessibilityRole="tab" accessibilityState={{ selected: overviewView === "radar" }} onPress={() => setOverviewView("radar")} style={[styles.overviewTab, overviewView === "radar" && { backgroundColor: colors.surfaceRaised }]}>
+                  <Ionicons name="analytics-outline" size={14} color={overviewView === "radar" ? colors.gold : colors.textSecondary} />
+                  <Text style={[styles.overviewTabText, { color: overviewView === "radar" ? colors.textPrimary : colors.textSecondary }]}>Radar</Text>
                 </Pressable>
               </View>
               {overviewView === "radar" ? (

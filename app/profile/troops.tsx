@@ -2,14 +2,14 @@ import EntityCard from "@/components/EntityCard";
 import type { HomeColors } from "@/theme/home";
 import { useHomeColors } from "@/theme/useHomeColors";
 import { getUpgradeStatus } from "@/engine/progression/selectors/getUpgradeStatus";
-import { usePlayerProfile } from "@/hooks/usePlayerProfile";
-import { fetchFullPlayer } from "@/services/clashApi";
+import { getPlayerProfileSnapshot } from "@/services/playerProfileRepository";
+import { useAccountStore } from "@/stores/accountStore";
 import { track } from "@/utils/analytics/analytics";
 import { parseArmy } from "@/utils/profile/parseArmy";
 import type { PlayerVillage } from "@/types/playerFull";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -55,7 +55,8 @@ export default function TroopsScreen() {
   const GREEN = colors.success;
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { profile } = usePlayerProfile();
+  const activeTag = useAccountStore((state) => state.activeTag);
+  const loadRequestId = useRef(0);
 
   const [troopsByCategory, setTroopsByCategory] = useState<Record<TroopCategory, Troop[]>>({
     home: [],
@@ -78,23 +79,24 @@ export default function TroopsScreen() {
     });
   }, []);
 
-  const load = useCallback(async (silent = false) => {
-    try {
-      if (!silent) {
-        setLoading(true);
-      }
+  const load = useCallback(async (forceRefresh = false, silent = false) => {
+    const requestId = ++loadRequestId.current;
+    const playerTag = activeTag;
 
+    try {
+      if (!silent) setLoading(true);
       setError(null);
 
-      if (!profile?.playerTag) {
+      if (!playerTag) {
+        setTroopsByCategory({ home: [], superTroops: [], builderBase: [] });
         setError("No player tag found");
         return;
       }
 
-      const data = await fetchFullPlayer(profile.playerTag);
+      const snapshot = await getPlayerProfileSnapshot(playerTag, { forceRefresh });
+      if (requestId !== loadRequestId.current) return;
 
-      const parsed = parseArmy(data);
-
+      const parsed = parseArmy(snapshot.profile);
       const toTroops = (entities: typeof parsed.home.troops): Troop[] =>
         entities.map((entity) => ({
           dataId: entity.dataId,
@@ -112,22 +114,23 @@ export default function TroopsScreen() {
         builderBase: toTroops(parsed.builderBase.troops),
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load troops");
-    } finally {
-      if (!silent) {
-        setLoading(false);
+      if (requestId === loadRequestId.current) {
+        setError(err instanceof Error ? err.message : "Failed to load troops");
       }
+    } finally {
+      if (requestId === loadRequestId.current && !silent) setLoading(false);
     }
-  }, [profile?.playerTag]);
+  }, [activeTag]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    setTroopsByCategory({ home: [], superTroops: [], builderBase: [] });
+    void load();
+  }, [activeTag, load]);
 
   const onRefresh = async () => {
     try {
       setRefreshing(true);
-      await load(true);
+      await load(true, true);
     } finally {
       setRefreshing(false);
     }

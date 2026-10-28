@@ -1,10 +1,10 @@
-import { HOME_COLORS } from "@/theme/home";
+import type { HomeColors } from "@/theme/home";
+import { useHomeColors } from "@/theme/useHomeColors";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useMemo } from "react";
 
 type IconName = keyof typeof Ionicons.glyphMap;
-
-const GOLD = HOME_COLORS.gold;
 
 interface EntitySectionProps {
   title: string;
@@ -23,8 +23,12 @@ export default function EntitySection({
   children,
   onViewAll,
   onPressHeader,
-  accent = GOLD,
+  accent,
 }: EntitySectionProps) {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const resolvedAccent = accent ?? colors.gold;
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -36,15 +40,15 @@ export default function EntitySection({
           style={styles.headerLeft}
         >
           {icon && (
-            <View style={[styles.iconChip, { backgroundColor: accent + "1f" }]}>
-              <Ionicons name={icon} size={14} color={accent} />
+            <View style={[styles.iconChip, { backgroundColor: resolvedAccent + "1f" }]}>
+              <Ionicons name={icon} size={14} color={resolvedAccent} />
             </View>
           )}
           <Text style={styles.title}>{title}</Text>
           <View style={styles.countBadge}>
             <Text style={styles.countText}>{count}</Text>
           </View>
-          {onPressHeader && <Ionicons name="chevron-down" size={14} color={accent} />}
+          {onPressHeader && <Ionicons name="chevron-down" size={14} color={resolvedAccent} />}
         </Pressable>
 
         {onViewAll && (
@@ -55,14 +59,14 @@ export default function EntitySection({
             hitSlop={8}
             style={({ pressed }) => [
               styles.viewAll,
-              { backgroundColor: accent + "14" },
+              { backgroundColor: resolvedAccent + "14" },
               pressed && styles.pressed,
             ]}
           >
-            <Text style={[styles.viewAllText, { color: accent }]}>
+            <Text style={[styles.viewAllText, { color: resolvedAccent }]}>
               View all
             </Text>
-            <Ionicons name="chevron-forward" size={12} color={accent} />
+            <Ionicons name="chevron-forward" size={12} color={resolvedAccent} />
           </Pressable>
         )}
       </View>
@@ -72,7 +76,7 @@ export default function EntitySection({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: HomeColors) => StyleSheet.create({
   container: {
     gap: 12,
   },
@@ -101,7 +105,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 15,
     fontWeight: "700",
-    color: HOME_COLORS.textPrimary,
+    color: colors.textPrimary,
     letterSpacing: -0.2,
     flexShrink: 1,
   },
@@ -118,7 +122,7 @@ const styles = StyleSheet.create({
   countText: {
     fontSize: 11,
     fontWeight: "700",
-    color: HOME_COLORS.textSecondary,
+    color: colors.textSecondary,
   },
 
   viewAll: {

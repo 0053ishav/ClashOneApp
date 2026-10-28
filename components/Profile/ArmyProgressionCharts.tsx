@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import Svg, { G, Line, Rect, Text as SvgText } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import type { ParsedArmyEntity } from "@/utils/profile/parseArmy";
 import type { HomeColors } from "@/theme/home";
@@ -22,11 +21,6 @@ interface LevelBucket {
   count: number;
   color: string;
 }
-
-const CHART_WIDTH = 300;
-const CHART_HEIGHT = 172;
-const BAR_HEIGHT = 12;
-const BAR_GAP = 30;
 
 export default function ArmyProgressionCharts({
   items,
@@ -94,26 +88,47 @@ export default function ArmyProgressionCharts({
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No army progression data is available for this category.</Text>
           ) : (
             <>
-              <Svg width="100%" height={CHART_HEIGHT} viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} accessibilityLabel="Army level distribution bar chart">
-                {[0, 1, 2, 3].map((tick) => {
-                  const x = 120 + (tick / 3) * 150;
+              <View style={styles.chartRows}>
+                {buckets.map((bucket) => {
+                  const selected = selectedBucket === bucket.key;
+                  const percentage = total > 0 ? Math.round((bucket.count / total) * 100) : 0;
+                  const barWidth = maxCount > 0 ? (bucket.count / maxCount) * 100 : 0;
                   return (
-                    <Line key={tick} x1={x} y1={12} x2={x} y2={CHART_HEIGHT - 12} stroke={colors.borderStrong} strokeWidth={1} strokeDasharray="3 4" />
+                    <Pressable
+                      key={bucket.key}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      onPress={() => onSelectBucket(selected ? null : bucket.key)}
+                      style={[
+                        styles.chartRow,
+                        {
+                          borderColor: selected ? bucket.color : colors.borderStrong,
+                          backgroundColor: selected ? colors.surfaceDark : "transparent",
+                        },
+                      ]}
+                    >
+                      <View style={styles.chartRowHeading}>
+                        <View style={styles.chartLabelGroup}>
+                          <View style={[styles.chartLegend, { backgroundColor: bucket.color }]} />
+                          <Text style={[styles.chartLabel, { color: colors.textPrimary }]}>{bucket.label}</Text>
+                        </View>
+                        <View style={styles.chartMetric}>
+                          <Text style={[styles.chartCount, { color: bucket.color }]}>{bucket.count}</Text>
+                          <Text style={[styles.chartPercent, { color: colors.textSecondary }]}>{percentage}%</Text>
+                        </View>
+                      </View>
+                      <View style={[styles.chartTrack, { backgroundColor: colors.surfaceDark }]}>
+                        <View
+                          style={[
+                            styles.chartFill,
+                            { width: `${barWidth}%`, backgroundColor: bucket.color },
+                          ]}
+                        />
+                      </View>
+                    </Pressable>
                   );
                 })}
-                {buckets.map((bucket, index) => {
-                  const y = 28 + index * BAR_GAP;
-                  const barWidth = (bucket.count / maxCount) * 142;
-                  return (
-                    <G key={bucket.key}>
-                      <SvgText x={0} y={y + 4} fill={colors.textSecondary} fontSize={10} fontWeight="600">{bucket.label}</SvgText>
-                      <Rect x={120} y={y - BAR_HEIGHT / 2} width={150} height={BAR_HEIGHT} rx={6} fill={colors.surfaceDark} />
-                      <Rect x={120} y={y - BAR_HEIGHT / 2} width={barWidth} height={BAR_HEIGHT} rx={6} fill={bucket.color} />
-                      <SvgText x={Math.min(286, 126 + barWidth)} y={y + 4} fill={colors.textPrimary} fontSize={11} fontWeight="700">{String(bucket.count)}</SvgText>
-                    </G>
-                  );
-                })}
-              </Svg>
+              </View>
               <View style={styles.filters}>
                 {buckets.map((bucket) => {
                   const selected = selectedBucket === bucket.key;
@@ -184,6 +199,17 @@ const styles = StyleSheet.create({
   totalBadge: { minWidth: 52, paddingVertical: 6, paddingHorizontal: 9, borderRadius: 11, alignItems: "center" },
   totalValue: { fontSize: 18, fontWeight: "900", fontVariant: ["tabular-nums"] },
   totalLabel: { fontSize: 9, fontWeight: "700" },
+  chartRows: { gap: 8 },
+  chartRow: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 11, paddingVertical: 10, gap: 9 },
+  chartRowHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  chartLabelGroup: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
+  chartLegend: { width: 8, height: 8, borderRadius: 4 },
+  chartLabel: { fontSize: 12, fontWeight: "700" },
+  chartMetric: { flexDirection: "row", alignItems: "baseline", gap: 7 },
+  chartCount: { fontSize: 15, fontWeight: "900", fontVariant: ["tabular-nums"] },
+  chartPercent: { fontSize: 10, fontWeight: "700", fontVariant: ["tabular-nums"] },
+  chartTrack: { height: 7, borderRadius: 6, overflow: "hidden" },
+  chartFill: { height: "100%", borderRadius: 6 },
   filters: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   filterChip: { flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1, borderRadius: 10, paddingHorizontal: 9, paddingVertical: 8 },
   filterDot: { width: 7, height: 7, borderRadius: 4 },

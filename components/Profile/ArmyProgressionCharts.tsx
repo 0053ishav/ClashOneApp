@@ -18,8 +18,10 @@ interface Props {
 interface LevelBucket {
   key: "maxed" | "nearMax" | "upgrade";
   label: string;
+  description: string;
   count: number;
   color: string;
+  icon: React.ComponentProps<typeof Ionicons>["name"];
 }
 
 export default function ArmyProgressionCharts({
@@ -32,9 +34,9 @@ export default function ArmyProgressionCharts({
 }: Props) {
   const buckets = useMemo<LevelBucket[]>(() => {
     const result: LevelBucket[] = [
-      { key: "maxed", label: "Max level", count: 0, color: colors.success },
-      { key: "nearMax", label: "Almost there", count: 0, color: colors.gold },
-      { key: "upgrade", label: "Needs upgrades", count: 0, color: colors.danger },
+      { key: "maxed", label: "Maxed", description: "At max level", count: 0, color: colors.success, icon: "checkmark-circle" },
+      { key: "nearMax", label: "Almost there", description: "1–2 levels left", count: 0, color: colors.gold, icon: "trending-up" },
+      { key: "upgrade", label: "Needs work", description: "3+ levels left", count: 0, color: colors.danger, icon: "arrow-up-circle" },
     ];
 
     for (const item of items) {
@@ -48,39 +50,48 @@ export default function ArmyProgressionCharts({
   }, [items, colors.danger, colors.gold, colors.success]);
 
   const total = items.length;
-  const maxCount = Math.max(1, ...buckets.map((bucket) => bucket.count));
+  const maxedCount = buckets[0].count;
+  const readiness = total === 0 ? 0 : Math.round((maxedCount / total) * 100);
+  const hasSelection = selectedBucket !== null;
 
   return (
     <View style={styles.container}>
-      <View style={styles.switcher} accessibilityRole="tablist">
+      <View style={[styles.modeSwitch, { backgroundColor: colors.surfaceDark }]}>
         <Pressable
           accessibilityRole="tab"
           accessibilityState={{ selected: mode === "distribution" }}
           onPress={() => onSelectMode("distribution")}
-          style={[styles.tab, { borderColor: mode === "distribution" ? colors.gold : colors.borderStrong, backgroundColor: mode === "distribution" ? colors.surfaceRaised : "transparent" }]}
+          style={[styles.modeTab, mode === "distribution" && { backgroundColor: colors.surfaceRaised }]}
         >
-          <Text style={[styles.tabText, { color: mode === "distribution" ? colors.textPrimary : colors.textSecondary }]}>Level distribution</Text>
+          <Ionicons name="grid-outline" size={14} color={mode === "distribution" ? colors.gold : colors.textSecondary} />
+          <Text style={[styles.modeText, { color: mode === "distribution" ? colors.textPrimary : colors.textSecondary }]}>Overview</Text>
         </Pressable>
         <Pressable
           accessibilityRole="tab"
           accessibilityState={{ selected: mode === "history" }}
           onPress={() => onSelectMode("history")}
-          style={[styles.tab, { borderColor: mode === "history" ? colors.gold : colors.borderStrong, backgroundColor: mode === "history" ? colors.surfaceRaised : "transparent" }]}
+          style={[styles.modeTab, mode === "history" && { backgroundColor: colors.surfaceRaised }]}
         >
-          <Text style={[styles.tabText, { color: mode === "history" ? colors.textPrimary : colors.textSecondary }]}>Over time</Text>
+          <Ionicons name="time-outline" size={14} color={mode === "history" ? colors.gold : colors.textSecondary} />
+          <Text style={[styles.modeText, { color: mode === "history" ? colors.textPrimary : colors.textSecondary }]}>History</Text>
         </Pressable>
       </View>
 
       {mode === "distribution" ? (
         <View style={[styles.card, { backgroundColor: colors.surfaceRaised, borderColor: colors.borderStrong }]}>
-          <View style={styles.cardHeading}>
-            <View style={styles.headingCopy}>
-              <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Army readiness</Text>
-              <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>Current levels across {total} entities</Text>
+          <View style={styles.hero}>
+            <View style={styles.heroCopy}>
+              <Text style={[styles.eyebrow, { color: colors.textSecondary }]}>ARMY READINESS</Text>
+              <Text style={[styles.heroTitle, { color: colors.textPrimary }]}>
+                {total === 0 ? "No data yet" : readiness === 100 ? "Army mastered" : readiness >= 60 ? "Looking strong" : "Room to grow"}
+              </Text>
+              <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
+                {total === 0 ? "Add progression data to see your readiness." : `${maxedCount} of ${total} entities fully upgraded`}
+              </Text>
             </View>
-            <View style={[styles.totalBadge, { backgroundColor: colors.surfaceDark }]}>
-              <Text style={[styles.totalValue, { color: colors.gold }]}>{total}</Text>
-              <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>units</Text>
+            <View style={[styles.scoreRing, { borderColor: colors.gold, backgroundColor: colors.surfaceDark }]}>
+              <Text style={[styles.scoreValue, { color: colors.gold }]}>{readiness}<Text style={styles.scoreUnit}>%</Text></Text>
+              <Text style={[styles.scoreCaption, { color: colors.textSecondary }]}>MAXED</Text>
             </View>
           </View>
 
@@ -88,11 +99,21 @@ export default function ArmyProgressionCharts({
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No army progression data is available for this category.</Text>
           ) : (
             <>
-              <View style={styles.chartRows}>
+              <View
+                accessibilityLabel={`${buckets.map((bucket) => `${bucket.label}: ${bucket.count}`).join(", ")} out of ${total} entities`}
+                style={[styles.distributionTrack, { backgroundColor: colors.surfaceDark }]}
+              >
+                {buckets.map((bucket) => bucket.count > 0 ? (
+                  <View
+                    key={bucket.key}
+                    style={{ flex: bucket.count, backgroundColor: bucket.color }}
+                  />
+                ) : null)}
+              </View>
+              <View style={styles.statsGrid}>
                 {buckets.map((bucket) => {
                   const selected = selectedBucket === bucket.key;
-                  const percentage = total > 0 ? Math.round((bucket.count / total) * 100) : 0;
-                  const barWidth = maxCount > 0 ? (bucket.count / maxCount) * 100 : 0;
+                  const percentage = Math.round((bucket.count / total) * 100);
                   return (
                     <Pressable
                       key={bucket.key}
@@ -100,70 +121,45 @@ export default function ArmyProgressionCharts({
                       accessibilityState={{ selected }}
                       onPress={() => onSelectBucket(selected ? null : bucket.key)}
                       style={[
-                        styles.chartRow,
-                        {
-                          borderColor: selected ? bucket.color : colors.borderStrong,
-                          backgroundColor: selected ? colors.surfaceDark : "transparent",
-                        },
+                        styles.statCard,
+                        { backgroundColor: colors.surfaceDark, borderColor: selected ? bucket.color : "transparent" },
                       ]}
                     >
-                      <View style={styles.chartRowHeading}>
-                        <View style={styles.chartLabelGroup}>
-                          <View style={[styles.chartLegend, { backgroundColor: bucket.color }]} />
-                          <Text style={[styles.chartLabel, { color: colors.textPrimary }]}>{bucket.label}</Text>
-                        </View>
-                        <View style={styles.chartMetric}>
-                          <Text style={[styles.chartCount, { color: bucket.color }]}>{bucket.count}</Text>
-                          <Text style={[styles.chartPercent, { color: colors.textSecondary }]}>{percentage}%</Text>
-                        </View>
+                      <View style={styles.statHeading}>
+                        <Ionicons name={bucket.icon} size={16} color={bucket.color} />
+                        <Text style={[styles.statPercent, { color: bucket.color }]}>{percentage}%</Text>
                       </View>
-                      <View style={[styles.chartTrack, { backgroundColor: colors.surfaceDark }]}>
-                        <View
-                          style={[
-                            styles.chartFill,
-                            { width: `${barWidth}%`, backgroundColor: bucket.color },
-                          ]}
-                        />
-                      </View>
+                      <Text style={[styles.statCount, { color: colors.textPrimary }]}>{bucket.count}</Text>
+                      <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{bucket.label}</Text>
                     </Pressable>
                   );
                 })}
               </View>
-              <View style={styles.filters}>
-                {buckets.map((bucket) => {
-                  const selected = selectedBucket === bucket.key;
-                  return (
-                    <Pressable
-                      key={bucket.key}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected }}
-                      onPress={() => onSelectBucket(selected ? null : bucket.key)}
-                      style={[
-                        styles.filterChip,
-                        {
-                          borderColor: selected ? bucket.color : colors.borderStrong,
-                          backgroundColor: selected ? colors.surfaceDark : "transparent",
-                        },
-                      ]}
-                    >
-                      <View style={[styles.filterDot, { backgroundColor: bucket.color }]} />
-                      <Text style={[styles.filterText, { color: colors.textPrimary }]}>
-                        {bucket.label} · {bucket.count}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-              <Text style={[styles.filterHint, { color: colors.textSecondary }]}>
-                {selectedBucket ? "Showing matching entities below. Tap the selected filter to clear it." : "Tap a category to see exactly which entities need attention below."}
-              </Text>
-              <View style={[styles.insight, { backgroundColor: colors.surfaceDark }]}>
-                <View style={[styles.insightDot, { backgroundColor: colors.success }]} />
-                <Text style={[styles.insightText, { color: colors.textSecondary }]}>
-                  {buckets[0].count === total
-                    ? "Everything in this category is at max level."
-                    : `${buckets[0].count} of ${total} entities are maxed. Focus on the remaining upgrades to strengthen your army.`}
-                </Text>
+              <View style={[styles.insight, { borderColor: colors.borderStrong }]}>
+                <View style={[styles.insightIcon, { backgroundColor: colors.surfaceDark }]}>
+                  <Ionicons
+                    name={buckets[2].count > 0 ? "flash-outline" : "checkmark-circle-outline"}
+                    size={17}
+                    color={buckets[2].count > 0 ? colors.gold : colors.success}
+                  />
+                </View>
+                <View style={styles.insightCopy}>
+                  <Text style={[styles.insightTitle, { color: colors.textPrimary }]}>
+                    {buckets[2].count > 0 ? "Best place to focus" : buckets[1].count > 0 ? "You're nearly there" : "All caught up"}
+                  </Text>
+                  <Text style={[styles.insightText, { color: colors.textSecondary }]}>
+                    {buckets[2].count > 0
+                      ? `${buckets[2].count} entities have more than 2 levels left. Select “Needs work” to review them.`
+                      : buckets[1].count > 0
+                        ? `${buckets[1].count} entities are within two levels of max.`
+                        : "Every tracked entity is at max level."}
+                  </Text>
+                </View>
+                {hasSelection && (
+                  <Pressable accessibilityRole="button" accessibilityLabel="Clear progression filter" onPress={() => onSelectBucket(null)} hitSlop={8}>
+                    <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+                  </Pressable>
+                )}
               </View>
             </>
           )}
@@ -171,13 +167,14 @@ export default function ArmyProgressionCharts({
       ) : (
         <View style={[styles.card, styles.historyCard, { backgroundColor: colors.surfaceRaised, borderColor: colors.borderStrong }]}>
           <View style={[styles.historyIcon, { backgroundColor: colors.surfaceDark }]}>
-            <Ionicons name="analytics-outline" size={34} color={colors.cyan} />
+            <Ionicons name="time-outline" size={28} color={colors.cyan} />
           </View>
-          <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Your progress story starts here</Text>
+          <Text style={[styles.historyTitle, { color: colors.textPrimary }]}>Your progress story starts here</Text>
           <Text style={[styles.historyCopy, { color: colors.textSecondary }]}>
-            Clash One currently has your latest levels, but not a saved history of earlier levels. Once progression snapshots are available, this chart can show how your army improves over time.
+            Clash One currently has your latest levels, but not a saved history of earlier levels. Once progression snapshots are available, this view can show how your army improves over time.
           </Text>
           <View style={[styles.historyNote, { borderColor: colors.borderStrong }]}>
+            <Ionicons name="information-circle-outline" size={15} color={colors.textSecondary} />
             <Text style={[styles.historyNoteText, { color: colors.textSecondary }]}>No historical data yet · Nothing is estimated or invented</Text>
           </View>
         </View>
@@ -187,41 +184,37 @@ export default function ArmyProgressionCharts({
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 12 },
-  switcher: { flexDirection: "row", gap: 8 },
-  tab: { flex: 1, minHeight: 42, paddingHorizontal: 10, borderWidth: 1, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  tabText: { fontSize: 11, fontWeight: "800" },
-  card: { borderWidth: 1, borderRadius: 16, padding: 14, gap: 12 },
-  cardHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
-  headingCopy: { flex: 1, gap: 4 },
-  cardTitle: { fontSize: 15, fontWeight: "900", letterSpacing: -0.2, textAlign: "center" },
-  cardSubtitle: { fontSize: 11 },
-  totalBadge: { minWidth: 52, paddingVertical: 6, paddingHorizontal: 9, borderRadius: 11, alignItems: "center" },
-  totalValue: { fontSize: 18, fontWeight: "900", fontVariant: ["tabular-nums"] },
-  totalLabel: { fontSize: 9, fontWeight: "700" },
-  chartRows: { gap: 8 },
-  chartRow: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 11, paddingVertical: 10, gap: 9 },
-  chartRowHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
-  chartLabelGroup: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
-  chartLegend: { width: 8, height: 8, borderRadius: 4 },
-  chartLabel: { fontSize: 12, fontWeight: "700" },
-  chartMetric: { flexDirection: "row", alignItems: "baseline", gap: 7 },
-  chartCount: { fontSize: 15, fontWeight: "900", fontVariant: ["tabular-nums"] },
-  chartPercent: { fontSize: 10, fontWeight: "700", fontVariant: ["tabular-nums"] },
-  chartTrack: { height: 7, borderRadius: 6, overflow: "hidden" },
-  chartFill: { height: "100%", borderRadius: 6 },
-  filters: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  filterChip: { flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1, borderRadius: 10, paddingHorizontal: 9, paddingVertical: 8 },
-  filterDot: { width: 7, height: 7, borderRadius: 4 },
-  filterText: { fontSize: 10, fontWeight: "700" },
-  filterHint: { fontSize: 10, lineHeight: 14 },
-  insight: { flexDirection: "row", alignItems: "flex-start", gap: 8, padding: 10, borderRadius: 10 },
-  insightDot: { width: 7, height: 7, borderRadius: 4, marginTop: 4 },
-  insightText: { flex: 1, fontSize: 11, lineHeight: 16 },
+  container: { gap: 10 },
+  modeSwitch: { flexDirection: "row", alignSelf: "flex-start", padding: 4, borderRadius: 12, gap: 3 },
+  modeTab: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 34, paddingHorizontal: 13, borderRadius: 9 },
+  modeText: { fontSize: 11, fontWeight: "800" },
+  card: { borderWidth: 1, borderRadius: 20, padding: 15, gap: 15 },
+  hero: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  heroCopy: { flex: 1, gap: 5 },
+  eyebrow: { fontSize: 9, fontWeight: "900", letterSpacing: 1.4 },
+  heroTitle: { fontSize: 19, fontWeight: "900", letterSpacing: -0.5 },
+  heroSubtitle: { fontSize: 11, lineHeight: 16 },
+  scoreRing: { width: 76, height: 76, borderWidth: 2, borderRadius: 38, alignItems: "center", justifyContent: "center", gap: 1 },
+  scoreValue: { fontSize: 23, fontWeight: "900", fontVariant: ["tabular-nums"] },
+  scoreUnit: { fontSize: 12, fontWeight: "800" },
+  scoreCaption: { fontSize: 8, fontWeight: "900", letterSpacing: 0.8 },
+  distributionTrack: { height: 10, flexDirection: "row", borderRadius: 6, overflow: "hidden", gap: 3 },
+  statsGrid: { flexDirection: "row", gap: 8 },
+  statCard: { flex: 1, minWidth: 0, borderWidth: 1, borderRadius: 14, padding: 10, gap: 5 },
+  statHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 3 },
+  statPercent: { fontSize: 10, fontWeight: "900", fontVariant: ["tabular-nums"] },
+  statCount: { fontSize: 24, lineHeight: 28, fontWeight: "900", fontVariant: ["tabular-nums"] },
+  statLabel: { fontSize: 10, lineHeight: 13, fontWeight: "700" },
+  insight: { flexDirection: "row", alignItems: "center", gap: 10, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 13 },
+  insightIcon: { width: 34, height: 34, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  insightCopy: { flex: 1, gap: 3 },
+  insightTitle: { fontSize: 12, fontWeight: "900" },
+  insightText: { fontSize: 10, lineHeight: 15 },
   emptyText: { fontSize: 12, lineHeight: 18 },
   historyCard: { alignItems: "center", paddingVertical: 24, gap: 12 },
-  historyIcon: { width: 82, height: 70, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  historyIcon: { width: 66, height: 66, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  historyTitle: { fontSize: 15, fontWeight: "900", textAlign: "center" },
   historyCopy: { fontSize: 12, lineHeight: 19, textAlign: "center" },
-  historyNote: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, alignSelf: "stretch" },
-  historyNoteText: { fontSize: 10, textAlign: "center" },
+  historyNote: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, alignSelf: "stretch" },
+  historyNoteText: { fontSize: 10, textAlign: "center", flexShrink: 1 },
 });

@@ -43,6 +43,7 @@ export default function ProfileScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const [data, setData] = useState<PlayerFull | null>(null);
+  const [dataTag, setDataTag] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,11 +51,14 @@ export default function ProfileScreen() {
 
   const activeTag = useAccountStore((s) => s.activeTag);
   const [entities, setEntities] = useState<EntityRecord[]>([]);
+  const [entitiesTag, setEntitiesTag] = useState<string | null>(null);
+  const visibleData = dataTag === activeTag ? data : null;
+  const activeEntities = entitiesTag === activeTag ? entities : [];
   const progressionSheetRef = useRef<ProgressionBreakdownSheetRef>(null);
   const router = useRouter();
   const armyList = useMemo(
-    () => (data ? buildVirtualizedArmyList(parseArmy(data)) : { categories: [], items: [] }),
-    [data],
+    () => (visibleData ? buildVirtualizedArmyList(parseArmy(visibleData)) : { categories: [], items: [] }),
+    [visibleData],
   );
 
   useEffect(() => {
@@ -90,7 +94,9 @@ export default function ProfileScreen() {
 
       if (!playerTag) {
         setData(null);
+        setDataTag(null);
         setEntities([]);
+        setEntitiesTag(null);
         setProfileUpdatedAt(null);
         setError("No player tag found");
         return;
@@ -102,12 +108,18 @@ export default function ProfileScreen() {
         const inMemory = getInMemoryCachedPlayerProfile(playerTag);
         if (inMemory) {
           setData(inMemory.profile);
+          setDataTag(playerTag);
+          setEntities([]);
+          setEntitiesTag(null);
           setProfileUpdatedAt(inMemory.updatedAt);
           setLoading(false);
 
           // Entity chips are supplementary; don't block the profile content on them.
           void getEntities(playerTag).then((entityData) => {
-            if (requestId === loadRequestId.current) setEntities(entityData);
+            if (requestId === loadRequestId.current) {
+              setEntities(entityData);
+              setEntitiesTag(playerTag);
+            }
           }).catch((entityError: unknown) => {
             console.warn("Failed to read cached profile entities:", entityError);
           });
@@ -124,11 +136,15 @@ export default function ProfileScreen() {
 
           if (cached) {
             setData(cached.profile);
+            setDataTag(playerTag);
+            setEntities([]);
+            setEntitiesTag(null);
             setProfileUpdatedAt(cached.updatedAt);
             logProfileTiming("profile-cache-hit", loadStartedAt);
             const entityData = await getEntities(playerTag);
             if (requestId === loadRequestId.current) {
               setEntities(entityData);
+              setEntitiesTag(playerTag);
             }
             return;
           }
@@ -149,6 +165,9 @@ export default function ProfileScreen() {
       logProfileTiming(forceRefresh ? "profile-network-refresh" : "profile-network-miss", loadStartedAt);
 
       setData(playerData);
+      setDataTag(playerTag);
+      setEntities([]);
+      setEntitiesTag(null);
       rememberPlayerProfileInMemory(playerTag, playerData, Date.now());
 
       // A cache write failure should not discard a successful live API response.
@@ -173,6 +192,7 @@ export default function ProfileScreen() {
       });
 
       setEntities(entityData);
+      setEntitiesTag(playerTag);
     } catch (err) {
       if (requestId !== loadRequestId.current) return;
 
@@ -192,7 +212,9 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     setData(null);
+    setDataTag(null);
     setEntities([]);
+    setEntitiesTag(null);
     setProfileUpdatedAt(null);
     setError(null);
     void loadProfile();
@@ -207,7 +229,7 @@ export default function ProfileScreen() {
     setRefreshing(false);
   };
 
-  if (loading && !data) {
+  if (!visibleData && (loading || dataTag !== activeTag)) {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <View style={styles.loadingWrapper}>
@@ -218,7 +240,7 @@ export default function ProfileScreen() {
     );
   }
 
-  if (!data) {
+  if (!visibleData) {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <View style={styles.errorIcon}>
@@ -243,8 +265,8 @@ export default function ProfileScreen() {
     );
   }
 
-  const helpers = entities.filter((entity) => entity.type?.toLowerCase() === "helper");
-  const guardians = entities.filter((entity) => entity.type?.toLowerCase() === "guardian");
+  const helpers = activeEntities.filter((entity) => entity.type?.toLowerCase() === "helper");
+  const guardians = activeEntities.filter((entity) => entity.type?.toLowerCase() === "guardian");
 
   const renderArmyItem = ({ item }: { item: VirtualizedArmyListItem }) => {
     if (item.type === "army-header") {
@@ -342,15 +364,15 @@ export default function ProfileScreen() {
         <Text style={styles.headerTitle}>Profile</Text>
         <View style={styles.headerSpacer} />
       </View>
-      <ProfileHeroCard data={data} helpers={helpers} guardians={guardians} />
+      <ProfileHeroCard data={visibleData} helpers={helpers} guardians={guardians} />
       <StatsGrid
         title="Battle stats"
         stats={[
-          { icon: "star", label: "War stars", value: data.warStars, highlight: true },
-          { icon: "flame", label: "Attacks won", value: data.attackWins, color: colors.orange },
-          { icon: "shield-checkmark", label: "Defenses won", value: data.defenseWins, color: colors.cyan },
-          { icon: "arrow-up", label: "Donated", value: data.donations, color: colors.success },
-          { icon: "arrow-down", label: "Received", value: data.donationsReceived, color: colors.blue },
+          { icon: "star", label: "War stars", value: visibleData.warStars, highlight: true },
+          { icon: "flame", label: "Attacks won", value: visibleData.attackWins, color: colors.orange },
+          { icon: "shield-checkmark", label: "Defenses won", value: visibleData.defenseWins, color: colors.cyan },
+          { icon: "arrow-up", label: "Donated", value: visibleData.donations, color: colors.success },
+          { icon: "arrow-down", label: "Received", value: visibleData.donationsReceived, color: colors.blue },
         ]}
       />
     </View>
@@ -358,7 +380,7 @@ export default function ProfileScreen() {
 
   const listFooter = (
     <View style={styles.listFooter}>
-      <ProgressSection data={data} />
+      <ProgressSection data={visibleData} />
       <View style={styles.footer}>
         <Ionicons
           name={error ? "alert-circle" : "checkmark-circle"}

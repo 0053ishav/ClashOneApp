@@ -169,6 +169,9 @@ export default function TabLayout() {
             name={tab.name}
             options={{
               title: tab.title,
+              // Mount Profile before it is selected so the first tap after an
+              // account switch doesn't pay the screen's initial mount cost.
+              ...(tab.name === "profile" ? { lazy: false } : {}),
               // Stable accessibility identifiers keep UI automation independent
               // of label ordering and prevent confusing the app tab with Android Home.
               tabBarButtonTestID: `${tab.name === "index" ? "home" : tab.name}-tab`,

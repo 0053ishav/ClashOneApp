@@ -7,6 +7,8 @@ import ProgressSection from "@/components/Profile/ProgressSection";
 import { fetchFullPlayer } from "@/services/clashApi";
 import {
   getCachedPlayerProfile,
+  getInMemoryCachedPlayerProfile,
+  rememberPlayerProfileInMemory,
   saveCachedPlayerProfile,
 } from "@/services/playerProfileCacheService";
 import { getEntities } from "@/services/entityService";
@@ -62,6 +64,25 @@ export default function ProfileScreen() {
         return;
       }
 
+      // Serve a profile already seen in this app session synchronously so an
+      // account switch does not wait for another SQLite round trip before render.
+      if (!forceRefresh) {
+        const inMemory = getInMemoryCachedPlayerProfile(playerTag);
+        if (inMemory) {
+          setData(inMemory.profile);
+          setProfileUpdatedAt(inMemory.updatedAt);
+          setLoading(false);
+
+          // Entity chips are supplementary; don't block the profile content on them.
+          void getEntities(playerTag).then((entityData) => {
+            if (requestId === loadRequestId.current) setEntities(entityData);
+          }).catch((entityError: unknown) => {
+            console.warn("Failed to read cached profile entities:", entityError);
+          });
+          return;
+        }
+      }
+
       // Read local SQLite first. A cached profile prevents an automatic network
       // request whenever this screen mounts or the active account changes.
       if (!forceRefresh) {
@@ -94,6 +115,7 @@ export default function ProfileScreen() {
       if (requestId !== loadRequestId.current) return;
 
       setData(playerData);
+      rememberPlayerProfileInMemory(playerTag, playerData, Date.now());
 
       // A cache write failure should not discard a successful live API response.
       try {

@@ -1,6 +1,8 @@
 import { getDB } from "@/db/database";
 import {
+  clearInMemoryPlayerProfileCache,
   getCachedPlayerProfile,
+  getInMemoryCachedPlayerProfile,
   saveCachedPlayerProfile,
 } from "@/services/playerProfileCacheService";
 import type { PlayerFull } from "@/types/playerFull";
@@ -50,6 +52,7 @@ function setupCachedRow(value: unknown, updatedAt = 1234) {
 describe("player profile cache service", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    clearInMemoryPlayerProfileCache();
   });
 
   it("reads a profile using a normalized player tag", async () => {
@@ -64,6 +67,24 @@ describe("player profile cache service", () => {
       expect.stringContaining("FROM player_profile_cache"),
       ["#ABC123"],
     );
+  });
+
+  it("returns a profile synchronously after it has been read from SQLite", async () => {
+    const db = setupCachedRow(profile);
+
+    await getCachedPlayerProfile("#ABC123");
+
+    expect(getInMemoryCachedPlayerProfile(" #abc123 ")).toEqual({
+      profile,
+      updatedAt: 1234,
+    });
+    expect(db.getFirstAsync).toHaveBeenCalledTimes(1);
+
+    await expect(getCachedPlayerProfile("#ABC123")).resolves.toEqual({
+      profile,
+      updatedAt: 1234,
+    });
+    expect(db.getFirstAsync).toHaveBeenCalledTimes(1);
   });
 
   it("returns null when the player has no cached profile", async () => {

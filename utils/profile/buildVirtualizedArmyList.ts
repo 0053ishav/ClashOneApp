@@ -1,7 +1,11 @@
 import type { ParsedArmy, ParsedArmyEntity } from "@/utils/profile/parseArmy";
-import type { ProgressionCategory } from "@/components/Profile/ProgressionBreakdownSheet";
-
 export type ArmyCategoryIcon = "flash" | "person" | "paw" | "hammer" | "construct";
+
+export interface ProgressionCategory {
+  key: string;
+  title: string;
+  items: ParsedArmyEntity[];
+}
 
 export interface ArmyDisplayCategory extends ProgressionCategory {
   icon: ArmyCategoryIcon;

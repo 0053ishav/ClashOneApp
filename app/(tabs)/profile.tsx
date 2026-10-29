@@ -196,6 +196,9 @@ export default function ProfileScreen() {
     } catch (err) {
       if (requestId !== loadRequestId.current) return;
 
+      // Mark this account as the current request even on failure so the
+      // matching error state can render instead of an indefinite switch spinner.
+      setDataTag(playerTag);
       track("player_fetching_failed", {
         source: getSessionSource(),
         trigger: forceRefresh ? "profile_refresh" : "profile_screen",

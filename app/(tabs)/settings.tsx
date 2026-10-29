@@ -401,10 +401,14 @@ export default function SettingsScreen() {
     track("screen_view", { screen: "settings" });
   }, []);
 
-  useEffect(() => {
-    loadAccounts();
-    loadLastSync();
-  }, [loadAccounts, loadLastSync]);
+  useFocusEffect(
+    useCallback(() => {
+      // Settings can be mounted eagerly while hidden. Defer account and sync
+      // metadata reads until the user actually opens this tab.
+      loadAccounts();
+      loadLastSync();
+    }, [loadAccounts, loadLastSync]),
+  );
 
   useEffect(() => {
     const acc = accounts.find((a) => a.tag === activeTag);

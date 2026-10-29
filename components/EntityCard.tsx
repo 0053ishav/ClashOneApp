@@ -7,7 +7,7 @@ import type { Village } from "@/types/entity";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 
 interface EntityCardProps {
   dataId: number;
@@ -23,7 +23,7 @@ interface EntityCardProps {
   isSuperTroop?: boolean;
 }
 
-export default function EntityCard({
+function EntityCard({
   dataId,
   name,
   level,
@@ -65,14 +65,18 @@ export default function EntityCard({
           contentFit="contain"
           allowDownscaling={false}
           cachePolicy="memory-disk"
-          onLoadStart={() => setImageLoading(true)}
-          onLoad={() => setImageLoading(false)}
+          onLoadStart={() => {
+            if (!compact) setImageLoading(true);
+          }}
+          onLoad={() => {
+            if (!compact) setImageLoading(false);
+          }}
           onError={() => {
-            setImageLoading(false);
+            if (!compact) setImageLoading(false);
             if (isSuperTroop && useSuperTroopIcon) setFailedSuperIconKey(superIconKey);
           }}
         />
-        {imageLoading && (
+        {imageLoading && !compact && (
           <View pointerEvents="none" style={styles.imageLoadingOverlay}>
             <ActivityIndicator size="small" color={colors.textSecondary} />
           </View>
@@ -275,7 +279,7 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   },
 
   levelBadgeDefault: {
-    backgroundColor: "#1b2637",
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 5,
     minWidth: 22,
     height: 20,
@@ -339,3 +343,6 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
 });
+
+
+export default memo(EntityCard);

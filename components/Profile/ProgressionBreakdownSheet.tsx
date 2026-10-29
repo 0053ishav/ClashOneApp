@@ -1,4 +1,6 @@
 import type { ParsedArmyEntity } from "@/utils/profile/parseArmy";
+import type { ProgressionCategory } from "@/utils/profile/buildVirtualizedArmyList";
+export type { ProgressionCategory };
 import type { HomeColors } from "@/theme/home";
 import { useHomeColors } from "@/theme/useHomeColors";
 import { ProgressionQueries } from "@/services/progression/progressionQueries";
@@ -11,12 +13,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-
-export interface ProgressionCategory {
-  key: string;
-  title: string;
-  items: ParsedArmyEntity[];
-}
 
 export interface ProgressionBreakdownSheetRef {
   present: (categoryKey?: string) => void;

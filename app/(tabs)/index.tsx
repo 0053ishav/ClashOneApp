@@ -301,16 +301,19 @@ export default function HomeScreen() {
     return map;
   }, [builders]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const finished = builders.find((u) => u.endTime <= now);
-      if (finished) {
-        setCompletedId((current) => current ?? finished.id);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [builders]);
+  useFocusEffect(
+    useCallback(() => {
+      // Upgrade completion checks only matter while Home is visible.
+      const interval = setInterval(() => {
+        const now = Date.now();
+        const finished = builders.find((u) => u.endTime <= now);
+        if (finished) {
+          setCompletedId((current) => current ?? finished.id);
+        }
+      }, 1000);
+      return () => clearInterval(interval);
+    }, [builders]),
+  );
 
   const performSync = useCallback(async () => {
     await refreshState();
@@ -498,10 +501,16 @@ export default function HomeScreen() {
     }, [loadGoldPassSettings, loadReEngagementSettings]),
   );
 
-  useEffect(() => {
-    const interval = setInterval(refreshState, 60 * 1000);
-    return () => clearInterval(interval);
-  }, [refreshState]);
+  useFocusEffect(
+    useCallback(() => {
+      // Do not poll SQLite while another tab is active. Focus already triggers
+      // an immediate refresh through the refreshState focus effect above.
+      const interval = setInterval(() => {
+        void refreshState();
+      }, 60 * 1000);
+      return () => clearInterval(interval);
+    }, [refreshState]),
+  );
 
   const TAB_WIDTH = (width - 4 * 2) / 2;
 
@@ -509,7 +518,7 @@ export default function HomeScreen() {
     translateX.value = withTiming(selectedVillage === "home" ? 0 : TAB_WIDTH, {
       duration: 0,
     });
-  });
+  }, [selectedVillage, TAB_WIDTH, translateX]);
 
   const handleRefresh = useCallback(async () => {
     if (refreshing) return;

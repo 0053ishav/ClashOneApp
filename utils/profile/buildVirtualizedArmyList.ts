@@ -38,7 +38,7 @@ export function buildVirtualizedArmyList(
     throw new RangeError("rowSize must be a positive integer");
   }
 
-  const categories: ArmyDisplayCategory[] = [
+  const categoryDefinitions: ArmyDisplayCategory[] = [
     { key: "home-troops", title: "Home troops", icon: "flash", items: army.home.troops, showViewAll: true },
     { key: "super-troops", title: "Super Troops", icon: "flash", items: army.home.superTroops },
     { key: "heroes", title: "Heroes", icon: "person", items: army.home.heroes },
@@ -46,7 +46,8 @@ export function buildVirtualizedArmyList(
     { key: "siege-machines", title: "Siege machines", icon: "hammer", items: army.home.siegeMachines },
     { key: "builder-troops", title: "Builder base troops", icon: "construct", items: army.builderBase.troops },
     { key: "builder-heroes", title: "Builder base heroes", icon: "person", items: army.builderBase.heroes },
-  ].filter((category) => category.items.length > 0);
+  ];
+  const categories = categoryDefinitions.filter((category) => category.items.length > 0);
 
   const total = categories.reduce((count, category) => count + category.items.length, 0);
   if (total === 0) return { categories, items: [] };

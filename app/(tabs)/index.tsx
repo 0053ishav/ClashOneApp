@@ -518,7 +518,7 @@ export default function HomeScreen() {
     translateX.value = withTiming(selectedVillage === "home" ? 0 : TAB_WIDTH, {
       duration: 0,
     });
-  });
+  }, [selectedVillage, TAB_WIDTH, translateX]);
 
   const handleRefresh = useCallback(async () => {
     if (refreshing) return;

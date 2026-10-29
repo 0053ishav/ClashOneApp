@@ -21,6 +21,7 @@ import {
 } from "@/services/playerProfileCacheService";
 import { getEntities } from "@/services/entityService";
 import { useAccountStore } from "@/stores/accountStore";
+import { useEntityStore } from "@/stores/entityStore";
 import type { PlayerFull } from "@/types/playerFull";
 import type { EntityRecord } from "@/types/upgrade";
 import { getSessionSource, track } from "@/utils/analytics/analytics";
@@ -50,6 +51,9 @@ export default function ProfileScreen() {
   const [profileUpdatedAt, setProfileUpdatedAt] = useState<number | null>(null);
 
   const activeTag = useAccountStore((s) => s.activeTag);
+  // parseArmy reads entity metadata from the Zustand store. Subscribe to its
+  // mapping so the memoized army is rebuilt when background CDN hydration finishes.
+  const entityMetadataByName = useEntityStore((state) => state.entitiesByName);
   const [entities, setEntities] = useState<EntityRecord[]>([]);
   const [entitiesTag, setEntitiesTag] = useState<string | null>(null);
   const visibleData = dataTag === activeTag ? data : null;
@@ -58,7 +62,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const armyList = useMemo(
     () => (visibleData ? buildVirtualizedArmyList(parseArmy(visibleData)) : { categories: [], items: [] }),
-    [visibleData],
+    [visibleData, entityMetadataByName],
   );
 
   useEffect(() => {

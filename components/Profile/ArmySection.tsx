@@ -27,8 +27,8 @@ export default function ArmySection({ data }: { data: PlayerFull }) {
   const router = useRouter();
   const progressionSheetRef = useRef<ProgressionBreakdownSheetRef>(null);
 
-  const army = parseArmy(data);
-  const progressionCategories = [
+  const army = useMemo(() => parseArmy(data), [data]);
+  const progressionCategories = useMemo(() => [
     { key: "home-troops", title: "Home Troops", items: army.home.troops },
     { key: "super-troops", title: "Super Troops", items: army.home.superTroops },
     { key: "heroes", title: "Heroes", items: army.home.heroes },
@@ -36,7 +36,7 @@ export default function ArmySection({ data }: { data: PlayerFull }) {
     { key: "siege-machines", title: "Siege Machines", items: army.home.siegeMachines },
     { key: "builder-troops", title: "Builder Base Troops", items: army.builderBase.troops },
     { key: "builder-heroes", title: "Builder Base Heroes", items: army.builderBase.heroes },
-  ];
+  ], [army]);
 
   const homeCount =
     (army.home.troops?.length ?? 0) +

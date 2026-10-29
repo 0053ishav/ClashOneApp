@@ -195,6 +195,7 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       <ScrollView
+        removeClippedSubviews
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,

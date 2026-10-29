@@ -1,9 +1,17 @@
-import ArmySection from "@/components/Profile/ArmySection";
 import type { HomeColors } from "@/theme/home";
 import { useHomeColors } from "@/theme/useHomeColors";
 import StatsGrid from "@/components/Profile/StatsGrid";
 import ProfileHeroCard from "@/components/Profile/ProfileHeroCard";
 import ProgressSection from "@/components/Profile/ProgressSection";
+import ProgressionBreakdownSheet, {
+  type ProgressionBreakdownSheetRef,
+} from "@/components/Profile/ProgressionBreakdownSheet";
+import EntityCard from "@/components/EntityCard";
+import {
+  buildVirtualizedArmyList,
+  type VirtualizedArmyListItem,
+} from "@/utils/profile/buildVirtualizedArmyList";
+import { parseArmy } from "@/utils/profile/parseArmy";
 import { fetchFullPlayer } from "@/services/clashApi";
 import {
   getCachedPlayerProfile,
@@ -13,21 +21,22 @@ import {
 } from "@/services/playerProfileCacheService";
 import { getEntities } from "@/services/entityService";
 import { useAccountStore } from "@/stores/accountStore";
-import { PlayerFull } from "@/types/playerFull";
-import { EntityRecord } from "@/types/upgrade";
+import type { PlayerFull } from "@/types/playerFull";
+import type { EntityRecord } from "@/types/upgrade";
 import { getSessionSource, track } from "@/utils/analytics/analytics";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import {
   ActivityIndicator,
+  FlatList,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 
 export default function ProfileScreen() {
   const colors = useHomeColors();
@@ -41,6 +50,12 @@ export default function ProfileScreen() {
 
   const activeTag = useAccountStore((s) => s.activeTag);
   const [entities, setEntities] = useState<EntityRecord[]>([]);
+  const progressionSheetRef = useRef<ProgressionBreakdownSheetRef>(null);
+  const router = useRouter();
+  const armyList = useMemo(
+    () => (data ? buildVirtualizedArmyList(parseArmy(data)) : { categories: [], items: [] }),
+    [data],
+  );
 
   useEffect(() => {
     track("screen_view", { screen: "profile" });
@@ -228,17 +243,153 @@ export default function ProfileScreen() {
     );
   }
 
-  const helpers = entities.filter((e) => e.type?.toLowerCase() === "helper");
-  const guardians = entities.filter(
-    (e) => e.type?.toLowerCase() === "guardian",
+  const helpers = entities.filter((entity) => entity.type?.toLowerCase() === "helper");
+  const guardians = entities.filter((entity) => entity.type?.toLowerCase() === "guardian");
+
+  const renderArmyItem = ({ item }: { item: VirtualizedArmyListItem }) => {
+    if (item.type === "army-header") {
+      return (
+        <View style={styles.armyHeader}>
+          <View style={styles.armyHeaderLeft}>
+            <View style={styles.armyIconWrapper}>
+              <Ionicons name="shield" size={15} color={colors.gold} />
+            </View>
+            <Text style={styles.armyTitle}>Army</Text>
+          </View>
+          <View style={styles.armyHeaderActions}>
+            <Text style={styles.armyTotal}>{item.total} units</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Open overall army progression"
+              onPress={() => progressionSheetRef.current?.present()}
+              style={styles.overviewButton}
+            >
+              <Ionicons name="stats-chart-outline" size={14} color={colors.gold} />
+              <Text style={styles.overviewButtonText}>Overview</Text>
+            </Pressable>
+          </View>
+        </View>
+      );
+    }
+
+    const { category, rowItems, rowIndex, rowCount } = item;
+    const firstRow = rowIndex === 0;
+    const lastRow = rowIndex === rowCount - 1;
+    const accent = category.key.startsWith("builder-") ? colors.purpleStrong : colors.gold;
+
+    return (
+      <View
+        style={[
+          styles.armyCategoryRow,
+          firstRow && styles.armyCategoryFirst,
+          !firstRow && styles.armyCategoryContinuation,
+          lastRow && styles.armyCategoryLast,
+        ]}
+      >
+        {firstRow && (
+          <View style={styles.armyCategoryHeader}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`View ${category.title} progression details`}
+              onPress={() => progressionSheetRef.current?.present(category.key)}
+              style={styles.armyCategoryHeaderLeft}
+            >
+              <View style={[styles.armyCategoryIconChip, { backgroundColor: accent + "1f" }]}>
+                <Ionicons name={category.icon} size={14} color={accent} />
+              </View>
+              <Text style={styles.armyCategoryTitle}>{category.title}</Text>
+              <View style={styles.armyCountBadge}>
+                <Text style={styles.armyCountText}>{category.items.length}</Text>
+              </View>
+              <Ionicons name="chevron-down" size={14} color={accent} />
+            </Pressable>
+            {category.showViewAll && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`View all ${category.title}`}
+                onPress={() => router.push("/profile/troops")}
+                hitSlop={8}
+                style={styles.viewAllButton}
+              >
+                <Text style={[styles.viewAllText, { color: accent }]}>View all</Text>
+                <Ionicons name="chevron-forward" size={12} color={accent} />
+              </Pressable>
+            )}
+          </View>
+        )}
+        <View style={styles.armyGrid}>
+          {rowItems.map((entity, index) => (
+            <EntityCard
+              key={`${entity.dataId}-${entity.level}-${rowIndex * 6 + index}`}
+              name={entity.name}
+              dataId={entity.dataId}
+              level={entity.level}
+              maxLevel={entity.maxLevel}
+              village={entity.village}
+              isSuperTroop={entity.isSuperTroop}
+              compact
+            />
+          ))}
+        </View>
+      </View>
+    );
+  };
+
+  const listHeader = (
+    <View>
+      <View style={styles.headerRow}>
+        <View style={styles.headerSpacer} />
+        <Text style={styles.headerTitle}>Profile</Text>
+        <View style={styles.headerSpacer} />
+      </View>
+      <ProfileHeroCard data={data} helpers={helpers} guardians={guardians} />
+      <StatsGrid
+        title="Battle stats"
+        stats={[
+          { icon: "star", label: "War stars", value: data.warStars, highlight: true },
+          { icon: "flame", label: "Attacks won", value: data.attackWins, color: colors.orange },
+          { icon: "shield-checkmark", label: "Defenses won", value: data.defenseWins, color: colors.cyan },
+          { icon: "arrow-up", label: "Donated", value: data.donations, color: colors.success },
+          { icon: "arrow-down", label: "Received", value: data.donationsReceived, color: colors.blue },
+        ]}
+      />
+    </View>
+  );
+
+  const listFooter = (
+    <View style={styles.listFooter}>
+      <ProgressSection data={data} />
+      <View style={styles.footer}>
+        <Ionicons
+          name={error ? "alert-circle" : "checkmark-circle"}
+          size={13}
+          color={error ? colors.danger : colors.success}
+        />
+        <Text style={styles.footerText}>
+          {error
+            ? "Showing saved profile; latest update unavailable"
+            : profileUpdatedAt
+              ? `Saved profile · ${new Date(profileUpdatedAt).toLocaleString()}`
+              : "Synced from Clash of Clans API"}
+        </Text>
+      </View>
+    </View>
   );
 
   return (
     <View style={styles.container}>
-      <ScrollView
+      <ProgressionBreakdownSheet
+        ref={progressionSheetRef}
+        categories={armyList.categories}
+      />
+      <FlatList
         onLayout={handleProfileContentLayout}
-        removeClippedSubviews
-        style={styles.scrollView}
+        data={armyList.items}
+        extraData={data}
+        keyExtractor={(item) => item.key}
+        renderItem={renderArmyItem}
+        ListHeaderComponent={listHeader}
+        ListFooterComponent={listFooter}
         contentContainerStyle={[
           styles.scrollContent,
           { paddingTop: insets.top + 10 },
@@ -250,72 +401,13 @@ export default function ProfileScreen() {
             tintColor={colors.gold}
           />
         }
+        removeClippedSubviews
+        initialNumToRender={6}
+        maxToRenderPerBatch={6}
+        updateCellsBatchingPeriod={40}
+        windowSize={5}
         showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.headerRow}>
-          <View style={styles.headerSpacer} />
-
-          <Text style={styles.headerTitle}>Profile</Text>
-
-          <View style={styles.headerSpacer} />
-        </View>
-
-        <ProfileHeroCard data={data} helpers={helpers} guardians={guardians} />
-        <StatsGrid
-          title="Battle stats"
-          stats={[
-            {
-              icon: "star",
-              label: "War stars",
-              value: data.warStars,
-              highlight: true,
-            },
-            {
-              icon: "flame",
-              label: "Attacks won",
-              value: data.attackWins,
-              color: colors.orange,
-            },
-            {
-              icon: "shield-checkmark",
-              label: "Defenses won",
-              value: data.defenseWins,
-              color: colors.cyan,
-            },
-            {
-              icon: "arrow-up",
-              label: "Donated",
-              value: data.donations,
-              color: colors.success,
-            },
-            {
-              icon: "arrow-down",
-              label: "Received",
-              value: data.donationsReceived,
-              color: colors.blue,
-            },
-          ]}
-        />
-
-        <ArmySection data={data} />
-
-        <ProgressSection data={data} />
-
-        <View style={styles.footer}>
-          <Ionicons
-            name={error ? "alert-circle" : "checkmark-circle"}
-            size={13}
-            color={error ? colors.danger : colors.success}
-          />
-          <Text style={styles.footerText}>
-            {error
-              ? "Showing saved profile; latest update unavailable"
-              : profileUpdatedAt
-                ? `Saved profile · ${new Date(profileUpdatedAt).toLocaleString()}`
-                : "Synced from Clash of Clans API"}
-          </Text>
-        </View>
-      </ScrollView>
+      />
     </View>
   );
 }
@@ -339,6 +431,146 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   scrollContent: {
     paddingBottom: 32,
     paddingHorizontal: 14,
+  },
+
+  listFooter: {
+    gap: 8,
+    paddingTop: 12,
+  },
+
+  armyHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingBottom: 10,
+    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(51, 65, 85, 0.6)",
+  },
+  armyHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  armyIconWrapper: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    backgroundColor: "rgba(251, 191, 36, 0.12)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  armyTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: colors.textPrimary,
+    letterSpacing: -0.2,
+  },
+  armyHeaderActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  armyTotal: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.textSecondary,
+  },
+  overviewButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surfaceRaised,
+  },
+  overviewButtonText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: colors.textPrimary,
+  },
+  armyCategoryRow: {
+    backgroundColor: colors.surfaceDark,
+    borderColor: colors.borderStrong,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+  },
+  armyCategoryFirst: {
+    paddingTop: 12,
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
+  },
+  armyCategoryContinuation: {
+    borderTopWidth: 0,
+    paddingTop: 0,
+  },
+  armyCategoryLast: {
+    paddingBottom: 12,
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
+    marginBottom: 12,
+  },
+  armyCategoryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    marginBottom: 12,
+  },
+  armyCategoryHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexShrink: 1,
+  },
+  armyCategoryIconChip: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  armyCategoryTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.textPrimary,
+    letterSpacing: -0.2,
+    flexShrink: 1,
+  },
+  armyCountBadge: {
+    minWidth: 22,
+    alignItems: "center",
+    backgroundColor: "rgba(148, 163, 184, 0.16)",
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 999,
+  },
+  armyCountText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: colors.textSecondary,
+  },
+  viewAllButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    paddingVertical: 5,
+    paddingLeft: 10,
+    paddingRight: 6,
+    borderRadius: 999,
+  },
+  viewAllText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  armyGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 5,
+    paddingBottom: 10,
   },
 
   pressed: {

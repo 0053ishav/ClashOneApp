@@ -1,6 +1,6 @@
 import type { ParsedArmyEntity } from "@/utils/profile/parseArmy";
 import type { ProgressionCategory } from "@/utils/profile/buildVirtualizedArmyList";
-export type { ProgressionCategory } from "@/utils/profile/buildVirtualizedArmyList";
+export type { ProgressionCategory };
 import type { HomeColors } from "@/theme/home";
 import { useHomeColors } from "@/theme/useHomeColors";
 import { ProgressionQueries } from "@/services/progression/progressionQueries";

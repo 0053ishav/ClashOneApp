@@ -47,8 +47,25 @@ export default function ProfileScreen() {
   }, []);
 
   const loadRequestId = useRef(0);
+  const screenMountedAtRef = useRef(Date.now());
+  const firstContentLayoutLoggedRef = useRef(false);
+
+  const logProfileTiming = useCallback((event: string, startedAt: number) => {
+    if (__DEV__) {
+      console.info("[PROFILE_PERF]", event, {
+        elapsedMs: Date.now() - startedAt,
+      });
+    }
+  }, []);
+
+  const handleProfileContentLayout = useCallback(() => {
+    if (firstContentLayoutLoggedRef.current) return;
+    firstContentLayoutLoggedRef.current = true;
+    logProfileTiming("first-content-layout", screenMountedAtRef.current);
+  }, [logProfileTiming]);
 
   const loadProfile = useCallback(async (forceRefresh = false) => {
+    const loadStartedAt = Date.now();
     const requestId = ++loadRequestId.current;
     const playerTag = activeTag;
 
@@ -93,6 +110,7 @@ export default function ProfileScreen() {
           if (cached) {
             setData(cached.profile);
             setProfileUpdatedAt(cached.updatedAt);
+            logProfileTiming("profile-cache-hit", loadStartedAt);
             const entityData = await getEntities(playerTag);
             if (requestId === loadRequestId.current) {
               setEntities(entityData);
@@ -113,6 +131,7 @@ export default function ProfileScreen() {
 
       const playerData = await fetchFullPlayer(playerTag);
       if (requestId !== loadRequestId.current) return;
+      logProfileTiming(forceRefresh ? "profile-network-refresh" : "profile-network-miss", loadStartedAt);
 
       setData(playerData);
       rememberPlayerProfileInMemory(playerTag, playerData, Date.now());
@@ -154,7 +173,7 @@ export default function ProfileScreen() {
         setLoading(false);
       }
     }
-  }, [activeTag]);
+  }, [activeTag, logProfileTiming]);
 
   useEffect(() => {
     setData(null);
@@ -217,6 +236,7 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       <ScrollView
+        onLayout={handleProfileContentLayout}
         removeClippedSubviews
         style={styles.scrollView}
         contentContainerStyle={[

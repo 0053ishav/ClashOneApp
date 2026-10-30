@@ -82,7 +82,7 @@ export interface ProgressionCandidate {
   estimate: UpgradeEstimate;
 }
 
-export type ObservedUpgradeSource = "game-api" | "village-import" | "manual";
+export type ObservedUpgradeSource = "village-import" | "manual" | "restored-local-state";
 
 export interface ObservedActiveUpgrade {
   /** Identifier of the live timer in the app's active-upgrade store. */

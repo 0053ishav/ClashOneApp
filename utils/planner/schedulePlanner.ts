@@ -148,7 +148,15 @@ function prerequisiteReasons(
 ): PlannerBlockReason[] {
   return candidate.prerequisites
     .filter((prerequisite) => !prerequisiteSatisfied(prerequisite, state))
-    .map((prerequisite) => ({ code: "prerequisite-unmet", prerequisite }));
+    .map((prerequisite) => {
+      if (
+        prerequisite.kind === "entity-level" &&
+        !Object.prototype.hasOwnProperty.call(state.entityLevels, prerequisite.entityId)
+      ) {
+        return { code: "prerequisite-unknown" as const, prerequisite };
+      }
+      return { code: "prerequisite-unmet" as const, prerequisite };
+    });
 }
 
 /**

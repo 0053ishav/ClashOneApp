@@ -31,6 +31,7 @@ import type {
   PlannerCatalogResult,
 } from "@/services/plannerCatalogService";
 import type { PlannerEntityCategory } from "@/types/planner";
+import { resolvePlannerStructureLevels } from "@/services/plannerStructureLevelService";
 
 const CATEGORIES: { label: string; value: PlannerEntityCategory | "all" }[] = [
   { label: "All", value: "all" },
@@ -123,15 +124,16 @@ export default function PlannerCatalogScreen() {
     let cancelled = false;
     if (!activeTag) return;
 
+    const structureLevels = resolvePlannerStructureLevels(
+      Object.values(entitiesById),
+      currentLevels,
+    );
     const filters: PlannerCatalogFilters = {
       query,
       category,
       currentLevels,
       townHallLevel,
-      // Until the player imports these structure levels, zero is a conservative
-      // prerequisite value: it can block an item, but cannot falsely unlock it.
-      laboratoryLevel: 0,
-      petHouseLevel: 0,
+      ...structureLevels,
     };
     const identity = {
       accountTag: activeTag,

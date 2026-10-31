@@ -1,5 +1,6 @@
 import {
   addPlannerQueueItem,
+  getDefaultPlannerLane,
   movePlannerQueueItem,
   removePlannerQueueItem,
   updatePlannerQueueItem,
@@ -50,6 +51,20 @@ function laneIds(items: readonly PlannedUpgradeItem[], lane: PlannerLaneAssignme
 }
 
 describe("plannerQueueService", () => {
+  it("assigns default lanes by progression category", () => {
+    expect(getDefaultPlannerLane("troop")).toEqual({ lane: "laboratory" });
+    expect(getDefaultPlannerLane("spell")).toEqual({ lane: "laboratory" });
+    expect(getDefaultPlannerLane("siege")).toEqual({ lane: "laboratory" });
+    expect(getDefaultPlannerLane("pet")).toEqual({ lane: "pets" });
+
+    for (const category of ["building", "hero", "trap", "wall"] as const) {
+      expect(getDefaultPlannerLane(category)).toEqual({
+        lane: "normal-builders",
+        builderIndex: 1,
+      });
+    }
+  });
+
   it("adds to the end of the matching lane and does not mutate input", () => {
     const existing = [item("a", 0), item("b", 1), item("other", 0, laboratory)];
     const result = addPlannerQueueItem(existing, item("c", 50));

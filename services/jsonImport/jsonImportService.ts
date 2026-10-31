@@ -264,6 +264,9 @@ function validateJson(data: any) {
   }
 
   for (const building of data.buildings ?? []) {
+    if (building.cnt != null && (!Number.isSafeInteger(building.cnt) || building.cnt < 1)) {
+      throw new Error("INVALID_STRUCTURE_COUNT");
+    }
     if (
       building.supercharge != null &&
       (!Number.isSafeInteger(building.supercharge) || building.supercharge < 0)

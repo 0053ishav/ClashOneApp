@@ -215,11 +215,26 @@ export default function PlannerCatalogScreen() {
     const level = Number(draft);
     if (!Number.isSafeInteger(level) || level < 0 || level > maxLevel) return;
     if (!activeTag) return;
-    setCurrentLevels((previous) => {
-      const next = { ...previous, [String(entityId)]: level };
-      savePlannerCatalogLevelOverrides(activeTag, next);
-      return next;
-    });
+    const entityKey = String(entityId);
+    const nextLevels = { ...currentLevels, [entityKey]: level };
+
+    try {
+      // Persist only manually entered overrides, not imported building levels.
+      const savedOverrides = loadPlannerCatalogLevelOverrides(activeTag);
+      savePlannerCatalogLevelOverrides(activeTag, {
+        ...savedOverrides,
+        [entityKey]: level,
+      });
+      setCurrentLevels(nextLevels);
+      setLevelDrafts((previous) => ({ ...previous, [entityKey]: String(level) }));
+      setError(null);
+    } catch (saveError: unknown) {
+      setError(
+        saveError instanceof Error
+          ? `Could not save this level: ${saveError.message}`
+          : "Could not save this level.",
+      );
+    }
   };
 
   return (

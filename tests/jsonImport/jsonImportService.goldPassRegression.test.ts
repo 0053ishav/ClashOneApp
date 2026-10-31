@@ -188,6 +188,17 @@ describe("importVillageJson Gold Pass regression coverage", () => {
   });
 
 
+  it("rejects invalid grouped structure counts instead of treating them as one copy", async () => {
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      buildings: [{ data: 1000002, lvl: 16, cnt: 0 }],
+    });
+
+    await expect(importVillageJson(rawExport)).rejects.toThrow("INVALID_STRUCTURE_COUNT");
+    expect(mockImportJsonData).not.toHaveBeenCalled();
+  });
+
   it("uses configured builder capacity when the export under-reports builders", async () => {
     jest.mocked(getAccountByTag).mockResolvedValue({
       tag: accountTag,

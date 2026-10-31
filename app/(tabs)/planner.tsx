@@ -9,7 +9,12 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Image } from "expo-image";
 import { useHomeColors } from "@/theme/useHomeColors";
+import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
+import { resolveResourceIcon } from "@/utils/icons/resolveResourceIcon";
+import { ResourceType } from "@/types/resource";
+import { getResourceColor } from "@/components/ResourceCost";
 import { useAccountStore } from "@/stores/accountStore";
 import { useEntityStore } from "@/stores/entityStore";
 import { getBuildingProgress, getStructureInstances } from "@/services/accountService";
@@ -877,22 +882,56 @@ export default function PlannerCatalogScreen() {
               query={query}
             />
 
-            {!isLoading && result?.items.map((item) => (
+            {!isLoading && result?.items.map((item) => {
+              const entityId = Number(item.candidate.entityId);
+              const entity = Number.isSafeInteger(entityId) ? entitiesById[entityId] : undefined;
+              const iconUri = entity
+                ? resolveEntityIcon(entityId, {
+                    village: entity.village,
+                    type: entity.type,
+                    subType: entity.subType,
+                    level: Math.max(1, item.currentLevel),
+                    useTroopIcon: entity.type === "troop",
+                  })
+                : undefined;
+              const costResources = getCostResources(item.candidate.estimate.cost);
+              return (
               <View key={item.candidate.candidateId} style={styles.itemCard}>
                 <View style={styles.itemHeader}>
-                  <View style={styles.itemTitleWrap}>
-                    <Text style={styles.itemName}>{item.name}</Text>
-                    <Text style={styles.muted}>{item.candidate.category}</Text>
+                  <View style={styles.catalogIdentity}>
+                    {iconUri ? (
+                      <Image source={{ uri: iconUri }} style={styles.entityIcon} contentFit="contain" cachePolicy="memory-disk" />
+                    ) : (
+                      <View style={styles.entityIconFallback}>
+                        <Text style={styles.muted}>{item.candidate.category.slice(0, 1).toUpperCase()}</Text>
+                      </View>
+                    )}
+                    <View style={styles.itemTitleWrap}>
+                      <Text style={styles.itemName}>{item.name}</Text>
+                      <Text style={styles.muted}>{item.candidate.category}</Text>
+                    </View>
                   </View>
                   <View style={styles.levelBadge}>
                     <Text style={styles.levelText}>{item.currentLevel} → {item.candidate.targetLevel}</Text>
                   </View>
                 </View>
-                <Text style={styles.body}>
-                  Cost: {formatCostEstimate(item.candidate.estimate.cost)}
-                  {" · "}
-                  Time: {formatDurationEstimate(item.candidate.estimate.durationMs)}
-                </Text>
+                <View style={styles.costAndTime}>
+                  <View style={styles.resourceCostRow}>
+                    {costResources.length === 0 ? (
+                      <Text style={styles.body}>Cost: {formatCostEstimate(item.candidate.estimate.cost)}</Text>
+                    ) : costResources.map(({ resource, amount }) => {
+                      const resourceIcon = resolveResourceIcon(resource);
+                      const resourceColor = getResourceColor(resource, colors);
+                      return (
+                        <View key={resource} style={[styles.resourceCostChip, { backgroundColor: resourceColor + "18" }]}>
+                          {resourceIcon ? <Image source={{ uri: resourceIcon }} style={styles.resourceIcon} contentFit="contain" /> : null}
+                          <Text style={[styles.resourceCostText, { color: resourceColor }]}>{amount.toLocaleString("en-US")}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                  <Text style={styles.muted}>Time: {formatDurationEstimate(item.candidate.estimate.durationMs)}</Text>
+                </View>
                 {item.blockedBy.length > 0 && (
                   <Text style={styles.warning}>
                     Prerequisites not confirmed: {item.blockedBy.map((prerequisite) =>
@@ -934,6 +973,21 @@ export default function PlannerCatalogScreen() {
         )}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function getCostResources(
+  estimate: PlannerCatalogResult["items"][number]["candidate"]["estimate"]["cost"],
+): { resource: ResourceType; amount: number }[] {
+  if (estimate.status !== "known") return [];
+  const resources: { resource: ResourceType; amount: number | undefined }[] = [
+    { resource: ResourceType.GOLD, amount: estimate.value.gold },
+    { resource: ResourceType.ELIXIR, amount: estimate.value.elixir },
+    { resource: ResourceType.DARK_ELIXIR, amount: estimate.value.darkElixir },
+  ];
+  return resources.filter(
+    (entry): entry is { resource: ResourceType; amount: number } =>
+      entry.amount !== undefined && Number.isFinite(entry.amount) && entry.amount >= 0,
   );
 }
 
@@ -996,6 +1050,14 @@ function createStyles(colors: ReturnType<typeof useHomeColors>) {
     stateTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: "800" },
     itemCard: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 14, padding: 14, gap: 8 },
     itemHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10 },
+    catalogIdentity: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
+    entityIcon: { width: 48, height: 48 },
+    entityIconFallback: { width: 48, height: 48, alignItems: "center", justifyContent: "center", backgroundColor: colors.surfaceRaised, borderRadius: 8 },
+    costAndTime: { gap: 5 },
+    resourceCostRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 },
+    resourceCostChip: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 7, paddingVertical: 4, borderRadius: 8 },
+    resourceIcon: { width: 18, height: 18 },
+    resourceCostText: { fontSize: 12, fontWeight: "800" },
     itemTitleWrap: { flex: 1 },
     itemName: { color: colors.textPrimary, fontSize: 15, fontWeight: "800" },
     levelBadge: { backgroundColor: colors.surfaceRaised, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7 },

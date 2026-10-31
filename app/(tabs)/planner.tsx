@@ -40,6 +40,7 @@ import { createPlannerPlan, listPlannerPlans, replacePlannerQueue } from "@/serv
 import { addPlannerQueueItem, getDefaultPlannerLane, movePlannerQueueItem, removePlannerQueueItem, updatePlannerQueueItem } from "@/services/planner/plannerQueueService";
 import { resolvePlannerStructureLevels } from "@/services/plannerStructureLevelService";
 import { resolvePlannerCatalogLevelState } from "@/services/plannerCatalogLevelState";
+import { PlannerTimeline } from "@/components/planner/PlannerTimeline";
 
 const CATEGORIES: { label: string; value: PlannerEntityCategory | "all" }[] = [
   { label: "All", value: "all" },
@@ -586,6 +587,18 @@ export default function PlannerCatalogScreen() {
                 )}
               </View>
             )}
+
+            <PlannerTimeline
+              items={queuePlan?.items ?? []}
+              projections={projections ?? []}
+              candidates={plannerCandidates}
+              entityNamesById={Object.fromEntries(
+                Object.values(entitiesById).map((entity) => [String(entity.id), entity.name.en]),
+              )}
+              liveUpgrades={observedUpgrades ?? []}
+              builderCount={activeTag ? profilesByTag[activeTag]?.normalBuilderCount ?? 0 : 0}
+              nowMs={Date.now()}
+            />
 
             <View style={styles.stateCard}>
               <Text style={styles.stateTitle}>Upgrade queue</Text>

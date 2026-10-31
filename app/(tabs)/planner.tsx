@@ -67,6 +67,7 @@ export default function PlannerCatalogScreen() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<PlannerEntityCategory | "all">("all");
   const [currentLevels, setCurrentLevels] = useState<Record<string, number>>({});
+  const [manualOverrides, setManualOverrides] = useState<Record<string, number>>({});
   const [levelDrafts, setLevelDrafts] = useState<Record<string, string>>({});
   const [levelErrors, setLevelErrors] = useState<Record<string, string>>({});
   const [result, setResult] = useState<PlannerCatalogResult | null>(null);
@@ -86,6 +87,7 @@ export default function PlannerCatalogScreen() {
 
     if (!activeTag) {
       setCurrentLevels({});
+      setManualOverrides({});
       setIsLoading(false);
       return () => {
         cancelled = true;
@@ -94,6 +96,7 @@ export default function PlannerCatalogScreen() {
     }
 
     setCurrentLevels({});
+    setManualOverrides(savedOverrides);
     setLevelDrafts({});
     setIsLoading(true);
     const savedOverrides = loadPlannerCatalogLevelOverrides(activeTag);
@@ -106,6 +109,9 @@ export default function PlannerCatalogScreen() {
           levels[key] = Math.max(levels[key] ?? 0, record.normalLevel);
         }
         setCurrentLevels({ ...savedOverrides, ...levels });
+        setManualOverrides(Object.fromEntries(
+          Object.entries(savedOverrides).filter(([key]) => !Object.prototype.hasOwnProperty.call(levels, key)),
+        ));
       })
       .catch((loadError: unknown) => {
         if (!cancelled) {
@@ -197,7 +203,8 @@ export default function PlannerCatalogScreen() {
       .filter((entity) => entity.village === "home")
       .filter((entity) => CATEGORY_BY_ENTITY_TYPE[entity.type] !== undefined)
       .filter((entity) => category === "all" || CATEGORY_BY_ENTITY_TYPE[entity.type] === category)
-      .filter((entity) => !Object.prototype.hasOwnProperty.call(currentLevels, String(entity.id)))
+      .filter((entity) => !Object.prototype.hasOwnProperty.call(currentLevels, String(entity.id))
+        || Object.prototype.hasOwnProperty.call(manualOverrides, String(entity.id)))
       .filter((entity) => {
         if (!normalizedQuery) return true;
         return entity.name.en.toLocaleLowerCase().includes(normalizedQuery)
@@ -211,7 +218,7 @@ export default function PlannerCatalogScreen() {
       })
       .filter(({ maxLevel }) => maxLevel > 0)
       .slice(0, 6);
-  }, [category, currentLevels, entitiesById, query]);
+  }, [category, currentLevels, entitiesById, manualOverrides, query]);
 
   const applyLevel = (entityId: number, maxLevel: number) => {
     const entityKey = String(entityId);
@@ -236,6 +243,7 @@ export default function PlannerCatalogScreen() {
         [entityKey]: level,
       });
       setCurrentLevels(nextLevels);
+      setManualOverrides((previous) => ({ ...previous, [entityKey]: level }));
       setLevelDrafts((previous) => ({ ...previous, [entityKey]: String(level) }));
       setLevelErrors((previous) => {
         const next = { ...previous };
@@ -302,9 +310,9 @@ export default function PlannerCatalogScreen() {
 
             {untrackedEntities.length > 0 && (
               <View style={styles.stateCard}>
-                <Text style={styles.stateTitle}>Set missing levels</Text>
+                <Text style={styles.stateTitle}>Set or edit levels</Text>
                 <Text style={styles.body}>
-                  These levels are not present in the imported snapshot. Enter the level you know for an entity; the catalog will then show its next upgrade. Level 0 means not built/unlocked.
+                  Levels absent from the imported snapshot need manual entry. You can also edit saved manual levels here. Level 0 means not built/unlocked; imported levels take precedence over manual values.
                 </Text>
                 {untrackedEntities.map(({ entity, maxLevel }) => {
                   const key = String(entity.id);
@@ -317,7 +325,7 @@ export default function PlannerCatalogScreen() {
                       <TextInput
                         accessibilityLabel={`Current level for ${entity.name.en}`}
                         keyboardType="number-pad"
-                        value={levelDrafts[key] ?? ""}
+                        value={levelDrafts[key] ?? (manualOverrides[key] !== undefined ? String(manualOverrides[key]) : "")}
                         onChangeText={(value) => {
                           setLevelDrafts((previous) => ({ ...previous, [key]: value.replace(/[^0-9]/g, "") }));
                           setLevelErrors((previous) => {

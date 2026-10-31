@@ -613,11 +613,63 @@ export default function PlannerCatalogScreen() {
                   <View style={styles.itemTitleWrap}>
                     <Text style={styles.itemName}>{result?.items.find((item) => item.candidate.candidateId === queuedItem.candidateId)?.name ?? queuedItem.candidateId}</Text>
                     <Text style={styles.muted}>Target level {queuedItem.targetLevel} · {queuedItem.lane.lane === "normal-builders" ? `Builder ${queuedItem.lane.builderIndex}` : queuedItem.lane.lane}</Text>
+                    {editingQueueItemId === queuedItem.id && (
+                      <View style={styles.queueEditPanel}>
+                        <Text style={styles.muted}>Target level</Text>
+                        <TextInput
+                          accessibilityLabel="Edit target level"
+                          keyboardType="number-pad"
+                          value={queueTargetDrafts[queuedItem.id] ?? String(queuedItem.targetLevel)}
+                          onChangeText={(value) => setQueueTargetDrafts((previous) => ({ ...previous, [queuedItem.id]: value.replace(/[^0-9]/g, "") }))}
+                          style={styles.levelInput}
+                        />
+                        {(() => {
+                          const candidate = plannerCandidates.find((entry) => entry.candidateId === queuedItem.candidateId);
+                          const builderCount = activeTag ? profilesByTag[activeTag]?.normalBuilderCount ?? 0 : 0;
+                          if (!candidate || getDefaultPlannerLane(candidate.category).lane !== "normal-builders") {
+                            return <Text style={styles.muted}>Lane is determined by the upgrade category.</Text>;
+                          }
+                          return (
+                            <View style={styles.laneChoiceRow}>
+                              {Array.from({ length: builderCount }, (_, index) => index + 1).map((builderIndex) => {
+                                const selectedLane = queueLaneDrafts[queuedItem.id] ?? queuedItem.lane;
+                                const selected = selectedLane.lane === "normal-builders" && selectedLane.builderIndex === builderIndex;
+                                return (
+                                  <Pressable
+                                    key={builderIndex}
+                                    accessibilityRole="button"
+                                    accessibilityState={{ selected }}
+                                    onPress={() => setQueueLaneDrafts((previous) => ({ ...previous, [queuedItem.id]: { lane: "normal-builders", builderIndex } }))}
+                                    style={[styles.laneChoice, selected && styles.laneChoiceSelected]}
+                                  >
+                                    <Text style={[styles.removeButtonText, selected && styles.laneChoiceTextSelected]}>Builder {builderIndex}</Text>
+                                  </Pressable>
+                                );
+                              })}
+                            </View>
+                          );
+                        })()}
+                        {!!queueEditErrors[queuedItem.id] && <Text accessibilityRole="alert" style={styles.warning}>{queueEditErrors[queuedItem.id]}</Text>}
+                        <View style={styles.queueActions}>
+                          <Pressable accessibilityRole="button" disabled={queueBusy} onPress={() => saveQueueItemEdit(queuedItem)} style={styles.applyButton}>
+                            <Text style={styles.applyButtonText}>Save preview</Text>
+                          </Pressable>
+                          <Pressable accessibilityRole="button" disabled={queueBusy} onPress={() => setEditingQueueItemId(null)} style={styles.removeButton}>
+                            <Text style={styles.removeButtonText}>Cancel</Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    )}
                     <Text style={projectionByItemId.get(queuedItem.id)?.status === "scheduled" ? styles.body : styles.warning}>
                       {formatProjection(projectionByItemId.get(queuedItem.id))}
                     </Text>
                   </View>
                   <View style={styles.queueActions}>
+                    {editingQueueItemId !== queuedItem.id && (
+                      <Pressable accessibilityRole="button" accessibilityLabel="Edit target level and lane" disabled={queueBusy} onPress={() => beginQueueItemEdit(queuedItem)} style={styles.removeButton}>
+                        <Text style={styles.removeButtonText}>Edit</Text>
+                      </Pressable>
+                    )}
                     {queuedItem.lane.lane === "normal-builders" &&
                       (activeTag ? profilesByTag[activeTag]?.normalBuilderCount ?? 0 : 0) > 1 && (
                       <Pressable
@@ -931,7 +983,12 @@ function createStyles(colors: ReturnType<typeof useHomeColors>) {
     applyButton: { backgroundColor: colors.gold, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 9 },
     applyButtonText: { color: colors.textDark, fontSize: 11, fontWeight: "800" },
     queueRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 10, marginTop: 10, borderTopWidth: 1, borderTopColor: colors.border },
-    queueActions: { flexDirection: "row", alignItems: "center", gap: 5 },
+    queueActions: { flexDirection: "row", alignItems: "center", gap: 5, flexWrap: "wrap" },
+    queueEditPanel: { gap: 8, paddingTop: 8, marginTop: 8, borderTopWidth: 1, borderTopColor: colors.border },
+    laneChoiceRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+    laneChoice: { borderColor: colors.border, borderWidth: 1, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7 },
+    laneChoiceSelected: { backgroundColor: colors.gold, borderColor: colors.gold },
+    laneChoiceTextSelected: { color: colors.textDark },
     removeButton: { borderColor: colors.border, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
     removeButtonText: { color: colors.textSecondary, fontSize: 11, fontWeight: "700" },
   });

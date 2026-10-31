@@ -87,6 +87,8 @@ export default function PlannerCatalogScreen() {
       };
     }
 
+    setCurrentLevels({});
+    setLevelDrafts({});
     setIsLoading(true);
     void getBuildingProgress(activeTag)
       .then((records) => {

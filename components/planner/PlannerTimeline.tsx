@@ -124,6 +124,25 @@ export function PlannerTimeline({
     null,
   );
   const hasIncompleteWork = unknownCount > 0 || blockedCount > 0 || projections.length < items.length;
+  const knownCostProjections = scheduled.filter((projection) => projection.estimate.cost.status === "known");
+  const unknownScheduledCostCount = scheduled.length - knownCostProjections.length;
+  const resourceTotals = knownCostProjections.reduce(
+    (totals, projection) => {
+      if (projection.estimate.cost.status !== "known") return totals;
+      totals.gold += projection.estimate.cost.value.gold ?? 0;
+      totals.elixir += projection.estimate.cost.value.elixir ?? 0;
+      totals.darkElixir += projection.estimate.cost.value.darkElixir ?? 0;
+      return totals;
+    },
+    { gold: 0, elixir: 0, darkElixir: 0 },
+  );
+  const laneCounts = lanes.map((lane) => ({
+    ...lane,
+    count: items.filter((item) => laneKey(item.lane) === lane.key).length,
+  })).filter((lane) => lane.count > 0);
+
+  const formatResource = (amount: number) =>
+    new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(amount);
 
   return (
     <View style={styles.card}>
@@ -268,6 +287,75 @@ export function PlannerTimeline({
         <View style={styles.legendItem}><View style={[styles.legendSwatch, styles.blockedSwatch]} /><Text style={styles.legendText}>Blocked</Text></View>
         <View style={styles.legendItem}><View style={[styles.legendSwatch, styles.unknownSwatch]} /><Text style={styles.legendText}>Unknown</Text></View>
       </View>
+      {items.length > 0 && (
+        <View style={styles.detailsSection}>
+          <Text style={styles.detailsTitle}>Plan details</Text>
+          <View style={styles.detailsGrid}>
+            <View style={styles.detailCell}>
+              <Text style={styles.summaryLabel}>Queued actions</Text>
+              <Text style={styles.detailValue}>{items.length}</Text>
+            </View>
+            <View style={styles.detailCell}>
+              <Text style={styles.summaryLabel}>Live timers locked</Text>
+              <Text style={styles.detailValue}>{liveUpgrades.length}</Text>
+            </View>
+            <View style={styles.detailCell}>
+              <Text style={styles.summaryLabel}>Active lanes</Text>
+              <Text style={styles.detailValue}>{laneCounts.length}</Text>
+            </View>
+          </View>
+          {laneCounts.length > 0 && (
+            <View style={styles.laneSummaryList}>
+              {laneCounts.map((lane) => (
+                <View key={lane.key} style={styles.laneSummaryRow}>
+                  <Text style={styles.laneSummaryLabel}>{lane.label}</Text>
+                  <Text style={styles.laneSummaryCount}>{lane.count} {lane.count === 1 ? "upgrade" : "upgrades"}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+          <Text style={styles.assumptionText}>
+            Scheduling follows queue order within each lane. Different lanes may progress in parallel. Live timers reserve their lanes and are never changed by this plan.
+          </Text>
+        </View>
+      )}
+
+      {items.length > 0 && (
+        <View style={styles.detailsSection}>
+          <Text style={styles.detailsTitle}>Known resource totals</Text>
+          <Text style={styles.assumptionText}>Scheduler-provided costs for scheduled upgrades only.</Text>
+          {knownCostProjections.length === 0 ? (
+            <Text style={styles.detailValue}>No known costs available yet</Text>
+          ) : (
+            <View style={styles.resourceRow}>
+              {resourceTotals.gold > 0 && (
+                <View style={styles.resourceCell}>
+                  <Text style={styles.resourceLabel}>Gold</Text>
+                  <Text style={styles.detailValue}>{formatResource(resourceTotals.gold)}</Text>
+                </View>
+              )}
+              {resourceTotals.elixir > 0 && (
+                <View style={styles.resourceCell}>
+                  <Text style={styles.resourceLabel}>Elixir</Text>
+                  <Text style={styles.detailValue}>{formatResource(resourceTotals.elixir)}</Text>
+                </View>
+              )}
+              {resourceTotals.darkElixir > 0 && (
+                <View style={styles.resourceCell}>
+                  <Text style={styles.resourceLabel}>Dark elixir</Text>
+                  <Text style={styles.detailValue}>{formatResource(resourceTotals.darkElixir)}</Text>
+                </View>
+              )}
+            </View>
+          )}
+          {unknownScheduledCostCount > 0 && (
+            <Text style={styles.incompleteNote}>
+              Costs are unknown for {unknownScheduledCostCount} scheduled {unknownScheduledCostCount === 1 ? "upgrade" : "upgrades"} and are excluded from these totals.
+            </Text>
+          )}
+        </View>
+      )}
+
       {hasIncompleteWork && items.length > 0 && (
         <Text style={styles.incompleteNote}>
           Finish estimates include scheduled work only. Blocked or unknown upgrades do not receive invented dates.
@@ -323,6 +411,19 @@ function createStyles(colors: ReturnType<typeof useHomeColors>) {
     blockedSwatch: { backgroundColor: colors.orangeLight },
     unknownSwatch: { backgroundColor: colors.textMuted },
     legendText: { color: colors.textMuted, fontSize: 10 },
+    detailsSection: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12, gap: 9 },
+    detailsTitle: { color: colors.textPrimary, fontSize: 13, fontWeight: "800" },
+    detailsGrid: { flexDirection: "row", gap: 10 },
+    detailCell: { flex: 1, gap: 4 },
+    detailValue: { color: colors.textPrimary, fontSize: 13, fontWeight: "700" },
+    laneSummaryList: { gap: 6 },
+    laneSummaryRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 },
+    laneSummaryLabel: { color: colors.textSecondary, fontSize: 11 },
+    laneSummaryCount: { color: colors.textPrimary, fontSize: 11, fontWeight: "700" },
+    assumptionText: { color: colors.textMuted, fontSize: 11, lineHeight: 16 },
+    resourceRow: { flexDirection: "row", flexWrap: "wrap", gap: 18 },
+    resourceCell: { minWidth: 74, gap: 4 },
+    resourceLabel: { color: colors.textMuted, fontSize: 10, fontWeight: "700" },
     incompleteNote: { color: colors.textMuted, fontSize: 11, lineHeight: 16 },
   });
 }

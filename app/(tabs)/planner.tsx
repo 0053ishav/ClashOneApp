@@ -307,7 +307,7 @@ export default function PlannerCatalogScreen() {
                   style={styles.itemTitleWrap}
                 >
                   <Text style={styles.stateTitle}>
-                    Tracked structure copies ({structureInstances.filter((instance) => entitiesById[String(instance.dataId)]?.type !== "wall").length})
+                    Tracked structure copies ({structureInstances.filter((instance) => entitiesById[instance.dataId]?.type !== "wall").length})
                   </Text>
                   <Text style={styles.muted}>{showStructureInstances ? "Hide" : "Show"}</Text>
                 </Pressable>
@@ -315,10 +315,10 @@ export default function PlannerCatalogScreen() {
                   Numbered labels are presentation only; the saved instance ID is the identity. Copies are marked uncertain when an import cannot prove which physical copy changed.
                 </Text>
                 {showStructureInstances && structureInstances
-                  .filter((instance) => entitiesById[String(instance.dataId)]?.type !== "wall")
+                  .filter((instance) => entitiesById[instance.dataId]?.type !== "wall")
                   .slice(0, 100)
                   .map((instance) => {
-                    const entity = entitiesById[String(instance.dataId)];
+                    const entity = entitiesById[instance.dataId];
                     const label = entity?.name.en ?? `Entity ${instance.dataId}`;
                     const activeUpgrade = activeUpgrades.find(
                       (upgrade) => upgrade.structureInstanceId === instance.id,
@@ -352,7 +352,7 @@ export default function PlannerCatalogScreen() {
                     );
                   })}
                 {showStructureInstances && structureInstances.filter(
-                  (instance) => entitiesById[String(instance.dataId)]?.type !== "wall",
+                  (instance) => entitiesById[instance.dataId]?.type !== "wall",
                 ).length > 100 && (
                   <Text style={styles.muted}>Showing the first 100 non-wall copies.</Text>
                 )}

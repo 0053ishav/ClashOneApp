@@ -159,7 +159,7 @@ export function PlannerQueueList({
             </View>
             <View style={styles.queueActions}>
               {!isEditing && (
-                <Pressable accessibilityRole="button" accessibilityLabel="Edit target level and lane" disabled={queueBusy || hasEditConflict} onPress={() => onBeginEdit(queuedItem)} style={styles.removeButton}>
+                <Pressable accessibilityRole="button" accessibilityLabel="Edit target level and lane" disabled={queueBusy || hasEditConflict || pendingEdit !== null} onPress={() => onBeginEdit(queuedItem)} style={styles.removeButton}>
                   <Text style={styles.removeButtonText}>Edit</Text>
                 </Pressable>
               )}
@@ -167,20 +167,20 @@ export function PlannerQueueList({
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Assign upgrade to next builder; currently Builder ${queuedItem.lane.builderIndex}`}
-                  disabled={queueBusy}
+                  disabled={queueBusy || pendingEdit !== null}
                   onPress={() => onAssignNextBuilder(queuedItem.id)}
                   style={styles.removeButton}
                 >
                   <Text style={styles.removeButtonText}>Builder ↻</Text>
                 </Pressable>
               )}
-              <Pressable accessibilityRole="button" accessibilityLabel="Move upgrade earlier" disabled={queueBusy || queuedItem.order === 0} onPress={() => onMove(queuedItem.id, -1)} style={styles.removeButton}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Move upgrade earlier" disabled={queueBusy || pendingEdit !== null || queuedItem.order === 0} onPress={() => onMove(queuedItem.id, -1)} style={styles.removeButton}>
                 <Text style={styles.removeButtonText}>↑</Text>
               </Pressable>
-              <Pressable accessibilityRole="button" accessibilityLabel="Move upgrade later" disabled={queueBusy} onPress={() => onMove(queuedItem.id, 1)} style={styles.removeButton}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Move upgrade later" disabled={queueBusy || pendingEdit !== null} onPress={() => onMove(queuedItem.id, 1)} style={styles.removeButton}>
                 <Text style={styles.removeButtonText}>↓</Text>
               </Pressable>
-              <Pressable accessibilityRole="button" disabled={queueBusy} onPress={() => onRemove(queuedItem.id)} style={styles.removeButton}>
+              <Pressable accessibilityRole="button" disabled={queueBusy || pendingEdit !== null} onPress={() => onRemove(queuedItem.id)} style={styles.removeButton}>
                 <Text style={styles.removeButtonText}>Remove</Text>
               </Pressable>
             </View>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useHomeColors } from "@/theme/useHomeColors";
 import type {
   ObservedActiveUpgrade,
@@ -75,6 +75,7 @@ export function PlannerTimeline({
   const colors = useHomeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [scale, setScale] = useState<TimelineScale>("weeks");
+  const [selectedItemId, setSelectedItemId] = useState<PlannedUpgradeItem["id"] | null>(null);
   const config = SCALE_CONFIG[scale];
   const timelineWidth = config.days * config.pixelsPerDay;
   const candidateById = useMemo(
@@ -237,31 +238,49 @@ export function PlannerTimeline({
                     if (projection?.status === "scheduled") {
                       const position = getBlockPosition(projection.startsAtMs, projection.completesAtMs, nowMs, config.days, config.pixelsPerDay);
                       if (!position) return null;
+                      const selected = selectedItemId === item.id;
                       return (
-                        <View
+                        <Pressable
                           key={item.id}
-                          style={[styles.block, styles.plannedBlock, { left: position.left, width: position.width }]}
-                          accessibilityLabel={`${name}, scheduled from ${formatDate(projection.startsAtMs)} to ${formatDate(projection.completesAtMs)}`}
+                          onPress={() => setSelectedItemId(item.id)}
+                          hitSlop={7}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected }}
+                          accessibilityLabel={`${name}, level ${candidate?.currentLevel ?? "unknown"} to ${item.targetLevel}, scheduled from ${formatDate(projection.startsAtMs)} to ${formatDate(projection.completesAtMs)}`}
+                          style={[
+                            styles.block,
+                            styles.plannedBlock,
+                            selected && styles.selectedPlannedBlock,
+                            { left: position.left, width: position.width },
+                          ]}
                         >
                           <Text numberOfLines={1} style={styles.plannedBlockText}>{name}</Text>
-                        </View>
+                        </Pressable>
                       );
                     }
                     const unknown = projection?.status === "unknown";
                     return (
-                      <View
-                        key={item.id}
-                        style={[
-                          styles.block,
-                          unknown ? styles.unknownBlock : styles.blockedBlock,
-                          { left: 3, width: Math.max(64, Math.min(150, timelineWidth * 0.28)) },
-                        ]}
-                        accessibilityLabel={`${name}: ${unknown ? "estimate unknown" : "blocked or not scheduled"}`}
-                      >
-                        <Text numberOfLines={1} style={unknown ? styles.unknownBlockText : styles.blockedBlockText}>
-                          {unknown ? "Unknown" : "Blocked"} · {name}
-                        </Text>
-                      </View>
+                      const selected = selectedItemId === item.id;
+                      return (
+                        <Pressable
+                          key={item.id}
+                          onPress={() => setSelectedItemId(item.id)}
+                          hitSlop={7}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected }}
+                          style={[
+                            styles.block,
+                            unknown ? styles.unknownBlock : styles.blockedBlock,
+                            selected && styles.selectedUnscheduledBlock,
+                            { left: 3, width: Math.max(64, Math.min(150, timelineWidth * 0.28)) },
+                          ]}
+                          accessibilityLabel={`${name}, level ${candidate?.currentLevel ?? "unknown"} to ${item.targetLevel}, ${unknown ? "estimate unknown" : "blocked or not scheduled"}`}
+                        >
+                          <Text numberOfLines={1} style={unknown ? styles.unknownBlockText : styles.blockedBlockText}>
+                            {unknown ? "Unknown" : "Blocked"} · {name}
+                          </Text>
+                        </Pressable>
+                      );
                     );
                   })}
                 </View>
@@ -386,6 +405,8 @@ function createStyles(colors: ReturnType<typeof useHomeColors>) {
     gridLine: { position: "absolute", top: 0, bottom: 0, width: 1, backgroundColor: colors.border, opacity: 0.5 },
     block: { position: "absolute", top: 7, height: 30, borderRadius: 6, paddingHorizontal: 6, justifyContent: "center", overflow: "hidden" },
     plannedBlock: { backgroundColor: colors.gold },
+    selectedPlannedBlock: { borderWidth: 2, borderColor: colors.textPrimary },
+    selectedUnscheduledBlock: { borderWidth: 2, borderColor: colors.textPrimary },
     plannedBlockText: { color: colors.textDark, fontSize: 10, fontWeight: "700" },
     liveBlock: { backgroundColor: colors.surfaceRaised, borderWidth: 1, borderColor: colors.borderStrong },
     liveBlockText: { color: colors.textSecondary, fontSize: 10, fontWeight: "700" },

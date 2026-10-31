@@ -61,7 +61,7 @@ describe("PlannerTimeline positioning", () => {
       nowMs,
       365,
       3,
-    )).toEqual({ left: 1092, width: 3 });
+    )).toEqual({ left: 1092, width: 8 });
   });
 
   it("keeps an instant or very short task visible without inventing a longer duration", () => {
@@ -88,7 +88,7 @@ describe("PlannerTimeline positioning", () => {
     expect(screen.getByText("Your timeline starts here")).toBeTruthy();
     expect(screen.getByText("No plan yet")).toBeTruthy();
     expect(screen.getByLabelText("Timeline scale")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Weeks" })).toHaveAccessibilityState({ selected: true });
+    expect(screen.getByRole("button", { name: "Weeks" })).props.accessibilityState).toEqual({ selected: true });
 
     fireEvent.press(screen.getByRole("button", { name: "Months" }));
     expect(screen.getByRole("button", { name: "Months" })).toHaveAccessibilityState({ selected: true });

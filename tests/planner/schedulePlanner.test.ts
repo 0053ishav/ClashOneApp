@@ -149,7 +149,7 @@ describe("schedulePlanner", () => {
     });
     const result = schedulePlanner(input({
       candidates: [instant, candidate("b")],
-      items: [item("instant", "a"), item("after", "b")],
+      items: [item("instant", "a", { lane: "normal-builders", builderIndex: 1 }, 0), item("after", "b", { lane: "normal-builders", builderIndex: 1 }, 1)],
     }));
     expect(result).toEqual([
       expect.objectContaining({ status: "scheduled", startsAtMs: NOW, completesAtMs: NOW }),

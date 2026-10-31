@@ -44,6 +44,7 @@ import { resolvePlannerCatalogLevelState } from "@/services/plannerCatalogLevelS
 import { PlannerTimeline } from "@/components/planner/PlannerTimeline";
 import { PlannerSnapshotReview } from "@/components/planner/PlannerSnapshotReview";
 import { PlannerQueueList } from "@/components/planner/PlannerQueueList";
+import { PlannerCatalogState } from "@/components/planner/PlannerCatalogState";
 
 const CATEGORIES: { label: string; value: PlannerEntityCategory | "all" }[] = [
   { label: "All", value: "all" },
@@ -830,67 +831,14 @@ export default function PlannerCatalogScreen() {
               </View>
             )}
 
-            {isLoading && (
-              <View style={styles.inlineState}>
-                <ActivityIndicator color={colors.gold} />
-                <Text style={styles.body}>Loading catalog…</Text>
-              </View>
-            )}
-
-            {!!error && (
-              <View style={styles.stateCard}>
-                <Text style={styles.stateTitle}>Catalog unavailable</Text>
-                <Text style={styles.body}>{error}</Text>
-              </View>
-            )}
-
-            {!isLoading && !error && result?.state === "error" && (
-              <View style={styles.stateCard}>
-                <Text style={styles.stateTitle}>Game data unavailable</Text>
-                <Text style={styles.body}>The progression manifest or category cache is missing. Sync game data and try again.</Text>
-              </View>
-            )}
-
-            {!isLoading && !error && result && result.items.length === 0 && (
-              <View style={styles.stateCard}>
-                {Object.keys(entitiesById).length === 0 ? (
-                  <>
-                    <Text style={styles.stateTitle}>Game entity metadata not loaded</Text>
-                    <Text style={styles.body}>
-                      The Planner has no entity catalog to search or show level editors for. Open the Home screen and sync game data, then return here. This is different from having no eligible upgrades.
-                    </Text>
-                  </>
-                ) : untrackedEntities.length === 0 && query.trim() !== "" ? (
-                  <>
-                    <Text style={styles.stateTitle}>No matching entity metadata</Text>
-                    <Text style={styles.body}>
-                      No Home Village entity name matches “{query.trim()}”. Try another name or clear search.
-                    </Text>
-                  </>
-                ) : (
-                  <>
-                    <Text style={styles.stateTitle}>No eligible upgrades yet</Text>
-                    <Text style={styles.body}>
-                      The catalog has no candidate matching the known account levels and available progression data. Missing levels are not assumed to be 0. Check the entity&apos;s current level and sync game data if its next level is missing.
-                    </Text>
-                  </>
-                )}
-                <Text style={styles.muted}>
-                  Planner diagnostics · progression candidates {result.diagnosticsSummary.datasetCandidates}
-                  {" · "}Home Village {result.diagnosticsSummary.homeVillageCandidates}
-                  {" · "}known level {result.diagnosticsSummary.knownLevelCandidates}
-                  {" · "}next level {result.diagnosticsSummary.nextLevelCandidates}
-                  {" · "}category match {result.diagnosticsSummary.categoryCandidates}
-                  {" · "}metadata match {result.diagnosticsSummary.metadataCandidates}
-                  {" · "}below max {result.diagnosticsSummary.belowMaxLevelCandidates}
-                  {" · "}search match {result.diagnosticsSummary.queryCandidates}
-                  {" · "}shown {result.diagnosticsSummary.returnedItems}
-                </Text>
-                {result.state === "partial" && (
-                  <Text style={styles.muted}>Some progression categories are unavailable: {result.unavailableCategories.join(", ") || "data is incomplete"}.</Text>
-                )}
-              </View>
-            )}
+            <PlannerCatalogState
+              isLoading={isLoading}
+              error={error}
+              result={result}
+              entityCount={Object.keys(entitiesById).length}
+              untrackedEntityCount={untrackedEntities.length}
+              query={query}
+            />
 
             {!isLoading && result?.items.map((item) => (
               <View key={item.candidate.candidateId} style={styles.itemCard}>

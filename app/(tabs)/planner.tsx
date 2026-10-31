@@ -868,18 +868,32 @@ export default function PlannerCatalogScreen() {
                     ).join(", ")}
                   </Text>
                 )}
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={queueBusy || !queuePlan}
-                  onPress={() => addToQueue(item.candidate.candidateId, item.candidate.targetLevel)}
-                  style={styles.applyButton}
-                >
-                  <Text style={styles.applyButtonText}>
-                    {queuePlan?.items.some((queued) => queued.candidateId === item.candidate.candidateId && queued.targetLevel === item.candidate.targetLevel)
-                      ? "Already queued"
-                      : "Add to queue"}
+                {item.canAdd ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={queuePlan?.items.some((queued) =>
+                      queued.candidateId === item.candidate.candidateId &&
+                      queued.targetLevel === item.candidate.targetLevel
+                    ) ? `Already queued: ${item.name}` : `Add ${item.name} to plan`}
+                    disabled={queueBusy || !queuePlan || queuePlan.items.some((queued) =>
+                      queued.candidateId === item.candidate.candidateId &&
+                      queued.targetLevel === item.candidate.targetLevel
+                    )}
+                    onPress={() => addToQueue(item.candidate.candidateId, item.candidate.targetLevel)}
+                    style={styles.applyButton}
+                  >
+                    <Text style={styles.applyButtonText}>
+                      {queuePlan?.items.some((queued) =>
+                        queued.candidateId === item.candidate.candidateId &&
+                        queued.targetLevel === item.candidate.targetLevel
+                      ) ? "Already queued" : "Add to plan"}
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <Text accessibilityRole="text" style={styles.warning}>
+                    Cannot add until the listed prerequisites are met or confirmed.
                   </Text>
-                </Pressable>
+                )}
               </View>
             ))}
           </>

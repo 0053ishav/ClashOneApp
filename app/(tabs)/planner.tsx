@@ -1107,6 +1107,7 @@ function createStyles(colors: ReturnType<typeof useHomeColors>) {
     levelInput: { width: 64, color: colors.textPrimary, backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderWidth: 1, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 7, textAlign: "center" },
     applyButton: { backgroundColor: colors.gold, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 9 },
     applyButtonText: { color: colors.textDark, fontSize: 11, fontWeight: "800" },
+    applyButtonHint: { color: colors.textDark, fontSize: 10, textAlign: "center", marginTop: 3 },
     queueRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 10, marginTop: 10, borderTopWidth: 1, borderTopColor: colors.border },
     queueActions: { flexDirection: "row", alignItems: "center", gap: 5, flexWrap: "wrap" },
     queueEditPanel: { gap: 8, paddingTop: 8, marginTop: 8, borderTopWidth: 1, borderTopColor: colors.border },

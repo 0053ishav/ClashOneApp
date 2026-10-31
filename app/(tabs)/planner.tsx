@@ -43,6 +43,7 @@ import { resolvePlannerStructureLevels } from "@/services/plannerStructureLevelS
 import { resolvePlannerCatalogLevelState } from "@/services/plannerCatalogLevelState";
 import { PlannerTimeline } from "@/components/planner/PlannerTimeline";
 import { PlannerSnapshotReview } from "@/components/planner/PlannerSnapshotReview";
+import { PlannerQueueList } from "@/components/planner/PlannerQueueList";
 
 const CATEGORIES: { label: string; value: PlannerEntityCategory | "all" }[] = [
   { label: "All", value: "all" },
@@ -728,113 +729,32 @@ export default function PlannerCatalogScreen() {
               nowMs={Date.now()}
             />
 
-            <View style={styles.stateCard}>
-              <Text style={styles.stateTitle}>Upgrade queue</Text>
-              <Text style={styles.body}>Planned upgrades are separate from live timers. Projections recalculate from the saved queue, validated progression data, current levels, and confirmed active timers.</Text>
-              {!!projectionError && <Text accessibilityRole="alert" style={styles.warning}>{projectionError}</Text>}
-              {!projectionError && queuePlan && queuePlan.items.length > 0 && projections === null && <Text style={styles.muted}>Calculating schedule…</Text>}
-              {queueBusy && <Text style={styles.muted}>Saving queue…</Text>}
-              {!!queueError && <Text accessibilityRole="alert" style={styles.warning}>{queueError}</Text>}
-              {queuePlan?.items.length === 0 && <Text style={styles.muted}>No upgrades queued yet.</Text>}
-              {queuePlan?.items.map((queuedItem) => (
-                <View key={queuedItem.id} style={styles.queueRow}>
-                  <View style={styles.itemTitleWrap}>
-                    <Text style={styles.itemName}>{result?.items.find((item) => item.candidate.candidateId === queuedItem.candidateId)?.name ?? queuedItem.candidateId}</Text>
-                    <Text style={styles.muted}>Target level {queuedItem.targetLevel} · {queuedItem.lane.lane === "normal-builders" ? `Builder ${queuedItem.lane.builderIndex}` : queuedItem.lane.lane}</Text>
-                    {editingQueueItemId === queuedItem.id && (
-                      <View style={styles.queueEditPanel}>
-                        <Text style={styles.muted}>Target level</Text>
-                        <TextInput
-                          accessibilityLabel="Edit target level"
-                          keyboardType="number-pad"
-                          value={queueTargetDrafts[queuedItem.id] ?? String(queuedItem.targetLevel)}
-                          onChangeText={(value) => setQueueTargetDrafts((previous) => ({ ...previous, [queuedItem.id]: value.replace(/[^0-9]/g, "") }))}
-                          style={styles.levelInput}
-                        />
-                        {(() => {
-                          const candidate = plannerCandidates.find((entry) => entry.candidateId === queuedItem.candidateId);
-                          const builderCount = activeTag ? profilesByTag[activeTag]?.normalBuilderCount ?? 0 : 0;
-                          if (!candidate || getDefaultPlannerLane(candidate.category).lane !== "normal-builders") {
-                            return <Text style={styles.muted}>Lane is determined by the upgrade category.</Text>;
-                          }
-                          return (
-                            <View style={styles.laneChoiceRow}>
-                              {Array.from({ length: builderCount }, (_, index) => index + 1).map((builderIndex) => {
-                                const selectedLane = queueLaneDrafts[queuedItem.id] ?? queuedItem.lane;
-                                const selected = selectedLane.lane === "normal-builders" && selectedLane.builderIndex === builderIndex;
-                                return (
-                                  <Pressable
-                                    key={builderIndex}
-                                    accessibilityRole="button"
-                                    accessibilityState={{ selected }}
-                                    onPress={() => setQueueLaneDrafts((previous) => ({ ...previous, [queuedItem.id]: { lane: "normal-builders", builderIndex } }))}
-                                    style={[styles.laneChoice, selected && styles.laneChoiceSelected]}
-                                  >
-                                    <Text style={[styles.removeButtonText, selected && styles.laneChoiceTextSelected]}>Builder {builderIndex}</Text>
-                                  </Pressable>
-                                );
-                              })}
-                            </View>
-                          );
-                        })()}
-                        {!!queueEditErrors[queuedItem.id] && <Text accessibilityRole="alert" style={styles.warning}>{queueEditErrors[queuedItem.id]}</Text>}
-                        <View style={styles.queueActions}>
-                          <Pressable accessibilityRole="button" disabled={queueBusy} onPress={() => saveQueueItemEdit(queuedItem)} style={styles.applyButton}>
-                            <Text style={styles.applyButtonText}>Save preview</Text>
-                          </Pressable>
-                          <Pressable accessibilityRole="button" disabled={queueBusy} onPress={() => { setEditingQueueItemId(null); setEditingQueueOwner(null); }} style={styles.removeButton}>
-                            <Text style={styles.removeButtonText}>Cancel</Text>
-                          </Pressable>
-                        </View>
-                      </View>
-                    )}
-                    <Text style={projectionByItemId.get(queuedItem.id)?.status === "scheduled" ? styles.body : styles.warning}>
-                      {formatProjection(projectionByItemId.get(queuedItem.id))}
-                    </Text>
-                  </View>
-                  <View style={styles.queueActions}>
-                    {editingQueueItemId !== queuedItem.id && (
-                      <Pressable accessibilityRole="button" accessibilityLabel="Edit target level and lane" disabled={queueBusy || hasQueueEditConflict} onPress={() => beginQueueItemEdit(queuedItem)} style={styles.removeButton}>
-                        <Text style={styles.removeButtonText}>Edit</Text>
-                      </Pressable>
-                    )}
-                    {queuedItem.lane.lane === "normal-builders" &&
-                      (activeTag ? profilesByTag[activeTag]?.normalBuilderCount ?? 0 : 0) > 1 && (
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Assign upgrade to next builder; currently Builder ${queuedItem.lane.builderIndex}`}
-                        disabled={queueBusy}
-                        onPress={() => assignNextBuilder(queuedItem.id)}
-                        style={styles.removeButton}
-                      >
-                        <Text style={styles.removeButtonText}>Builder ↻</Text>
-                      </Pressable>
-                    )}
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Move upgrade earlier"
-                      disabled={queueBusy || queuedItem.order === 0}
-                      onPress={() => moveQueueItem(queuedItem.id, -1)}
-                      style={styles.removeButton}
-                    >
-                      <Text style={styles.removeButtonText}>↑</Text>
-                    </Pressable>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Move upgrade later"
-                      disabled={queueBusy}
-                      onPress={() => moveQueueItem(queuedItem.id, 1)}
-                      style={styles.removeButton}
-                    >
-                      <Text style={styles.removeButtonText}>↓</Text>
-                    </Pressable>
-                    <Pressable accessibilityRole="button" disabled={queueBusy} onPress={() => removeFromQueue(queuedItem.id)} style={styles.removeButton}>
-                      <Text style={styles.removeButtonText}>Remove</Text>
-                    </Pressable>
-                  </View>
-                </View>
-              ))}
-            </View>
+            <PlannerQueueList
+              items={queuePlan?.items ?? []}
+              projections={projections ?? []}
+              candidates={plannerCandidates}
+              itemNamesByCandidateId={Object.fromEntries(
+                (result?.items ?? []).map((item) => [item.candidate.candidateId, item.name]),
+              )}
+              builderCount={activeTag ? profilesByTag[activeTag]?.normalBuilderCount ?? 0 : 0}
+              queueBusy={queueBusy}
+              queueError={queueError}
+              projectionError={projectionError}
+              isCalculating={Boolean(!projectionError && queuePlan && queuePlan.items.length > 0 && projections === null)}
+              editingItemId={editingQueueItemId}
+              targetDrafts={queueTargetDrafts}
+              laneDrafts={queueLaneDrafts}
+              editErrors={queueEditErrors}
+              hasEditConflict={hasQueueEditConflict}
+              onTargetDraftChange={(itemId, value) => setQueueTargetDrafts((previous) => ({ ...previous, [itemId]: value.replace(/[^0-9]/g, "") }))}
+              onLaneDraftChange={(itemId, lane) => setQueueLaneDrafts((previous) => ({ ...previous, [itemId]: lane }))}
+              onSaveEdit={(item) => void saveQueueItemEdit(item)}
+              onBeginEdit={beginQueueItemEdit}
+              onCancelEdit={() => { setEditingQueueItemId(null); setEditingQueueOwner(null); }}
+              onRemove={removeFromQueue}
+              onAssignNextBuilder={assignNextBuilder}
+              onMove={moveQueueItem}
+            />
 
             <TextInput
               accessibilityLabel="Search upgrades"

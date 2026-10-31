@@ -396,7 +396,7 @@ export default function PlannerCatalogScreen() {
                   <>
                     <Text style={styles.stateTitle}>No eligible upgrades yet</Text>
                     <Text style={styles.body}>
-                      The catalog has no candidate matching the known account levels and available progression data. Missing levels are not assumed to be 0. Check the entity's current level and sync game data if its next level is missing.
+                      The catalog has no candidate matching the known account levels and available progression data. Missing levels are not assumed to be 0. Check the entity&apos;s current level and sync game data if its next level is missing.
                     </Text>
                   </>
                 )}

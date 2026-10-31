@@ -12,6 +12,8 @@ export interface StructureInstanceRecord {
   accountTag: string;
   village: "home";
   dataId: number;
+  /** Stable, account-scoped presentation ordinal; not used as identity. */
+  instanceNumber: number;
   currentLevel: number;
   superchargeLevel: number;
   identityConfidence: StructureIdentityConfidence;
@@ -118,6 +120,13 @@ export function reconcileStructureInstances(
 
   const instances: StructureInstanceRecord[] = [];
   const ambiguousEntityIds = [...changedEntityIds].sort((a, b) => a - b);
+  const nextInstanceNumberByEntity = new Map<number, number>();
+  for (const instance of previousForAccount) {
+    nextInstanceNumberByEntity.set(
+      instance.dataId,
+      Math.max(nextInstanceNumberByEntity.get(instance.dataId) ?? 0, instance.instanceNumber),
+    );
+  }
 
   for (const bucket of incomingBuckets) {
     const key = bucketKey(bucket);

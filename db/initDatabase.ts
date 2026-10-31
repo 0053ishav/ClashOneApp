@@ -406,11 +406,16 @@ async function migrateDatabase() {
       CREATE INDEX IF NOT EXISTS idx_structure_instances_account_entity
       ON structure_instances(account_player_tag, data_id);
     `);
-    try {
-      await db.execAsync("ALTER TABLE planner_plan_items ADD COLUMN structure_instance_id TEXT;");
-    } catch (error) {
-      // An interrupted migration may have added the column before the schema version was saved.
-      log("⏭️ structure_instance_id already exists", error);
+    for (const statement of [
+      "ALTER TABLE planner_plan_items ADD COLUMN structure_instance_id TEXT;",
+      "ALTER TABLE upgrades ADD COLUMN structure_instance_id TEXT;",
+    ]) {
+      try {
+        await db.execAsync(statement);
+      } catch (error) {
+        // An interrupted migration may have added a column before the schema version was saved.
+        log("⏭️ structure instance column already exists", error);
+      }
     }
     await setSchemaVersion(db, 13);
     version = 13;

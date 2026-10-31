@@ -24,6 +24,9 @@ export interface PlannerQueueListProps {
   targetDrafts: Readonly<Record<string, string>>;
   laneDrafts: Readonly<Record<string, PlannerLaneAssignment>>;
   editErrors: Readonly<Record<string, string>>;
+  pendingEdit: { itemId: PlannerItemId; projections: readonly UpgradeProjection[] } | null;
+  onConfirmEdit: () => void;
+  onCancelPreview: () => void;
   hasEditConflict: boolean;
   onTargetDraftChange: (itemId: PlannerItemId, value: string) => void;
   onLaneDraftChange: (itemId: PlannerItemId, lane: PlannerLaneAssignment) => void;
@@ -49,6 +52,9 @@ export function PlannerQueueList({
   targetDrafts,
   laneDrafts,
   editErrors,
+  pendingEdit,
+  onConfirmEdit,
+  onCancelPreview,
   hasEditConflict,
   onTargetDraftChange,
   onLaneDraftChange,
@@ -116,8 +122,31 @@ export function PlannerQueueList({
                     </View>
                   )}
                   {!!editErrors[queuedItem.id] && <Text accessibilityRole="alert" style={styles.warning}>{editErrors[queuedItem.id]}</Text>}
+              {pendingEdit?.itemId === queuedItem.id && (
+                <View style={styles.queueEditPanel}>
+                  <Text style={styles.itemName}>Schedule preview</Text>
+                  <Text style={styles.body}>These are projected dates from the proposed queue. Nothing is saved until you confirm.</Text>
+                  {pendingEdit.projections.map((preview) => {
+                    const previewItem = items.find((item) => item.id === preview.plannedItemId);
+                    if (!previewItem) return null;
+                    return (
+                      <Text key={preview.plannedItemId} style={preview.status === "scheduled" ? styles.body : styles.warning}>
+                        {(itemNamesByCandidateId[previewItem.candidateId] ?? previewItem.candidateId) + ": " + formatProjection(preview)}
+                      </Text>
+                    );
+                  })}
                   <View style={styles.queueActions}>
-                    <Pressable accessibilityRole="button" disabled={queueBusy} onPress={() => onSaveEdit(queuedItem)} style={styles.applyButton}>
+                    <Pressable accessibilityRole="button" disabled={queueBusy} onPress={onConfirmEdit} style={styles.applyButton}>
+                      <Text style={styles.applyButtonText}>Confirm and save</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" disabled={queueBusy} onPress={onCancelPreview} style={styles.removeButton}>
+                      <Text style={styles.removeButtonText}>Cancel preview</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              )}
+                  <View style={styles.queueActions}>
+                    <Pressable accessibilityRole="button" disabled={queueBusy || pendingEdit?.itemId === queuedItem.id} onPress={() => onSaveEdit(queuedItem)} style={styles.applyButton}>
                       <Text style={styles.applyButtonText}>Save changes</Text>
                     </Pressable>
                     <Pressable accessibilityRole="button" disabled={queueBusy} onPress={onCancelEdit} style={styles.removeButton}>

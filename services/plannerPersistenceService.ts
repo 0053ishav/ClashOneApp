@@ -24,6 +24,7 @@ type PlanItemRow = {
   user_order: number;
   created_at_ms: number;
   updated_at_ms: number;
+  structure_instance_id?: string | null;
 };
 
 function requireAccountTag(accountTag: string): void {
@@ -72,6 +73,7 @@ function mapPlanItem(row: PlanItemRow): PlannedUpgradeItem {
     id: row.id as PlannerItemId,
     candidateId: row.candidate_id,
     targetLevel: row.target_level,
+    ...(row.structure_instance_id ? { structureInstanceId: row.structure_instance_id as PlannedUpgradeItem["structureInstanceId"] } : {}),
     lane: parseLaneAssignment(row.lane_json),
     order: row.user_order,
     createdAtMs: row.created_at_ms,
@@ -85,7 +87,7 @@ async function mapPlan(
 ): Promise<PlannerPlan> {
   const db = await getDB();
   const rows = await db.getAllAsync<PlanItemRow>(
-    `SELECT id, candidate_id, target_level, lane_json, user_order, created_at_ms, updated_at_ms
+    `SELECT id, candidate_id, target_level, structure_instance_id, lane_json, user_order, created_at_ms, updated_at_ms
      FROM planner_plan_items
      WHERE plan_id = ? AND account_player_tag = ?
      ORDER BY user_order ASC, created_at_ms ASC, id ASC`,
@@ -181,13 +183,23 @@ export async function savePlannerItem(
   );
   if (!owner) throw new Error("PLANNER_PLAN_NOT_FOUND");
 
+  if (item.structureInstanceId) {
+    const instance = await db.getFirstAsync<{ id: string; identity_confidence: "stable" | "ambiguous" }>(
+      "SELECT id, identity_confidence FROM structure_instances WHERE id = ? AND account_player_tag = ?",
+      [item.structureInstanceId, accountTag],
+    );
+    if (!instance) throw new Error("STRUCTURE_INSTANCE_NOT_FOUND");
+    if (instance.identity_confidence !== "stable") throw new Error("STRUCTURE_INSTANCE_IDENTITY_AMBIGUOUS");
+  }
+
   await db.runAsync(
     `INSERT INTO planner_plan_items
-      (id, plan_id, account_player_tag, candidate_id, target_level, lane_json, user_order, created_at_ms, updated_at_ms)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (id, plan_id, account_player_tag, candidate_id, target_level, structure_instance_id, lane_json, user_order, created_at_ms, updated_at_ms)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(plan_id, id) DO UPDATE SET
        candidate_id = excluded.candidate_id,
        target_level = excluded.target_level,
+       structure_instance_id = excluded.structure_instance_id,
        lane_json = excluded.lane_json,
        user_order = excluded.user_order,
        updated_at_ms = excluded.updated_at_ms
@@ -198,6 +210,7 @@ export async function savePlannerItem(
       accountTag,
       item.candidateId,
       item.targetLevel,
+      item.structureInstanceId ?? null,
       JSON.stringify(item.lane),
       item.order,
       item.createdAtMs,

@@ -195,12 +195,24 @@ export function PlannerTimeline({
           <Text style={styles.subtitle}>Add an upgrade from the catalog to see its projected start and finish.</Text>
         </View>
       ) : (
-        <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={styles.timelineScroll}>
-          <View>
-            <View style={styles.axisRow}>
+        <View style={styles.timelineLayout}>
+          <View style={styles.fixedLaneColumn}>
+            <View style={[styles.axisRow, styles.fixedAxisRow]}>
               <View style={styles.laneLabel}>
                 <Text style={styles.axisLabel}>Lane</Text>
               </View>
+            </View>
+            {lanes.map((lane) => (
+              <View key={lane.key} style={styles.fixedLaneRow}>
+                <View style={styles.laneLabel}>
+                  <Text numberOfLines={2} style={styles.laneText}>{lane.label}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={styles.timelineScroll}>
+            <View>
+              <View style={[styles.axisRow, styles.timelineAxisRow]}>
               <View style={[styles.axis, { width: timelineWidth }]}>
                 {projectedFinish !== null &&
                   projectedFinish >= nowMs &&
@@ -230,10 +242,7 @@ export function PlannerTimeline({
             </View>
 
             {lanes.map((lane) => (
-              <View key={lane.key} style={styles.laneRow}>
-                <View style={styles.laneLabel}>
-                  <Text numberOfLines={2} style={styles.laneText}>{lane.label}</Text>
-                </View>
+              <View key={lane.key} style={styles.trackRow}>
                 <View style={[styles.track, { width: timelineWidth }]}>
                   {Array.from({ length: Math.floor(config.days / config.tickDays) + 1 }, (_, index) => (
                     <View
@@ -318,8 +327,9 @@ export function PlannerTimeline({
                 </View>
               </View>
             ))}
-          </View>
-        </ScrollView>
+            </View>
+          </ScrollView>
+        </View>
       )}
 
       <View style={styles.legend}>
@@ -454,8 +464,14 @@ function createStyles(colors: ReturnType<typeof useHomeColors>) {
     emptyState: { backgroundColor: colors.background, borderRadius: 10, padding: 16, gap: 5 },
     emptyTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: "700" },
     timelineScroll: { paddingBottom: 4 },
+    timelineLayout: { flexDirection: "row", alignItems: "flex-start" },
+    fixedLaneColumn: { width: 84, flexShrink: 0 },
     axisRow: { flexDirection: "row", height: 36 },
-    laneLabel: { width: 84, justifyContent: "center", paddingRight: 8, borderRightWidth: 1, borderRightColor: colors.border },
+    fixedAxisRow: { borderBottomWidth: 1, borderBottomColor: colors.border },
+    timelineAxisRow: { borderBottomWidth: 1, borderBottomColor: colors.border },
+    fixedLaneRow: { minHeight: 46, borderTopWidth: 1, borderTopColor: colors.border },
+    trackRow: { minHeight: 46, borderTopWidth: 1, borderTopColor: colors.border },
+    laneLabel: { width: 84, minHeight: 46, justifyContent: "center", paddingRight: 8, borderRightWidth: 1, borderRightColor: colors.border },
     axis: { position: "relative", height: 36 },
     axisLabel: { color: colors.textMuted, fontSize: 9 },
     tick: { position: "absolute", top: 0, width: 56, height: 36 },

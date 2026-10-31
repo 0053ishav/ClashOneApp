@@ -6,7 +6,7 @@ import {
   listPlannerPlans,
   savePlannerItem,
 } from "@/services/plannerPersistenceService";
-import type { PlannerItemId, PlannerPlanId, PlannedUpgradeItem } from "@/types/planner";
+import type { PlannerItemId, PlannerPlanId, PlannerStructureInstanceId, PlannedUpgradeItem } from "@/types/planner";
 
 jest.mock("@/db/database", () => ({
   getDB: jest.fn(),
@@ -99,6 +99,7 @@ describe("planner persistence account isolation", () => {
         "#ACCOUNT_A",
         item.candidateId,
         item.targetLevel,
+        null,
         JSON.stringify(item.lane),
         item.order,
         item.createdAtMs,
@@ -109,6 +110,58 @@ describe("planner persistence account isolation", () => {
       2,
       expect.stringContaining("UPDATE planner_plans SET updated_at_ms"),
       [item.updatedAtMs, planId, "#ACCOUNT_A"],
+    );
+  });
+
+  it("requires a stable instance owned by the same account before saving an instance-specific upgrade", async () => {
+    const db = setupDatabase({
+      getFirstAsync: jest.fn()
+        .mockResolvedValueOnce({ id: planId })
+        .mockResolvedValueOnce({ id: "cannon-a", identity_confidence: "stable" }),
+    });
+    const itemWithInstance: PlannedUpgradeItem = {
+      ...item,
+      structureInstanceId: "cannon-a" as PlannerStructureInstanceId,
+    };
+
+    await savePlannerItem("#ACCOUNT_A", planId, itemWithInstance);
+
+    expect(db.getFirstAsync).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining("FROM structure_instances WHERE id = ? AND account_player_tag = ?"),
+      ["cannon-a", "#ACCOUNT_A"],
+    );
+    expect(db.runAsync).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining("structure_instance_id"),
+      [
+        itemId,
+        planId,
+        "#ACCOUNT_A",
+        item.candidateId,
+        item.targetLevel,
+        "cannon-a",
+        JSON.stringify(item.lane),
+        item.order,
+        item.createdAtMs,
+        item.updatedAtMs,
+      ],
+    );
+  });
+
+  it("rejects ambiguous structure identity instead of attaching a plan item to a guess", async () => {
+    setupDatabase({
+      getFirstAsync: jest.fn()
+        .mockResolvedValueOnce({ id: planId })
+        .mockResolvedValueOnce({ id: "cannon-a", identity_confidence: "ambiguous" }),
+    });
+    const itemWithInstance: PlannedUpgradeItem = {
+      ...item,
+      structureInstanceId: "cannon-a" as PlannerStructureInstanceId,
+    };
+
+    await expect(savePlannerItem("#ACCOUNT_A", planId, itemWithInstance)).rejects.toThrow(
+      "STRUCTURE_INSTANCE_IDENTITY_AMBIGUOUS",
     );
   });
 

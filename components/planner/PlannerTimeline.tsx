@@ -7,6 +7,7 @@ import type {
   ProgressionCandidate,
   UpgradeProjection,
 } from "@/types/planner";
+import { getPlannerViewModel } from "@/utils/planner/plannerViewModel";
 
 type TimelineScale = "days" | "weeks" | "months";
 
@@ -114,28 +115,17 @@ export function PlannerTimeline({
     return result;
   }, [builderCount, items, liveUpgrades]);
 
-  const scheduled = projections.filter((projection) => projection.status === "scheduled");
-  const unknownCount = projections.filter((projection) => projection.status === "unknown").length;
-  const blockedCount = projections.filter((projection) => projection.status === "blocked").length;
-  const projectedFinish = scheduled.reduce<number | null>(
-    (latest, projection) => projection.status === "scheduled"
-      ? Math.max(latest ?? projection.completesAtMs, projection.completesAtMs)
-      : latest,
-    null,
-  );
-  const hasIncompleteWork = unknownCount > 0 || blockedCount > 0 || projections.length < items.length;
-  const knownCostProjections = scheduled.filter((projection) => projection.estimate.cost.status === "known");
-  const unknownScheduledCostCount = scheduled.length - knownCostProjections.length;
-  const resourceTotals = knownCostProjections.reduce(
-    (totals, projection) => {
-      if (projection.estimate.cost.status !== "known") return totals;
-      totals.gold += projection.estimate.cost.value.gold ?? 0;
-      totals.elixir += projection.estimate.cost.value.elixir ?? 0;
-      totals.darkElixir += projection.estimate.cost.value.darkElixir ?? 0;
-      return totals;
-    },
-    { gold: 0, elixir: 0, darkElixir: 0 },
-  );
+  const viewModel = getPlannerViewModel(projections, items.length);
+  const {
+    scheduledProjections: scheduled,
+    unknownCount,
+    blockedCount,
+    projectedFinishMs: projectedFinish,
+    hasIncompleteWork,
+    knownCostProjections,
+    unknownScheduledCostCount,
+    resourceTotals,
+  } = viewModel;
   const laneCounts = lanes.map((lane) => ({
     ...lane,
     count: items.filter((item) => laneKey(item.lane) === lane.key).length,

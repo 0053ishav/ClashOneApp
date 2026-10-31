@@ -388,6 +388,30 @@ async function migrateDatabase() {
     version = 12;
   }
 
+  // V13 - Persist app-owned physical structure identities and optional plan references.
+  if (version < 13) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS structure_instances (
+        id TEXT PRIMARY KEY,
+        account_player_tag TEXT NOT NULL,
+        village TEXT NOT NULL DEFAULT 'home' CHECK (village = 'home'),
+        data_id INTEGER NOT NULL,
+        current_level INTEGER NOT NULL,
+        supercharge_level INTEGER NOT NULL DEFAULT 0,
+        identity_confidence TEXT NOT NULL DEFAULT 'stable'
+          CHECK (identity_confidence IN ('stable', 'ambiguous')),
+        FOREIGN KEY(account_player_tag) REFERENCES accounts(player_tag) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_structure_instances_account_entity
+      ON structure_instances(account_player_tag, data_id);
+
+      ALTER TABLE planner_plan_items ADD COLUMN structure_instance_id TEXT;
+    `);
+    await setSchemaVersion(db, 13);
+    version = 13;
+  }
+
   // log("✅ Database ready. Version:", version);
 
   // Debug only

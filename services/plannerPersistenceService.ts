@@ -257,3 +257,89 @@ export async function deletePlannerPlan(
     [planId, accountTag],
   );
 }
+
+
+/**
+ * Atomically replaces the queue for one account-owned plan.
+ * This is the persistence boundary for pure queue mutations: partial writes
+ * cannot leave persisted ordering inconsistent when a later item is invalid.
+ */
+export async function replacePlannerQueue(
+  accountTag: string,
+  planId: PlannerPlanId,
+  items: readonly PlannedUpgradeItem[],
+  now = Date.now(),
+): Promise<void> {
+  requireAccountTag(accountTag);
+  requirePlanId(planId);
+  if (!Number.isSafeInteger(now) || now < 0) throw new Error("INVALID_PLANNER_TIMESTAMP");
+
+  const ids = new Set<string>();
+  for (const item of items) {
+    if (!item.id.trim() || !item.candidateId.trim()) throw new Error("INVALID_PLANNER_ITEM");
+    if (ids.has(item.id)) throw new Error("DUPLICATE_PLANNER_ITEM_ID");
+    ids.add(item.id);
+    if (!Number.isSafeInteger(item.targetLevel) || item.targetLevel < 1) {
+      throw new Error("INVALID_PLANNER_TARGET_LEVEL");
+    }
+    if (!Number.isSafeInteger(item.order) || item.order < 0) {
+      throw new Error("INVALID_PLANNER_ORDER");
+    }
+    if (
+      !Number.isSafeInteger(item.createdAtMs) || item.createdAtMs < 0 ||
+      !Number.isSafeInteger(item.updatedAtMs) || item.updatedAtMs < item.createdAtMs
+    ) throw new Error("INVALID_PLANNER_TIMESTAMP");
+  }
+
+  const db = await getDB();
+  await db.withTransactionAsync(async () => {
+    const owner = await db.getFirstAsync<{ id: string }>(
+      "SELECT id FROM planner_plans WHERE id = ? AND account_player_tag = ?",
+      [planId, accountTag],
+    );
+    if (!owner) throw new Error("PLANNER_PLAN_NOT_FOUND");
+
+    for (const item of items) {
+      if (!item.structureInstanceId) continue;
+      const instance = await db.getFirstAsync<{
+        id: string;
+        identity_confidence: "stable" | "ambiguous";
+      }>(
+        "SELECT id, identity_confidence FROM structure_instances WHERE id = ? AND account_player_tag = ?",
+        [item.structureInstanceId, accountTag],
+      );
+      if (!instance) throw new Error("STRUCTURE_INSTANCE_NOT_FOUND");
+      if (instance.identity_confidence !== "stable") {
+        throw new Error("STRUCTURE_INSTANCE_IDENTITY_AMBIGUOUS");
+      }
+    }
+
+    await db.runAsync(
+      "DELETE FROM planner_plan_items WHERE plan_id = ? AND account_player_tag = ?",
+      [planId, accountTag],
+    );
+    for (const item of items) {
+      await db.runAsync(
+        `INSERT INTO planner_plan_items
+          (id, plan_id, account_player_tag, candidate_id, target_level, structure_instance_id, lane_json, user_order, created_at_ms, updated_at_ms)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          item.id,
+          planId,
+          accountTag,
+          item.candidateId,
+          item.targetLevel,
+          item.structureInstanceId ?? null,
+          JSON.stringify(item.lane),
+          item.order,
+          item.createdAtMs,
+          item.updatedAtMs,
+        ],
+      );
+    }
+    await db.runAsync(
+      "UPDATE planner_plans SET updated_at_ms = ? WHERE id = ? AND account_player_tag = ?",
+      [now, planId, accountTag],
+    );
+  });
+}

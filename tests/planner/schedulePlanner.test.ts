@@ -140,6 +140,26 @@ describe("schedulePlanner", () => {
     }));
   });
 
+  it("schedules known durations when cost data is unknown", () => {
+    const costUnknown = candidate("a", "building", {
+      estimate: {
+        cost: { status: "unknown", reason: "missing-game-data" },
+        durationMs: { status: "known", value: 60_000 },
+      },
+    });
+    const result = schedulePlanner(input({
+      candidates: [costUnknown],
+      items: [item("a-item", "a")],
+    }));
+
+    expect(result[0]).toEqual(expect.objectContaining({
+      status: "scheduled",
+      startsAtMs: NOW,
+      completesAtMs: NOW + 60_000,
+      estimate: costUnknown.estimate,
+    }));
+  });
+
   it("allows known zero-duration tasks without occupying the lane", () => {
     const instant = candidate("a", "building", {
       estimate: {

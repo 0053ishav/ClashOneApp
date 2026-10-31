@@ -18,7 +18,11 @@ const CATEGORY_BY_ENTITY_TYPE: Readonly<Record<string, string | undefined>> = {
   wall: "walls",
 };
 
-const SUPPORTED_CATEGORIES = new Set(Object.values(CATEGORY_BY_ENTITY_TYPE));
+const SUPPORTED_CATEGORIES: ReadonlySet<string> = new Set(
+  Object.values(CATEGORY_BY_ENTITY_TYPE).filter(
+    (category): category is string => category !== undefined,
+  ),
+);
 
 function payload<T>(records: readonly T[] | null): CategoryPayloadState {
   return records === null
@@ -75,7 +79,7 @@ export function buildPlannerDatasetFromCache(
     entitiesByCategory.set(category, bucket);
   }
 
-  const categories = new Set([
+  const categories = new Set<string>([
     ...Object.keys(input.manifest.categories),
     ...SUPPORTED_CATEGORIES,
   ]);

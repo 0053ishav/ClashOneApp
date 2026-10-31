@@ -1,0 +1,141 @@
+import type { BuildingProgressRecord } from "@/types/upgrade";
+
+export type StructureInstanceId = string & { readonly __brand: "StructureInstanceId" };
+export type StructureIdentityConfidence = "stable" | "ambiguous";
+
+/**
+ * App-owned identity for one physical copy represented by an aggregated game
+ * export record. Clash of Clans exports quantities, not durable copy IDs.
+ */
+export interface StructureInstanceRecord {
+  id: StructureInstanceId;
+  accountTag: string;
+  village: "home";
+  dataId: number;
+  currentLevel: number;
+  superchargeLevel: number;
+  identityConfidence: StructureIdentityConfidence;
+}
+
+export interface StructureInstanceReconciliation {
+  instances: readonly StructureInstanceRecord[];
+  ambiguousEntityIds: readonly number[];
+}
+
+type StructureBucket = Pick<
+  BuildingProgressRecord,
+  "dataId" | "village" | "normalLevel" | "superchargeLevel" | "count"
+>;
+
+function bucketKey(bucket: StructureBucket): string {
+  return [bucket.village, bucket.dataId, bucket.normalLevel, bucket.superchargeLevel].join(":");
+}
+
+function assertValidBucket(bucket: StructureBucket): void {
+  if (!Number.isSafeInteger(bucket.dataId) || bucket.dataId <= 0) {
+    throw new Error("INVALID_STRUCTURE_DATA_ID");
+  }
+  if (!Number.isSafeInteger(bucket.normalLevel) || bucket.normalLevel < 0) {
+    throw new Error("INVALID_STRUCTURE_LEVEL");
+  }
+  if (!Number.isSafeInteger(bucket.superchargeLevel) || bucket.superchargeLevel < 0) {
+    throw new Error("INVALID_SUPERCHARGE_LEVEL");
+  }
+  if (!Number.isSafeInteger(bucket.count) || bucket.count < 1) {
+    throw new Error("INVALID_STRUCTURE_COUNT");
+  }
+}
+
+/**
+ * Reconcile grouped export buckets with previously persisted app-owned IDs.
+ *
+ * IDs are preserved as stable only when the complete bucket (entity, village,
+ * normal level, supercharge level, count) is unchanged. If the count or level
+ * distribution changes, the export cannot tell which identical physical copy
+ * moved or disappeared; affected copies are marked ambiguous instead of
+ * silently claiming a physical identity.
+ */
+export function reconcileStructureInstances(
+  accountTag: string,
+  incomingBuckets: readonly BuildingProgressRecord[],
+  previousInstances: readonly StructureInstanceRecord[],
+  createId: () => string,
+): StructureInstanceReconciliation {
+  if (!accountTag.trim()) throw new Error("INVALID_ACCOUNT_TAG");
+
+  const incomingByKey = new Map<string, StructureBucket>();
+  for (const bucket of incomingBuckets) {
+    assertValidBucket(bucket);
+    const key = bucketKey(bucket);
+    if (incomingByKey.has(key)) throw new Error("DUPLICATE_STRUCTURE_BUCKET");
+    incomingByKey.set(key, bucket);
+  }
+
+  const previousForAccount = previousInstances.filter(
+    (instance) => instance.accountTag === accountTag && instance.village === "home",
+  );
+  const previousByKey = new Map<string, StructureInstanceRecord[]>();
+  for (const instance of previousForAccount) {
+    const key = bucketKey({
+      dataId: instance.dataId,
+      village: instance.village,
+      normalLevel: instance.currentLevel,
+      superchargeLevel: instance.superchargeLevel,
+      count: 1,
+    });
+    const records = previousByKey.get(key) ?? [];
+    records.push(instance);
+    previousByKey.set(key, records);
+  }
+
+  const previousCountsByEntity = new Map<number, number>();
+  const incomingCountsByEntity = new Map<number, number>();
+  for (const instance of previousForAccount) {
+    previousCountsByEntity.set(instance.dataId, (previousCountsByEntity.get(instance.dataId) ?? 0) + 1);
+  }
+  for (const bucket of incomingBuckets) {
+    incomingCountsByEntity.set(bucket.dataId, (incomingCountsByEntity.get(bucket.dataId) ?? 0) + bucket.count);
+  }
+
+  const changedEntityIds = new Set<number>();
+  const entityIds = new Set([...previousCountsByEntity.keys(), ...incomingCountsByEntity.keys()]);
+  for (const dataId of entityIds) {
+    const previousCount = previousCountsByEntity.get(dataId) ?? 0;
+    const incomingCount = incomingCountsByEntity.get(dataId) ?? 0;
+    const priorLevels = new Set(previousForAccount.filter((item) => item.dataId === dataId).map(
+      (item) => `${item.currentLevel}:${item.superchargeLevel}`,
+    ));
+    const nextLevels = new Set(incomingBuckets.filter((item) => item.dataId === dataId).map(
+      (item) => `${item.normalLevel}:${item.superchargeLevel}`,
+    ));
+    const levelDistributionChanged =
+      priorLevels.size !== nextLevels.size ||
+      [...priorLevels].some((level) => !nextLevels.has(level));
+    if (previousCount !== incomingCount || levelDistributionChanged) changedEntityIds.add(dataId);
+  }
+
+  const instances: StructureInstanceRecord[] = [];
+  const ambiguousEntityIds = [...changedEntityIds].sort((a, b) => a - b);
+
+  for (const bucket of incomingBuckets) {
+    const key = bucketKey(bucket);
+    const prior = (previousByKey.get(key) ?? []).slice().sort((a, b) => a.id.localeCompare(b.id));
+    const sameBucketCount = prior.length === bucket.count &&
+      !changedEntityIds.has(bucket.dataId);
+
+    for (let index = 0; index < bucket.count; index += 1) {
+      const existing = prior[index];
+      instances.push({
+        id: (existing?.id ?? createId()) as StructureInstanceId,
+        accountTag,
+        village: bucket.village,
+        dataId: bucket.dataId,
+        currentLevel: bucket.normalLevel,
+        superchargeLevel: bucket.superchargeLevel,
+        identityConfidence: sameBucketCount ? "stable" : "ambiguous",
+      });
+    }
+  }
+
+  return { instances, ambiguousEntityIds };
+}

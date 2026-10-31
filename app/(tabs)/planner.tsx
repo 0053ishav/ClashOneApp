@@ -968,7 +968,8 @@ export default function PlannerCatalogScreen() {
                   </Text>
                 )}
               </View>
-            ))}
+              );
+            })}
           </>
         )}
       </ScrollView>

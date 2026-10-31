@@ -241,7 +241,18 @@ export function PlannerTimeline({
                       style={[styles.gridLine, { left: index * config.tickDays * config.pixelsPerDay }]}
                     />
                   ))}
-                  {liveUpgrades.filter((upgrade) => laneKey(upgrade.lane) === lane.key).map((upgrade) => {
+                  {projectedFinish !== null &&
+                  projectedFinish >= nowMs &&
+                  projectedFinish <= nowMs + config.days * DAY_MS && (
+                    <View
+                      pointerEvents="none"
+                      style={[
+                        styles.finishTrackMarker,
+                        { left: ((projectedFinish - nowMs) / DAY_MS) * config.pixelsPerDay },
+                      ]}
+                    />
+                  )}
+                {liveUpgrades.filter((upgrade) => laneKey(upgrade.lane) === lane.key).map((upgrade) => {
                     const position = getBlockPosition(upgrade.startsAtMs, upgrade.completesAtMs, nowMs, config.days, config.pixelsPerDay);
                     if (!position) return null;
                     return (
@@ -439,6 +450,7 @@ function createStyles(colors: ReturnType<typeof useHomeColors>) {
     scaleButtonTextSelected: { color: colors.textDark },
     finishMarker: { position: "absolute", zIndex: 2, top: 0, bottom: 0, width: 2, backgroundColor: colors.success },
     finishMarkerLabel: { position: "absolute", top: 0, left: 4, width: 100, color: colors.success, fontSize: 10, fontWeight: "800" },
+    finishTrackMarker: { position: "absolute", zIndex: 1, top: 0, bottom: 0, width: 2, backgroundColor: colors.success, opacity: 0.65 },
     emptyState: { backgroundColor: colors.background, borderRadius: 10, padding: 16, gap: 5 },
     emptyTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: "700" },
     timelineScroll: { paddingBottom: 4 },

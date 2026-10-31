@@ -307,7 +307,7 @@ export default function PlannerCatalogScreen() {
                   style={styles.itemTitleWrap}
                 >
                   <Text style={styles.stateTitle}>
-                    Tracked structure copies ({structureInstances.filter((instance) => entitiesById[instance.dataId]?.type !== "wall").length})
+                    Tracked structure copies ({structureInstances.length})
                   </Text>
                   <Text style={styles.muted}>{showStructureInstances ? "Hide" : "Show"}</Text>
                 </Pressable>
@@ -315,7 +315,6 @@ export default function PlannerCatalogScreen() {
                   Numbered labels are presentation only; the saved instance ID is the identity. Copies are marked uncertain when an import cannot prove which physical copy changed.
                 </Text>
                 {showStructureInstances && structureInstances
-                  .filter((instance) => entitiesById[instance.dataId]?.type !== "wall")
                   .slice(0, 100)
                   .map((instance) => {
                     const entity = entitiesById[instance.dataId];
@@ -351,9 +350,7 @@ export default function PlannerCatalogScreen() {
                       </View>
                     );
                   })}
-                {showStructureInstances && structureInstances.filter(
-                  (instance) => entitiesById[instance.dataId]?.type !== "wall",
-                ).length > 100 && (
+                {showStructureInstances && structureInstances.length > 100 && (
                   <Text style={styles.muted}>Showing the first 100 non-wall copies.</Text>
                 )}
               </View>

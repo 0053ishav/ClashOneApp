@@ -273,20 +273,6 @@ export function schedulePlanner(input: SchedulePlannerInput): readonly UpgradePr
         madeProgress = true;
         continue;
       }
-      if (!isKnownEstimate(candidate.estimate.cost)) {
-        projections.push({
-          status: "unknown",
-          plannedItemId: item.id,
-          reasons: [{
-            code: "estimate-unknown",
-            estimate: "cost",
-            reason: candidate.estimate.cost.reason,
-          }],
-        });
-        pendingItems.delete(itemId);
-        madeProgress = true;
-        continue;
-      }
       if (
         !Number.isFinite(candidate.estimate.durationMs.value) ||
         candidate.estimate.durationMs.value < 0 ||

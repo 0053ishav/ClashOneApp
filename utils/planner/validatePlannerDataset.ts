@@ -89,7 +89,7 @@ function resolveCost(
 ): Estimate<{ gold?: number; elixir?: number; darkElixir?: number }> {
   if (value === undefined || value === null) {
     diagnostics.push({ code: "missing-cost", category, entityId, level, detail: "Cost is absent; estimate remains unknown." });
-    return unknownEstimate("missing-game-data");
+    return { status: "unknown", reason: "missing-game-data" };
   }
   if (!finiteNonNegative(value)) {
     diagnostics.push({ code: "invalid-cost", category, entityId, level, detail: "Cost must be finite and non-negative." });
@@ -257,7 +257,7 @@ export function validatePlannerDataset(
           targetLevel: levelNumber,
           prerequisites,
           estimate: {
-            cost: resolveCost(level.cost, progression.resource, input.category, entityId, levelNumber, diagnostics),
+            cost: resolveCost(level.cost, input.category, entityId, levelNumber, progression.resource, diagnostics),
             durationMs: resolveDuration(level.upgradeTime, input.category, entityId, levelNumber, diagnostics),
           },
         });

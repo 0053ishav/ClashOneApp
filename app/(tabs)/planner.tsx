@@ -909,7 +909,7 @@ export default function PlannerCatalogScreen() {
                       queued.candidateId === item.candidate.candidateId &&
                       queued.targetLevel === item.candidate.targetLevel
                     ) ? `Already queued: ${item.name}` : `Add ${item.name} to plan`}
-                    disabled={queueBusy || !queuePlan || queuePlan.items.some((queued) =>
+                    disabled={queueBusy || pendingQueueEdit !== null || !queuePlan || queuePlan.items.some((queued) =>
                       queued.candidateId === item.candidate.candidateId &&
                       queued.targetLevel === item.candidate.targetLevel
                     )}

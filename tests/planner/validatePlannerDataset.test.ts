@@ -15,6 +15,7 @@ function category(overrides: Partial<ProgressionCategoryInput> = {}): Progressio
       status: "loaded",
       records: [{
         id: 1,
+        resource: 0,
         maxLevel: 2,
         levels: {
           "1": { hallLevel: 2, cost: 100, upgradeTime: 60 },
@@ -42,6 +43,7 @@ describe("validatePlannerDataset", () => {
         status: "loaded",
         records: [{
           id: 1,
+          resource: 0,
           maxLevel: 2,
           levels: {
             "1": { hallLevel: 2 },
@@ -121,6 +123,7 @@ describe("validatePlannerDataset", () => {
       metadata: { status: "loaded", records: [{ id: 1, village: "home", maxLevel: 5 }] },
       progression: { status: "loaded", records: [{
         id: 1,
+        resource: 0,
         maxLevel: 2,
         levels: {
           "1": { hallLevel: -1, laboratoryLevel: "3", cost: -2, upgradeTime: Number.NaN },
@@ -142,6 +145,7 @@ describe("validatePlannerDataset", () => {
       metadata: { status: "loaded", records: [{ id: 1, village: "home", superTroop: { id: "variant" } }] },
       progression: { status: "loaded", records: [{
         id: 1,
+        resource: 0,
         maxLevel: 1,
         superTroop: { id: "variant", levels: { "1": { cost: 2 } } },
         supercharge: { "1": { cost: 2 } },

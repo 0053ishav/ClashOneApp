@@ -15,14 +15,25 @@ const VALID_TARGETS = new Set<HammerJamTarget>([
   "pet",
 ]);
 
+// The backend contract uses Unix seconds. Cap at year 9999 to reject accidental
+// millisecond timestamps rather than silently creating an unusable far-future date.
+const MAX_UNIX_SECONDS = 253_402_300_799;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isTimestampOrNull(value: unknown): value is string | null {
-  return value === null || (
-    typeof value === "string" && Number.isFinite(Date.parse(value))
+function isUnixSeconds(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    value > 0 &&
+    value <= MAX_UNIX_SECONDS
   );
+}
+
+function toIsoTimestamp(value: number | null): string | null {
+  return value === null ? null : new Date(value * 1000).toISOString();
 }
 
 function isVillage(value: unknown): value is Village {
@@ -42,12 +53,17 @@ function parseHammerJamPayload(
   }
 
   const event = payload.hammerJam;
+  const startsAtSeconds = event.startsAt;
+  const endsAtSeconds = event.endsAt;
+  const startsAtValid = startsAtSeconds === null || isUnixSeconds(startsAtSeconds);
+  const endsAtValid = endsAtSeconds === null || isUnixSeconds(endsAtSeconds);
 
   if (
     typeof event.title !== "string" ||
+    event.title.trim().length === 0 ||
     typeof event.enabled !== "boolean" ||
-    !isTimestampOrNull(event.startsAt) ||
-    !isTimestampOrNull(event.endsAt) ||
+    !startsAtValid ||
+    !endsAtValid ||
     typeof event.timeMultiplier !== "number" ||
     !Number.isFinite(event.timeMultiplier) ||
     event.timeMultiplier <= 0 ||
@@ -61,6 +77,18 @@ function parseHammerJamPayload(
     event.resourceMultiplier <= 0 ||
     !Array.isArray(event.appliesTo) ||
     !Array.isArray(event.villages)
+  ) {
+    return null;
+  }
+
+  // A disabled event may intentionally have no schedule. Any configured
+  // schedule must be complete and have a strictly positive event window.
+  if (
+    (startsAtSeconds === null) !== (endsAtSeconds === null) ||
+    (startsAtSeconds !== null &&
+      endsAtSeconds !== null &&
+      endsAtSeconds <= startsAtSeconds) ||
+    (event.enabled && (startsAtSeconds === null || endsAtSeconds === null))
   ) {
     return null;
   }
@@ -84,8 +112,8 @@ function parseHammerJamPayload(
   return {
     title: event.title,
     enabled: event.enabled,
-    startsAt: event.startsAt,
-    endsAt: event.endsAt,
+    startsAt: toIsoTimestamp(startsAtSeconds),
+    endsAt: toIsoTimestamp(endsAtSeconds),
     timeMultiplier: event.timeMultiplier,
     costMultiplier: event.costMultiplier,
     resourceMultiplier: event.resourceMultiplier,
@@ -97,7 +125,8 @@ function parseHammerJamPayload(
 /**
  * Reads the global manifest first, then loads the matching Hammer Jam
  * configuration version from the backend. Invalid or unavailable remote
- * configuration safely disables the event.
+ * configuration safely disables the event. Unix seconds are converted to the
+ * app's ISO timestamp representation only at this boundary.
  */
 export async function fetchHammerJamManifest(): Promise<HammerJamManifest> {
   if (!ENV.BACKEND) {

@@ -1,11 +1,13 @@
 {
-  "version": 1,
+  "version": 2,
   "hammerJam": {
+    "title": "Hammer Jam 2026",
     "enabled": false,
     "startsAt": null,
     "endsAt": null,
     "timeMultiplier": 0.5,
     "costMultiplier": 0.5,
+    "resourceMultiplier": 2,
     "appliesTo": [
       "building",
       "troop",

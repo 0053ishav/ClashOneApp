@@ -9,6 +9,8 @@ export type Upgrade = {
 
   village: Village;
   dataId?: number;
+  /** App-owned identity when an imported timer maps to exactly one structure copy. */
+  structureInstanceId?: string;
   entity: string;
 
   moduleId?: number;

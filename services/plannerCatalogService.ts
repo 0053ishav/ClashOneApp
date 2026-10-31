@@ -91,7 +91,10 @@ export function buildPlannerCatalog(
 
   for (const candidate of dataset.candidates) {
     if (candidate.village !== "home") continue;
-    const currentLevel = currentLevels[candidate.entityId] ?? 0;
+    // An absent level is unknown, not level zero. Never recommend an upgrade
+    // from an invented account state.
+    if (!Object.prototype.hasOwnProperty.call(currentLevels, candidate.entityId)) continue;
+    const currentLevel = currentLevels[candidate.entityId];
     const targetLevel = currentLevel + 1;
     if (candidate.targetLevel !== targetLevel) continue;
     if (candidate.targetLevel > candidate.currentLevel + 1) continue;

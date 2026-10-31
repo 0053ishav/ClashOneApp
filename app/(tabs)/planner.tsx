@@ -400,6 +400,17 @@ export default function PlannerCatalogScreen() {
                     </Text>
                   </>
                 )}
+                <Text style={styles.muted}>
+                  Planner diagnostics · progression candidates {result.diagnosticsSummary.datasetCandidates}
+                  {" · "}Home Village {result.diagnosticsSummary.homeVillageCandidates}
+                  {" · "}known level {result.diagnosticsSummary.knownLevelCandidates}
+                  {" · "}next level {result.diagnosticsSummary.nextLevelCandidates}
+                  {" · "}category match {result.diagnosticsSummary.categoryCandidates}
+                  {" · "}metadata match {result.diagnosticsSummary.metadataCandidates}
+                  {" · "}below max {result.diagnosticsSummary.belowMaxLevelCandidates}
+                  {" · "}search match {result.diagnosticsSummary.queryCandidates}
+                  {" · "}shown {result.diagnosticsSummary.returnedItems}
+                </Text>
                 {result.state === "partial" && (
                   <Text style={styles.muted}>Some progression categories are unavailable: {result.unavailableCategories.join(", ") || "data is incomplete"}.</Text>
                 )}

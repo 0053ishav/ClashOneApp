@@ -700,7 +700,15 @@ export default function PlannerCatalogScreen() {
               </View>
             )}
 
-            {hasQueueEditConflict && editingQueueOwner && (\n              <View style={styles.stateCard}>\n                <Text style={styles.stateTitle}>Unsaved edit belongs to another account</Text>\n                <Text style={styles.body}>\n                  Your edit for {editingQueueOwner.accountTag} is preserved in memory and has not been applied. Switch back to that account to save or cancel it. Editing another account is disabled until you resolve this draft.\n                </Text>\n              </View>\n            )}\n            {snapshotReviewRequired && (
+            {hasQueueEditConflict && editingQueueOwner && (
+              <View style={styles.stateCard}>
+                <Text style={styles.stateTitle}>Unsaved edit belongs to another account</Text>
+                <Text style={styles.body}>
+                  Your edit for {editingQueueOwner.accountTag} is preserved in memory and has not been applied. Switch back to that account to save or cancel it. Editing another account is disabled until you resolve this draft.
+                </Text>
+              </View>
+            )}
+            {snapshotReviewRequired && (
               <View style={styles.stateCard}>
                 <Text style={styles.stateTitle}>Village snapshot needs review</Text>
                 <Text style={styles.body}>

@@ -16,8 +16,17 @@ jest.mock("@/theme/useHomeColors", () => ({
 
 import React from "react";
 import { fireEvent, render, screen } from "@testing-library/react-native";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { getBlockPosition, PlannerTimeline } from "@/components/planner/PlannerTimeline";
 import type { PlannerItemId, PlannedUpgradeItem } from "@/types/planner";
+
+function TestWrapper({ children }: { children: React.ReactNode }) {
+  return <BottomSheetModalProvider>{children}</BottomSheetModalProvider>;
+}
+
+function renderWithProvider(element: React.ReactElement) {
+  return render(element, { wrapper: TestWrapper });
+}
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -75,7 +84,7 @@ describe("PlannerTimeline positioning", () => {
   });
 
   it("renders a useful empty state and accessible scale controls", () => {
-    render(React.createElement(PlannerTimeline, {
+    renderWithProvider(React.createElement(PlannerTimeline, {
       items: [],
       projections: [],
       candidates: [],

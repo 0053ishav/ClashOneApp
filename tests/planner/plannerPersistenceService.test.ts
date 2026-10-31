@@ -130,6 +130,43 @@ describe("planner persistence account isolation", () => {
     );
   });
 
+  it("reopens a stored plan with typed lane intent and stable user order", async () => {
+    const db = setupDatabase({
+      getFirstAsync: jest.fn().mockResolvedValue({
+        id: planId,
+        account_player_tag: "#ACCOUNT_A",
+        village: "home",
+        name: "Upgrade Plan",
+        created_at_ms: 50,
+        updated_at_ms: 200,
+      }),
+      getAllAsync: jest.fn().mockResolvedValue([
+        {
+          id: itemId,
+          candidate_id: item.candidateId,
+          target_level: item.targetLevel,
+          lane_json: JSON.stringify(item.lane),
+          user_order: item.order,
+          created_at_ms: item.createdAtMs,
+          updated_at_ms: item.updatedAtMs,
+        },
+      ]),
+    });
+
+    await expect(getPlannerPlan("#ACCOUNT_A", planId)).resolves.toEqual({
+      id: planId,
+      accountTag: "#ACCOUNT_A",
+      village: "home",
+      items: [item],
+      createdAtMs: 50,
+      updatedAtMs: 200,
+    });
+    expect(db.getAllAsync).toHaveBeenCalledWith(
+      expect.stringContaining("WHERE plan_id = ? AND account_player_tag = ?"),
+      [planId, "#ACCOUNT_A"],
+    );
+  });
+
   it("rejects blank account tags before opening the database", async () => {
     await expect(listPlannerPlans(" ")).rejects.toThrow("INVALID_ACCOUNT_TAG");
     expect(mockGetDB).not.toHaveBeenCalled();

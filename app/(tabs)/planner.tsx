@@ -42,6 +42,7 @@ import { addPlannerQueueItem, getDefaultPlannerLane, movePlannerQueueItem, remov
 import { resolvePlannerStructureLevels } from "@/services/plannerStructureLevelService";
 import { resolvePlannerCatalogLevelState } from "@/services/plannerCatalogLevelState";
 import { PlannerTimeline } from "@/components/planner/PlannerTimeline";
+import { PlannerSnapshotReview } from "@/components/planner/PlannerSnapshotReview";
 
 const CATEGORIES: { label: string; value: PlannerEntityCategory | "all" }[] = [
   { label: "All", value: "all" },
@@ -708,26 +709,13 @@ export default function PlannerCatalogScreen() {
                 </Text>
               </View>
             )}
-            {snapshotReviewRequired && (
-              <View style={styles.stateCard}>
-                <Text style={styles.stateTitle}>Village snapshot needs review</Text>
-                <Text style={styles.body}>
-                  {lastJsonSyncAtMs === undefined
-                    ? "The latest village snapshot has no recorded sync time. Sync account data before recalculating. Your saved queue has not been changed."
-                    : queuePlan?.snapshotAtMs === null
-                      ? "This plan has no recorded snapshot baseline. Review the current import before calculating estimates. Your saved queue remains unchanged."
-                      : `A newer village import exists (last sync ${new Date(lastJsonSyncAtMs).toLocaleString()}). Review it before recalculating. Your saved queue remains unchanged.`}
-                </Text>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={snapshotReviewBusy || lastJsonSyncAtMs === undefined}
-                  onPress={() => void reviewSnapshotAndRecalculate()}
-                  style={[styles.applyButton, (snapshotReviewBusy || lastJsonSyncAtMs === undefined) && { opacity: 0.5 }]}
-                >
-                  <Text style={styles.applyButtonText}>{snapshotReviewBusy ? "Recording review…" : "Review snapshot & recalculate"}</Text>
-                </Pressable>
-              </View>
-            )}
+            <PlannerSnapshotReview
+              visible={snapshotReviewRequired}
+              lastJsonSyncAtMs={lastJsonSyncAtMs}
+              snapshotAtMs={queuePlan?.snapshotAtMs}
+              busy={snapshotReviewBusy}
+              onReviewAndRecalculate={() => void reviewSnapshotAndRecalculate()}
+            />
             <PlannerTimeline
               items={queuePlan?.items ?? []}
               projections={projections ?? []}

@@ -220,6 +220,70 @@ export default function PlannerCatalogScreen() {
     };
   }, [activeTag, category, coordinator, currentLevels, entitiesById, query, townHallLevel]);
 
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!activeTag) {
+      setQueuePlan(null);
+      setQueueError(null);
+      return;
+    }
+    setQueuePlan(null);
+    setQueueError(null);
+    void listPlannerPlans(activeTag)
+      .then(async (plans) => {
+        if (cancelled) return;
+        const plan = plans[0] ?? await createPlannerPlan(activeTag, `planner-${Date.now()}-${nextItemId.current++}` as PlannerPlanId);
+        if (!cancelled) setQueuePlan(plan);
+      })
+      .catch((loadError: unknown) => {
+        if (!cancelled) setQueueError(loadError instanceof Error ? loadError.message : "Could not load the upgrade queue.");
+      });
+    return () => { cancelled = true; };
+  }, [activeTag]);
+
+  const persistQueue = async (items: readonly PlannedUpgradeItem[]) => {
+    if (!activeTag || !queuePlan || queueBusy) return;
+    setQueueBusy(true);
+    setQueueError(null);
+    const now = Date.now();
+    const timestampedItems = items.map((item) => ({ ...item, updatedAtMs: Math.max(now, item.createdAtMs) }));
+    try {
+      await replacePlannerQueue(activeTag, queuePlan.id, timestampedItems, now);
+      setQueuePlan((previous) => previous ? { ...previous, items: timestampedItems, updatedAtMs: now } : previous);
+    } catch (saveError: unknown) {
+      setQueueError(saveError instanceof Error ? saveError.message : "Could not save the upgrade queue.");
+    } finally {
+      setQueueBusy(false);
+    }
+  };
+
+  const addToQueue = (candidateId: string, targetLevel: number) => {
+    if (!queuePlan || queueBusy) return;
+    if (queuePlan.items.some((item) => item.candidateId === candidateId && item.targetLevel === targetLevel)) return;
+    const now = Date.now();
+    const lane = { lane: "normal-builders" as const, builderIndex: 1 };
+    const laneItems = queuePlan.items.filter((item) => item.lane.lane === lane.lane && item.lane.builderIndex === lane.builderIndex);
+    const item: PlannedUpgradeItem = {
+      id: `planner-item-${now}-${nextItemId.current++}` as PlannerItemId,
+      candidateId, targetLevel, lane, order: laneItems.length, createdAtMs: now, updatedAtMs: now,
+    };
+    try {
+      void persistQueue(addPlannerQueueItem(queuePlan.items, item));
+    } catch (mutationError: unknown) {
+      setQueueError(mutationError instanceof Error ? mutationError.message : "Could not update the upgrade queue.");
+    }
+  };
+
+  const removeFromQueue = (itemId: PlannerItemId) => {
+    if (!queuePlan || queueBusy) return;
+    try {
+      void persistQueue(removePlannerQueueItem(queuePlan.items, itemId));
+    } catch (mutationError: unknown) {
+      setQueueError(mutationError instanceof Error ? mutationError.message : "Could not update the upgrade queue.");
+    }
+  };
+
   const knownLevelCount = Object.keys(currentLevels).length;
   const untrackedEntities = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -361,6 +425,25 @@ export default function PlannerCatalogScreen() {
                 )}
               </View>
             )}
+
+            <View style={styles.stateCard}>
+              <Text style={styles.stateTitle}>Upgrade queue</Text>
+              <Text style={styles.body}>Planned items are saved to this village. New items currently default to Builder 1; lane assignment and scheduling projections are not available yet.</Text>
+              {queueBusy && <Text style={styles.muted}>Saving queue…</Text>}
+              {!!queueError && <Text accessibilityRole="alert" style={styles.warning}>{queueError}</Text>}
+              {queuePlan?.items.length === 0 && <Text style={styles.muted}>No upgrades queued yet.</Text>}
+              {queuePlan?.items.map((queuedItem) => (
+                <View key={queuedItem.id} style={styles.queueRow}>
+                  <View style={styles.itemTitleWrap}>
+                    <Text style={styles.itemName}>{result?.items.find((item) => item.candidate.candidateId === queuedItem.candidateId)?.name ?? queuedItem.candidateId}</Text>
+                    <Text style={styles.muted}>Target level {queuedItem.targetLevel} · {queuedItem.lane.lane === "normal-builders" ? `Builder ${queuedItem.lane.builderIndex}` : queuedItem.lane.lane}</Text>
+                  </View>
+                  <Pressable accessibilityRole="button" disabled={queueBusy} onPress={() => removeFromQueue(queuedItem.id)} style={styles.removeButton}>
+                    <Text style={styles.removeButtonText}>Remove</Text>
+                  </Pressable>
+                </View>
+              ))}
+            </View>
 
             <TextInput
               accessibilityLabel="Search upgrades"

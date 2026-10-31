@@ -131,15 +131,56 @@ describe("reconcileStructureInstances", () => {
   });
 
   it.each([
-    [0, 1, "INVALID_STRUCTURE_DATA_ID"],
-    [1000002, -1, "INVALID_STRUCTURE_LEVEL"],
-  ])("rejects malformed dataId/level (%s, %s)", (dataId, level, error) => {
+    { dataId: 0, level: 1, error: "INVALID_STRUCTURE_DATA_ID" },
+    { dataId: 1000002, level: -1, error: "INVALID_STRUCTURE_LEVEL" },
+  ])("rejects malformed dataId/level ($dataId, $level)", ({ dataId, level, error }) => {
     expect(() => reconcileStructureInstances(
       accountTag,
       [bucket(dataId, level, 1)],
       [],
       () => "id",
     )).toThrow(error);
+  });
+
+  it("associates a live timer only when one stable structure instance matches", () => {
+    const { resolveActiveStructureTimerInstanceId } = require("@/services/planner/structureInstanceService") as typeof import("@/services/planner/structureInstanceService");
+    const instances = [instance("cannon-a", 1000002, 16)];
+
+    expect(resolveActiveStructureTimerInstanceId(
+      { dataId: 1000002, currentLevel: 16, upgradeKind: "NORMAL" },
+      instances,
+    )).toBe("cannon-a");
+  });
+
+  it("leaves live timer identity unresolved when multiple identical copies match", () => {
+    const { resolveActiveStructureTimerInstanceId } = require("@/services/planner/structureInstanceService") as typeof import("@/services/planner/structureInstanceService");
+    const instances = [
+      instance("cannon-a", 1000002, 16),
+      instance("cannon-b", 1000002, 16),
+    ];
+
+    expect(resolveActiveStructureTimerInstanceId(
+      { dataId: 1000002, currentLevel: 16, upgradeKind: "NORMAL" },
+      instances,
+    )).toBeUndefined();
+  });
+
+  it("does not associate a timer with ambiguous or already claimed instances", () => {
+    const { resolveActiveStructureTimerInstanceId } = require("@/services/planner/structureInstanceService") as typeof import("@/services/planner/structureInstanceService");
+    const ambiguous = {
+      ...instance("cannon-a", 1000002, 16),
+      identityConfidence: "ambiguous" as const,
+    };
+
+    expect(resolveActiveStructureTimerInstanceId(
+      { dataId: 1000002, currentLevel: 16 },
+      [ambiguous],
+    )).toBeUndefined();
+    expect(resolveActiveStructureTimerInstanceId(
+      { dataId: 1000002, currentLevel: 16 },
+      [instance("cannon-a", 1000002, 16)],
+      new Set(["cannon-a"]),
+    )).toBeUndefined();
   });
 
   it("rejects invalid counts and duplicate grouped buckets", () => {

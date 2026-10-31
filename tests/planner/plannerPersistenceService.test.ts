@@ -1,5 +1,6 @@
 import { getDB } from "@/db/database";
 import {
+  acknowledgePlannerSnapshot,
   deletePlannerItem,
   deletePlannerPlan,
   getPlannerPlan,
@@ -195,6 +196,7 @@ describe("planner persistence account isolation", () => {
         name: "Upgrade Plan",
         created_at_ms: 50,
         updated_at_ms: 200,
+        snapshot_at_ms: null,
       }),
       getAllAsync: jest.fn().mockResolvedValue([
         {
@@ -216,6 +218,7 @@ describe("planner persistence account isolation", () => {
       items: [item],
       createdAtMs: 50,
       updatedAtMs: 200,
+      snapshotAtMs: null,
     });
     expect(db.getAllAsync).toHaveBeenCalledWith(
       expect.stringContaining("WHERE plan_id = ? AND account_player_tag = ?"),
@@ -223,6 +226,26 @@ describe("planner persistence account isolation", () => {
     );
   });
 
+
+  it("acknowledges the current snapshot only for the owning account plan", async () => {
+    const db = setupDatabase({
+      runAsync: jest.fn().mockResolvedValue({ changes: 1 }),
+    });
+
+    await acknowledgePlannerSnapshot("#ACCOUNT_A", planId, 500);
+
+    expect(db.runAsync).toHaveBeenCalledWith(
+      "UPDATE planner_plans SET snapshot_at_ms = ? WHERE id = ? AND account_player_tag = ?",
+      [500, planId, "#ACCOUNT_A"],
+    );
+  });
+
+  it("rejects invalid snapshot timestamps before opening the database", async () => {
+    await expect(acknowledgePlannerSnapshot("#ACCOUNT_A", planId, -1)).rejects.toThrow(
+      "INVALID_PLANNER_SNAPSHOT_TIMESTAMP",
+    );
+    expect(mockGetDB).not.toHaveBeenCalled();
+  });
   it("rejects blank account tags before opening the database", async () => {
     await expect(listPlannerPlans(" ")).rejects.toThrow("INVALID_ACCOUNT_TAG");
     expect(mockGetDB).not.toHaveBeenCalled();

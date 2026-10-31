@@ -14,6 +14,7 @@ type PlanRow = {
   name: string;
   created_at_ms: number;
   updated_at_ms: number;
+  snapshot_at_ms: number | null;
 };
 
 type PlanItemRow = {
@@ -78,6 +79,7 @@ function mapPlanItem(row: PlanItemRow): PlannedUpgradeItem {
     order: row.user_order,
     createdAtMs: row.created_at_ms,
     updatedAtMs: row.updated_at_ms,
+    snapshotAtMs: row.snapshot_at_ms ?? null,
   };
 }
 
@@ -109,21 +111,25 @@ export async function createPlannerPlan(
   accountTag: string,
   planId: PlannerPlanId,
   now = Date.now(),
+  snapshotAtMs: number | null = null,
 ): Promise<PlannerPlan> {
   requireAccountTag(accountTag);
   requirePlanId(planId);
   if (!Number.isSafeInteger(now) || now < 0) throw new Error("INVALID_PLANNER_TIMESTAMP");
+  if (snapshotAtMs !== null && (!Number.isSafeInteger(snapshotAtMs) || snapshotAtMs < 0)) {
+    throw new Error("INVALID_PLANNER_SNAPSHOT_TIMESTAMP");
+  }
 
   const db = await getDB();
   await db.runAsync(
     `INSERT INTO planner_plans
-      (id, account_player_tag, village, name, created_at_ms, updated_at_ms)
-     VALUES (?, ?, 'home', 'Upgrade Plan', ?, ?)`,
-    [planId, accountTag, now, now],
+      (id, account_player_tag, village, name, created_at_ms, updated_at_ms, snapshot_at_ms)
+     VALUES (?, ?, 'home', 'Upgrade Plan', ?, ?, ?)`,
+    [planId, accountTag, now, now, snapshotAtMs],
   );
 
   const row = await db.getFirstAsync<PlanRow>(
-    `SELECT id, account_player_tag, village, name, created_at_ms, updated_at_ms
+    `SELECT id, account_player_tag, village, name, created_at_ms, updated_at_ms, snapshot_at_ms
      FROM planner_plans WHERE id = ? AND account_player_tag = ?`,
     [planId, accountTag],
   );
@@ -136,7 +142,7 @@ export async function listPlannerPlans(accountTag: string): Promise<PlannerPlan[
   requireAccountTag(accountTag);
   const db = await getDB();
   const rows = await db.getAllAsync<PlanRow>(
-    `SELECT id, account_player_tag, village, name, created_at_ms, updated_at_ms
+    `SELECT id, account_player_tag, village, name, created_at_ms, updated_at_ms, snapshot_at_ms
      FROM planner_plans WHERE account_player_tag = ?
      ORDER BY updated_at_ms DESC, id ASC`,
     [accountTag],
@@ -160,6 +166,25 @@ export async function getPlannerPlan(
   return row ? mapPlan(accountTag, row) : null;
 }
 
+
+/** Records explicit review of the current account snapshot without changing queue intent. */
+export async function acknowledgePlannerSnapshot(
+  accountTag: string,
+  planId: PlannerPlanId,
+  snapshotAtMs: number,
+): Promise<void> {
+  requireAccountTag(accountTag);
+  requirePlanId(planId);
+  if (!Number.isSafeInteger(snapshotAtMs) || snapshotAtMs < 0) {
+    throw new Error("INVALID_PLANNER_SNAPSHOT_TIMESTAMP");
+  }
+  const db = await getDB();
+  const result = await db.runAsync(
+    "UPDATE planner_plans SET snapshot_at_ms = ? WHERE id = ? AND account_player_tag = ?",
+    [snapshotAtMs, planId, accountTag],
+  );
+  if (result.changes === 0) throw new Error("PLANNER_PLAN_NOT_FOUND");
+}
 /** Upserts only when the parent plan belongs to the supplied account. */
 export async function savePlannerItem(
   accountTag: string,

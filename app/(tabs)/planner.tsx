@@ -37,7 +37,7 @@ import type { ObservedActiveUpgrade, PlannerEntityCategory, PlannerItemId, Plann
 import { recalculatePlannerProjection } from "@/services/plannerApplicationService";
 import type { PlannerLaneAvailability, PlannerPrerequisiteState } from "@/utils/planner/schedulePlanner";
 import type { PlannerLaneAssignment } from "@/types/planner";
-import { createPlannerPlan, listPlannerPlans, replacePlannerQueue } from "@/services/plannerPersistenceService";
+import { acknowledgePlannerSnapshot, createPlannerPlan, listPlannerPlans, replacePlannerQueue } from "@/services/plannerPersistenceService";
 import { addPlannerQueueItem, getDefaultPlannerLane, movePlannerQueueItem, removePlannerQueueItem, updatePlannerQueueItem } from "@/services/planner/plannerQueueService";
 import { resolvePlannerStructureLevels } from "@/services/plannerStructureLevelService";
 import { resolvePlannerCatalogLevelState } from "@/services/plannerCatalogLevelState";
@@ -72,6 +72,7 @@ export default function PlannerCatalogScreen() {
   const activeTag = useAccountStore((state) => state.activeTag);
   const accounts = useAccountStore((state) => state.accounts);
   const profilesByTag = useAccountStore((state) => state.profilesByTag);
+  const lastJsonSyncMap = useAccountStore((state) => state.lastJsonSyncMap);
   const entitiesById = useEntityStore((state) => state.entitiesById);
   const coordinator = useRef(createPlannerCatalogRequestCoordinator()).current;
   const [query, setQuery] = useState("");
@@ -88,6 +89,7 @@ export default function PlannerCatalogScreen() {
   const [error, setError] = useState<string | null>(null);
   const [queuePlan, setQueuePlan] = useState<PlannerPlan | null>(null);
   const [queueBusy, setQueueBusy] = useState(false);
+  const [snapshotReviewBusy, setSnapshotReviewBusy] = useState(false);
   const [queueError, setQueueError] = useState<string | null>(null);
   const [editingQueueItemId, setEditingQueueItemId] = useState<PlannerItemId | null>(null);
   const [queueTargetDrafts, setQueueTargetDrafts] = useState<Record<string, string>>({});
@@ -99,6 +101,7 @@ export default function PlannerCatalogScreen() {
   const queueWriteInFlight = useRef(false);
 
   const activeAccount = accounts.find((account) => account.tag === activeTag);
+  const lastJsonSyncAtMs = activeTag ? lastJsonSyncMap[activeTag] : undefined;
   const townHallLevel =
     (activeTag ? profilesByTag[activeTag]?.townHallLevel : undefined) ??
     activeAccount?.townhall ??
@@ -244,14 +247,14 @@ export default function PlannerCatalogScreen() {
     void listPlannerPlans(activeTag)
       .then(async (plans) => {
         if (cancelled) return;
-        const plan = plans[0] ?? await createPlannerPlan(activeTag, `planner-${Date.now()}-${nextItemId.current++}` as PlannerPlanId);
+        const plan = plans[0] ?? await createPlannerPlan(activeTag, `planner-${Date.now()}-${nextItemId.current++}` as PlannerPlanId, Date.now(), lastJsonSyncAtMs ?? null);
         if (!cancelled) setQueuePlan(plan);
       })
       .catch((loadError: unknown) => {
         if (!cancelled) setQueueError(loadError instanceof Error ? loadError.message : "Could not load the upgrade queue.");
       });
     return () => { cancelled = true; };
-  }, [activeTag]);
+  }, [activeTag, lastJsonSyncAtMs]);
 
   const persistQueue = async (items: readonly PlannedUpgradeItem[]): Promise<boolean> => {
     if (!activeTag || !queuePlan || queueWriteInFlight.current) return false;
@@ -494,6 +497,10 @@ export default function PlannerCatalogScreen() {
     setProjections(null);
     setProjectionError(null);
     if (!activeTag || !queuePlan || queuePlan.accountTag !== activeTag) return;
+    if (snapshotReviewRequired) {
+      setProjectionError("Village data changed or its freshness cannot be verified. Review the current snapshot before recalculating this saved plan.");
+      return;
+    }
     if (observedUpgrades === null) {
       setProjectionError("A live timer has no confirmed lane assignment. Scheduling is paused rather than guessing which builder or lab is occupied.");
       return;
@@ -512,11 +519,36 @@ export default function PlannerCatalogScreen() {
       if (!cancelled) setProjectionError(projectionLoadError instanceof Error ? projectionLoadError.message : "Could not calculate the upgrade schedule.");
     });
     return () => { cancelled = true; };
-  }, [activeTag, laneAvailability, observedUpgrades, plannerCandidates, prerequisiteState, queuePlan]);
+  }, [activeTag, laneAvailability, observedUpgrades, plannerCandidates, prerequisiteState, queuePlan, snapshotReviewRequired]);
 
   const projectionByItemId = useMemo(() => new Map(
     (projections ?? []).map((projection) => [projection.plannedItemId, projection]),
   ), [projections]);
+
+  const snapshotReviewRequired = Boolean(
+    queuePlan && queuePlan.accountTag === activeTag &&
+    (queuePlan.snapshotAtMs === null || lastJsonSyncAtMs === undefined || lastJsonSyncAtMs > queuePlan.snapshotAtMs),
+  );
+
+  const reviewSnapshotAndRecalculate = async () => {
+    if (!activeTag || !queuePlan || queuePlan.accountTag !== activeTag || snapshotReviewBusy) return;
+    if (lastJsonSyncAtMs === undefined) {
+      setProjectionError("The latest village snapshot has no recorded sync time. Sync the account data before recalculating this plan.");
+      return;
+    }
+    setSnapshotReviewBusy(true);
+    try {
+      await acknowledgePlannerSnapshot(activeTag, queuePlan.id, lastJsonSyncAtMs);
+      setQueuePlan((previous) => previous && previous.accountTag === activeTag && previous.id === queuePlan.id
+        ? { ...previous, snapshotAtMs: lastJsonSyncAtMs }
+        : previous);
+      setProjectionError(null);
+    } catch (reviewError: unknown) {
+      setProjectionError(reviewError instanceof Error ? reviewError.message : "Could not record the reviewed village snapshot.");
+    } finally {
+      setSnapshotReviewBusy(false);
+    }
+  };
 
   const knownLevelCount = Object.keys(currentLevels).length;
   const untrackedEntities = useMemo(() => {
@@ -660,6 +692,26 @@ export default function PlannerCatalogScreen() {
               </View>
             )}
 
+            {snapshotReviewRequired && (
+              <View style={styles.stateCard}>
+                <Text style={styles.stateTitle}>Village snapshot needs review</Text>
+                <Text style={styles.body}>
+                  {lastJsonSyncAtMs === undefined
+                    ? "The latest village snapshot has no recorded sync time. Sync account data before recalculating. Your saved queue has not been changed."
+                    : queuePlan?.snapshotAtMs === null
+                      ? "This plan has no recorded snapshot baseline. Review the current import before calculating estimates. Your saved queue remains unchanged."
+                      : `A newer village import exists (last sync ${new Date(lastJsonSyncAtMs).toLocaleString()}). Review it before recalculating. Your saved queue remains unchanged.`}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={snapshotReviewBusy || lastJsonSyncAtMs === undefined}
+                  onPress={() => void reviewSnapshotAndRecalculate()}
+                  style={[styles.applyButton, (snapshotReviewBusy || lastJsonSyncAtMs === undefined) && { opacity: 0.5 }]}
+                >
+                  <Text style={styles.applyButtonText}>{snapshotReviewBusy ? "Recording review…" : "Review snapshot & recalculate"}</Text>
+                </Pressable>
+              </View>
+            )}
             <PlannerTimeline
               items={queuePlan?.items ?? []}
               projections={projections ?? []}

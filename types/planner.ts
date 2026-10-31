@@ -132,6 +132,8 @@ export interface PlannerPlan {
   items: readonly PlannedUpgradeItem[];
   createdAtMs: number;
   updatedAtMs: number;
+  /** Last account snapshot explicitly reviewed for this plan; null means unverified. */
+  snapshotAtMs: number | null;
 }
 
 export type PlannerBlockReason =

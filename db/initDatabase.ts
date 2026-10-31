@@ -424,6 +424,20 @@ async function migrateDatabase() {
     version = 13;
   }
 
+
+  // V14 - Track the account snapshot explicitly reviewed by each saved plan.
+  if (version < 14) {
+    try {
+      await db.execAsync(`
+        ALTER TABLE planner_plans
+        ADD COLUMN snapshot_at_ms INTEGER;
+      `);
+    } catch (error) {
+      log("⏭️ planner snapshot column already exists", error);
+    }
+    await setSchemaVersion(db, 14);
+    version = 14;
+  }
   // log("✅ Database ready. Version:", version);
 
   // Debug only

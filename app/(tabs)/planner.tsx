@@ -207,8 +207,7 @@ export default function PlannerCatalogScreen() {
         || Object.prototype.hasOwnProperty.call(manualOverrides, String(entity.id)))
       .filter((entity) => {
         if (!normalizedQuery) return true;
-        return entity.name.en.toLocaleLowerCase().includes(normalizedQuery)
-          || String(entity.id).includes(normalizedQuery);
+        return entity.name.en.toLocaleLowerCase().includes(normalizedQuery);
       })
       .map((entity) => {
         const levels = Object.keys(entity.levels ?? {})
@@ -285,7 +284,7 @@ export default function PlannerCatalogScreen() {
               accessibilityLabel="Search upgrades"
               value={query}
               onChangeText={setQuery}
-              placeholder="Search by name or entity ID"
+              placeholder="Search upgrades by name"
               placeholderTextColor={colors.textMuted}
               autoCapitalize="none"
               style={styles.search}
@@ -320,7 +319,7 @@ export default function PlannerCatalogScreen() {
                     <View key={key} style={styles.levelEditor}>
                       <View style={styles.itemTitleWrap}>
                         <Text style={styles.itemName}>{entity.name.en}</Text>
-                        <Text style={styles.muted}>Max level {maxLevel} · ID {key}</Text>
+                        <Text style={styles.muted}>Max level {maxLevel}</Text>
                       </View>
                       <TextInput
                         accessibilityLabel={`Current level for ${entity.name.en}`}
@@ -389,7 +388,7 @@ export default function PlannerCatalogScreen() {
                   <>
                     <Text style={styles.stateTitle}>No matching entity metadata</Text>
                     <Text style={styles.body}>
-                      No Home Village entity name or ID matches “{query.trim()}”. Try the entity name without extra words, clear search, or sync game data if the entity is missing.
+                      No Home Village entity name matches “{query.trim()}”. Try another name or clear search.
                     </Text>
                   </>
                 ) : (
@@ -422,7 +421,7 @@ export default function PlannerCatalogScreen() {
                 <View style={styles.itemHeader}>
                   <View style={styles.itemTitleWrap}>
                     <Text style={styles.itemName}>{item.name}</Text>
-                    <Text style={styles.muted}>{item.candidate.category} · ID {item.candidate.entityId}</Text>
+                    <Text style={styles.muted}>{item.candidate.category}</Text>
                   </View>
                   <View style={styles.levelBadge}>
                     <Text style={styles.levelText}>{item.currentLevel} → {item.candidate.targetLevel}</Text>
@@ -437,7 +436,7 @@ export default function PlannerCatalogScreen() {
                   <Text style={styles.warning}>
                     Prerequisites not confirmed: {item.blockedBy.map((prerequisite) =>
                       prerequisite.kind === "entity-level"
-                        ? `entity ${prerequisite.entityId} level ${prerequisite.minimumLevel}`
+                        ? `required upgrade level ${prerequisite.minimumLevel}`
                         : `${prerequisite.kind} ${prerequisite.minimumLevel}`,
                     ).join(", ")}
                   </Text>

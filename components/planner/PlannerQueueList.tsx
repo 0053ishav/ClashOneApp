@@ -15,6 +15,7 @@ export interface PlannerQueueListProps {
   projections: readonly UpgradeProjection[];
   candidates: readonly ProgressionCandidate[];
   itemNamesByCandidateId: Readonly<Record<string, string>>;
+  structureInstanceNumbersById: Readonly<Record<string, number>>;
   builderCount: number;
   queueBusy: boolean;
   queueError: string | null;
@@ -43,6 +44,7 @@ export function PlannerQueueList({
   projections,
   candidates,
   itemNamesByCandidateId,
+  structureInstanceNumbersById,
   builderCount,
   queueBusy,
   queueError,
@@ -88,7 +90,7 @@ export function PlannerQueueList({
         return (
           <View key={queuedItem.id} style={styles.queueRow}>
             <View style={styles.itemTitleWrap}>
-              <Text style={styles.itemName}>{itemNamesByCandidateId[queuedItem.candidateId] ?? queuedItem.candidateId}</Text>
+              <Text style={styles.itemName}>{itemNamesByCandidateId[queuedItem.candidateId] ?? queuedItem.candidateId}{queuedItem.structureInstanceId && structureInstanceNumbersById[queuedItem.structureInstanceId] !== undefined ? ` #${structureInstanceNumbersById[queuedItem.structureInstanceId]}` : ""}</Text>
               <Text style={styles.muted}>Target level {queuedItem.targetLevel} · {queuedItem.lane.lane === "normal-builders" ? `Builder ${queuedItem.lane.builderIndex}` : queuedItem.lane.lane}</Text>
               {isEditing && (
                 <View style={styles.queueEditPanel}>

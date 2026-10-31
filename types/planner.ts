@@ -19,7 +19,7 @@ export interface PlannerStructureInstance {
   id: PlannerStructureInstanceId;
   accountTag: string;
   village: PlannerVillage;
-  entityId: string;
+  dataId: number;
   /** Stable per-entity label ordinal; presentation only, never the primary key. */
   instanceNumber: number;
   currentLevel: number;

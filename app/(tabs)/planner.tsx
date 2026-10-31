@@ -13,6 +13,8 @@ import { useHomeColors } from "@/theme/useHomeColors";
 import { useAccountStore } from "@/stores/accountStore";
 import { useEntityStore } from "@/stores/entityStore";
 import { getBuildingProgress, getStructureInstances } from "@/services/accountService";
+import { getActiveUpgrades } from "@/services/upgradeService";
+import type { Upgrade } from "@/types/upgrade";
 import type { StructureInstanceRecord } from "@/services/planner/structureInstanceService";
 import {
   loadPlannerCatalogLevelOverrides,
@@ -70,6 +72,7 @@ export default function PlannerCatalogScreen() {
   const [category, setCategory] = useState<PlannerEntityCategory | "all">("all");
   const [currentLevels, setCurrentLevels] = useState<Record<string, number>>({});
   const [structureInstances, setStructureInstances] = useState<StructureInstanceRecord[]>([]);
+  const [activeUpgrades, setActiveUpgrades] = useState<Upgrade[]>([]);
   const [showStructureInstances, setShowStructureInstances] = useState(false);
   const [manualOverrides, setManualOverrides] = useState<Record<string, number>>({});
   const [levelDrafts, setLevelDrafts] = useState<Record<string, string>>({});
@@ -92,6 +95,7 @@ export default function PlannerCatalogScreen() {
     if (!activeTag) {
       setCurrentLevels({});
       setStructureInstances([]);
+      setActiveUpgrades([]);
       setShowStructureInstances(false);
       setManualOverrides({});
       setIsLoading(false);
@@ -103,6 +107,7 @@ export default function PlannerCatalogScreen() {
 
     setCurrentLevels({});
     setStructureInstances([]);
+    setActiveUpgrades([]);
     setShowStructureInstances(false);
     setManualOverrides({});
     setLevelDrafts({});
@@ -111,8 +116,9 @@ export default function PlannerCatalogScreen() {
     void Promise.all([
       getBuildingProgress(activeTag),
       getStructureInstances(activeTag),
+      getActiveUpgrades(activeTag),
     ])
-      .then(([records, instances]) => {
+      .then(([records, instances, upgrades]) => {
         if (cancelled) return;
         const levels: Record<string, number> = {};
         for (const record of records) {
@@ -123,6 +129,7 @@ export default function PlannerCatalogScreen() {
         setCurrentLevels(resolvedLevels.currentLevels);
         setManualOverrides(resolvedLevels.manualOverrides);
         setStructureInstances(instances);
+        setActiveUpgrades(upgrades);
       })
       .catch((loadError: unknown) => {
         if (!cancelled) {
@@ -313,12 +320,29 @@ export default function PlannerCatalogScreen() {
                   .map((instance) => {
                     const entity = entitiesById[String(instance.dataId)];
                     const label = entity?.name.en ?? `Entity ${instance.dataId}`;
+                    const activeUpgrade = activeUpgrades.find(
+                      (upgrade) => upgrade.structureInstanceId === instance.id,
+                    );
+                    const hasUnresolvedTimer = activeUpgrades.some(
+                      (upgrade) =>
+                        !upgrade.structureInstanceId &&
+                        upgrade.dataId === instance.dataId &&
+                        upgrade.currentLevel === instance.currentLevel,
+                    );
                     return (
                       <View key={instance.id} style={styles.levelEditor}>
                         <View style={styles.itemTitleWrap}>
                           <Text style={styles.itemName}>{label} #{instance.instanceNumber}</Text>
                           <Text style={styles.muted}>Level {instance.currentLevel}</Text>
                         </View>
+                        {activeUpgrade && (
+                          <Text style={styles.body}>
+                            Upgrading to level {activeUpgrade.nextLevel ?? "unknown"} · finishes {new Date(activeUpgrade.endTime).toLocaleString()}
+                          </Text>
+                        )}
+                        {!activeUpgrade && hasUnresolvedTimer && (
+                          <Text style={styles.warning}>An active timer exists, but the export cannot identify this exact copy.</Text>
+                        )}
                         {instance.identityConfidence === "ambiguous" && (
                           <Text style={styles.warning}>Identity needs confirmation after import changes.</Text>
                         )}

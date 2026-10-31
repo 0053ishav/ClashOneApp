@@ -121,7 +121,8 @@ export type PlannerBlockReason =
   | { code: "lane-ineligible"; lane: "goblin-builder" | "goblin-laboratory"; detail: string }
   | { code: "estimate-unknown"; estimate: "cost" | "duration"; reason: EstimateUnknownReason }
   | { code: "invalid-target-level"; targetLevel: number }
-  | { code: "candidate-unavailable"; candidateId: string };
+  | { code: "candidate-unavailable"; candidateId: string }
+  | { code: "dependency-cycle"; itemIds: readonly string[] };
 
 export type UpgradeProjection =
   | {

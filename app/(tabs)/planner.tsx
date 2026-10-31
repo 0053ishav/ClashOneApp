@@ -67,6 +67,7 @@ export default function PlannerCatalogScreen() {
   const [category, setCategory] = useState<PlannerEntityCategory | "all">("all");
   const [currentLevels, setCurrentLevels] = useState<Record<string, number>>({});
   const [levelDrafts, setLevelDrafts] = useState<Record<string, string>>({});
+  const [levelErrors, setLevelErrors] = useState<Record<string, string>>({});
   const [result, setResult] = useState<PlannerCatalogResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -211,11 +212,18 @@ export default function PlannerCatalogScreen() {
   }, [category, currentLevels, entitiesById, query]);
 
   const applyLevel = (entityId: number, maxLevel: number) => {
-    const draft = levelDrafts[String(entityId)] ?? "";
-    const level = Number(draft);
-    if (!Number.isSafeInteger(level) || level < 0 || level > maxLevel) return;
-    if (!activeTag) return;
     const entityKey = String(entityId);
+    const draft = levelDrafts[entityKey] ?? "";
+    const level = Number(draft);
+
+    if (draft.trim() === "" || !Number.isSafeInteger(level) || level < 0 || level > maxLevel) {
+      setLevelErrors((previous) => ({
+        ...previous,
+        [entityKey]: `Enter a whole-number level from 0 to ${maxLevel}.`,
+      }));
+      return;
+    }
+    if (!activeTag) return;
     const nextLevels = { ...currentLevels, [entityKey]: level };
 
     try {
@@ -227,6 +235,11 @@ export default function PlannerCatalogScreen() {
       });
       setCurrentLevels(nextLevels);
       setLevelDrafts((previous) => ({ ...previous, [entityKey]: String(level) }));
+      setLevelErrors((previous) => {
+        const next = { ...previous };
+        delete next[entityKey];
+        return next;
+      });
       setError(null);
     } catch (saveError: unknown) {
       setError(
@@ -303,7 +316,15 @@ export default function PlannerCatalogScreen() {
                         accessibilityLabel={`Current level for ${entity.name.en}`}
                         keyboardType="number-pad"
                         value={levelDrafts[key] ?? ""}
-                        onChangeText={(value) => setLevelDrafts((previous) => ({ ...previous, [key]: value.replace(/[^0-9]/g, "") }))}
+                        onChangeText={(value) => {
+                          setLevelDrafts((previous) => ({ ...previous, [key]: value.replace(/[^0-9]/g, "") }));
+                          setLevelErrors((previous) => {
+                            if (!previous[key]) return previous;
+                            const next = { ...previous };
+                            delete next[key];
+                            return next;
+                          });
+                        }}
                         placeholder="Level"
                         placeholderTextColor={colors.textMuted}
                         style={styles.levelInput}
@@ -315,6 +336,9 @@ export default function PlannerCatalogScreen() {
                       >
                         <Text style={styles.applyButtonText}>Use level</Text>
                       </Pressable>
+                      {!!levelErrors[key] && (
+                        <Text accessibilityRole="alert" style={styles.warning}>{levelErrors[key]}</Text>
+                      )}
                     </View>
                   );
                 })}

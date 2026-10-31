@@ -141,7 +141,10 @@ export function reconcileStructureInstances(
   for (const bucket of incomingBuckets) {
     const key = bucketKey(bucket);
     const prior = (previousByKey.get(key) ?? []).slice().sort((a, b) => a.id.localeCompare(b.id));
-    const sameBucketCount = prior.length === bucket.count &&
+    const sameBucketCount =
+      (prior.length === bucket.count || (
+        prior.length === 0 && !previousCountsByEntity.has(bucket.dataId)
+      )) &&
       !changedEntityIds.has(bucket.dataId);
 
     for (let index = 0; index < bucket.count; index += 1) {

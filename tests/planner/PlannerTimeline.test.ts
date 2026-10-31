@@ -129,7 +129,7 @@ describe("PlannerTimeline positioning", () => {
       updatedAtMs: nowMs,
     };
 
-    render(React.createElement(PlannerTimeline, {
+    renderWithProvider(React.createElement(PlannerTimeline, {
       items: [item],
       projections: [],
       candidates: [],
@@ -156,7 +156,7 @@ describe("PlannerTimeline positioning", () => {
       updatedAtMs: nowMs,
     };
 
-    render(React.createElement(PlannerTimeline, {
+    renderWithProvider(React.createElement(PlannerTimeline, {
       items: [item],
       projections: [{
         status: "blocked",

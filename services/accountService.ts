@@ -1,5 +1,6 @@
 import { getDB } from "@/db/database";
 import { BuildingProgressRecord, EntityRecord, Upgrade } from "@/types/upgrade";
+import type { StructureInstanceRecord } from "@/services/planner/structureInstanceService";
 
 export type Account = {
   tag: string;
@@ -133,9 +134,29 @@ export async function resetVillageData(tag: string): Promise<void> {
     await db.runAsync("DELETE FROM upgrades WHERE account_player_tag = ?", [tag]);
     await db.runAsync("DELETE FROM entities WHERE account_player_tag = ?", [tag]);
     await db.runAsync("DELETE FROM building_progress WHERE account_player_tag = ?", [tag]);
+    await db.runAsync("DELETE FROM structure_instances WHERE account_player_tag = ?", [tag]);
     await db.runAsync("DELETE FROM magic_item_inventory WHERE account_player_tag = ?", [tag]);
     await db.runAsync("DELETE FROM active_magic_effects WHERE account_player_tag = ?", [tag]);
     await db.runAsync("DELETE FROM imported_boosts WHERE account_player_tag = ?", [tag]);
+    if (structureInstances !== undefined) {
+      for (const instance of structureInstances) {
+        await db.runAsync(
+          `INSERT INTO structure_instances
+            (id, account_player_tag, village, data_id, current_level, supercharge_level, identity_confidence)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            instance.id,
+            tag,
+            instance.village,
+            instance.dataId,
+            instance.currentLevel,
+            instance.superchargeLevel,
+            instance.identityConfidence,
+          ],
+        );
+      }
+    }
+
     await db.execAsync("COMMIT");
   } catch (error) {
     await db.execAsync("ROLLBACK");
@@ -343,6 +364,7 @@ export async function replaceImportedVillageSnapshot(
   upgrades: Upgrade[],
   entities: Omit<EntityRecord, "accountTag">[],
   buildingProgress: BuildingProgressRecord[] = [],
+  structureInstances?: readonly StructureInstanceRecord[],
 ): Promise<void> {
   if (!tag.trim()) throw new Error("INVALID_ACCOUNT_TAG");
 
@@ -353,6 +375,10 @@ export async function replaceImportedVillageSnapshot(
     await db.runAsync("DELETE FROM upgrades WHERE account_player_tag = ?", [tag]);
     await db.runAsync("DELETE FROM entities WHERE account_player_tag = ?", [tag]);
     await db.runAsync("DELETE FROM building_progress WHERE account_player_tag = ?", [tag]);
+
+    if (structureInstances !== undefined) {
+      await db.runAsync("DELETE FROM structure_instances WHERE account_player_tag = ?", [tag]);
+    }
 
     for (const u of upgrades) {
       await db.runAsync(
@@ -434,5 +460,34 @@ export async function getBuildingProgress(tag: string): Promise<BuildingProgress
     normalLevel: row.normal_level,
     count: row.building_count,
     superchargeLevel: row.supercharge_level,
+  }));
+}
+
+
+/** Read persisted app-owned identities for the selected account only. */
+export async function getStructureInstances(tag: string): Promise<StructureInstanceRecord[]> {
+  if (!tag.trim()) throw new Error("INVALID_ACCOUNT_TAG");
+  const db = await getDB();
+  const rows = await db.getAllAsync<{
+    id: string;
+    account_player_tag: string;
+    village: "home";
+    data_id: number;
+    current_level: number;
+    supercharge_level: number;
+    identity_confidence: "stable" | "ambiguous";
+  }>(
+    "SELECT id, account_player_tag, village, data_id, current_level, supercharge_level, identity_confidence " +
+      "FROM structure_instances WHERE account_player_tag = ? ORDER BY data_id, current_level, supercharge_level, id",
+    [tag],
+  );
+  return rows.map((row) => ({
+    id: row.id as StructureInstanceRecord["id"],
+    accountTag: row.account_player_tag,
+    village: row.village,
+    dataId: row.data_id,
+    currentLevel: row.current_level,
+    superchargeLevel: row.supercharge_level,
+    identityConfidence: row.identity_confidence,
   }));
 }

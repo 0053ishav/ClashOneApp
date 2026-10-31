@@ -180,6 +180,7 @@ function formatProjection(projection: UpgradeProjection | undefined): string {
     case "lane-unavailable": return "Blocked · assigned lane is occupied or unavailable";
     case "lane-ineligible": return "Blocked · Goblin lane eligibility is not confirmed";
     case "prerequisite-unmet": return "Blocked · prerequisite level is not met or confirmed";
+    case "prerequisite-unknown": return "Blocked · enter or sync the prerequisite level to calculate this upgrade";
     case "invalid-target-level": return "Blocked · target level is outside the validated candidate range";
     case "dependency-cycle": return "Blocked · planned upgrades contain a dependency cycle";
     case "estimate-unknown": return "Unknown estimate · game data is incomplete";

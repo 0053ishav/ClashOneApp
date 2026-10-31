@@ -349,6 +349,45 @@ async function migrateDatabase() {
     version = 11;
   }
 
+  // V12 - Persist user-authored Upgrade Planner plans separately from live timers.
+  if (version < 12) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS planner_plans (
+        id TEXT PRIMARY KEY,
+        account_player_tag TEXT NOT NULL,
+        village TEXT NOT NULL DEFAULT 'home' CHECK (village = 'home'),
+        name TEXT NOT NULL DEFAULT 'Upgrade Plan',
+        created_at_ms INTEGER NOT NULL,
+        updated_at_ms INTEGER NOT NULL,
+        FOREIGN KEY(account_player_tag) REFERENCES accounts(player_tag) ON DELETE CASCADE,
+        UNIQUE(id, account_player_tag)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_planner_plans_account_updated
+      ON planner_plans(account_player_tag, updated_at_ms DESC);
+
+      CREATE TABLE IF NOT EXISTS planner_plan_items (
+        id TEXT NOT NULL,
+        plan_id TEXT NOT NULL,
+        account_player_tag TEXT NOT NULL,
+        candidate_id TEXT NOT NULL,
+        target_level INTEGER NOT NULL CHECK (target_level > 0),
+        lane_json TEXT NOT NULL,
+        user_order INTEGER NOT NULL,
+        created_at_ms INTEGER NOT NULL,
+        updated_at_ms INTEGER NOT NULL,
+        PRIMARY KEY(plan_id, id),
+        FOREIGN KEY(plan_id, account_player_tag)
+          REFERENCES planner_plans(id, account_player_tag) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_planner_items_plan_order
+      ON planner_plan_items(plan_id, user_order, created_at_ms);
+    `);
+    await setSchemaVersion(db, 12);
+    version = 12;
+  }
+
   // log("✅ Database ready. Version:", version);
 
   // Debug only

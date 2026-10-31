@@ -96,7 +96,7 @@ export default function PlannerCatalogScreen() {
     }
 
     setCurrentLevels({});
-    setManualOverrides(savedOverrides);
+    setManualOverrides({});
     setLevelDrafts({});
     setIsLoading(true);
     const savedOverrides = loadPlannerCatalogLevelOverrides(activeTag);

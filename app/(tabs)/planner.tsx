@@ -99,7 +99,7 @@ export default function PlannerCatalogScreen() {
   const [queueTargetDrafts, setQueueTargetDrafts] = useState<Record<string, string>>({});
   const [queueLaneDrafts, setQueueLaneDrafts] = useState<Record<string, PlannerLaneAssignment>>({});
   const [queueEditErrors, setQueueEditErrors] = useState<Record<string, string>>({});
-  const [pendingQueueEdit, setPendingQueueEdit] = useState<{ itemId: PlannerItemId; items: PlannedUpgradeItem[]; projections: readonly UpgradeProjection[] } | null>(null);
+  const [pendingQueueEdit, setPendingQueueEdit] = useState<{ accountTag: string; planId: PlannerPlanId; itemId: PlannerItemId; items: PlannedUpgradeItem[]; projections: readonly UpgradeProjection[] } | null>(null);
   const [projections, setProjections] = useState<readonly UpgradeProjection[] | null>(null);
   const [projectionError, setProjectionError] = useState<string | null>(null);
   const nextItemId = useRef(0);
@@ -368,7 +368,7 @@ export default function PlannerCatalogScreen() {
       prerequisiteState,
       laneAvailability,
     });
-    setPendingQueueEdit({ itemId: item.id, items: updatedItems, projections: previewProjections });
+    setPendingQueueEdit({ accountTag: activeTag, planId: queuePlan.id, itemId: item.id, items: updatedItems, projections: previewProjections });
   };
 
   const addToQueue = (candidateId: string, targetLevel: number) => {
@@ -761,7 +761,10 @@ export default function PlannerCatalogScreen() {
               editErrors={queueEditErrors}
               pendingEdit={pendingQueueEdit}
               onConfirmEdit={() => {
-                if (!pendingQueueEdit || queueBusy) return;
+                if (!pendingQueueEdit || queueBusy || pendingQueueEdit.accountTag !== activeTag || pendingQueueEdit.planId !== queuePlan?.id) {
+                  setPendingQueueEdit(null);
+                  return;
+                }
                 void persistQueue(pendingQueueEdit.items).then((saved) => {
                   if (!saved) return;
                   setEditingQueueItemId(null);

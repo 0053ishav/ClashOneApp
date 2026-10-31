@@ -36,6 +36,7 @@ import type {
 import type { ObservedActiveUpgrade, PlannerEntityCategory, PlannerItemId, PlannerPlan, PlannerPlanId, PlannedUpgradeItem, ProgressionCandidate, UpgradeProjection } from "@/types/planner";
 import { recalculatePlannerProjection } from "@/services/plannerApplicationService";
 import type { PlannerLaneAvailability, PlannerPrerequisiteState } from "@/utils/planner/schedulePlanner";
+import type { PlannerLaneAssignment } from "@/types/planner";
 import { createPlannerPlan, listPlannerPlans, replacePlannerQueue } from "@/services/plannerPersistenceService";
 import { addPlannerQueueItem, getDefaultPlannerLane, movePlannerQueueItem, removePlannerQueueItem, updatePlannerQueueItem } from "@/services/planner/plannerQueueService";
 import { resolvePlannerStructureLevels } from "@/services/plannerStructureLevelService";
@@ -88,6 +89,10 @@ export default function PlannerCatalogScreen() {
   const [queuePlan, setQueuePlan] = useState<PlannerPlan | null>(null);
   const [queueBusy, setQueueBusy] = useState(false);
   const [queueError, setQueueError] = useState<string | null>(null);
+  const [editingQueueItemId, setEditingQueueItemId] = useState<PlannerItemId | null>(null);
+  const [queueTargetDrafts, setQueueTargetDrafts] = useState<Record<string, string>>({});
+  const [queueLaneDrafts, setQueueLaneDrafts] = useState<Record<string, PlannerLaneAssignment>>({});
+  const [queueEditErrors, setQueueEditErrors] = useState<Record<string, string>>({});
   const [projections, setProjections] = useState<readonly UpgradeProjection[] | null>(null);
   const [projectionError, setProjectionError] = useState<string | null>(null);
   const nextItemId = useRef(0);
@@ -248,8 +253,8 @@ export default function PlannerCatalogScreen() {
     return () => { cancelled = true; };
   }, [activeTag]);
 
-  const persistQueue = async (items: readonly PlannedUpgradeItem[]) => {
-    if (!activeTag || !queuePlan || queueWriteInFlight.current) return;
+  const persistQueue = async (items: readonly PlannedUpgradeItem[]): Promise<boolean> => {
+    if (!activeTag || !queuePlan || queueWriteInFlight.current) return false;
     queueWriteInFlight.current = true;
     setQueueBusy(true);
     setQueueError(null);
@@ -267,6 +272,71 @@ export default function PlannerCatalogScreen() {
     } finally {
       queueWriteInFlight.current = false;
       setQueueBusy(false);
+    }
+  };
+
+
+  const beginQueueItemEdit = (item: PlannedUpgradeItem) => {
+    setEditingQueueItemId(item.id);
+    setQueueTargetDrafts((previous) => ({ ...previous, [item.id]: String(item.targetLevel) }));
+    setQueueLaneDrafts((previous) => ({ ...previous, [item.id]: item.lane }));
+    setQueueEditErrors((previous) => {
+      const next = { ...previous };
+      delete next[item.id];
+      return next;
+    });
+  };
+
+  const saveQueueItemEdit = async (item: PlannedUpgradeItem) => {
+    if (!activeTag || !queuePlan || queuePlan.accountTag !== activeTag || queueBusy) return;
+    const candidate = plannerCandidates.find((entry) => entry.candidateId === item.candidateId);
+    if (!candidate) {
+      setQueueEditErrors((previous) => ({ ...previous, [item.id]: "This upgrade is missing from the current catalog. Sync game data before editing it." }));
+      return;
+    }
+
+    const targetText = queueTargetDrafts[item.id] ?? String(item.targetLevel);
+    const targetLevel = Number(targetText);
+    if (!/^\\d+$/.test(targetText) || !Number.isSafeInteger(targetLevel) ||
+      targetLevel <= candidate.currentLevel || targetLevel > candidate.targetLevel) {
+      setQueueEditErrors((previous) => ({ ...previous, [item.id]: `Target level must be a whole number above level ${candidate.currentLevel} and no higher than ${candidate.targetLevel}.` }));
+      return;
+    }
+
+    const lane = queueLaneDrafts[item.id] ?? item.lane;
+    const defaultLane = getDefaultPlannerLane(candidate.category);
+    const laneCompatible = defaultLane.lane === "normal-builders"
+      ? lane.lane === "normal-builders" &&
+        Number.isSafeInteger(lane.builderIndex) &&
+        lane.builderIndex >= 1 &&
+        lane.builderIndex <= (profilesByTag[activeTag]?.normalBuilderCount ?? 0)
+      : lane.lane === defaultLane.lane;
+    if (!laneCompatible) {
+      setQueueEditErrors((previous) => ({ ...previous, [item.id]: "Choose a lane compatible with this upgrade and available on this account." }));
+      return;
+    }
+
+    let updatedItems: PlannedUpgradeItem[];
+    try {
+      updatedItems = updatePlannerQueueItem(queuePlan.items, item.id, {
+        candidateId: item.candidateId,
+        targetLevel,
+        lane,
+        ...(item.structureInstanceId ? { structureInstanceId: item.structureInstanceId } : {}),
+      });
+    } catch (mutationError: unknown) {
+      setQueueEditErrors((previous) => ({ ...previous, [item.id]: mutationError instanceof Error ? mutationError.message : "Could not update this queue item." }));
+      return;
+    }
+
+    const saved = await persistQueue(updatedItems);
+    if (saved) {
+      setEditingQueueItemId(null);
+      setQueueEditErrors((previous) => {
+        const next = { ...previous };
+        delete next[item.id];
+        return next;
+      });
     }
   };
 

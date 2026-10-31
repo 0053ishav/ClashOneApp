@@ -17,6 +17,11 @@ export interface PlannerCatalogEntry {
   maxLevel: number;
 }
 
+export interface PlannerCatalogMetadata {
+  namesByEntityId: Readonly<Record<string, string>>;
+  maxLevelsByEntityId: Readonly<Record<string, number>>;
+}
+
 export interface PlannerCatalogFilters {
   query: string;
   category: PlannerEntityCategory | "all";
@@ -71,7 +76,7 @@ function getState(dataset: ValidatedPlannerDataset): PlannerCatalogLoadState {
  */
 export function buildPlannerCatalog(
   dataset: ValidatedPlannerDataset,
-  namesByEntityId: Readonly<Record<string, string>>,
+  metadata: PlannerCatalogMetadata,
   filters: PlannerCatalogFilters,
 ): PlannerCatalogResult {
   const diagnostics = dataset.diagnostics;
@@ -92,8 +97,10 @@ export function buildPlannerCatalog(
     if (candidate.targetLevel > candidate.currentLevel + 1) continue;
     if (candidate.category !== filters.category && filters.category !== "all") continue;
 
-    const name = namesByEntityId[candidate.entityId]?.trim();
-    if (!name) continue;
+    const name = metadata.namesByEntityId[candidate.entityId]?.trim();
+    const maxLevel = metadata.maxLevelsByEntityId[candidate.entityId];
+    if (!name || !Number.isSafeInteger(maxLevel) || maxLevel < 1) continue;
+    if (currentLevel >= maxLevel || targetLevel > maxLevel) continue;
     const search = filters.query.trim().toLocaleLowerCase();
     if (search && !name.toLocaleLowerCase().includes(search) &&
       !candidate.entityId.toLocaleLowerCase().includes(search)) continue;
@@ -108,7 +115,7 @@ export function buildPlannerCatalog(
     items.push({
       candidate,
       name,
-      maxLevel: Math.max(candidate.targetLevel, candidate.targetLevel),
+      maxLevel,
       currentLevel,
       isNextLevel: true,
       canAdd: blockedBy.length === 0,

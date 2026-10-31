@@ -138,25 +138,6 @@ export async function resetVillageData(tag: string): Promise<void> {
     await db.runAsync("DELETE FROM magic_item_inventory WHERE account_player_tag = ?", [tag]);
     await db.runAsync("DELETE FROM active_magic_effects WHERE account_player_tag = ?", [tag]);
     await db.runAsync("DELETE FROM imported_boosts WHERE account_player_tag = ?", [tag]);
-    if (structureInstances !== undefined) {
-      for (const instance of structureInstances) {
-        await db.runAsync(
-          `INSERT INTO structure_instances
-            (id, account_player_tag, village, data_id, current_level, supercharge_level, identity_confidence)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [
-            instance.id,
-            tag,
-            instance.village,
-            instance.dataId,
-            instance.currentLevel,
-            instance.superchargeLevel,
-            instance.identityConfidence,
-          ],
-        );
-      }
-    }
-
     await db.execAsync("COMMIT");
   } catch (error) {
     await db.execAsync("ROLLBACK");
@@ -424,6 +405,26 @@ export async function replaceImportedVillageSnapshot(
         [building.id, tag, building.village, building.dataId, building.normalLevel, building.count, building.superchargeLevel],
       );
     }
+
+    if (structureInstances !== undefined) {
+      for (const instance of structureInstances) {
+        await db.runAsync(
+          `INSERT INTO structure_instances
+            (id, account_player_tag, village, data_id, current_level, supercharge_level, identity_confidence)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            instance.id,
+            tag,
+            instance.village,
+            instance.dataId,
+            instance.currentLevel,
+            instance.superchargeLevel,
+            instance.identityConfidence,
+          ],
+        );
+      }
+    }
+
     await db.execAsync("COMMIT");
   } catch (error) {
     try {

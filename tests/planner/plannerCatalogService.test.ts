@@ -65,6 +65,17 @@ describe("buildPlannerCatalog", () => {
     expect(result.items[0].maxLevel).toBe(20);
   });
 
+  it("does not treat a missing current level as level zero", () => {
+    const result = buildPlannerCatalog(dataset([
+      candidate({ entityId: "untracked-building", candidateId: "buildings:untracked-building:1", currentLevel: 0, targetLevel: 1 }),
+    ]), {
+      namesByEntityId: { "untracked-building": "Archer Tower" },
+      maxLevelsByEntityId: { "untracked-building": 20 },
+    }, { ...filters, currentLevels: {} });
+
+    expect(result.items).toEqual([]);
+  });
+
   it("filters by category and case-insensitive name or stable entity ID", () => {
     const result = buildPlannerCatalog(dataset([
       candidate(),

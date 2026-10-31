@@ -1,5 +1,8 @@
 import { addAccount, getAccountByTag, getStructureInstances, updateAccount } from "@/services/accountService";
-import { reconcileStructureInstances } from "@/services/planner/structureInstanceService";
+import {
+  reconcileStructureInstances,
+  resolveActiveStructureTimerInstanceId,
+} from "@/services/planner/structureInstanceService";
 import { fetchPlayerFromApi } from "@/services/clashApi";
 import { ensureCraftedLoaded } from "@/services/craftedService";
 import { ProgressionApplicationService } from "@/services/progression";
@@ -1284,7 +1287,31 @@ export async function importVillageJson(
       );
     }
 
-    await importJsonData(parsed.tag, newUpgrades, entities, buildingProgress, structureReconciliation.instances);
+    const claimedInstanceIds = new Set<string>();
+    const upgradesWithStructureInstances = newUpgrades.map((upgrade) => {
+      if (upgrade.type !== "BUILDING" || upgrade.dataId === undefined) return upgrade;
+      const structureInstanceId = resolveActiveStructureTimerInstanceId(
+        {
+          dataId: upgrade.dataId,
+          currentLevel: upgrade.currentLevel,
+          upgradeKind: upgrade.upgradeKind,
+          currentSuperchargeLevel: upgrade.currentSuperchargeLevel,
+        },
+        structureReconciliation.instances,
+        claimedInstanceIds,
+      );
+      if (!structureInstanceId) return upgrade;
+      claimedInstanceIds.add(structureInstanceId);
+      return { ...upgrade, structureInstanceId };
+    });
+
+    await importJsonData(
+      parsed.tag,
+      upgradesWithStructureInstances,
+      entities,
+      buildingProgress,
+      structureReconciliation.instances,
+    );
     // Imported timers are authoritative; app-side simulated potion effects must not re-project them.
     await clearActiveMagicEffects(parsed.tag);
     await replaceImportedBoostSnapshot({

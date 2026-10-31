@@ -272,9 +272,37 @@ export default function PlannerCatalogScreen() {
   const addToQueue = (candidateId: string, targetLevel: number) => {
     if (!queuePlan || queueBusy) return;
     if (queuePlan.items.some((item) => item.candidateId === candidateId && item.targetLevel === targetLevel)) return;
+
+    const candidate = plannerCandidates.find((item) => item.candidateId === candidateId);
+    if (!candidate) {
+      setQueueError("This upgrade is not available in the current progression catalog. Refresh the catalog and try again.");
+      return;
+    }
+
+    // Assign the lane from the upgrade's game domain, not a one-size-fits-all
+    // builder default: research uses the Laboratory, pets use the Pet House,
+    // and construction uses a normal Builder.
+    const lane: PlannedUpgradeItem["lane"] = (() => {
+      switch (candidate.category) {
+        case "troop":
+        case "spell":
+        case "siege":
+          return { lane: "laboratory" };
+        case "pet":
+          return { lane: "pets" };
+        case "building":
+        case "hero":
+        case "trap":
+        case "wall":
+          return { lane: "normal-builders", builderIndex: 1 };
+      }
+    })();
     const now = Date.now();
-    const lane = { lane: "normal-builders" as const, builderIndex: 1 };
-    const laneItems = queuePlan.items.filter((item) => item.lane.lane === lane.lane && item.lane.builderIndex === lane.builderIndex);
+    const laneItems = queuePlan.items.filter((item) =>
+      item.lane.lane === lane.lane &&
+      (lane.lane !== "normal-builders" ||
+        (item.lane.lane === "normal-builders" && item.lane.builderIndex === lane.builderIndex)),
+    );
     const item: PlannedUpgradeItem = {
       id: `planner-item-${now}-${nextItemId.current++}` as PlannerItemId,
       candidateId, targetLevel, lane, order: laneItems.length, createdAtMs: now, updatedAtMs: now,

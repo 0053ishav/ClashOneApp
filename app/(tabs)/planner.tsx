@@ -92,6 +92,7 @@ export default function PlannerCatalogScreen() {
   const [snapshotReviewBusy, setSnapshotReviewBusy] = useState(false);
   const [queueError, setQueueError] = useState<string | null>(null);
   const [editingQueueItemId, setEditingQueueItemId] = useState<PlannerItemId | null>(null);
+  const [editingQueueOwner, setEditingQueueOwner] = useState<{ accountTag: string; planId: PlannerPlanId } | null>(null);
   const [queueTargetDrafts, setQueueTargetDrafts] = useState<Record<string, string>>({});
   const [queueLaneDrafts, setQueueLaneDrafts] = useState<Record<string, PlannerLaneAssignment>>({});
   const [queueEditErrors, setQueueEditErrors] = useState<Record<string, string>>({});
@@ -106,6 +107,8 @@ export default function PlannerCatalogScreen() {
     (activeTag ? profilesByTag[activeTag]?.townHallLevel : undefined) ??
     activeAccount?.townhall ??
     0;
+
+  const hasQueueEditConflict = Boolean(editingQueueOwner && (editingQueueOwner.accountTag !== activeTag || editingQueueOwner.planId !== queuePlan?.id));
 
   const snapshotReviewRequired = Boolean(
     queuePlan && queuePlan.accountTag === activeTag &&
@@ -288,6 +291,8 @@ export default function PlannerCatalogScreen() {
 
 
   const beginQueueItemEdit = (item: PlannedUpgradeItem) => {
+    if (!activeTag || !queuePlan || queuePlan.accountTag !== activeTag || hasQueueEditConflict) return;
+    setEditingQueueOwner({ accountTag: activeTag, planId: queuePlan.id });
     setEditingQueueItemId(item.id);
     setQueueTargetDrafts((previous) => ({ ...previous, [item.id]: String(item.targetLevel) }));
     setQueueLaneDrafts((previous) => ({ ...previous, [item.id]: item.lane }));
@@ -299,7 +304,8 @@ export default function PlannerCatalogScreen() {
   };
 
   const saveQueueItemEdit = async (item: PlannedUpgradeItem) => {
-    if (!activeTag || !queuePlan || queuePlan.accountTag !== activeTag || queueBusy) return;
+    if (!activeTag || !queuePlan || queuePlan.accountTag !== activeTag || queueBusy ||
+      editingQueueOwner?.accountTag !== activeTag || editingQueueOwner.planId !== queuePlan.id) return;
     const candidate = plannerCandidates.find((entry) => entry.candidateId === item.candidateId);
     if (!candidate) {
       setQueueEditErrors((previous) => ({ ...previous, [item.id]: "This upgrade is missing from the current catalog. Sync game data before editing it." }));
@@ -343,6 +349,7 @@ export default function PlannerCatalogScreen() {
     const saved = await persistQueue(updatedItems);
     if (saved) {
       setEditingQueueItemId(null);
+      setEditingQueueOwner(null);
       setQueueEditErrors((previous) => {
         const next = { ...previous };
         delete next[item.id];
@@ -693,7 +700,7 @@ export default function PlannerCatalogScreen() {
               </View>
             )}
 
-            {snapshotReviewRequired && (
+            {hasQueueEditConflict && editingQueueOwner && (\n              <View style={styles.stateCard}>\n                <Text style={styles.stateTitle}>Unsaved edit belongs to another account</Text>\n                <Text style={styles.body}>\n                  Your edit for {editingQueueOwner.accountTag} is preserved in memory and has not been applied. Switch back to that account to save or cancel it. Editing another account is disabled until you resolve this draft.\n                </Text>\n              </View>\n            )}\n            {snapshotReviewRequired && (
               <View style={styles.stateCard}>
                 <Text style={styles.stateTitle}>Village snapshot needs review</Text>
                 <Text style={styles.body}>
@@ -779,7 +786,7 @@ export default function PlannerCatalogScreen() {
                           <Pressable accessibilityRole="button" disabled={queueBusy} onPress={() => saveQueueItemEdit(queuedItem)} style={styles.applyButton}>
                             <Text style={styles.applyButtonText}>Save preview</Text>
                           </Pressable>
-                          <Pressable accessibilityRole="button" disabled={queueBusy} onPress={() => setEditingQueueItemId(null)} style={styles.removeButton}>
+                          <Pressable accessibilityRole="button" disabled={queueBusy} onPress={() => { setEditingQueueItemId(null); setEditingQueueOwner(null); }} style={styles.removeButton}>
                             <Text style={styles.removeButtonText}>Cancel</Text>
                           </Pressable>
                         </View>
@@ -791,7 +798,7 @@ export default function PlannerCatalogScreen() {
                   </View>
                   <View style={styles.queueActions}>
                     {editingQueueItemId !== queuedItem.id && (
-                      <Pressable accessibilityRole="button" accessibilityLabel="Edit target level and lane" disabled={queueBusy} onPress={() => beginQueueItemEdit(queuedItem)} style={styles.removeButton}>
+                      <Pressable accessibilityRole="button" accessibilityLabel="Edit target level and lane" disabled={queueBusy || hasQueueEditConflict} onPress={() => beginQueueItemEdit(queuedItem)} style={styles.removeButton}>
                         <Text style={styles.removeButtonText}>Edit</Text>
                       </Pressable>
                     )}

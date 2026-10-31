@@ -5,6 +5,7 @@ import {
   getPlannerPlan,
   listPlannerPlans,
   savePlannerItem,
+  replacePlannerQueue,
 } from "@/services/plannerPersistenceService";
 import type { PlannerItemId, PlannerPlanId, PlannerStructureInstanceId, PlannedUpgradeItem } from "@/types/planner";
 
@@ -18,11 +19,13 @@ function setupDatabase(overrides: {
   getFirstAsync?: jest.Mock;
   getAllAsync?: jest.Mock;
   runAsync?: jest.Mock;
+  withTransactionAsync?: jest.Mock;
 } = {}) {
   const db = {
     getFirstAsync: overrides.getFirstAsync ?? jest.fn().mockResolvedValue(null),
     getAllAsync: overrides.getAllAsync ?? jest.fn().mockResolvedValue([]),
     runAsync: overrides.runAsync ?? jest.fn().mockResolvedValue({ changes: 1 }),
+    withTransactionAsync: overrides.withTransactionAsync ?? jest.fn(async (task: () => Promise<void>) => task()),
   };
   mockGetDB.mockResolvedValue(db as unknown as Awaited<ReturnType<typeof getDB>>);
   return db;
@@ -223,5 +226,58 @@ describe("planner persistence account isolation", () => {
   it("rejects blank account tags before opening the database", async () => {
     await expect(listPlannerPlans(" ")).rejects.toThrow("INVALID_ACCOUNT_TAG");
     expect(mockGetDB).not.toHaveBeenCalled();
+  });
+
+  it("replaces queue items atomically after verifying plan ownership", async () => {
+    const db = setupDatabase({
+      getFirstAsync: jest.fn().mockResolvedValue({ id: planId }),
+    });
+
+    await replacePlannerQueue("#ACCOUNT_A", planId, [{ ...item, order: 0 }], 300);
+
+    expect(db.withTransactionAsync).toHaveBeenCalledTimes(1);
+    expect(db.getFirstAsync).toHaveBeenCalledWith(
+      expect.stringContaining("WHERE id = ? AND account_player_tag = ?"),
+      [planId, "#ACCOUNT_A"],
+    );
+    expect(db.runAsync).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining("DELETE FROM planner_plan_items"),
+      [planId, "#ACCOUNT_A"],
+    );
+    expect(db.runAsync).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining("INSERT INTO planner_plan_items"),
+      [
+        itemId, planId, "#ACCOUNT_A", item.candidateId, item.targetLevel,
+        null, JSON.stringify(item.lane), 0, item.createdAtMs, item.updatedAtMs,
+      ],
+    );
+    expect(db.runAsync).toHaveBeenNthCalledWith(
+      3,
+      expect.stringContaining("UPDATE planner_plans SET updated_at_ms"),
+      [300, planId, "#ACCOUNT_A"],
+    );
+  });
+
+  it("does not delete the existing queue if the plan is not owned by the account", async () => {
+    const db = setupDatabase();
+
+    await expect(replacePlannerQueue("#ACCOUNT_B", planId, [item], 300)).rejects.toThrow(
+      "PLANNER_PLAN_NOT_FOUND",
+    );
+
+    expect(db.withTransactionAsync).toHaveBeenCalledTimes(1);
+    expect(db.runAsync).not.toHaveBeenCalled();
+  });
+
+  it("rejects duplicate queue IDs before opening a transaction", async () => {
+    const db = setupDatabase();
+
+    await expect(replacePlannerQueue("#ACCOUNT_A", planId, [item, item], 300)).rejects.toThrow(
+      "DUPLICATE_PLANNER_ITEM_ID",
+    );
+
+    expect(db.withTransactionAsync).not.toHaveBeenCalled();
   });
 });

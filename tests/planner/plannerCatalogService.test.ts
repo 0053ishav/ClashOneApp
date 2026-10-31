@@ -63,6 +63,17 @@ describe("buildPlannerCatalog", () => {
     expect(result.items[0].candidate.candidateId).toBe("buildings:1:2");
     expect(result.items[0].currentLevel).toBe(1);
     expect(result.items[0].maxLevel).toBe(20);
+    expect(result.diagnosticsSummary).toEqual({
+      datasetCandidates: 3,
+      homeVillageCandidates: 3,
+      knownLevelCandidates: 3,
+      nextLevelCandidates: 1,
+      categoryCandidates: 1,
+      metadataCandidates: 1,
+      belowMaxLevelCandidates: 1,
+      queryCandidates: 1,
+      returnedItems: 1,
+    });
   });
 
   it("does not treat a missing current level as level zero", () => {

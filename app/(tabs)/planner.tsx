@@ -188,7 +188,7 @@ export default function PlannerCatalogScreen() {
       cancelled = true;
       coordinator.invalidate();
     };
-  }, [activeTag, category, coordinator, currentLevels, query, townHallLevel]);
+  }, [activeTag, category, coordinator, currentLevels, entitiesById, query, townHallLevel]);
 
   const knownLevelCount = Object.keys(currentLevels).length;
   const untrackedEntities = useMemo(() => {
@@ -270,7 +270,7 @@ export default function PlannerCatalogScreen() {
           <>
             <View style={styles.accountCard}>
               <Text style={styles.accountName}>{activeAccount?.name ?? activeTag}</Text>
-              <Text style={styles.muted}>Town Hall {townHallLevel || "unknown"} · {knownLevelCount} known building levels</Text>
+              <Text style={styles.muted}>Town Hall {townHallLevel || "unknown"} · {knownLevelCount} known entity levels</Text>
             </View>
 
             <TextInput

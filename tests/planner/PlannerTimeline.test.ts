@@ -88,10 +88,10 @@ describe("PlannerTimeline positioning", () => {
     expect(screen.getByText("Your timeline starts here")).toBeTruthy();
     expect(screen.getByText("No plan yet")).toBeTruthy();
     expect(screen.getByLabelText("Timeline scale")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Weeks" })).props.accessibilityState).toEqual({ selected: true });
+    expect(screen.getByRole("button", { name: "Weeks" }).props.accessibilityState).toEqual({ selected: true });
 
     fireEvent.press(screen.getByRole("button", { name: "Months" }));
-    expect(screen.getByRole("button", { name: "Months" })).toHaveAccessibilityState({ selected: true });
+    expect(screen.getByRole("button", { name: "Months" }).props.accessibilityState).toEqual({ selected: true });
   });
 
   it("marks missing scheduler output as incomplete instead of inventing a finish date", () => {

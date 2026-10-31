@@ -15,6 +15,7 @@ import type { GoldPassBoostSettings } from "@/types/goldPass";
 jest.mock("@/services/accountService", () => ({
   addAccount: jest.fn(),
   getAccountByTag: jest.fn(),
+  getStructureInstances: jest.fn().mockResolvedValue([]),
   updateAccount: jest.fn(),
 }));
 

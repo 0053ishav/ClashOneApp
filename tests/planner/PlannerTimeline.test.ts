@@ -14,6 +14,7 @@ jest.mock("@/theme/useHomeColors", () => ({
   }),
 }));
 
+import React from "react";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { getBlockPosition, PlannerTimeline } from "@/components/planner/PlannerTimeline";
 import type { PlannerItemId, PlannedUpgradeItem } from "@/types/planner";
@@ -74,17 +75,15 @@ describe("PlannerTimeline positioning", () => {
   });
 
   it("renders a useful empty state and accessible scale controls", () => {
-    render(
-      <PlannerTimeline
-        items={[]}
-        projections={[]}
-        candidates={[]}
-        entityNamesById={{}}
-        liveUpgrades={[]}
-        builderCount={0}
-        nowMs={nowMs}
-      />,
-    );
+    render(React.createElement(PlannerTimeline, {
+      items: [],
+      projections: [],
+      candidates: [],
+      entityNamesById: {},
+      liveUpgrades: [],
+      builderCount: 0,
+      nowMs,
+    }));
 
     expect(screen.getByText("Your timeline starts here")).toBeTruthy();
     expect(screen.getByText("No plan yet")).toBeTruthy();
@@ -106,17 +105,15 @@ describe("PlannerTimeline positioning", () => {
       updatedAtMs: nowMs,
     };
 
-    render(
-      <PlannerTimeline
-        items={[item]}
-        projections={[]}
-        candidates={[]}
-        entityNamesById={{}}
-        liveUpgrades={[]}
-        builderCount={1}
-        nowMs={nowMs}
-      />,
-    );
+    render(React.createElement(PlannerTimeline, {
+      items: [item],
+      projections: [],
+      candidates: [],
+      entityNamesById: {},
+      liveUpgrades: [],
+      builderCount: 1,
+      nowMs,
+    }));
 
     expect(screen.getByText("Estimate incomplete")).toBeTruthy();
     expect(screen.getByText("Blocked · candidate-1")).toBeTruthy();

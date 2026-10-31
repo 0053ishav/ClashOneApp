@@ -19,13 +19,17 @@ type HammerJamState = {
   refreshAvailability: (now?: number) => void;
 };
 
+let latestSyncRequestId = 0;
+
 export const useHammerJamStore = create<HammerJamState>((set, get) => ({
   manifest: DEFAULT_HAMMER_JAM_MANIFEST,
   availability: "loading",
   sync: async () => {
+    const requestId = ++latestSyncRequestId;
     // Fail closed during refresh; stale active config must not keep discounts on.
     set({ availability: "loading", manifest: DEFAULT_HAMMER_JAM_MANIFEST });
     const result = await fetchHammerJamManifestResult();
+    if (requestId !== latestSyncRequestId) return;
     set({ manifest: result.manifest, availability: result.status });
   },
   refreshAvailability: (now = Date.now()) => {

@@ -331,6 +331,9 @@ export default function PlannerCatalogScreen() {
     if (!activeTag) return [];
     const observed: ObservedActiveUpgrade[] = [];
     for (const upgrade of activeUpgrades) {
+      // This screen schedules the Home Village plan only; Builder Base timers
+      // must not occupy Home Village lanes.
+      if (upgrade.village !== "home") continue;
       let lane: ObservedActiveUpgrade["lane"] | null = null;
       if (upgrade.upgradeType === "PET") {
         lane = { lane: "pets" };
@@ -349,7 +352,7 @@ export default function PlannerCatalogScreen() {
       observed.push({
         observedUpgradeId: upgrade.id,
         accountTag: upgrade.accountTag,
-        village: upgrade.village === "home" ? "home" : "home",
+        village: "home",
         lane,
         startsAtMs: upgrade.startTime,
         completesAtMs: upgrade.endTime,

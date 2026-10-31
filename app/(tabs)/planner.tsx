@@ -267,8 +267,10 @@ export default function PlannerCatalogScreen() {
           ? { ...previous, items: timestampedItems, updatedAtMs: now }
           : previous,
       );
+      return true;
     } catch (saveError: unknown) {
       setQueueError(saveError instanceof Error ? saveError.message : "Could not save the upgrade queue.");
+      return false;
     } finally {
       queueWriteInFlight.current = false;
       setQueueBusy(false);
@@ -297,7 +299,7 @@ export default function PlannerCatalogScreen() {
 
     const targetText = queueTargetDrafts[item.id] ?? String(item.targetLevel);
     const targetLevel = Number(targetText);
-    if (!/^\\d+$/.test(targetText) || !Number.isSafeInteger(targetLevel) ||
+    if (!/^\d+$/.test(targetText) || !Number.isSafeInteger(targetLevel) ||
       targetLevel <= candidate.currentLevel || targetLevel > candidate.targetLevel) {
       setQueueEditErrors((previous) => ({ ...previous, [item.id]: `Target level must be a whole number above level ${candidate.currentLevel} and no higher than ${candidate.targetLevel}.` }));
       return;

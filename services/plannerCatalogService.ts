@@ -99,6 +99,20 @@ export function buildPlannerCatalog(
     .sort();
 
   const currentLevels = filters.currentLevels;
+  // The validated progression dataset is authoritative for upgradeable max
+  // levels. Entity metadata levels primarily describe icons/display levels and
+  // can be incomplete even when progression records are fully loaded.
+  const progressionMaxLevelsByEntityId = new Map<string, number>();
+  for (const candidate of dataset.candidates) {
+    if (candidate.village !== "home") continue;
+    progressionMaxLevelsByEntityId.set(
+      candidate.entityId,
+      Math.max(
+        progressionMaxLevelsByEntityId.get(candidate.entityId) ?? 0,
+        candidate.targetLevel,
+      ),
+    );
+  }
   const seen = new Set<string>();
   const items: PlannerCatalogItem[] = [];
   const diagnosticsSummary: PlannerCatalogDiagnosticsSummary = {
@@ -129,8 +143,10 @@ export function buildPlannerCatalog(
     diagnosticsSummary.categoryCandidates += 1;
 
     const name = metadata.namesByEntityId[candidate.entityId]?.trim();
-    const maxLevel = metadata.maxLevelsByEntityId[candidate.entityId];
-    if (!name || !Number.isSafeInteger(maxLevel) || maxLevel < 1) continue;
+    const metadataMaxLevel = metadata.maxLevelsByEntityId[candidate.entityId];
+    const maxLevel = progressionMaxLevelsByEntityId.get(candidate.entityId)
+      ?? metadataMaxLevel;
+    if (!name || !Number.isSafeInteger(maxLevel) || maxLevel! < 1) continue;
     diagnosticsSummary.metadataCandidates += 1;
     if (currentLevel >= maxLevel || targetLevel > maxLevel) continue;
     diagnosticsSummary.belowMaxLevelCandidates += 1;

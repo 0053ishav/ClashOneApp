@@ -400,13 +400,9 @@ export default function PlannerCatalogScreen() {
                   </View>
                 </View>
                 <Text style={styles.body}>
-                  {item.candidate.estimate.cost.status === "known"
-                    ? "Cost data available"
-                    : "Cost estimate unavailable"}
+                  Cost: {formatCostEstimate(item.candidate.estimate.cost)}
                   {" · "}
-                  {item.candidate.estimate.durationMs.status === "known"
-                    ? "Time data available"
-                    : "Time estimate unavailable"}
+                  Time: {formatDurationEstimate(item.candidate.estimate.durationMs)}
                 </Text>
                 {item.blockedBy.length > 0 && (
                   <Text style={styles.warning}>
@@ -424,6 +420,43 @@ export default function PlannerCatalogScreen() {
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+function formatCostEstimate(
+  estimate: PlannerCatalogResult["items"][number]["candidate"]["estimate"]["cost"],
+): string {
+  if (estimate.status === "unknown") return "unknown";
+  const resources: readonly (readonly [string, number | undefined])[] = [
+    ["gold", estimate.value.gold],
+    ["elixir", estimate.value.elixir],
+    ["dark elixir", estimate.value.darkElixir],
+  ];
+  const parts = resources
+    .filter((entry) => entry[1] !== undefined && Number.isFinite(entry[1]) && entry[1] >= 0)
+    .map((entry) => String(entry[1]!.toLocaleString("en-US")) + " " + entry[0]);
+  return parts.length > 0 ? parts.join(" + ") : "not listed";
+}
+
+function formatDurationEstimate(
+  estimate: PlannerCatalogResult["items"][number]["candidate"]["estimate"]["durationMs"],
+): string {
+  if (estimate.status === "unknown") return "unknown";
+  let remaining = estimate.value;
+  if (!Number.isSafeInteger(remaining) || remaining < 0) return "invalid";
+  if (remaining === 0) return "instant";
+  const units: readonly (readonly [number, string])[] = [
+    [86400000, "d"], [3600000, "h"], [60000, "m"], [1000, "s"],
+  ];
+  const parts: string[] = [];
+  for (const unit of units) {
+    const amount = Math.floor(remaining / unit[0]);
+    if (amount > 0) {
+      parts.push(String(amount) + unit[1]);
+      remaining -= amount * unit[0];
+    }
+    if (parts.length === 2) break;
+  }
+  return parts.join(" ") || "<1s";
 }
 
 function createStyles(colors: ReturnType<typeof useHomeColors>) {

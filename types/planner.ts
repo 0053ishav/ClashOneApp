@@ -138,6 +138,7 @@ export interface PlannerPlan {
 
 export type PlannerBlockReason =
   | { code: "prerequisite-unmet"; prerequisite: UpgradePrerequisite }
+  | { code: "prerequisite-unknown"; prerequisite: UpgradePrerequisite }
   | { code: "lane-unavailable"; lane: PlannerLaneId }
   | { code: "lane-ineligible"; lane: "goblin-builder" | "goblin-laboratory"; detail: string }
   | { code: "estimate-unknown"; estimate: "cost" | "duration"; reason: EstimateUnknownReason }

@@ -146,7 +146,7 @@ export function buildPlannerCatalog(
     const metadataMaxLevel = metadata.maxLevelsByEntityId[candidate.entityId];
     const maxLevel = progressionMaxLevelsByEntityId.get(candidate.entityId)
       ?? metadataMaxLevel;
-    if (!name || !Number.isSafeInteger(maxLevel) || maxLevel! < 1) continue;
+    if (!name || typeof maxLevel !== "number" || !Number.isSafeInteger(maxLevel) || maxLevel < 1) continue;
     diagnosticsSummary.metadataCandidates += 1;
     if (currentLevel >= maxLevel || targetLevel > maxLevel) continue;
     diagnosticsSummary.belowMaxLevelCandidates += 1;

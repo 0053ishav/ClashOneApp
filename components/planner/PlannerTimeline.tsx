@@ -45,7 +45,7 @@ function formatDate(timestampMs: number, includeYear = false): string {
   });
 }
 
-function getBlockPosition(
+export function getBlockPosition(
   startMs: number,
   endMs: number,
   nowMs: number,

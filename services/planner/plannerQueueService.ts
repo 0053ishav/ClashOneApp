@@ -1,4 +1,5 @@
 import type {
+  PlannerEntityCategory,
   PlannerItemId,
   PlannerLaneAssignment,
   PlannedUpgradeItem,
@@ -14,6 +15,29 @@ export class PlannerQueueError extends Error {
   constructor(readonly code: PlannerQueueErrorCode) {
     super(code);
     this.name = "PlannerQueueError";
+  }
+}
+
+/**
+ * Chooses the default resource lane for a progression category.
+ * This is a default assignment only; users can reassign items to another
+ * eligible lane when planner lane editing is available.
+ */
+export function getDefaultPlannerLane(
+  category: PlannerEntityCategory,
+): PlannerLaneAssignment {
+  switch (category) {
+    case "troop":
+    case "spell":
+    case "siege":
+      return { lane: "laboratory" };
+    case "pet":
+      return { lane: "pets" };
+    case "building":
+    case "hero":
+    case "trap":
+    case "wall":
+      return { lane: "normal-builders", builderIndex: 1 };
   }
 }
 

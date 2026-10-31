@@ -25,6 +25,7 @@ const TABS: {
   inactive: IconName;
 }[] = [
   { name: "index", title: "Home", active: "home", inactive: "home-outline" },
+  { name: "planner", title: "Planner", active: "construct", inactive: "construct-outline" },
   {
     name: "profile",
     title: "Profile",

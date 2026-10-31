@@ -349,6 +349,81 @@ async function migrateDatabase() {
     version = 11;
   }
 
+  // V12 - Persist user-authored Upgrade Planner plans separately from live timers.
+  if (version < 12) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS planner_plans (
+        id TEXT PRIMARY KEY,
+        account_player_tag TEXT NOT NULL,
+        village TEXT NOT NULL DEFAULT 'home' CHECK (village = 'home'),
+        name TEXT NOT NULL DEFAULT 'Upgrade Plan',
+        created_at_ms INTEGER NOT NULL,
+        updated_at_ms INTEGER NOT NULL,
+        FOREIGN KEY(account_player_tag) REFERENCES accounts(player_tag) ON DELETE CASCADE,
+        UNIQUE(id, account_player_tag)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_planner_plans_account_updated
+      ON planner_plans(account_player_tag, updated_at_ms DESC);
+
+      CREATE TABLE IF NOT EXISTS planner_plan_items (
+        id TEXT NOT NULL,
+        plan_id TEXT NOT NULL,
+        account_player_tag TEXT NOT NULL,
+        candidate_id TEXT NOT NULL,
+        target_level INTEGER NOT NULL CHECK (target_level > 0),
+        lane_json TEXT NOT NULL,
+        user_order INTEGER NOT NULL,
+        created_at_ms INTEGER NOT NULL,
+        updated_at_ms INTEGER NOT NULL,
+        PRIMARY KEY(plan_id, id),
+        FOREIGN KEY(plan_id, account_player_tag)
+          REFERENCES planner_plans(id, account_player_tag) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_planner_items_plan_order
+      ON planner_plan_items(plan_id, user_order, created_at_ms);
+    `);
+    await setSchemaVersion(db, 12);
+    version = 12;
+  }
+
+  // V13 - Persist app-owned physical structure identities and optional plan references.
+  if (version < 13) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS structure_instances (
+        id TEXT PRIMARY KEY,
+        account_player_tag TEXT NOT NULL,
+        village TEXT NOT NULL DEFAULT 'home' CHECK (village = 'home'),
+        data_id INTEGER NOT NULL,
+        instance_number INTEGER NOT NULL,
+        current_level INTEGER NOT NULL,
+        supercharge_level INTEGER NOT NULL DEFAULT 0,
+        identity_confidence TEXT NOT NULL DEFAULT 'stable'
+          CHECK (identity_confidence IN ('stable', 'ambiguous')),
+        FOREIGN KEY(account_player_tag) REFERENCES accounts(player_tag) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_structure_instances_account_entity
+      ON structure_instances(account_player_tag, data_id);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_structure_instances_account_number
+      ON structure_instances(account_player_tag, data_id, instance_number);
+    `);
+    for (const statement of [
+      "ALTER TABLE planner_plan_items ADD COLUMN structure_instance_id TEXT;",
+      "ALTER TABLE upgrades ADD COLUMN structure_instance_id TEXT;",
+    ]) {
+      try {
+        await db.execAsync(statement);
+      } catch (error) {
+        // An interrupted migration may have added a column before the schema version was saved.
+        log("⏭️ structure instance column already exists", error);
+      }
+    }
+    await setSchemaVersion(db, 13);
+    version = 13;
+  }
+
   // log("✅ Database ready. Version:", version);
 
   // Debug only

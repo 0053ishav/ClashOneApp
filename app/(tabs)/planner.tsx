@@ -1,0 +1,1067 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useHomeColors } from "@/theme/useHomeColors";
+import { useAccountStore } from "@/stores/accountStore";
+import { useEntityStore } from "@/stores/entityStore";
+import { getBuildingProgress, getStructureInstances } from "@/services/accountService";
+import { getActiveUpgrades } from "@/services/upgradeService";
+import type { Upgrade } from "@/types/upgrade";
+import type { StructureInstanceRecord } from "@/services/planner/structureInstanceService";
+import {
+  loadPlannerCatalogLevelOverrides,
+  savePlannerCatalogLevelOverrides,
+} from "@/services/plannerCatalogLevelStorage";
+import {
+  loadProgressionCategory,
+  loadProgressionManifest,
+} from "@/storage/progressionStorage";
+import { buildPlannerDatasetFromCache } from "@/services/plannerCatalogSourceService";
+import {
+  createPlannerCatalogRequestCoordinator,
+  loadPlannerCatalog,
+} from "@/services/plannerCatalogRequestService";
+import type {
+  PlannerCatalogFilters,
+  PlannerCatalogResult,
+} from "@/services/plannerCatalogService";
+import type { ObservedActiveUpgrade, PlannerEntityCategory, PlannerItemId, PlannerPlan, PlannerPlanId, PlannedUpgradeItem, ProgressionCandidate, UpgradeProjection } from "@/types/planner";
+import { recalculatePlannerProjection } from "@/services/plannerApplicationService";
+import type { PlannerLaneAvailability, PlannerPrerequisiteState } from "@/utils/planner/schedulePlanner";
+import type { PlannerLaneAssignment } from "@/types/planner";
+import { createPlannerPlan, listPlannerPlans, replacePlannerQueue } from "@/services/plannerPersistenceService";
+import { addPlannerQueueItem, getDefaultPlannerLane, movePlannerQueueItem, removePlannerQueueItem, updatePlannerQueueItem } from "@/services/planner/plannerQueueService";
+import { resolvePlannerStructureLevels } from "@/services/plannerStructureLevelService";
+import { resolvePlannerCatalogLevelState } from "@/services/plannerCatalogLevelState";
+import { PlannerTimeline } from "@/components/planner/PlannerTimeline";
+
+const CATEGORIES: { label: string; value: PlannerEntityCategory | "all" }[] = [
+  { label: "All", value: "all" },
+  { label: "Buildings", value: "building" },
+  { label: "Heroes", value: "hero" },
+  { label: "Troops", value: "troop" },
+  { label: "Spells", value: "spell" },
+  { label: "Siege", value: "siege" },
+  { label: "Pets", value: "pet" },
+  { label: "Traps", value: "trap" },
+  { label: "Walls", value: "wall" },
+];
+
+const CATEGORY_BY_ENTITY_TYPE: Readonly<Record<string, PlannerEntityCategory | undefined>> = {
+  building: "building",
+  hero: "hero",
+  troop: "troop",
+  spell: "spell",
+  siege: "siege",
+  pet: "pet",
+  trap: "trap",
+  wall: "wall",
+};
+
+export default function PlannerCatalogScreen() {
+  const colors = useHomeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const activeTag = useAccountStore((state) => state.activeTag);
+  const accounts = useAccountStore((state) => state.accounts);
+  const profilesByTag = useAccountStore((state) => state.profilesByTag);
+  const entitiesById = useEntityStore((state) => state.entitiesById);
+  const coordinator = useRef(createPlannerCatalogRequestCoordinator()).current;
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState<PlannerEntityCategory | "all">("all");
+  const [currentLevels, setCurrentLevels] = useState<Record<string, number>>({});
+  const [structureInstances, setStructureInstances] = useState<StructureInstanceRecord[]>([]);
+  const [activeUpgrades, setActiveUpgrades] = useState<Upgrade[]>([]);
+  const [showStructureInstances, setShowStructureInstances] = useState(false);
+  const [manualOverrides, setManualOverrides] = useState<Record<string, number>>({});
+  const [levelDrafts, setLevelDrafts] = useState<Record<string, string>>({});
+  const [levelErrors, setLevelErrors] = useState<Record<string, string>>({});
+  const [result, setResult] = useState<PlannerCatalogResult | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [queuePlan, setQueuePlan] = useState<PlannerPlan | null>(null);
+  const [queueBusy, setQueueBusy] = useState(false);
+  const [queueError, setQueueError] = useState<string | null>(null);
+  const [editingQueueItemId, setEditingQueueItemId] = useState<PlannerItemId | null>(null);
+  const [queueTargetDrafts, setQueueTargetDrafts] = useState<Record<string, string>>({});
+  const [queueLaneDrafts, setQueueLaneDrafts] = useState<Record<string, PlannerLaneAssignment>>({});
+  const [queueEditErrors, setQueueEditErrors] = useState<Record<string, string>>({});
+  const [projections, setProjections] = useState<readonly UpgradeProjection[] | null>(null);
+  const [projectionError, setProjectionError] = useState<string | null>(null);
+  const nextItemId = useRef(0);
+  const queueWriteInFlight = useRef(false);
+
+  const activeAccount = accounts.find((account) => account.tag === activeTag);
+  const townHallLevel =
+    (activeTag ? profilesByTag[activeTag]?.townHallLevel : undefined) ??
+    activeAccount?.townhall ??
+    0;
+
+  useEffect(() => {
+    let cancelled = false;
+    setResult(null);
+    setError(null);
+
+    if (!activeTag) {
+      setCurrentLevels({});
+      setStructureInstances([]);
+      setActiveUpgrades([]);
+      setShowStructureInstances(false);
+      setManualOverrides({});
+      setIsLoading(false);
+      return () => {
+        cancelled = true;
+        coordinator.invalidate();
+      };
+    }
+
+    setCurrentLevels({});
+    setStructureInstances([]);
+    setActiveUpgrades([]);
+    setShowStructureInstances(false);
+    setManualOverrides({});
+    setLevelDrafts({});
+    setIsLoading(true);
+    const savedOverrides = loadPlannerCatalogLevelOverrides(activeTag);
+    void Promise.all([
+      getBuildingProgress(activeTag),
+      getStructureInstances(activeTag),
+      getActiveUpgrades(activeTag),
+    ])
+      .then(([records, instances, upgrades]) => {
+        if (cancelled) return;
+        const levels: Record<string, number> = {};
+        for (const record of records) {
+          const key = String(record.dataId);
+          levels[key] = Math.max(levels[key] ?? 0, record.normalLevel);
+        }
+        const resolvedLevels = resolvePlannerCatalogLevelState(savedOverrides, levels);
+        setCurrentLevels(resolvedLevels.currentLevels);
+        setManualOverrides(resolvedLevels.manualOverrides);
+        setStructureInstances(instances);
+        setActiveUpgrades(upgrades);
+      })
+      .catch((loadError: unknown) => {
+        if (!cancelled) {
+          setError(loadError instanceof Error ? loadError.message : "Could not load village levels.");
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      coordinator.invalidate();
+    };
+  }, [activeTag, coordinator]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!activeTag) return;
+
+    const structureLevels = resolvePlannerStructureLevels(
+      Object.values(entitiesById),
+      currentLevels,
+    );
+    const filters: PlannerCatalogFilters = {
+      query,
+      category,
+      currentLevels,
+      townHallLevel,
+      ...structureLevels,
+    };
+    const identity = {
+      accountTag: activeTag,
+      categoryKey: category,
+      village: "home" as const,
+    };
+
+    setIsLoading(true);
+    setError(null);
+    void loadPlannerCatalog({
+      identity,
+      filters,
+      coordinator,
+      activeIdentity: () => ({
+        accountTag: useAccountStore.getState().activeTag ?? "",
+        categoryKey: category,
+        village: "home",
+      }),
+      loadSource: async () => {
+        const entities = Object.values(useEntityStore.getState().entitiesById);
+        const manifest = loadProgressionManifest();
+        const dataset = buildPlannerDatasetFromCache({
+          entities,
+          manifest,
+          loadCategory: loadProgressionCategory,
+        });
+        const namesByEntityId: Record<string, string> = {};
+        const maxLevelsByEntityId: Record<string, number> = {};
+        for (const entity of entities) {
+          if (entity.village !== "home") continue;
+          namesByEntityId[String(entity.id)] = entity.name.en;
+          const levels = Object.keys(entity.levels ?? {})
+            .map(Number)
+            .filter((level) => Number.isSafeInteger(level) && level > 0);
+          if (levels.length > 0) {
+            maxLevelsByEntityId[String(entity.id)] = Math.max(...levels);
+          }
+        }
+        return { dataset, metadata: { namesByEntityId, maxLevelsByEntityId } };
+      },
+    }).then((nextResult) => {
+      if (cancelled || !nextResult) return;
+      setResult(nextResult);
+      setIsLoading(false);
+    }).catch((loadError: unknown) => {
+      if (cancelled) return;
+      setError(loadError instanceof Error ? loadError.message : "Could not load the upgrade catalog.");
+      setIsLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+      coordinator.invalidate();
+    };
+  }, [activeTag, category, coordinator, currentLevels, entitiesById, query, townHallLevel]);
+
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!activeTag) {
+      setQueuePlan(null);
+      setQueueError(null);
+      return;
+    }
+    setQueuePlan(null);
+    setQueueError(null);
+    void listPlannerPlans(activeTag)
+      .then(async (plans) => {
+        if (cancelled) return;
+        const plan = plans[0] ?? await createPlannerPlan(activeTag, `planner-${Date.now()}-${nextItemId.current++}` as PlannerPlanId);
+        if (!cancelled) setQueuePlan(plan);
+      })
+      .catch((loadError: unknown) => {
+        if (!cancelled) setQueueError(loadError instanceof Error ? loadError.message : "Could not load the upgrade queue.");
+      });
+    return () => { cancelled = true; };
+  }, [activeTag]);
+
+  const persistQueue = async (items: readonly PlannedUpgradeItem[]): Promise<boolean> => {
+    if (!activeTag || !queuePlan || queueWriteInFlight.current) return false;
+    queueWriteInFlight.current = true;
+    setQueueBusy(true);
+    setQueueError(null);
+    const now = Date.now();
+    const timestampedItems = items.map((item) => ({ ...item, updatedAtMs: Math.max(now, item.createdAtMs) }));
+    try {
+      await replacePlannerQueue(activeTag, queuePlan.id, timestampedItems, now);
+      setQueuePlan((previous) =>
+        previous && previous.accountTag === activeTag && previous.id === queuePlan.id
+          ? { ...previous, items: timestampedItems, updatedAtMs: now }
+          : previous,
+      );
+      return true;
+    } catch (saveError: unknown) {
+      setQueueError(saveError instanceof Error ? saveError.message : "Could not save the upgrade queue.");
+      return false;
+    } finally {
+      queueWriteInFlight.current = false;
+      setQueueBusy(false);
+    }
+  };
+
+
+  const beginQueueItemEdit = (item: PlannedUpgradeItem) => {
+    setEditingQueueItemId(item.id);
+    setQueueTargetDrafts((previous) => ({ ...previous, [item.id]: String(item.targetLevel) }));
+    setQueueLaneDrafts((previous) => ({ ...previous, [item.id]: item.lane }));
+    setQueueEditErrors((previous) => {
+      const next = { ...previous };
+      delete next[item.id];
+      return next;
+    });
+  };
+
+  const saveQueueItemEdit = async (item: PlannedUpgradeItem) => {
+    if (!activeTag || !queuePlan || queuePlan.accountTag !== activeTag || queueBusy) return;
+    const candidate = plannerCandidates.find((entry) => entry.candidateId === item.candidateId);
+    if (!candidate) {
+      setQueueEditErrors((previous) => ({ ...previous, [item.id]: "This upgrade is missing from the current catalog. Sync game data before editing it." }));
+      return;
+    }
+
+    const targetText = queueTargetDrafts[item.id] ?? String(item.targetLevel);
+    const targetLevel = Number(targetText);
+    if (!/^\d+$/.test(targetText) || !Number.isSafeInteger(targetLevel) ||
+      targetLevel <= candidate.currentLevel || targetLevel > candidate.targetLevel) {
+      setQueueEditErrors((previous) => ({ ...previous, [item.id]: `Target level must be a whole number above level ${candidate.currentLevel} and no higher than ${candidate.targetLevel}.` }));
+      return;
+    }
+
+    const lane = queueLaneDrafts[item.id] ?? item.lane;
+    const defaultLane = getDefaultPlannerLane(candidate.category);
+    const laneCompatible = defaultLane.lane === "normal-builders"
+      ? lane.lane === "normal-builders" &&
+        Number.isSafeInteger(lane.builderIndex) &&
+        lane.builderIndex >= 1 &&
+        lane.builderIndex <= (profilesByTag[activeTag]?.normalBuilderCount ?? 0)
+      : lane.lane === defaultLane.lane;
+    if (!laneCompatible) {
+      setQueueEditErrors((previous) => ({ ...previous, [item.id]: "Choose a lane compatible with this upgrade and available on this account." }));
+      return;
+    }
+
+    let updatedItems: PlannedUpgradeItem[];
+    try {
+      updatedItems = updatePlannerQueueItem(queuePlan.items, item.id, {
+        candidateId: item.candidateId,
+        targetLevel,
+        lane,
+        ...(item.structureInstanceId ? { structureInstanceId: item.structureInstanceId } : {}),
+      });
+    } catch (mutationError: unknown) {
+      setQueueEditErrors((previous) => ({ ...previous, [item.id]: mutationError instanceof Error ? mutationError.message : "Could not update this queue item." }));
+      return;
+    }
+
+    const saved = await persistQueue(updatedItems);
+    if (saved) {
+      setEditingQueueItemId(null);
+      setQueueEditErrors((previous) => {
+        const next = { ...previous };
+        delete next[item.id];
+        return next;
+      });
+    }
+  };
+
+  const addToQueue = (candidateId: string, targetLevel: number) => {
+    if (!queuePlan || queueBusy) return;
+    if (queuePlan.items.some((item) => item.candidateId === candidateId && item.targetLevel === targetLevel)) return;
+
+    const candidate = plannerCandidates.find((item) => item.candidateId === candidateId);
+    if (!candidate) {
+      setQueueError("This upgrade is not available in the current progression catalog. Refresh the catalog and try again.");
+      return;
+    }
+
+    const lane = getDefaultPlannerLane(candidate.category);
+    const now = Date.now();
+    const laneItems = queuePlan.items.filter((item) =>
+      item.lane.lane === lane.lane &&
+      (lane.lane !== "normal-builders" ||
+        (item.lane.lane === "normal-builders" && item.lane.builderIndex === lane.builderIndex)),
+    );
+    const item: PlannedUpgradeItem = {
+      id: `planner-item-${now}-${nextItemId.current++}` as PlannerItemId,
+      candidateId, targetLevel, lane, order: laneItems.length, createdAtMs: now, updatedAtMs: now,
+    };
+    try {
+      void persistQueue(addPlannerQueueItem(queuePlan.items, item));
+    } catch (mutationError: unknown) {
+      setQueueError(mutationError instanceof Error ? mutationError.message : "Could not update the upgrade queue.");
+    }
+  };
+
+  const removeFromQueue = (itemId: PlannerItemId) => {
+    if (!queuePlan || queueBusy) return;
+    try {
+      void persistQueue(removePlannerQueueItem(queuePlan.items, itemId));
+    } catch (mutationError: unknown) {
+      setQueueError(mutationError instanceof Error ? mutationError.message : "Could not update the upgrade queue.");
+    }
+  };
+
+  const assignNextBuilder = (itemId: PlannerItemId) => {
+    if (!queuePlan || queueBusy) return;
+    const item = queuePlan.items.find((candidate) => candidate.id === itemId);
+    const builderCount = activeTag ? profilesByTag[activeTag]?.normalBuilderCount ?? 0 : 0;
+    if (!item || item.lane.lane !== "normal-builders" || builderCount < 2) return;
+
+    const nextBuilderIndex = item.lane.builderIndex >= builderCount
+      ? 1
+      : item.lane.builderIndex + 1;
+    try {
+      void persistQueue(updatePlannerQueueItem(
+        queuePlan.items,
+        itemId,
+        {
+          candidateId: item.candidateId,
+          targetLevel: item.targetLevel,
+          lane: { lane: "normal-builders", builderIndex: nextBuilderIndex },
+          ...(item.structureInstanceId ? { structureInstanceId: item.structureInstanceId } : {}),
+        },
+      ));
+    } catch (mutationError: unknown) {
+      setQueueError(mutationError instanceof Error ? mutationError.message : "Could not reassign the builder.");
+    }
+  };
+
+  const moveQueueItem = (itemId: PlannerItemId, direction: -1 | 1) => {
+    if (!queuePlan || queueBusy) return;
+    const item = queuePlan.items.find((candidate) => candidate.id === itemId);
+    if (!item) return;
+    const laneItems = queuePlan.items
+      .filter((candidate) =>
+        candidate.lane.lane === item.lane.lane &&
+        (candidate.lane.lane !== "normal-builders" ||
+          (item.lane.lane === "normal-builders" &&
+            candidate.lane.builderIndex === item.lane.builderIndex)),
+      )
+      .sort((a, b) => a.order - b.order);
+    const currentIndex = laneItems.findIndex((candidate) => candidate.id === itemId);
+    const targetIndex = currentIndex + direction;
+    if (targetIndex < 0 || targetIndex >= laneItems.length) return;
+    try {
+      void persistQueue(movePlannerQueueItem(queuePlan.items, itemId, targetIndex));
+    } catch (mutationError: unknown) {
+      setQueueError(mutationError instanceof Error ? mutationError.message : "Could not reorder the upgrade queue.");
+    }
+  };
+
+  const plannerCandidates = useMemo<readonly ProgressionCandidate[]>(() => {
+    const dataset = buildPlannerDatasetFromCache({
+      entities: Object.values(entitiesById),
+      manifest: loadProgressionManifest(),
+      loadCategory: loadProgressionCategory,
+    });
+    return dataset.candidates;
+  }, [entitiesById]);
+
+  const structureLevels = useMemo(
+    () => resolvePlannerStructureLevels(Object.values(entitiesById), currentLevels),
+    [currentLevels, entitiesById],
+  );
+
+  const observedUpgrades = useMemo<readonly ObservedActiveUpgrade[] | null>(() => {
+    if (!activeTag) return [];
+    const observed: ObservedActiveUpgrade[] = [];
+    for (const upgrade of activeUpgrades) {
+      // This screen schedules the Home Village plan only; Builder Base timers
+      // must not occupy Home Village lanes.
+      if (upgrade.village !== "home") continue;
+      let lane: ObservedActiveUpgrade["lane"] | null = null;
+      if (upgrade.upgradeType === "PET") {
+        lane = { lane: "pets" };
+      } else if (upgrade.upgradeType === "LAB") {
+        if (upgrade.labSlot === "GOBLIN") lane = { lane: "goblin-laboratory" };
+        else if (upgrade.labSlot === "NORMAL") lane = { lane: "laboratory" };
+      } else if (upgrade.upgradeType === "BUILDER") {
+        if (upgrade.builderType === "GOBLIN" || upgrade.builderSlot === "G") {
+          lane = { lane: "goblin-builder" };
+        } else if (typeof upgrade.builderSlot === "number" && Number.isSafeInteger(upgrade.builderSlot) && upgrade.builderSlot > 0) {
+          lane = { lane: "normal-builders", builderIndex: upgrade.builderSlot };
+        }
+      }
+      // Do not guess which lane an incomplete live-timer record occupies.
+      if (!lane) return null;
+      observed.push({
+        observedUpgradeId: upgrade.id,
+        accountTag: upgrade.accountTag,
+        village: "home",
+        lane,
+        startsAtMs: upgrade.startTime,
+        completesAtMs: upgrade.endTime,
+        source: upgrade.source === "JSON" ? "village-import" : upgrade.source === "MANUAL" ? "manual" : "restored-local-state",
+      });
+    }
+    return observed;
+  }, [activeTag, activeUpgrades]);
+
+  const laneAvailability = useMemo<PlannerLaneAvailability>(() => ({
+    normalBuilderCount: activeTag ? profilesByTag[activeTag]?.normalBuilderCount ?? 0 : 0,
+    // The app has no confirmed active-event/eligibility state for Goblin lanes yet.
+    goblinBuilderEligible: false,
+    goblinLaboratoryEligible: false,
+  }), [activeTag, profilesByTag]);
+
+  const prerequisiteState = useMemo<PlannerPrerequisiteState>(() => ({
+    townHallLevel,
+    laboratoryLevel: structureLevels.laboratoryLevel,
+    petHouseLevel: structureLevels.petHouseLevel,
+    entityLevels: currentLevels,
+  }), [currentLevels, structureLevels, townHallLevel]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setProjections(null);
+    setProjectionError(null);
+    if (!activeTag || !queuePlan || queuePlan.accountTag !== activeTag) return;
+    if (observedUpgrades === null) {
+      setProjectionError("A live timer has no confirmed lane assignment. Scheduling is paused rather than guessing which builder or lab is occupied.");
+      return;
+    }
+    void recalculatePlannerProjection({
+      accountTag: activeTag,
+      planId: queuePlan.id,
+      nowMs: Date.now(),
+      candidates: plannerCandidates,
+      observedActiveUpgrades: observedUpgrades,
+      prerequisiteState,
+      laneAvailability,
+    }).then((projection) => {
+      if (!cancelled) setProjections(projection?.projections ?? []);
+    }).catch((projectionLoadError: unknown) => {
+      if (!cancelled) setProjectionError(projectionLoadError instanceof Error ? projectionLoadError.message : "Could not calculate the upgrade schedule.");
+    });
+    return () => { cancelled = true; };
+  }, [activeTag, laneAvailability, observedUpgrades, plannerCandidates, prerequisiteState, queuePlan]);
+
+  const projectionByItemId = useMemo(() => new Map(
+    (projections ?? []).map((projection) => [projection.plannedItemId, projection]),
+  ), [projections]);
+
+  const knownLevelCount = Object.keys(currentLevels).length;
+  const untrackedEntities = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    return Object.values(entitiesById)
+      .filter((entity) => entity.village === "home")
+      .filter((entity) => CATEGORY_BY_ENTITY_TYPE[entity.type] !== undefined)
+      .filter((entity) => category === "all" || CATEGORY_BY_ENTITY_TYPE[entity.type] === category)
+      .filter((entity) => !Object.prototype.hasOwnProperty.call(currentLevels, String(entity.id))
+        || Object.prototype.hasOwnProperty.call(manualOverrides, String(entity.id)))
+      .filter((entity) => {
+        if (!normalizedQuery) return true;
+        return entity.name.en.toLocaleLowerCase().includes(normalizedQuery);
+      })
+      .map((entity) => {
+        const levels = Object.keys(entity.levels ?? {})
+          .map(Number)
+          .filter((level) => Number.isSafeInteger(level) && level > 0);
+        return { entity, maxLevel: levels.length > 0 ? Math.max(...levels) : 0 };
+      })
+      .filter(({ maxLevel }) => maxLevel > 0)
+      .slice(0, 6);
+  }, [category, currentLevels, entitiesById, manualOverrides, query]);
+
+  const applyLevel = (entityId: number, maxLevel: number) => {
+    const entityKey = String(entityId);
+    const draft = levelDrafts[entityKey] ?? "";
+    const level = Number(draft);
+
+    if (draft.trim() === "" || !Number.isSafeInteger(level) || level < 0 || level > maxLevel) {
+      setLevelErrors((previous) => ({
+        ...previous,
+        [entityKey]: `Enter a whole-number level from 0 to ${maxLevel}.`,
+      }));
+      return;
+    }
+    if (!activeTag) return;
+    const nextLevels = { ...currentLevels, [entityKey]: level };
+
+    try {
+      // Persist only manually entered overrides, not imported building levels.
+      const savedOverrides = loadPlannerCatalogLevelOverrides(activeTag);
+      savePlannerCatalogLevelOverrides(activeTag, {
+        ...savedOverrides,
+        [entityKey]: level,
+      });
+      setCurrentLevels(nextLevels);
+      setManualOverrides((previous) => ({ ...previous, [entityKey]: level }));
+      setLevelDrafts((previous) => ({ ...previous, [entityKey]: String(level) }));
+      setLevelErrors((previous) => {
+        const next = { ...previous };
+        delete next[entityKey];
+        return next;
+      });
+      setError(null);
+    } catch (saveError: unknown) {
+      setError(
+        saveError instanceof Error
+          ? `Could not save this level: ${saveError.message}`
+          : "Could not save this level.",
+      );
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <Text style={styles.eyebrow}>CLASH ONE · HOME VILLAGE</Text>
+        <Text style={styles.title}>Upgrade catalog</Text>
+        <Text style={styles.subtitle}>
+          Search validated game progression data and see the next upgrade only when the account level is known.
+        </Text>
+
+        {!activeTag ? (
+          <View style={styles.stateCard}>
+            <Text style={styles.stateTitle}>No active village</Text>
+            <Text style={styles.body}>Add or select an account before browsing account-specific upgrade candidates.</Text>
+          </View>
+        ) : (
+          <>
+            <View style={styles.accountCard}>
+              <Text style={styles.accountName}>{activeAccount?.name ?? activeTag}</Text>
+              <Text style={styles.muted}>Town Hall {townHallLevel || "unknown"} · {knownLevelCount} known entity levels</Text>
+            </View>
+
+            {structureInstances.length > 0 && (
+              <View style={styles.stateCard}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: showStructureInstances }}
+                  onPress={() => setShowStructureInstances((visible) => !visible)}
+                  style={styles.itemTitleWrap}
+                >
+                  <Text style={styles.stateTitle}>
+                    Tracked structure copies ({structureInstances.length})
+                  </Text>
+                  <Text style={styles.muted}>{showStructureInstances ? "Hide" : "Show"}</Text>
+                </Pressable>
+                <Text style={styles.body}>
+                  Numbered labels are presentation only; the saved instance ID is the identity. Copies are marked uncertain when an import cannot prove which physical copy changed.
+                </Text>
+                {showStructureInstances && structureInstances
+                  .slice(0, 100)
+                  .map((instance) => {
+                    const entity = entitiesById[instance.dataId];
+                    const label = entity?.name.en ?? `Entity ${instance.dataId}`;
+                    const activeUpgrade = activeUpgrades.find(
+                      (upgrade) => upgrade.structureInstanceId === instance.id,
+                    );
+                    const hasUnresolvedTimer = activeUpgrades.some(
+                      (upgrade) =>
+                        !upgrade.structureInstanceId &&
+                        upgrade.dataId === instance.dataId &&
+                        upgrade.currentLevel === instance.currentLevel,
+                    );
+                    return (
+                      <View key={instance.id} style={styles.levelEditor}>
+                        <View style={styles.itemTitleWrap}>
+                          <Text style={styles.itemName}>{label} #{instance.instanceNumber}</Text>
+                          <Text style={styles.muted}>Level {instance.currentLevel}</Text>
+                        </View>
+                        {activeUpgrade && (
+                          <Text style={styles.body}>
+                            {activeUpgrade.upgradeKind === "SUPERCHARGE"
+                              ? `Supercharging to level ${activeUpgrade.nextSuperchargeLevel ?? "unknown"}`
+                              : `Upgrading to level ${activeUpgrade.nextLevel ?? "unknown"}`} · finishes {new Date(activeUpgrade.endTime).toLocaleString()}
+                          </Text>
+                        )}
+                        {!activeUpgrade && hasUnresolvedTimer && (
+                          <Text style={styles.warning}>An active timer exists, but the export cannot identify this exact copy.</Text>
+                        )}
+                        {instance.identityConfidence === "ambiguous" && (
+                          <Text style={styles.warning}>Identity is ambiguous after import changes; timer mapping is withheld.</Text>
+                        )}
+                      </View>
+                    );
+                  })}
+                {showStructureInstances && structureInstances.length > 100 && (
+                  <Text style={styles.muted}>Showing the first 100 non-wall copies.</Text>
+                )}
+              </View>
+            )}
+
+            <PlannerTimeline
+              items={queuePlan?.items ?? []}
+              projections={projections ?? []}
+              candidates={plannerCandidates}
+              entityNamesById={Object.fromEntries(
+                Object.values(entitiesById).map((entity) => [String(entity.id), entity.name.en]),
+              )}
+              liveUpgrades={observedUpgrades ?? []}
+              builderCount={activeTag ? profilesByTag[activeTag]?.normalBuilderCount ?? 0 : 0}
+              nowMs={Date.now()}
+            />
+
+            <View style={styles.stateCard}>
+              <Text style={styles.stateTitle}>Upgrade queue</Text>
+              <Text style={styles.body}>Planned upgrades are separate from live timers. Projections recalculate from the saved queue, validated progression data, current levels, and confirmed active timers.</Text>
+              {!!projectionError && <Text accessibilityRole="alert" style={styles.warning}>{projectionError}</Text>}
+              {!projectionError && queuePlan && queuePlan.items.length > 0 && projections === null && <Text style={styles.muted}>Calculating schedule…</Text>}
+              {queueBusy && <Text style={styles.muted}>Saving queue…</Text>}
+              {!!queueError && <Text accessibilityRole="alert" style={styles.warning}>{queueError}</Text>}
+              {queuePlan?.items.length === 0 && <Text style={styles.muted}>No upgrades queued yet.</Text>}
+              {queuePlan?.items.map((queuedItem) => (
+                <View key={queuedItem.id} style={styles.queueRow}>
+                  <View style={styles.itemTitleWrap}>
+                    <Text style={styles.itemName}>{result?.items.find((item) => item.candidate.candidateId === queuedItem.candidateId)?.name ?? queuedItem.candidateId}</Text>
+                    <Text style={styles.muted}>Target level {queuedItem.targetLevel} · {queuedItem.lane.lane === "normal-builders" ? `Builder ${queuedItem.lane.builderIndex}` : queuedItem.lane.lane}</Text>
+                    {editingQueueItemId === queuedItem.id && (
+                      <View style={styles.queueEditPanel}>
+                        <Text style={styles.muted}>Target level</Text>
+                        <TextInput
+                          accessibilityLabel="Edit target level"
+                          keyboardType="number-pad"
+                          value={queueTargetDrafts[queuedItem.id] ?? String(queuedItem.targetLevel)}
+                          onChangeText={(value) => setQueueTargetDrafts((previous) => ({ ...previous, [queuedItem.id]: value.replace(/[^0-9]/g, "") }))}
+                          style={styles.levelInput}
+                        />
+                        {(() => {
+                          const candidate = plannerCandidates.find((entry) => entry.candidateId === queuedItem.candidateId);
+                          const builderCount = activeTag ? profilesByTag[activeTag]?.normalBuilderCount ?? 0 : 0;
+                          if (!candidate || getDefaultPlannerLane(candidate.category).lane !== "normal-builders") {
+                            return <Text style={styles.muted}>Lane is determined by the upgrade category.</Text>;
+                          }
+                          return (
+                            <View style={styles.laneChoiceRow}>
+                              {Array.from({ length: builderCount }, (_, index) => index + 1).map((builderIndex) => {
+                                const selectedLane = queueLaneDrafts[queuedItem.id] ?? queuedItem.lane;
+                                const selected = selectedLane.lane === "normal-builders" && selectedLane.builderIndex === builderIndex;
+                                return (
+                                  <Pressable
+                                    key={builderIndex}
+                                    accessibilityRole="button"
+                                    accessibilityState={{ selected }}
+                                    onPress={() => setQueueLaneDrafts((previous) => ({ ...previous, [queuedItem.id]: { lane: "normal-builders", builderIndex } }))}
+                                    style={[styles.laneChoice, selected && styles.laneChoiceSelected]}
+                                  >
+                                    <Text style={[styles.removeButtonText, selected && styles.laneChoiceTextSelected]}>Builder {builderIndex}</Text>
+                                  </Pressable>
+                                );
+                              })}
+                            </View>
+                          );
+                        })()}
+                        {!!queueEditErrors[queuedItem.id] && <Text accessibilityRole="alert" style={styles.warning}>{queueEditErrors[queuedItem.id]}</Text>}
+                        <View style={styles.queueActions}>
+                          <Pressable accessibilityRole="button" disabled={queueBusy} onPress={() => saveQueueItemEdit(queuedItem)} style={styles.applyButton}>
+                            <Text style={styles.applyButtonText}>Save preview</Text>
+                          </Pressable>
+                          <Pressable accessibilityRole="button" disabled={queueBusy} onPress={() => setEditingQueueItemId(null)} style={styles.removeButton}>
+                            <Text style={styles.removeButtonText}>Cancel</Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    )}
+                    <Text style={projectionByItemId.get(queuedItem.id)?.status === "scheduled" ? styles.body : styles.warning}>
+                      {formatProjection(projectionByItemId.get(queuedItem.id))}
+                    </Text>
+                  </View>
+                  <View style={styles.queueActions}>
+                    {editingQueueItemId !== queuedItem.id && (
+                      <Pressable accessibilityRole="button" accessibilityLabel="Edit target level and lane" disabled={queueBusy} onPress={() => beginQueueItemEdit(queuedItem)} style={styles.removeButton}>
+                        <Text style={styles.removeButtonText}>Edit</Text>
+                      </Pressable>
+                    )}
+                    {queuedItem.lane.lane === "normal-builders" &&
+                      (activeTag ? profilesByTag[activeTag]?.normalBuilderCount ?? 0 : 0) > 1 && (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Assign upgrade to next builder; currently Builder ${queuedItem.lane.builderIndex}`}
+                        disabled={queueBusy}
+                        onPress={() => assignNextBuilder(queuedItem.id)}
+                        style={styles.removeButton}
+                      >
+                        <Text style={styles.removeButtonText}>Builder ↻</Text>
+                      </Pressable>
+                    )}
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Move upgrade earlier"
+                      disabled={queueBusy || queuedItem.order === 0}
+                      onPress={() => moveQueueItem(queuedItem.id, -1)}
+                      style={styles.removeButton}
+                    >
+                      <Text style={styles.removeButtonText}>↑</Text>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Move upgrade later"
+                      disabled={queueBusy}
+                      onPress={() => moveQueueItem(queuedItem.id, 1)}
+                      style={styles.removeButton}
+                    >
+                      <Text style={styles.removeButtonText}>↓</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" disabled={queueBusy} onPress={() => removeFromQueue(queuedItem.id)} style={styles.removeButton}>
+                      <Text style={styles.removeButtonText}>Remove</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            <TextInput
+              accessibilityLabel="Search upgrades"
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Search upgrades by name"
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize="none"
+              style={styles.search}
+            />
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
+              {CATEGORIES.map((item) => {
+                const selected = item.value === category;
+                return (
+                  <Pressable
+                    key={item.value}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    onPress={() => setCategory(item.value)}
+                    style={[styles.filterChip, selected && styles.filterChipSelected]}
+                  >
+                    <Text style={[styles.filterText, selected && styles.filterTextSelected]}>{item.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            {untrackedEntities.length > 0 && (
+              <View style={styles.stateCard}>
+                <Text style={styles.stateTitle}>Set or edit levels</Text>
+                <Text style={styles.body}>
+                  Levels absent from the imported snapshot need manual entry. You can also edit saved manual levels here. Level 0 means not built/unlocked; imported levels take precedence over manual values.
+                </Text>
+                {untrackedEntities.map(({ entity, maxLevel }) => {
+                  const key = String(entity.id);
+                  return (
+                    <View key={key} style={styles.levelEditor}>
+                      <View style={styles.itemTitleWrap}>
+                        <Text style={styles.itemName}>{entity.name.en}</Text>
+                        <Text style={styles.muted}>Max level {maxLevel}</Text>
+                      </View>
+                      <TextInput
+                        accessibilityLabel={`Current level for ${entity.name.en}`}
+                        keyboardType="number-pad"
+                        value={levelDrafts[key] ?? (manualOverrides[key] !== undefined ? String(manualOverrides[key]) : "")}
+                        onChangeText={(value) => {
+                          setLevelDrafts((previous) => ({ ...previous, [key]: value.replace(/[^0-9]/g, "") }));
+                          setLevelErrors((previous) => {
+                            if (!previous[key]) return previous;
+                            const next = { ...previous };
+                            delete next[key];
+                            return next;
+                          });
+                        }}
+                        placeholder="Level"
+                        placeholderTextColor={colors.textMuted}
+                        style={styles.levelInput}
+                      />
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => applyLevel(entity.id, maxLevel)}
+                        style={styles.applyButton}
+                      >
+                        <Text style={styles.applyButtonText}>Use level</Text>
+                      </Pressable>
+                      {!!levelErrors[key] && (
+                        <Text accessibilityRole="alert" style={styles.warning}>{levelErrors[key]}</Text>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+
+            {isLoading && (
+              <View style={styles.inlineState}>
+                <ActivityIndicator color={colors.gold} />
+                <Text style={styles.body}>Loading catalog…</Text>
+              </View>
+            )}
+
+            {!!error && (
+              <View style={styles.stateCard}>
+                <Text style={styles.stateTitle}>Catalog unavailable</Text>
+                <Text style={styles.body}>{error}</Text>
+              </View>
+            )}
+
+            {!isLoading && !error && result?.state === "error" && (
+              <View style={styles.stateCard}>
+                <Text style={styles.stateTitle}>Game data unavailable</Text>
+                <Text style={styles.body}>The progression manifest or category cache is missing. Sync game data and try again.</Text>
+              </View>
+            )}
+
+            {!isLoading && !error && result && result.items.length === 0 && (
+              <View style={styles.stateCard}>
+                {Object.keys(entitiesById).length === 0 ? (
+                  <>
+                    <Text style={styles.stateTitle}>Game entity metadata not loaded</Text>
+                    <Text style={styles.body}>
+                      The Planner has no entity catalog to search or show level editors for. Open the Home screen and sync game data, then return here. This is different from having no eligible upgrades.
+                    </Text>
+                  </>
+                ) : untrackedEntities.length === 0 && query.trim() !== "" ? (
+                  <>
+                    <Text style={styles.stateTitle}>No matching entity metadata</Text>
+                    <Text style={styles.body}>
+                      No Home Village entity name matches “{query.trim()}”. Try another name or clear search.
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.stateTitle}>No eligible upgrades yet</Text>
+                    <Text style={styles.body}>
+                      The catalog has no candidate matching the known account levels and available progression data. Missing levels are not assumed to be 0. Check the entity&apos;s current level and sync game data if its next level is missing.
+                    </Text>
+                  </>
+                )}
+                <Text style={styles.muted}>
+                  Planner diagnostics · progression candidates {result.diagnosticsSummary.datasetCandidates}
+                  {" · "}Home Village {result.diagnosticsSummary.homeVillageCandidates}
+                  {" · "}known level {result.diagnosticsSummary.knownLevelCandidates}
+                  {" · "}next level {result.diagnosticsSummary.nextLevelCandidates}
+                  {" · "}category match {result.diagnosticsSummary.categoryCandidates}
+                  {" · "}metadata match {result.diagnosticsSummary.metadataCandidates}
+                  {" · "}below max {result.diagnosticsSummary.belowMaxLevelCandidates}
+                  {" · "}search match {result.diagnosticsSummary.queryCandidates}
+                  {" · "}shown {result.diagnosticsSummary.returnedItems}
+                </Text>
+                {result.state === "partial" && (
+                  <Text style={styles.muted}>Some progression categories are unavailable: {result.unavailableCategories.join(", ") || "data is incomplete"}.</Text>
+                )}
+              </View>
+            )}
+
+            {!isLoading && result?.items.map((item) => (
+              <View key={item.candidate.candidateId} style={styles.itemCard}>
+                <View style={styles.itemHeader}>
+                  <View style={styles.itemTitleWrap}>
+                    <Text style={styles.itemName}>{item.name}</Text>
+                    <Text style={styles.muted}>{item.candidate.category}</Text>
+                  </View>
+                  <View style={styles.levelBadge}>
+                    <Text style={styles.levelText}>{item.currentLevel} → {item.candidate.targetLevel}</Text>
+                  </View>
+                </View>
+                <Text style={styles.body}>
+                  Cost: {formatCostEstimate(item.candidate.estimate.cost)}
+                  {" · "}
+                  Time: {formatDurationEstimate(item.candidate.estimate.durationMs)}
+                </Text>
+                {item.blockedBy.length > 0 && (
+                  <Text style={styles.warning}>
+                    Prerequisites not confirmed: {item.blockedBy.map((prerequisite) =>
+                      prerequisite.kind === "entity-level"
+                        ? `required upgrade level ${prerequisite.minimumLevel}`
+                        : `${prerequisite.kind} ${prerequisite.minimumLevel}`,
+                    ).join(", ")}
+                  </Text>
+                )}
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={queueBusy || !queuePlan}
+                  onPress={() => addToQueue(item.candidate.candidateId, item.candidate.targetLevel)}
+                  style={styles.applyButton}
+                >
+                  <Text style={styles.applyButtonText}>
+                    {queuePlan?.items.some((queued) => queued.candidateId === item.candidate.candidateId && queued.targetLevel === item.candidate.targetLevel)
+                      ? "Already queued"
+                      : "Add to queue"}
+                  </Text>
+                </Pressable>
+              </View>
+            ))}
+          </>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function formatProjection(projection: UpgradeProjection | undefined): string {
+  if (!projection) return "Schedule not calculated";
+  if (projection.status === "scheduled") {
+    return `Scheduled · starts ${new Date(projection.startsAtMs).toLocaleString()} · finishes ${new Date(projection.completesAtMs).toLocaleString()}`;
+  }
+  if (projection.status === "unknown") {
+    const reason = projection.reasons[0];
+    return reason?.code === "estimate-unknown"
+      ? `Unknown estimate · ${reason.estimate} data unavailable`
+      : "Unknown estimate";
+  }
+  const reason = projection.reasons[0];
+  if (!reason) return "Blocked · reason unavailable";
+  switch (reason.code) {
+    case "candidate-unavailable": return "Blocked · progression candidate unavailable (sync game data or update this queue item)";
+    case "lane-unavailable": return "Blocked · assigned lane is occupied or unavailable";
+    case "lane-ineligible": return "Blocked · Goblin lane eligibility is not confirmed";
+    case "prerequisite-unmet": return "Blocked · prerequisite level is not met or confirmed";
+    case "invalid-target-level": return "Blocked · target level is outside the validated candidate range";
+    case "dependency-cycle": return "Blocked · planned upgrades contain a dependency cycle";
+    case "estimate-unknown": return "Unknown estimate · game data is incomplete";
+  }
+}
+
+function formatCostEstimate(
+  estimate: PlannerCatalogResult["items"][number]["candidate"]["estimate"]["cost"],
+): string {
+  if (estimate.status === "unknown") return "unknown";
+  const resources: readonly (readonly [string, number | undefined])[] = [
+    ["gold", estimate.value.gold],
+    ["elixir", estimate.value.elixir],
+    ["dark elixir", estimate.value.darkElixir],
+  ];
+  const parts = resources
+    .filter((entry) => entry[1] !== undefined && Number.isFinite(entry[1]) && entry[1] >= 0)
+    .map((entry) => String(entry[1]!.toLocaleString("en-US")) + " " + entry[0]);
+  return parts.length > 0 ? parts.join(" + ") : "not listed";
+}
+
+function formatDurationEstimate(
+  estimate: PlannerCatalogResult["items"][number]["candidate"]["estimate"]["durationMs"],
+): string {
+  if (estimate.status === "unknown") return "unknown";
+  let remaining = estimate.value;
+  if (!Number.isSafeInteger(remaining) || remaining < 0) return "invalid";
+  if (remaining === 0) return "instant";
+  const units: readonly (readonly [number, string])[] = [
+    [86400000, "d"], [3600000, "h"], [60000, "m"], [1000, "s"],
+  ];
+  const parts: string[] = [];
+  for (const unit of units) {
+    const amount = Math.floor(remaining / unit[0]);
+    if (amount > 0) {
+      parts.push(String(amount) + unit[1]);
+      remaining -= amount * unit[0];
+    }
+    if (parts.length === 2) break;
+  }
+  return parts.join(" ") || "<1s";
+}
+
+function createStyles(colors: ReturnType<typeof useHomeColors>) {
+  return StyleSheet.create({
+    safeArea: { flex: 1, backgroundColor: colors.background },
+    content: { padding: 18, paddingBottom: 32, gap: 12 },
+    eyebrow: { color: colors.gold, fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
+    title: { color: colors.textPrimary, fontSize: 28, fontWeight: "800" },
+    subtitle: { color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 4 },
+    accountCard: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 14, padding: 14 },
+    accountName: { color: colors.textPrimary, fontSize: 16, fontWeight: "700" },
+    muted: { color: colors.textMuted, fontSize: 12, marginTop: 4 },
+    body: { color: colors.textSecondary, fontSize: 13, lineHeight: 19, marginTop: 5 },
+    search: { color: colors.textPrimary, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14 },
+    filters: { gap: 8, paddingVertical: 2 },
+    filterChip: { paddingHorizontal: 13, paddingVertical: 8, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+    filterChipSelected: { backgroundColor: colors.gold, borderColor: colors.gold },
+    filterText: { color: colors.textSecondary, fontSize: 12, fontWeight: "700" },
+    filterTextSelected: { color: colors.textDark },
+    inlineState: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 18 },
+    stateCard: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 14, padding: 16 },
+    stateTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: "800" },
+    itemCard: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 14, padding: 14, gap: 8 },
+    itemHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10 },
+    itemTitleWrap: { flex: 1 },
+    itemName: { color: colors.textPrimary, fontSize: 15, fontWeight: "800" },
+    levelBadge: { backgroundColor: colors.surfaceRaised, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7 },
+    levelText: { color: colors.gold, fontSize: 12, fontWeight: "800" },
+    warning: { color: colors.orangeLight, fontSize: 12, lineHeight: 17 },
+    levelEditor: { flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 10, marginTop: 10, borderTopWidth: 1, borderTopColor: colors.border },
+    levelInput: { width: 64, color: colors.textPrimary, backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderWidth: 1, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 7, textAlign: "center" },
+    applyButton: { backgroundColor: colors.gold, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 9 },
+    applyButtonText: { color: colors.textDark, fontSize: 11, fontWeight: "800" },
+    queueRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 10, marginTop: 10, borderTopWidth: 1, borderTopColor: colors.border },
+    queueActions: { flexDirection: "row", alignItems: "center", gap: 5, flexWrap: "wrap" },
+    queueEditPanel: { gap: 8, paddingTop: 8, marginTop: 8, borderTopWidth: 1, borderTopColor: colors.border },
+    laneChoiceRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+    laneChoice: { borderColor: colors.border, borderWidth: 1, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7 },
+    laneChoiceSelected: { backgroundColor: colors.gold, borderColor: colors.gold },
+    laneChoiceTextSelected: { color: colors.textDark },
+    removeButton: { borderColor: colors.border, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
+    removeButtonText: { color: colors.textSecondary, fontSize: 11, fontWeight: "700" },
+  });
+}

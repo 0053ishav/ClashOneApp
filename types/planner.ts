@@ -9,6 +9,23 @@
 
 export type PlannerPlanId = string & { readonly __brand: "PlannerPlanId" };
 export type PlannerItemId = string & { readonly __brand: "PlannerItemId" };
+export type PlannerStructureInstanceId = string & { readonly __brand: "PlannerStructureInstanceId" };
+
+/** Confidence reflects what the grouped in-game export can actually prove. */
+export type StructureIdentityConfidence = "stable" | "ambiguous";
+
+/** App-owned identity for one structure copy; never a Clash API entity ID. */
+export interface PlannerStructureInstance {
+  id: PlannerStructureInstanceId;
+  accountTag: string;
+  village: PlannerVillage;
+  dataId: number;
+  /** Stable per-entity label ordinal; presentation only, never the primary key. */
+  instanceNumber: number;
+  currentLevel: number;
+  superchargeLevel: number;
+  identityConfidence: StructureIdentityConfidence;
+}
 
 export type PlannerVillage = "home";
 
@@ -99,6 +116,8 @@ export interface PlannedUpgradeItem {
   id: PlannerItemId;
   candidateId: ProgressionCandidate["candidateId"];
   targetLevel: number;
+  /** Optional for backward compatibility and shared-level/batch entities. */
+  structureInstanceId?: PlannerStructureInstanceId;
   lane: PlannerLaneAssignment;
   /** User-defined ordering within the assigned lane; lower values run first. */
   order: number;
@@ -121,7 +140,8 @@ export type PlannerBlockReason =
   | { code: "lane-ineligible"; lane: "goblin-builder" | "goblin-laboratory"; detail: string }
   | { code: "estimate-unknown"; estimate: "cost" | "duration"; reason: EstimateUnknownReason }
   | { code: "invalid-target-level"; targetLevel: number }
-  | { code: "candidate-unavailable"; candidateId: string };
+  | { code: "candidate-unavailable"; candidateId: string }
+  | { code: "dependency-cycle"; itemIds: readonly string[] };
 
 export type UpgradeProjection =
   | {

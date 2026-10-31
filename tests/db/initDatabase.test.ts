@@ -69,8 +69,13 @@ describe("initDatabase", () => {
     expect(executedSql).toContain("ADD COLUMN next_supercharge_level INTEGER");
     expect(executedSql).toContain("CREATE TABLE IF NOT EXISTS building_progress");
     expect(executedSql).toContain("CREATE TABLE IF NOT EXISTS player_profile_cache");
+    expect(executedSql).toContain("CREATE TABLE IF NOT EXISTS planner_plans");
+    expect(executedSql).toContain("CREATE TABLE IF NOT EXISTS planner_plan_items");
+    expect(executedSql).toContain("CREATE TABLE IF NOT EXISTS structure_instances");
+    expect(executedSql).toContain("ADD COLUMN structure_instance_id TEXT");
+    expect(executedSql).toContain("FOREIGN KEY(plan_id, account_player_tag)");
 
-    expect(database.runAsync).toHaveBeenCalledTimes(11);
+    expect(database.runAsync).toHaveBeenCalledTimes(13);
     expect(database.getAllAsync).toHaveBeenCalledWith(
       "PRAGMA table_info(upgrades)",
     );
@@ -101,6 +106,6 @@ describe("initDatabase", () => {
     // The connection was opened once successfully; only schema setup retries.
     expect(mockOpenDatabaseAsync).toHaveBeenCalledTimes(1);
     expect(database.getFirstAsync).toHaveBeenCalledTimes(1);
-    expect(database.runAsync).toHaveBeenCalledTimes(11);
+    expect(database.runAsync).toHaveBeenCalledTimes(13);
   });
 });

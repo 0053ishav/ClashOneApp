@@ -7,6 +7,7 @@ import { getWidgetPrefs, saveWidgetPrefs } from "@/storage/widgetPrefs";
 import { deleteWidgetCaches } from "@/utils/widget/widgetCache";
 import { PlayerProfile } from "@/types/player";
 import { BuildingProgressRecord, EntityRecord, Upgrade } from "@/types/upgrade";
+import type { StructureInstanceRecord } from "@/services/planner/structureInstanceService";
 import { create } from "zustand";
 
 type AccountState = {
@@ -47,6 +48,7 @@ type AccountState = {
     upgrades: Upgrade[],
     entities: EntityRecord[],
     buildingProgress?: BuildingProgressRecord[],
+    structureInstances?: readonly StructureInstanceRecord[],
   ) => Promise<void>;
 };
 
@@ -330,7 +332,7 @@ export const useAccountStore = create<AccountState>((set) => ({
     }
   },
 
-  importJsonData: async (tag, upgrades, entities, buildingProgress) => {
+  importJsonData: async (tag, upgrades, entities, buildingProgress, structureInstances) => {
     set({ isSyncing: true });
 
     if (!tag) {
@@ -338,7 +340,7 @@ export const useAccountStore = create<AccountState>((set) => ({
     }
 
     try {
-      await replaceImportedVillageSnapshot(tag, upgrades, entities, buildingProgress);
+      await replaceImportedVillageSnapshot(tag, upgrades, entities, buildingProgress, structureInstances);
 
       const { switchAccount, loadAccounts, setLastSync } = useAccountStore.getState();
       await loadAccounts();

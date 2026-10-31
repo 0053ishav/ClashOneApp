@@ -1,5 +1,6 @@
 import { getDB } from "@/db/database";
 import { BuildingProgressRecord, EntityRecord, Upgrade } from "@/types/upgrade";
+import type { StructureInstanceRecord } from "@/services/planner/structureInstanceService";
 
 export type Account = {
   tag: string;
@@ -133,6 +134,7 @@ export async function resetVillageData(tag: string): Promise<void> {
     await db.runAsync("DELETE FROM upgrades WHERE account_player_tag = ?", [tag]);
     await db.runAsync("DELETE FROM entities WHERE account_player_tag = ?", [tag]);
     await db.runAsync("DELETE FROM building_progress WHERE account_player_tag = ?", [tag]);
+    await db.runAsync("DELETE FROM structure_instances WHERE account_player_tag = ?", [tag]);
     await db.runAsync("DELETE FROM magic_item_inventory WHERE account_player_tag = ?", [tag]);
     await db.runAsync("DELETE FROM active_magic_effects WHERE account_player_tag = ?", [tag]);
     await db.runAsync("DELETE FROM imported_boosts WHERE account_player_tag = ?", [tag]);
@@ -227,9 +229,10 @@ export async function replaceUpgrades(tag: string, upgrades: Upgrade[]) {
     crafted_module_levels,
     upgrade_kind,
     current_supercharge_level,
-    next_supercharge_level
+    next_supercharge_level,
+    structure_instance_id
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           u.id,
           tag,
@@ -264,6 +267,7 @@ export async function replaceUpgrades(tag: string, upgrades: Upgrade[]) {
           u.upgradeKind ?? "NORMAL",
           u.currentSuperchargeLevel ?? null,
           u.nextSuperchargeLevel ?? null,
+          u.structureInstanceId ?? null,
         ]
       );
     }
@@ -343,6 +347,7 @@ export async function replaceImportedVillageSnapshot(
   upgrades: Upgrade[],
   entities: Omit<EntityRecord, "accountTag">[],
   buildingProgress: BuildingProgressRecord[] = [],
+  structureInstances?: readonly StructureInstanceRecord[],
 ): Promise<void> {
   if (!tag.trim()) throw new Error("INVALID_ACCOUNT_TAG");
 
@@ -354,6 +359,10 @@ export async function replaceImportedVillageSnapshot(
     await db.runAsync("DELETE FROM entities WHERE account_player_tag = ?", [tag]);
     await db.runAsync("DELETE FROM building_progress WHERE account_player_tag = ?", [tag]);
 
+    if (structureInstances !== undefined) {
+      await db.runAsync("DELETE FROM structure_instances WHERE account_player_tag = ?", [tag]);
+    }
+
     for (const u of upgrades) {
       await db.runAsync(
         `INSERT INTO upgrades (
@@ -362,8 +371,8 @@ export async function replaceImportedVillageSnapshot(
           next_level, start_time, duration_minutes, finish_timestamp,
           has_helper, recurrent_helper, helper_applied_seconds, is_completed,
           source, is_crafted, module_id, crafted_module_levels, upgrade_kind,
-          current_supercharge_level, next_supercharge_level
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          current_supercharge_level, next_supercharge_level, structure_instance_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           u.id, tag, u.village ?? "home", u.dataId ?? null, u.entity, u.type,
           u.subType ?? null, u.upgradeType,
@@ -377,6 +386,7 @@ export async function replaceImportedVillageSnapshot(
           u.upgradeKind ?? "NORMAL",
           u.currentSuperchargeLevel ?? null,
           u.nextSuperchargeLevel ?? null,
+          u.structureInstanceId ?? null,
         ],
       );
     }
@@ -398,6 +408,27 @@ export async function replaceImportedVillageSnapshot(
         [building.id, tag, building.village, building.dataId, building.normalLevel, building.count, building.superchargeLevel],
       );
     }
+
+    if (structureInstances !== undefined) {
+      for (const instance of structureInstances) {
+        await db.runAsync(
+          `INSERT INTO structure_instances
+            (id, account_player_tag, village, data_id, instance_number, current_level, supercharge_level, identity_confidence)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            instance.id,
+            tag,
+            instance.village,
+            instance.dataId,
+            instance.instanceNumber,
+            instance.currentLevel,
+            instance.superchargeLevel,
+            instance.identityConfidence,
+          ],
+        );
+      }
+    }
+
     await db.execAsync("COMMIT");
   } catch (error) {
     try {
@@ -434,5 +465,36 @@ export async function getBuildingProgress(tag: string): Promise<BuildingProgress
     normalLevel: row.normal_level,
     count: row.building_count,
     superchargeLevel: row.supercharge_level,
+  }));
+}
+
+
+/** Read persisted app-owned identities for the selected account only. */
+export async function getStructureInstances(tag: string): Promise<StructureInstanceRecord[]> {
+  if (!tag.trim()) throw new Error("INVALID_ACCOUNT_TAG");
+  const db = await getDB();
+  const rows = await db.getAllAsync<{
+    id: string;
+    account_player_tag: string;
+    village: "home";
+    data_id: number;
+    instance_number: number;
+    current_level: number;
+    supercharge_level: number;
+    identity_confidence: "stable" | "ambiguous";
+  }>(
+    "SELECT id, account_player_tag, village, data_id, instance_number, current_level, supercharge_level, identity_confidence " +
+      "FROM structure_instances WHERE account_player_tag = ? ORDER BY data_id, instance_number",
+    [tag],
+  );
+  return rows.map((row) => ({
+    id: row.id as StructureInstanceRecord["id"],
+    accountTag: row.account_player_tag,
+    village: row.village,
+    dataId: row.data_id,
+    instanceNumber: row.instance_number,
+    currentLevel: row.current_level,
+    superchargeLevel: row.supercharge_level,
+    identityConfidence: row.identity_confidence,
   }));
 }

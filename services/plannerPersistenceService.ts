@@ -79,7 +79,6 @@ function mapPlanItem(row: PlanItemRow): PlannedUpgradeItem {
     order: row.user_order,
     createdAtMs: row.created_at_ms,
     updatedAtMs: row.updated_at_ms,
-    snapshotAtMs: row.snapshot_at_ms ?? null,
   };
 }
 
@@ -103,6 +102,7 @@ async function mapPlan(
     items: rows.map(mapPlanItem),
     createdAtMs: row.created_at_ms,
     updatedAtMs: row.updated_at_ms,
+    snapshotAtMs: row.snapshot_at_ms ?? null,
   };
 }
 

@@ -550,7 +550,7 @@ export default function PlannerCatalogScreen() {
             <View style={styles.stateCard}>
               <Text style={styles.stateTitle}>Upgrade queue</Text>
               <Text style={styles.body}>Planned upgrades are separate from live timers. Projections recalculate from the saved queue, validated progression data, current levels, and confirmed active timers.</Text>
-              {!!projectionError && <Text accessibilityRole="alert" style={styles.warning}>{projectionError}</Text>
+              {!!projectionError && <Text accessibilityRole="alert" style={styles.warning}>{projectionError}</Text>}
               {!projectionError && queuePlan && queuePlan.items.length > 0 && projections === null && <Text style={styles.muted}>Calculating schedule…</Text>}
               {queueBusy && <Text style={styles.muted}>Saving queue…</Text>}
               {!!queueError && <Text accessibilityRole="alert" style={styles.warning}>{queueError}</Text>}

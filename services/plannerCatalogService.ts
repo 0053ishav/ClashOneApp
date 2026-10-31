@@ -1,0 +1,132 @@
+import type {
+  PlannerEntityCategory,
+  ProgressionCandidate,
+  UpgradePrerequisite,
+} from "@/types/planner";
+import type {
+  ProgressionDiagnostic,
+  ValidatedPlannerDataset,
+} from "@/utils/planner/validatePlannerDataset";
+
+export type PlannerCatalogLoadState = "loading" | "error" | "empty" | "partial" | "ready";
+
+export interface PlannerCatalogEntry {
+  candidate: ProgressionCandidate;
+  /** Localized display label from entity metadata, never used as identity. */
+  name: string;
+  maxLevel: number;
+}
+
+export interface PlannerCatalogFilters {
+  query: string;
+  category: PlannerEntityCategory | "all";
+  currentLevels: Readonly<Record<string, number>>;
+  townHallLevel: number;
+  laboratoryLevel: number;
+  petHouseLevel: number;
+}
+
+export interface PlannerCatalogItem extends PlannerCatalogEntry {
+  currentLevel: number;
+  isNextLevel: boolean;
+  canAdd: boolean;
+  blockedBy: readonly UpgradePrerequisite[];
+}
+
+export interface PlannerCatalogResult {
+  state: PlannerCatalogLoadState;
+  items: readonly PlannerCatalogItem[];
+  diagnostics: readonly ProgressionDiagnostic[];
+  unavailableCategories: readonly string[];
+}
+
+function isPrerequisiteSatisfied(
+  prerequisite: UpgradePrerequisite,
+  filters: PlannerCatalogFilters,
+): boolean {
+  switch (prerequisite.kind) {
+    case "town-hall-level":
+      return filters.townHallLevel >= prerequisite.minimumLevel;
+    case "laboratory-level":
+      return filters.laboratoryLevel >= prerequisite.minimumLevel;
+    case "pet-house-level":
+      return filters.petHouseLevel >= prerequisite.minimumLevel;
+    case "entity-level":
+      return (filters.currentLevels[prerequisite.entityId] ?? 0) >= prerequisite.minimumLevel;
+  }
+}
+
+function getState(dataset: ValidatedPlannerDataset): PlannerCatalogLoadState {
+  const statuses = Object.values(dataset.categoryStatus);
+  if (statuses.length === 0 || statuses.every((status) => status === "unavailable")) return "error";
+  const unavailable = statuses.some((status) => status === "unavailable");
+  if (dataset.candidates.length === 0) return unavailable ? "partial" : "empty";
+  return unavailable ? "partial" : "ready";
+}
+
+/**
+ * Creates a stable, filterable Home Village catalog from validated game data.
+ * Candidate IDs remain the sole identity; display names are only presentation.
+ * The catalog shows the next level for each entity, not every future level.
+ */
+export function buildPlannerCatalog(
+  dataset: ValidatedPlannerDataset,
+  namesByEntityId: Readonly<Record<string, string>>,
+  filters: PlannerCatalogFilters,
+): PlannerCatalogResult {
+  const diagnostics = dataset.diagnostics;
+  const unavailableCategories = Object.entries(dataset.categoryStatus)
+    .filter(([, status]) => status === "unavailable")
+    .map(([category]) => category)
+    .sort();
+
+  const currentLevels = filters.currentLevels;
+  const seen = new Set<string>();
+  const items: PlannerCatalogItem[] = [];
+
+  for (const candidate of dataset.candidates) {
+    if (candidate.village !== "home") continue;
+    const currentLevel = currentLevels[candidate.entityId] ?? 0;
+    const targetLevel = currentLevel + 1;
+    if (candidate.targetLevel !== targetLevel) continue;
+    if (candidate.targetLevel > candidate.currentLevel + 1) continue;
+    if (candidate.category !== filters.category && filters.category !== "all") continue;
+
+    const name = namesByEntityId[candidate.entityId]?.trim();
+    if (!name) continue;
+    const search = filters.query.trim().toLocaleLowerCase();
+    if (search && !name.toLocaleLowerCase().includes(search) &&
+      !candidate.entityId.toLocaleLowerCase().includes(search)) continue;
+
+    const uniqueKey = candidate.entityId + ":" + candidate.targetLevel;
+    if (seen.has(uniqueKey)) continue;
+    seen.add(uniqueKey);
+
+    const blockedBy = candidate.prerequisites.filter(
+      (prerequisite) => !isPrerequisiteSatisfied(prerequisite, filters),
+    );
+    items.push({
+      candidate,
+      name,
+      maxLevel: Math.max(candidate.targetLevel, candidate.targetLevel),
+      currentLevel,
+      isNextLevel: true,
+      canAdd: blockedBy.length === 0,
+      blockedBy,
+    });
+  }
+
+  items.sort((a, b) =>
+    a.category.localeCompare(b.category) ||
+    a.name.localeCompare(b.name) ||
+    a.candidate.targetLevel - b.candidate.targetLevel ||
+    a.candidate.candidateId.localeCompare(b.candidate.candidateId),
+  );
+
+  return {
+    state: getState(dataset),
+    items,
+    diagnostics,
+    unavailableCategories,
+  };
+}

@@ -1,23 +1,9 @@
+import type { PlannerStructureInstance, PlannerStructureInstanceId } from "@/types/planner";
 import type { BuildingProgressRecord } from "@/types/upgrade";
 
-export type StructureInstanceId = string & { readonly __brand: "StructureInstanceId" };
-export type StructureIdentityConfidence = "stable" | "ambiguous";
-
-/**
- * App-owned identity for one physical copy represented by an aggregated game
- * export record. Clash of Clans exports quantities, not durable copy IDs.
- */
-export interface StructureInstanceRecord {
-  id: StructureInstanceId;
-  accountTag: string;
-  village: "home";
-  dataId: number;
-  /** Stable, account-scoped presentation ordinal; not used as identity. */
-  instanceNumber: number;
-  currentLevel: number;
-  superchargeLevel: number;
-  identityConfidence: StructureIdentityConfidence;
-}
+export type StructureInstanceId = PlannerStructureInstanceId;
+export type StructureInstanceRecord = PlannerStructureInstance;
+export type { StructureIdentityConfidence } from "@/types/planner";
 
 export interface StructureInstanceReconciliation {
   instances: readonly StructureInstanceRecord[];

@@ -323,7 +323,7 @@ export default function PlannerCatalogScreen() {
           candidateId: item.candidateId,
           targetLevel: item.targetLevel,
           lane: { lane: "normal-builders", builderIndex: nextBuilderIndex },
-          structureInstanceId: item.structureInstanceId,
+          ...(item.structureInstanceId ? { structureInstanceId: item.structureInstanceId } : {}),
         },
       ));
     } catch (mutationError: unknown) {

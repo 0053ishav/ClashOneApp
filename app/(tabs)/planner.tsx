@@ -249,6 +249,10 @@ export default function PlannerCatalogScreen() {
 
 
   useEffect(() => {
+    setPendingQueueEdit(null);
+  }, [activeTag, queuePlan?.id]);
+
+  useEffect(() => {
     let cancelled = false;
     if (!activeTag) {
       setQueuePlan(null);
@@ -373,7 +377,7 @@ export default function PlannerCatalogScreen() {
   };
 
   const addToQueue = (candidateId: string, targetLevel: number) => {
-    if (!queuePlan || queueBusy) return;
+    if (!queuePlan || queueBusy || pendingQueueEdit) return;
     if (queuePlan.items.some((item) => item.candidateId === candidateId && item.targetLevel === targetLevel)) return;
 
     const candidate = plannerCandidates.find((item) => item.candidateId === candidateId);
@@ -401,7 +405,7 @@ export default function PlannerCatalogScreen() {
   };
 
   const removeFromQueue = (itemId: PlannerItemId) => {
-    if (!queuePlan || queueBusy) return;
+    if (!queuePlan || queueBusy || pendingQueueEdit) return;
     try {
       void persistQueue(removePlannerQueueItem(queuePlan.items, itemId));
     } catch (mutationError: unknown) {
@@ -410,7 +414,7 @@ export default function PlannerCatalogScreen() {
   };
 
   const assignNextBuilder = (itemId: PlannerItemId) => {
-    if (!queuePlan || queueBusy) return;
+    if (!queuePlan || queueBusy || pendingQueueEdit) return;
     const item = queuePlan.items.find((candidate) => candidate.id === itemId);
     const builderCount = activeTag ? profilesByTag[activeTag]?.normalBuilderCount ?? 0 : 0;
     if (!item || item.lane.lane !== "normal-builders" || builderCount < 2) return;
@@ -435,7 +439,7 @@ export default function PlannerCatalogScreen() {
   };
 
   const moveQueueItem = (itemId: PlannerItemId, direction: -1 | 1) => {
-    if (!queuePlan || queueBusy) return;
+    if (!queuePlan || queueBusy || pendingQueueEdit) return;
     const item = queuePlan.items.find((candidate) => candidate.id === itemId);
     if (!item) return;
     const laneItems = queuePlan.items

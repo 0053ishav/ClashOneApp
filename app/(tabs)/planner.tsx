@@ -40,6 +40,17 @@ const CATEGORIES: { label: string; value: PlannerEntityCategory | "all" }[] = [
   { label: "Walls", value: "wall" },
 ];
 
+const CATEGORY_BY_ENTITY_TYPE: Readonly<Record<string, PlannerEntityCategory | undefined>> = {
+  building: "building",
+  hero: "hero",
+  troop: "troop",
+  spell: "spell",
+  siege: "siege",
+  pet: "pet",
+  trap: "trap",
+  wall: "wall",
+};
+
 export default function PlannerCatalogScreen() {
   const colors = useHomeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -51,7 +62,8 @@ export default function PlannerCatalogScreen() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<PlannerEntityCategory | "all">("all");
   const [currentLevels, setCurrentLevels] = useState<Record<string, number>>({});
-  const [result, setResult] = useState<PlannerCatalogResult | null>(null);
+  const [levelDrafts, setLevelDrafts] = useState<Record<string, string>>({});
+  const [result, setResult = useState<PlannerCatalogResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -169,6 +181,34 @@ export default function PlannerCatalogScreen() {
   }, [activeTag, category, coordinator, currentLevels, query, townHallLevel]);
 
   const knownLevelCount = Object.keys(currentLevels).length;
+  const untrackedEntities = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    return Object.values(entitiesById)
+      .filter((entity) => entity.village === "home")
+      .filter((entity) => CATEGORY_BY_ENTITY_TYPE[entity.type] !== undefined)
+      .filter((entity) => category === "all" || CATEGORY_BY_ENTITY_TYPE[entity.type] === category)
+      .filter((entity) => !Object.prototype.hasOwnProperty.call(currentLevels, String(entity.id)))
+      .filter((entity) => {
+        if (!normalizedQuery) return true;
+        return entity.name.en.toLocaleLowerCase().includes(normalizedQuery)
+          || String(entity.id).includes(normalizedQuery);
+      })
+      .map((entity) => {
+        const levels = Object.keys(entity.levels ?? {})
+          .map(Number)
+          .filter((level) => Number.isSafeInteger(level) && level > 0);
+        return { entity, maxLevel: levels.length > 0 ? Math.max(...levels) : 0 };
+      })
+      .filter(({ maxLevel }) => maxLevel > 0)
+      .slice(0, 6);
+  }, [category, currentLevels, entitiesById, query]);
+
+  const applyLevel = (entityId: number, maxLevel: number) => {
+    const draft = levelDrafts[String(entityId)] ?? "";
+    const level = Number(draft);
+    if (!Number.isSafeInteger(level) || level < 0 || level > maxLevel) return;
+    setCurrentLevels((previous) => ({ ...previous, [String(entityId)]: level }));
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -217,6 +257,42 @@ export default function PlannerCatalogScreen() {
                 );
               })}
             </ScrollView>
+
+            {untrackedEntities.length > 0 && (
+              <View style={styles.stateCard}>
+                <Text style={styles.stateTitle}>Set missing levels</Text>
+                <Text style={styles.body}>
+                  These levels are not present in the imported snapshot. Enter the level you know for an entity; the catalog will then show its next upgrade. Level 0 means not built/unlocked.
+                </Text>
+                {untrackedEntities.map(({ entity, maxLevel }) => {
+                  const key = String(entity.id);
+                  return (
+                    <View key={key} style={styles.levelEditor}>
+                      <View style={styles.itemTitleWrap}>
+                        <Text style={styles.itemName}>{entity.name.en}</Text>
+                        <Text style={styles.muted}>Max level {maxLevel} · ID {key}</Text>
+                      </View>
+                      <TextInput
+                        accessibilityLabel={`Current level for ${entity.name.en}`}
+                        keyboardType="number-pad"
+                        value={levelDrafts[key] ?? ""}
+                        onChangeText={(value) => setLevelDrafts((previous) => ({ ...previous, [key]: value.replace(/[^0-9]/g, "") }))}
+                        placeholder="Level"
+                        placeholderTextColor={colors.textMuted}
+                        style={styles.levelInput}
+                      />
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => applyLevel(entity.id, maxLevel)}
+                        style={styles.applyButton}
+                      >
+                        <Text style={styles.applyButtonText}>Use level</Text>
+                      </Pressable>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
 
             {isLoading && (
               <View style={styles.inlineState}>
@@ -316,5 +392,9 @@ function createStyles(colors: ReturnType<typeof useHomeColors>) {
     levelBadge: { backgroundColor: colors.surfaceRaised, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7 },
     levelText: { color: colors.gold, fontSize: 12, fontWeight: "800" },
     warning: { color: colors.orangeLight, fontSize: 12, lineHeight: 17 },
+    levelEditor: { flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 10, marginTop: 10, borderTopWidth: 1, borderTopColor: colors.border },
+    levelInput: { width: 64, color: colors.textPrimary, backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderWidth: 1, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 7, textAlign: "center" },
+    applyButton: { backgroundColor: colors.gold, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 9 },
+    applyButtonText: { color: colors.textDark, fontSize: 11, fontWeight: "800" },
   });
 }

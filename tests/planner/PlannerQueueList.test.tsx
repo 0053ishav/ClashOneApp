@@ -73,6 +73,7 @@ function renderQueue(overrides: Partial<React.ComponentProps<typeof PlannerQueue
       projections={[preview]}
       candidates={[candidate]}
       itemNamesByCandidateId={{ "candidate-1": "Archer Tower" }}
+      structureInstanceNumbersById={{}}
       builderCount={1}
       queueBusy={false}
       queueError={null}

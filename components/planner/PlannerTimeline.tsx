@@ -259,9 +259,8 @@ export function PlannerTimeline({
                       );
                     }
                     const unknown = projection?.status === "unknown";
+                    const selected = selectedItemId === item.id;
                     return (
-                      const selected = selectedItemId === item.id;
-                      return (
                         <Pressable
                           key={item.id}
                           onPress={() => setSelectedItemId(item.id)}
@@ -280,7 +279,6 @@ export function PlannerTimeline({
                             {unknown ? "Unknown" : "Blocked"} · {name}
                           </Text>
                         </Pressable>
-                      );
                     );
                   })}
                 </View>

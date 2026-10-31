@@ -307,7 +307,7 @@ export default function PlannerCatalogScreen() {
                   style={styles.itemTitleWrap}
                 >
                   <Text style={styles.stateTitle}>
-                    Tracked structure copies ({structureInstances.length})
+                    Tracked structure copies ({structureInstances.filter((instance) => entitiesById[String(instance.dataId)]?.type !== "wall").length})
                   </Text>
                   <Text style={styles.muted}>{showStructureInstances ? "Hide" : "Show"}</Text>
                 </Pressable>
@@ -337,14 +337,16 @@ export default function PlannerCatalogScreen() {
                         </View>
                         {activeUpgrade && (
                           <Text style={styles.body}>
-                            Upgrading to level {activeUpgrade.nextLevel ?? "unknown"} · finishes {new Date(activeUpgrade.endTime).toLocaleString()}
+                            {activeUpgrade.upgradeKind === "SUPERCHARGE"
+                              ? `Supercharging to level ${activeUpgrade.nextSuperchargeLevel ?? "unknown"}`
+                              : `Upgrading to level ${activeUpgrade.nextLevel ?? "unknown"}`} · finishes {new Date(activeUpgrade.endTime).toLocaleString()}
                           </Text>
                         )}
                         {!activeUpgrade && hasUnresolvedTimer && (
                           <Text style={styles.warning}>An active timer exists, but the export cannot identify this exact copy.</Text>
                         )}
                         {instance.identityConfidence === "ambiguous" && (
-                          <Text style={styles.warning}>Identity needs confirmation after import changes.</Text>
+                          <Text style={styles.warning}>Identity is ambiguous after import changes; timer mapping is withheld.</Text>
                         )}
                       </View>
                     );

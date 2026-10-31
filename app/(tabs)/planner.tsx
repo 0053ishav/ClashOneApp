@@ -37,7 +37,7 @@ import type { ObservedActiveUpgrade, PlannerEntityCategory, PlannerItemId, Plann
 import { recalculatePlannerProjection } from "@/services/plannerApplicationService";
 import type { PlannerLaneAvailability, PlannerPrerequisiteState } from "@/utils/planner/schedulePlanner";
 import { createPlannerPlan, listPlannerPlans, replacePlannerQueue } from "@/services/plannerPersistenceService";
-import { addPlannerQueueItem, getDefaultPlannerLane, movePlannerQueueItem, removePlannerQueueItem } from "@/services/planner/plannerQueueService";
+import { addPlannerQueueItem, getDefaultPlannerLane, movePlannerQueueItem, removePlannerQueueItem, updatePlannerQueueItem } from "@/services/planner/plannerQueueService";
 import { resolvePlannerStructureLevels } from "@/services/plannerStructureLevelService";
 import { resolvePlannerCatalogLevelState } from "@/services/plannerCatalogLevelState";
 
@@ -303,6 +303,31 @@ export default function PlannerCatalogScreen() {
       void persistQueue(removePlannerQueueItem(queuePlan.items, itemId));
     } catch (mutationError: unknown) {
       setQueueError(mutationError instanceof Error ? mutationError.message : "Could not update the upgrade queue.");
+    }
+  };
+
+  const assignNextBuilder = (itemId: PlannerItemId) => {
+    if (!queuePlan || queueBusy) return;
+    const item = queuePlan.items.find((candidate) => candidate.id === itemId);
+    const builderCount = activeTag ? profilesByTag[activeTag]?.normalBuilderCount ?? 0 : 0;
+    if (!item || item.lane.lane !== "normal-builders" || builderCount < 2) return;
+
+    const nextBuilderIndex = item.lane.builderIndex >= builderCount
+      ? 1
+      : item.lane.builderIndex + 1;
+    try {
+      void persistQueue(updatePlannerQueueItem(
+        queuePlan.items,
+        itemId,
+        {
+          candidateId: item.candidateId,
+          targetLevel: item.targetLevel,
+          lane: { lane: "normal-builders", builderIndex: nextBuilderIndex },
+          structureInstanceId: item.structureInstanceId,
+        },
+      ));
+    } catch (mutationError: unknown) {
+      setQueueError(mutationError instanceof Error ? mutationError.message : "Could not reassign the builder.");
     }
   };
 
@@ -580,6 +605,18 @@ export default function PlannerCatalogScreen() {
                     </Text>
                   </View>
                   <View style={styles.queueActions}>
+                    {queuedItem.lane.lane === "normal-builders" &&
+                      (activeTag ? profilesByTag[activeTag]?.normalBuilderCount ?? 0 : 0) > 1 && (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Assign upgrade to next builder; currently Builder ${queuedItem.lane.builderIndex}`}
+                        disabled={queueBusy}
+                        onPress={() => assignNextBuilder(queuedItem.id)}
+                        style={styles.removeButton}
+                      >
+                        <Text style={styles.removeButtonText}>Builder ↻</Text>
+                      </Pressable>
+                    )}
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel="Move upgrade earlier"

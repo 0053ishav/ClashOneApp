@@ -29,12 +29,14 @@ function instance(
   currentLevel: number,
   superchargeLevel = 0,
   tag = accountTag,
+  instanceNumber = 1,
 ): StructureInstanceRecord {
   return {
     id: id as StructureInstanceRecord["id"],
     accountTag: tag,
     village: "home",
     dataId,
+    instanceNumber,
     currentLevel,
     superchargeLevel,
     identityConfidence: "stable",
@@ -64,7 +66,7 @@ describe("reconcileStructureInstances", () => {
   it("preserves IDs when the complete bucket distribution is unchanged", () => {
     const previous = [
       instance("cannon-a", 1000002, 16),
-      instance("cannon-b", 1000002, 16),
+      instance("cannon-b", 1000002, 16, 0, accountTag, 2),
     ];
 
     const result = reconcileStructureInstances(
@@ -81,8 +83,8 @@ describe("reconcileStructureInstances", () => {
   it("marks identities ambiguous when the quantity changes instead of guessing which copy disappeared", () => {
     const previous = [
       instance("cannon-a", 1000002, 16),
-      instance("cannon-b", 1000002, 16),
-      instance("cannon-c", 1000002, 16),
+      instance("cannon-b", 1000002, 16, 0, accountTag, 2),
+      instance("cannon-c", 1000002, 16, 0, accountTag, 3),
     ];
 
     const result = reconcileStructureInstances(

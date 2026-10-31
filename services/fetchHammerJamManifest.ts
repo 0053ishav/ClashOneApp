@@ -131,9 +131,40 @@ function parseHammerJamPayload(
  * configuration safely disables the event. Unix seconds are converted to the
  * app's ISO timestamp representation only at this boundary.
  */
-export async function fetchHammerJamManifest(): Promise<HammerJamManifest> {
+export type HammerJamFetchResult =
+  | { status: "active"; manifest: HammerJamManifest }
+  | { status: "disabled"; manifest: HammerJamManifest }
+  | { status: "unavailable"; manifest: HammerJamManifest };
+
+function toFetchResult(
+  manifest: HammerJamManifest | null,
+): HammerJamFetchResult {
+  if (!manifest) {
+    return { status: "unavailable", manifest: DEFAULT_HAMMER_JAM_MANIFEST };
+  }
+
+  const now = Date.now();
+  const startsAt = manifest.startsAt ? Date.parse(manifest.startsAt) : NaN;
+  const endsAt = manifest.endsAt ? Date.parse(manifest.endsAt) : NaN;
+  const active =
+    manifest.enabled &&
+    Number.isFinite(startsAt) &&
+    Number.isFinite(endsAt) &&
+    endsAt > startsAt &&
+    now >= startsAt &&
+    now < endsAt;
+
+  return { status: active ? "active" : "disabled", manifest };
+}
+
+/**
+ * Distinguishes confirmed disabled configuration from invalid/unavailable
+ * configuration. Consumers must never infer event availability from the
+ * fallback manifest alone.
+ */
+export async function fetchHammerJamManifestResult(): Promise<HammerJamFetchResult> {
   if (!ENV.BACKEND) {
-    return DEFAULT_HAMMER_JAM_MANIFEST;
+    return { status: "unavailable", manifest: DEFAULT_HAMMER_JAM_MANIFEST };
   }
 
   try {
@@ -145,22 +176,24 @@ export async function fetchHammerJamManifest(): Promise<HammerJamManifest> {
       !Number.isInteger(expectedVersion) ||
       expectedVersion < 1
     ) {
-      return DEFAULT_HAMMER_JAM_MANIFEST;
+      return { status: "unavailable", manifest: DEFAULT_HAMMER_JAM_MANIFEST };
     }
 
     const response = await fetch(`${ENV.BACKEND}/v2/events/hammer-jam`);
 
     if (!response.ok) {
-      return DEFAULT_HAMMER_JAM_MANIFEST;
+      return { status: "unavailable", manifest: DEFAULT_HAMMER_JAM_MANIFEST };
     }
 
     const payload: unknown = await response.json();
-
-    return (
-      parseHammerJamPayload(payload, expectedVersion) ??
-      DEFAULT_HAMMER_JAM_MANIFEST
-    );
+    return toFetchResult(parseHammerJamPayload(payload, expectedVersion));
   } catch {
-    return DEFAULT_HAMMER_JAM_MANIFEST;
+    return { status: "unavailable", manifest: DEFAULT_HAMMER_JAM_MANIFEST };
   }
+}
+
+/** Backward-compatible manifest-only adapter for existing domain consumers. */
+export async function fetchHammerJamManifest(): Promise<HammerJamManifest> {
+  const result = await fetchHammerJamManifestResult();
+  return result.manifest;
 }

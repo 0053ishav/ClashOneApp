@@ -1,3 +1,18 @@
+
+jest.mock("@gorhom/bottom-sheet", () => {
+  const React = require("react");
+  const { ScrollView, View } = require("react-native");
+  return {
+    BottomSheetModalProvider: ({ children }: { children: React.ReactNode }) =>
+      React.createElement(View, null, children),
+    BottomSheetModal: ({ children }: { children: React.ReactNode }) =>
+      React.createElement(View, null, children),
+    BottomSheetScrollView: ({ children, contentContainerStyle }: { children: React.ReactNode; contentContainerStyle?: unknown }) =>
+      React.createElement(ScrollView, { contentContainerStyle }, children),
+    BottomSheetBackdrop: () => null,
+  };
+});
+
 jest.mock("@/theme/useHomeColors", () => ({
   useHomeColors: () => ({
     background: "#000000",
@@ -21,7 +36,7 @@ import { getBlockPosition, PlannerTimeline } from "@/components/planner/PlannerT
 import type { PlannerItemId, PlannedUpgradeItem } from "@/types/planner";
 
 function TestWrapper({ children }: { children: React.ReactNode }) {
-  return <BottomSheetModalProvider>{children}</BottomSheetModalProvider>;
+  return React.createElement(BottomSheetModalProvider, null, children);
 }
 
 function renderWithProvider(element: React.ReactElement) {

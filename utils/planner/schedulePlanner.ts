@@ -99,9 +99,6 @@ function detectDependencyCycles(
   candidateById: ReadonlyMap<string, ProgressionCandidate>,
   state: PlannerPrerequisiteState,
 ): Set<string> {
-  const itemByCandidate = new Map<string, PlannedUpgradeItem>();
-  for (const item of items) itemByCandidate.set(item.candidateId, item);
-
   const edges = new Map<string, string[]>();
   for (const item of items) {
     const candidate = candidateById.get(item.candidateId);

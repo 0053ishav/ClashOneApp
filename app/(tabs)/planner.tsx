@@ -33,7 +33,9 @@ import type {
   PlannerCatalogFilters,
   PlannerCatalogResult,
 } from "@/services/plannerCatalogService";
-import type { PlannerEntityCategory, PlannerItemId, PlannerPlan, PlannerPlanId, PlannedUpgradeItem } from "@/types/planner";
+import type { ObservedActiveUpgrade, PlannerEntityCategory, PlannerItemId, PlannerPlan, PlannerPlanId, PlannedUpgradeItem, ProgressionCandidate, UpgradeProjection } from "@/types/planner";
+import { recalculatePlannerProjection } from "@/services/plannerApplicationService";
+import type { PlannerLaneAvailability, PlannerPrerequisiteState } from "@/utils/planner/schedulePlanner";
 import { createPlannerPlan, listPlannerPlans, replacePlannerQueue } from "@/services/plannerPersistenceService";
 import { addPlannerQueueItem, movePlannerQueueItem, removePlannerQueueItem } from "@/services/planner/plannerQueueService";
 import { resolvePlannerStructureLevels } from "@/services/plannerStructureLevelService";
@@ -85,6 +87,8 @@ export default function PlannerCatalogScreen() {
   const [queuePlan, setQueuePlan] = useState<PlannerPlan | null>(null);
   const [queueBusy, setQueueBusy] = useState(false);
   const [queueError, setQueueError] = useState<string | null>(null);
+  const [projections, setProjections] = useState<readonly UpgradeProjection[] | null>(null);
+  const [projectionError, setProjectionError] = useState<string | null>(null);
   const nextItemId = useRef(0);
   const queueWriteInFlight = useRef(false);
 
@@ -309,6 +313,95 @@ export default function PlannerCatalogScreen() {
     }
   };
 
+  const plannerCandidates = useMemo<readonly ProgressionCandidate[]>(() => {
+    const dataset = buildPlannerDatasetFromCache({
+      entities: Object.values(entitiesById),
+      manifest: loadProgressionManifest(),
+      loadCategory: loadProgressionCategory,
+    });
+    return dataset.candidates;
+  }, [entitiesById]);
+
+  const structureLevels = useMemo(
+    () => resolvePlannerStructureLevels(Object.values(entitiesById), currentLevels),
+    [currentLevels, entitiesById],
+  );
+
+  const observedUpgrades = useMemo<readonly ObservedActiveUpgrade[] | null>(() => {
+    if (!activeTag) return [];
+    const observed: ObservedActiveUpgrade[] = [];
+    for (const upgrade of activeUpgrades) {
+      let lane: ObservedActiveUpgrade["lane"] | null = null;
+      if (upgrade.upgradeType === "PET") {
+        lane = { lane: "pets" };
+      } else if (upgrade.upgradeType === "LAB") {
+        if (upgrade.labSlot === "GOBLIN") lane = { lane: "goblin-laboratory" };
+        else if (upgrade.labSlot === "NORMAL") lane = { lane: "laboratory" };
+      } else if (upgrade.upgradeType === "BUILDER") {
+        if (upgrade.builderType === "GOBLIN" || upgrade.builderSlot === "G") {
+          lane = { lane: "goblin-builder" };
+        } else if (typeof upgrade.builderSlot === "number" && Number.isSafeInteger(upgrade.builderSlot) && upgrade.builderSlot > 0) {
+          lane = { lane: "normal-builders", builderIndex: upgrade.builderSlot };
+        }
+      }
+      // Do not guess which lane an incomplete live-timer record occupies.
+      if (!lane) return null;
+      observed.push({
+        observedUpgradeId: upgrade.id,
+        accountTag: upgrade.accountTag,
+        village: upgrade.village === "home" ? "home" : "home",
+        lane,
+        startsAtMs: upgrade.startTime,
+        completesAtMs: upgrade.endTime,
+        source: upgrade.source === "JSON" ? "village-import" : upgrade.source === "MANUAL" ? "manual" : "restored-local-state",
+      });
+    }
+    return observed;
+  }, [activeTag, activeUpgrades]);
+
+  const laneAvailability = useMemo<PlannerLaneAvailability>(() => ({
+    normalBuilderCount: activeTag ? profilesByTag[activeTag]?.normalBuilderCount ?? 0 : 0,
+    // The app has no confirmed active-event/eligibility state for Goblin lanes yet.
+    goblinBuilderEligible: false,
+    goblinLaboratoryEligible: false,
+  }), [activeTag, profilesByTag]);
+
+  const prerequisiteState = useMemo<PlannerPrerequisiteState>(() => ({
+    townHallLevel,
+    laboratoryLevel: structureLevels.laboratoryLevel,
+    petHouseLevel: structureLevels.petHouseLevel,
+    entityLevels: currentLevels,
+  }), [currentLevels, structureLevels, townHallLevel]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setProjections(null);
+    setProjectionError(null);
+    if (!activeTag || !queuePlan || queuePlan.accountTag !== activeTag) return;
+    if (observedUpgrades === null) {
+      setProjectionError("A live timer has no confirmed lane assignment. Scheduling is paused rather than guessing which builder or lab is occupied.");
+      return;
+    }
+    void recalculatePlannerProjection({
+      accountTag: activeTag,
+      planId: queuePlan.id,
+      nowMs: Date.now(),
+      candidates: plannerCandidates,
+      observedActiveUpgrades: observedUpgrades,
+      prerequisiteState,
+      laneAvailability,
+    }).then((projection) => {
+      if (!cancelled) setProjections(projection?.projections ?? []);
+    }).catch((projectionLoadError: unknown) => {
+      if (!cancelled) setProjectionError(projectionLoadError instanceof Error ? projectionLoadError.message : "Could not calculate the upgrade schedule.");
+    });
+    return () => { cancelled = true; };
+  }, [activeTag, laneAvailability, observedUpgrades, plannerCandidates, prerequisiteState, queuePlan]);
+
+  const projectionByItemId = useMemo(() => new Map(
+    (projections ?? []).map((projection) => [projection.plannedItemId, projection]),
+  ), [projections]);
+
   const knownLevelCount = Object.keys(currentLevels).length;
   const untrackedEntities = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -453,7 +546,9 @@ export default function PlannerCatalogScreen() {
 
             <View style={styles.stateCard}>
               <Text style={styles.stateTitle}>Upgrade queue</Text>
-              <Text style={styles.body}>Planned items are saved to this village. New items currently default to Builder 1; lane assignment and scheduling projections are not available yet.</Text>
+              <Text style={styles.body}>Planned upgrades are separate from live timers. Projections recalculate from the saved queue, validated progression data, current levels, and confirmed active timers.</Text>
+              {!!projectionError && <Text accessibilityRole="alert" style={styles.warning}>{projectionError}</Text>
+              {!projectionError && queuePlan && queuePlan.items.length > 0 && projections === null && <Text style={styles.muted}>Calculating schedule…</Text>}
               {queueBusy && <Text style={styles.muted}>Saving queue…</Text>}
               {!!queueError && <Text accessibilityRole="alert" style={styles.warning}>{queueError}</Text>}
               {queuePlan?.items.length === 0 && <Text style={styles.muted}>No upgrades queued yet.</Text>}
@@ -462,6 +557,9 @@ export default function PlannerCatalogScreen() {
                   <View style={styles.itemTitleWrap}>
                     <Text style={styles.itemName}>{result?.items.find((item) => item.candidate.candidateId === queuedItem.candidateId)?.name ?? queuedItem.candidateId}</Text>
                     <Text style={styles.muted}>Target level {queuedItem.targetLevel} · {queuedItem.lane.lane === "normal-builders" ? `Builder ${queuedItem.lane.builderIndex}` : queuedItem.lane.lane}</Text>
+                    <Text style={projectionByItemId.get(queuedItem.id)?.status === "scheduled" ? styles.body : styles.warning}>
+                      {formatProjection(projectionByItemId.get(queuedItem.id))}
+                    </Text>
                   </View>
                   <View style={styles.queueActions}>
                     <Pressable
@@ -670,6 +768,30 @@ export default function PlannerCatalogScreen() {
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+function formatProjection(projection: UpgradeProjection | undefined): string {
+  if (!projection) return "Schedule not calculated";
+  if (projection.status === "scheduled") {
+    return `Scheduled · starts ${new Date(projection.startsAtMs).toLocaleString()} · finishes ${new Date(projection.completesAtMs).toLocaleString()}`;
+  }
+  if (projection.status === "unknown") {
+    const reason = projection.reasons[0];
+    return reason?.code === "estimate-unknown"
+      ? `Unknown estimate · ${reason.estimate} data unavailable`
+      : "Unknown estimate";
+  }
+  const reason = projection.reasons[0];
+  if (!reason) return "Blocked · reason unavailable";
+  switch (reason.code) {
+    case "candidate-unavailable": return "Blocked · progression candidate unavailable (sync game data or update this queue item)";
+    case "lane-unavailable": return "Blocked · assigned lane is occupied or unavailable";
+    case "lane-ineligible": return "Blocked · Goblin lane eligibility is not confirmed";
+    case "prerequisite-unmet": return "Blocked · prerequisite level is not met or confirmed";
+    case "invalid-target-level": return "Blocked · target level is outside the validated candidate range";
+    case "dependency-cycle": return "Blocked · planned upgrades contain a dependency cycle";
+    case "estimate-unknown": return "Unknown estimate · game data is incomplete";
+  }
 }
 
 function formatCostEstimate(

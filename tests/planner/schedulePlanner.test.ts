@@ -190,6 +190,42 @@ describe("schedulePlanner", () => {
     );
   });
 
+  it("tracks completion per planned item when the same candidate is queued at multiple target levels", () => {
+    const hall = candidate("hall", "building", {
+      entityId: "hall-entity",
+      currentLevel: 1,
+      targetLevel: 3,
+    });
+    const dependent = candidate("dependent", "building", {
+      prerequisites: [{ kind: "entity-level", entityId: "hall-entity", minimumLevel: 2 }],
+    });
+    const occupiedBuilder: ObservedActiveUpgrade = {
+      observedUpgradeId: "live-builder-1",
+      accountTag: "#PLAYER",
+      village: "home",
+      lane: { lane: "normal-builders", builderIndex: 1 },
+      startsAtMs: NOW,
+      completesAtMs: NOW + 500_000,
+      source: "manual",
+    };
+    const result = schedulePlanner(input({
+      candidates: [hall, dependent],
+      items: [
+        item("hall-level-2", "hall", { lane: "normal-builders", builderIndex: 1 }, 0, 2),
+        item("hall-level-3", "hall", { lane: "normal-builders", builderIndex: 2 }, 1, 3),
+        item("dependent-item", "dependent", { lane: "normal-builders", builderIndex: 3 }, 2),
+      ],
+      observedActiveUpgrades: [occupiedBuilder],
+    }));
+
+    expect(result.find((projection) => projection.plannedItemId === "hall-level-2")).toEqual(
+      expect.objectContaining({ status: "scheduled", completesAtMs: NOW + 560_000 }),
+    );
+    expect(result.find((projection) => projection.plannedItemId === "dependent-item")).toEqual(
+      expect.objectContaining({ status: "scheduled", startsAtMs: NOW + 560_000 }),
+    );
+  });
+
   it("reports unmet static prerequisites", () => {
     const blocked = candidate("a", "building", {
       prerequisites: [{ kind: "town-hall-level", minimumLevel: 17 }],

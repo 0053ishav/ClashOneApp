@@ -14,7 +14,9 @@ jest.mock("@/theme/useHomeColors", () => ({
   }),
 }));
 
-import { getBlockPosition } from "@/components/planner/PlannerTimeline";
+import { fireEvent, render, screen } from "@testing-library/react-native";
+import { getBlockPosition, PlannerTimeline } from "@/components/planner/PlannerTimeline";
+import type { PlannerItemId, PlannedUpgradeItem } from "@/types/planner";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -51,6 +53,16 @@ describe("PlannerTimeline positioning", () => {
     )).toBeNull();
   });
 
+  it("clips work at the far edge of the selected 365-day horizon", () => {
+    expect(getBlockPosition(
+      nowMs + 364 * DAY_MS,
+      nowMs + 366 * DAY_MS,
+      nowMs,
+      365,
+      3,
+    )).toEqual({ left: 1092, width: 3 });
+  });
+
   it("keeps an instant or very short task visible without inventing a longer duration", () => {
     expect(getBlockPosition(
       nowMs,
@@ -60,4 +72,55 @@ describe("PlannerTimeline positioning", () => {
       10,
     )).toEqual({ left: 0, width: 8 });
   });
+
+  it("renders a useful empty state and accessible scale controls", () => {
+    render(
+      <PlannerTimeline
+        items={[]}
+        projections={[]}
+        candidates={[]}
+        entityNamesById={{}}
+        liveUpgrades={[]}
+        builderCount={0}
+        nowMs={nowMs}
+      />,
+    );
+
+    expect(screen.getByText("Your timeline starts here")).toBeTruthy();
+    expect(screen.getByText("No plan yet")).toBeTruthy();
+    expect(screen.getByLabelText("Timeline scale")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Weeks" })).toHaveAccessibilityState({ selected: true });
+
+    fireEvent.press(screen.getByRole("button", { name: "Months" }));
+    expect(screen.getByRole("button", { name: "Months" })).toHaveAccessibilityState({ selected: true });
+  });
+
+  it("marks missing scheduler output as incomplete instead of inventing a finish date", () => {
+    const item: PlannedUpgradeItem = {
+      id: "item-1" as PlannerItemId,
+      candidateId: "candidate-1",
+      targetLevel: 2,
+      lane: { lane: "normal-builders", builderIndex: 1 },
+      order: 0,
+      createdAtMs: nowMs,
+      updatedAtMs: nowMs,
+    };
+
+    render(
+      <PlannerTimeline
+        items={[item]}
+        projections={[]}
+        candidates={[]}
+        entityNamesById={{}}
+        liveUpgrades={[]}
+        builderCount={1}
+        nowMs={nowMs}
+      />,
+    );
+
+    expect(screen.getByText("Estimate incomplete")).toBeTruthy();
+    expect(screen.getByText("Blocked · candidate-1")).toBeTruthy();
+    expect(screen.getByText("Finish estimates include scheduled work only. Blocked or unknown upgrades do not receive invented dates.")).toBeTruthy();
+  });
+
 });

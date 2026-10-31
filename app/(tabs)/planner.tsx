@@ -381,9 +381,12 @@ export default function PlannerCatalogScreen() {
     setPendingQueueEdit({ accountTag: activeTag, planId: queuePlan.id, itemId: item.id, items: updatedItems, projections: previewProjections });
   };
 
-  const addToQueue = (candidateId: string, targetLevel: number) => {
+  const addToQueue = (candidateId: string, targetLevel: number, structureInstanceId?: StructureInstanceRecord["id"]) => {
     if (!queuePlan || queueBusy || pendingQueueEdit) return;
-    if (queuePlan.items.some((item) => item.candidateId === candidateId && item.targetLevel === targetLevel)) return;
+    if (queuePlan.items.some((item) =>
+      item.candidateId === candidateId && item.targetLevel === targetLevel &&
+      (item.structureInstanceId ?? null) === (structureInstanceId ?? null)
+    )) return;
 
     const candidate = plannerCandidates.find((item) => item.candidateId === candidateId);
     if (!candidate) {
@@ -400,7 +403,8 @@ export default function PlannerCatalogScreen() {
     );
     const item: PlannedUpgradeItem = {
       id: `planner-item-${now}-${nextItemId.current++}` as PlannerItemId,
-      candidateId, targetLevel, lane, order: laneItems.length, createdAtMs: now, updatedAtMs: now,
+      candidateId, targetLevel, ...(structureInstanceId ? { structureInstanceId } : {}),
+      lane, order: laneItems.length, createdAtMs: now, updatedAtMs: now,
     };
     try {
       void persistQueue(addPlannerQueueItem(queuePlan.items, item));
@@ -760,6 +764,9 @@ export default function PlannerCatalogScreen() {
               itemNamesByCandidateId={Object.fromEntries(
                 (result?.items ?? []).map((item) => [item.candidate.candidateId, item.name]),
               )}
+              structureInstanceNumbersById={Object.fromEntries(
+                structureInstances.map((instance) => [instance.id, instance.instanceNumber]),
+              )}
               builderCount={activeTag ? profilesByTag[activeTag]?.normalBuilderCount ?? 0 : 0}
               queueBusy={queueBusy}
               queueError={queueError}
@@ -941,28 +948,59 @@ export default function PlannerCatalogScreen() {
                     ).join(", ")}
                   </Text>
                 )}
-                {item.canAdd ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={queuePlan?.items.some((queued) =>
+                {item.canAdd ? (() => {
+                  const instanceCandidates = (item.candidate.category === "building" || item.candidate.category === "trap")
+                    ? structureInstances.filter((instance) =>
+                        instance.dataId === Number(item.candidate.entityId) &&
+                        instance.currentLevel === item.currentLevel
+                      )
+                    : [];
+                  const queueHasItem = (instanceId?: StructureInstanceRecord["id"]) =>
+                    Boolean(queuePlan?.items.some((queued) =>
                       queued.candidateId === item.candidate.candidateId &&
-                      queued.targetLevel === item.candidate.targetLevel
-                    ) ? `Already queued: ${item.name}` : `Add ${item.name} to plan`}
-                    disabled={queueBusy || pendingQueueEdit !== null || !queuePlan || queuePlan.items.some((queued) =>
-                      queued.candidateId === item.candidate.candidateId &&
-                      queued.targetLevel === item.candidate.targetLevel
-                    )}
-                    onPress={() => addToQueue(item.candidate.candidateId, item.candidate.targetLevel)}
-                    style={styles.applyButton}
-                  >
-                    <Text style={styles.applyButtonText}>
-                      {queuePlan?.items.some((queued) =>
-                        queued.candidateId === item.candidate.candidateId &&
-                        queued.targetLevel === item.candidate.targetLevel
-                      ) ? "Already queued" : "Add to plan"}
-                    </Text>
-                  </Pressable>
-                ) : (
+                      queued.targetLevel === item.candidate.targetLevel &&
+                      (queued.structureInstanceId ?? null) === (instanceId ?? null)
+                    ));
+                  if (instanceCandidates.length > 0) {
+                    return (
+                      <View style={styles.instanceAddList}>
+                        <Text style={styles.muted}>Choose structure copy</Text>
+                        {instanceCandidates.map((instance) => {
+                          const alreadyQueued = queueHasItem(instance.id);
+                          return (
+                            <Pressable
+                              key={instance.id}
+                              accessibilityRole="button"
+                              accessibilityLabel={alreadyQueued ? `Already queued: ${item.name} number ${instance.instanceNumber}` : `Add ${item.name} number ${instance.instanceNumber} to plan`}
+                              disabled={queueBusy || pendingQueueEdit !== null || !queuePlan || alreadyQueued}
+                              onPress={() => addToQueue(item.candidate.candidateId, item.candidate.targetLevel, instance.id)}
+                              style={styles.applyButton}
+                            >
+                              <Text style={styles.applyButtonText}>
+                                {alreadyQueued ? `#${instance.instanceNumber} · Already queued` : `Add #${instance.instanceNumber} to plan`}
+                              </Text>
+                              {instance.identityConfidence === "ambiguous" && (
+                                <Text style={styles.applyButtonHint}>Copy identity is uncertain after the latest import.</Text>
+                              )}
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    );
+                  }
+                  const alreadyQueued = queueHasItem();
+                  return (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={alreadyQueued ? `Already queued: ${item.name}` : `Add ${item.name} to plan`}
+                      disabled={queueBusy || pendingQueueEdit !== null || !queuePlan || alreadyQueued}
+                      onPress={() => addToQueue(item.candidate.candidateId, item.candidate.targetLevel)}
+                      style={styles.applyButton}
+                    >
+                      <Text style={styles.applyButtonText}>{alreadyQueued ? "Already queued" : "Add to plan"}</Text>
+                    </Pressable>
+                  );
+                })() : (
                   <Text accessibilityRole="text" style={styles.warning}>
                     Cannot add until the listed prerequisites are met or confirmed.
                   </Text>
@@ -1050,6 +1088,7 @@ function createStyles(colors: ReturnType<typeof useHomeColors>) {
     stateCard: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 14, padding: 16 },
     stateTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: "800" },
     itemCard: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 14, padding: 14, gap: 8 },
+    instanceAddList: { gap: 8, marginTop: 4 },
     itemHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10 },
     catalogIdentity: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
     entityIcon: { width: 48, height: 48 },

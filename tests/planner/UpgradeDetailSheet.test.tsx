@@ -1,3 +1,18 @@
+
+jest.mock("@gorhom/bottom-sheet", () => {
+  const React = require("react");
+  const { ScrollView, View } = require("react-native");
+  return {
+    BottomSheetModalProvider: ({ children }: { children: React.ReactNode }) =>
+      React.createElement(View, null, children),
+    BottomSheetModal: ({ children }: { children: React.ReactNode }) =>
+      React.createElement(View, null, children),
+    BottomSheetScrollView: ({ children, contentContainerStyle }: { children: React.ReactNode; contentContainerStyle?: unknown }) =>
+      React.createElement(ScrollView, { contentContainerStyle }, children),
+    BottomSheetBackdrop: () => null,
+  };
+});
+
 jest.mock("@/theme/useHomeColors", () => ({
   useHomeColors: () => ({
     background: "#000000", border: "#222222", borderStrong: "#333333",
@@ -53,7 +68,7 @@ describe("UpgradeDetailSheet", () => {
   });
 
   it("keeps actions disabled while the queue is saving", () => {
-    render(<UpgradeDetailSheet visible item={item} candidate={candidate} projection={undefined}
+    renderWithProvider(<UpgradeDetailSheet visible item={item} candidate={candidate} projection={undefined}
       name="Archer Tower" queueBusy onClose={jest.fn()} onEdit={jest.fn()} onRemove={jest.fn()} />);
     expect(screen.getByRole("button", { name: "Edit upgrade" }).props.accessibilityState?.disabled).toBe(true);
     expect(screen.getByRole("button", { name: "Remove from plan" }).props.accessibilityState?.disabled).toBe(true);

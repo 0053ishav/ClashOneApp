@@ -107,6 +107,12 @@ export default function PlannerCatalogScreen() {
     activeAccount?.townhall ??
     0;
 
+  const snapshotReviewRequired = Boolean(
+    queuePlan && queuePlan.accountTag === activeTag &&
+    (queuePlan.snapshotAtMs === null || lastJsonSyncAtMs === undefined || lastJsonSyncAtMs > queuePlan.snapshotAtMs),
+  );
+
+
   useEffect(() => {
     let cancelled = false;
     setResult(null);
@@ -524,11 +530,6 @@ export default function PlannerCatalogScreen() {
   const projectionByItemId = useMemo(() => new Map(
     (projections ?? []).map((projection) => [projection.plannedItemId, projection]),
   ), [projections]);
-
-  const snapshotReviewRequired = Boolean(
-    queuePlan && queuePlan.accountTag === activeTag &&
-    (queuePlan.snapshotAtMs === null || lastJsonSyncAtMs === undefined || lastJsonSyncAtMs > queuePlan.snapshotAtMs),
-  );
 
   const reviewSnapshotAndRecalculate = async () => {
     if (!activeTag || !queuePlan || queuePlan.accountTag !== activeTag || snapshotReviewBusy) return;

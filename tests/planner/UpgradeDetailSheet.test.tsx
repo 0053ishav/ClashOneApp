@@ -9,8 +9,17 @@ jest.mock("@/theme/useHomeColors", () => ({
 
 import React from "react";
 import { fireEvent, render, screen } from "@testing-library/react-native";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { UpgradeDetailSheet } from "@/components/planner/UpgradeDetailSheet";
 import type { PlannerItemId, PlannedUpgradeItem, ProgressionCandidate } from "@/types/planner";
+
+function TestWrapper({ children }: { children: React.ReactNode }) {
+  return <BottomSheetModalProvider>{children}</BottomSheetModalProvider>;
+}
+
+function renderWithProvider(element: React.ReactElement) {
+  return render(element, { wrapper: TestWrapper });
+}
 
 const item: PlannedUpgradeItem = {
   id: "detail-item" as PlannerItemId, candidateId: "archer-tower",
@@ -27,7 +36,7 @@ describe("UpgradeDetailSheet", () => {
   it("shows levels, lane, known cost and a scheduler blocker; actions use supplied handlers", () => {
     const onEdit = jest.fn();
     const onRemove = jest.fn();
-    render(<UpgradeDetailSheet
+    renderWithProvider(<UpgradeDetailSheet
       visible item={item} candidate={candidate}
       projection={{ status: "blocked", plannedItemId: item.id, reasons: [{ code: "candidate-unavailable", candidateId: item.candidateId }] }}
       name="Archer Tower" queueBusy={false} onClose={jest.fn()} onEdit={onEdit} onRemove={onRemove}

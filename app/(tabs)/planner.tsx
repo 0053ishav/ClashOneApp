@@ -378,10 +378,28 @@ export default function PlannerCatalogScreen() {
 
             {!isLoading && !error && result && result.items.length === 0 && (
               <View style={styles.stateCard}>
-                <Text style={styles.stateTitle}>No eligible upgrades yet</Text>
-                <Text style={styles.body}>
-                  The catalog will not assume an untracked building or troop is level 0. Import a village snapshot with building levels, or sync progression data and try another category.
-                </Text>
+                {Object.keys(entitiesById).length === 0 ? (
+                  <>
+                    <Text style={styles.stateTitle}>Game entity metadata not loaded</Text>
+                    <Text style={styles.body}>
+                      The Planner has no entity catalog to search or show level editors for. Open the Home screen and sync game data, then return here. This is different from having no eligible upgrades.
+                    </Text>
+                  </>
+                ) : untrackedEntities.length === 0 && query.trim() !== "" ? (
+                  <>
+                    <Text style={styles.stateTitle}>No matching entity metadata</Text>
+                    <Text style={styles.body}>
+                      No Home Village entity name or ID matches “{query.trim()}”. Try the entity name without extra words, clear search, or sync game data if the entity is missing.
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.stateTitle}>No eligible upgrades yet</Text>
+                    <Text style={styles.body}>
+                      The catalog has no candidate matching the known account levels and available progression data. Missing levels are not assumed to be 0. Check the entity's current level and sync game data if its next level is missing.
+                    </Text>
+                  </>
+                )}
                 {result.state === "partial" && (
                   <Text style={styles.muted}>Some progression categories are unavailable: {result.unavailableCategories.join(", ") || "data is incomplete"}.</Text>
                 )}

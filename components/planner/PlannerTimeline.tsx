@@ -87,7 +87,12 @@ export function PlannerTimeline({
 
   const lanes = useMemo<TimelineLane[]>(() => {
     const result: TimelineLane[] = [];
-    for (let index = 1; index <= Math.max(0, Math.min(builderCount, 6)); index += 1) {
+    const requiredBuilderCount = Math.max(
+      builderCount,
+      ...items.map((item) => item.lane.lane === "normal-builders" ? item.lane.builderIndex : 0),
+      ...liveUpgrades.map((upgrade) => upgrade.lane.lane === "normal-builders" ? upgrade.lane.builderIndex : 0),
+    );
+    for (let index = 1; index <= Math.max(0, Math.min(requiredBuilderCount, 6)); index += 1) {
       result.push({
         key: `normal-builders:${index}`,
         label: `Builder ${index}`,

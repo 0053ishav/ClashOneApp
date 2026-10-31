@@ -69,8 +69,11 @@ describe("initDatabase", () => {
     expect(executedSql).toContain("ADD COLUMN next_supercharge_level INTEGER");
     expect(executedSql).toContain("CREATE TABLE IF NOT EXISTS building_progress");
     expect(executedSql).toContain("CREATE TABLE IF NOT EXISTS player_profile_cache");
+    expect(executedSql).toContain("CREATE TABLE IF NOT EXISTS planner_plans");
+    expect(executedSql).toContain("CREATE TABLE IF NOT EXISTS planner_plan_items");
+    expect(executedSql).toContain("FOREIGN KEY(plan_id, account_player_tag)");
 
-    expect(database.runAsync).toHaveBeenCalledTimes(11);
+    expect(database.runAsync).toHaveBeenCalledTimes(12);
     expect(database.getAllAsync).toHaveBeenCalledWith(
       "PRAGMA table_info(upgrades)",
     );

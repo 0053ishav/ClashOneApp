@@ -41,6 +41,7 @@ function blockerLabel(reason: PlannerBlockReason | undefined): string {
   if (!reason) return "No blocker reason was provided by the scheduler.";
   switch (reason.code) {
     case "prerequisite-unmet": return "A required upgrade level is not met or confirmed.";
+    case "prerequisite-unknown": return "Required entity level is missing; sync village data or enter the level.";
     case "lane-unavailable": return `${reason.lane} is occupied or unavailable.`;
     case "lane-ineligible": return reason.detail;
     case "estimate-unknown": return `The ${reason.estimate} estimate is unknown (${reason.reason}).`;

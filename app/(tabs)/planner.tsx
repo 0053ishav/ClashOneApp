@@ -247,14 +247,14 @@ export default function PlannerCatalogScreen() {
     void listPlannerPlans(activeTag)
       .then(async (plans) => {
         if (cancelled) return;
-        const plan = plans[0] ?? await createPlannerPlan(activeTag, `planner-${Date.now()}-${nextItemId.current++}` as PlannerPlanId, Date.now(), lastJsonSyncAtMs ?? null);
+        const plan = plans[0] ?? await createPlannerPlan(activeTag, `planner-${Date.now()}-${nextItemId.current++}` as PlannerPlanId, Date.now(), useAccountStore.getState().lastJsonSyncMap[activeTag] ?? null);
         if (!cancelled) setQueuePlan(plan);
       })
       .catch((loadError: unknown) => {
         if (!cancelled) setQueueError(loadError instanceof Error ? loadError.message : "Could not load the upgrade queue.");
       });
     return () => { cancelled = true; };
-  }, [activeTag, lastJsonSyncAtMs]);
+  }, [activeTag]);
 
   const persistQueue = async (items: readonly PlannedUpgradeItem[]): Promise<boolean> => {
     if (!activeTag || !queuePlan || queueWriteInFlight.current) return false;

@@ -220,6 +220,10 @@ describe("planner persistence account isolation", () => {
       updatedAtMs: 200,
       snapshotAtMs: null,
     });
+    expect(db.getFirstAsync).toHaveBeenCalledWith(
+      expect.stringContaining("snapshot_at_ms"),
+      [planId, "#ACCOUNT_A"],
+    );
     expect(db.getAllAsync).toHaveBeenCalledWith(
       expect.stringContaining("WHERE plan_id = ? AND account_player_tag = ?"),
       [planId, "#ACCOUNT_A"],

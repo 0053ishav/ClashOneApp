@@ -159,7 +159,7 @@ export async function getPlannerPlan(
   requirePlanId(planId);
   const db = await getDB();
   const row = await db.getFirstAsync<PlanRow>(
-    `SELECT id, account_player_tag, village, name, created_at_ms, updated_at_ms
+    `SELECT id, account_player_tag, village, name, created_at_ms, updated_at_ms, snapshot_at_ms
      FROM planner_plans WHERE id = ? AND account_player_tag = ?`,
     [planId, accountTag],
   );

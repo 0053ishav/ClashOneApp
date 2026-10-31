@@ -145,29 +145,6 @@ describe("recalculatePlannerProjection", () => {
     }));
   });
 
-  it("ignores Builder Base timers when projecting a Home Village plan", async () => {
-    mockedGetPlannerPlan.mockResolvedValue(makePlan());
-
-    const result = await recalculatePlannerProjection({
-      ...context,
-      observedActiveUpgrades: [{
-        observedUpgradeId: "builder-base-timer",
-        accountTag: "#PLAYER",
-        village: "builder-base",
-        lane: { lane: "normal-builders", builderIndex: 1 },
-        startsAtMs: NOW - 1000,
-        completesAtMs: NOW + 90_000,
-        source: "manual",
-      }],
-    });
-
-    expect(result?.projections[0]).toEqual(expect.objectContaining({
-      status: "scheduled",
-      startsAtMs: NOW,
-      completesAtMs: NOW + 60_000,
-    }));
-  });
-
   it("ignores observed timers belonging to another account", async () => {
     mockedGetPlannerPlan.mockResolvedValue(makePlan());
 

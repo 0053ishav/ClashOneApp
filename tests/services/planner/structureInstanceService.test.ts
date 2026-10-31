@@ -1,5 +1,6 @@
 import {
   reconcileStructureInstances,
+  resolveActiveStructureTimerInstanceId,
   type StructureInstanceRecord,
 } from "@/services/planner/structureInstanceService";
 import type { BuildingProgressRecord } from "@/types/upgrade";
@@ -143,7 +144,6 @@ describe("reconcileStructureInstances", () => {
   });
 
   it("associates a live timer only when one stable structure instance matches", () => {
-    const { resolveActiveStructureTimerInstanceId } = require("@/services/planner/structureInstanceService") as typeof import("@/services/planner/structureInstanceService");
     const instances = [instance("cannon-a", 1000002, 16)];
 
     expect(resolveActiveStructureTimerInstanceId(
@@ -153,7 +153,6 @@ describe("reconcileStructureInstances", () => {
   });
 
   it("leaves live timer identity unresolved when multiple identical copies match", () => {
-    const { resolveActiveStructureTimerInstanceId } = require("@/services/planner/structureInstanceService") as typeof import("@/services/planner/structureInstanceService");
     const instances = [
       instance("cannon-a", 1000002, 16),
       instance("cannon-b", 1000002, 16),
@@ -166,7 +165,6 @@ describe("reconcileStructureInstances", () => {
   });
 
   it("does not associate a timer with ambiguous or already claimed instances", () => {
-    const { resolveActiveStructureTimerInstanceId } = require("@/services/planner/structureInstanceService") as typeof import("@/services/planner/structureInstanceService");
     const ambiguous = {
       ...instance("cannon-a", 1000002, 16),
       identityConfidence: "ambiguous" as const,

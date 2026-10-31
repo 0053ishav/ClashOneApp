@@ -32,6 +32,11 @@ function isUnixSeconds(value: unknown): value is number {
   );
 }
 
+function parseUnixSeconds(value: unknown): number | null | undefined {
+  if (value === null) return null;
+  return isUnixSeconds(value) ? value : undefined;
+}
+
 function toIsoTimestamp(value: number | null): string | null {
   return value === null ? null : new Date(value * 1000).toISOString();
 }
@@ -53,17 +58,15 @@ function parseHammerJamPayload(
   }
 
   const event = payload.hammerJam;
-  const startsAtSeconds = event.startsAt;
-  const endsAtSeconds = event.endsAt;
-  const startsAtValid = startsAtSeconds === null || isUnixSeconds(startsAtSeconds);
-  const endsAtValid = endsAtSeconds === null || isUnixSeconds(endsAtSeconds);
+  const startsAtSeconds = parseUnixSeconds(event.startsAt);
+  const endsAtSeconds = parseUnixSeconds(event.endsAt);
 
   if (
     typeof event.title !== "string" ||
     event.title.trim().length === 0 ||
     typeof event.enabled !== "boolean" ||
-    !startsAtValid ||
-    !endsAtValid ||
+    startsAtSeconds === undefined ||
+    endsAtSeconds === undefined ||
     typeof event.timeMultiplier !== "number" ||
     !Number.isFinite(event.timeMultiplier) ||
     event.timeMultiplier <= 0 ||

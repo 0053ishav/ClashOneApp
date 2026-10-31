@@ -136,11 +136,15 @@ export function reconcileStructureInstances(
 
     for (let index = 0; index < bucket.count; index += 1) {
       const existing = prior[index];
+      const nextNumber = (nextInstanceNumberByEntity.get(bucket.dataId) ?? 0) + 1;
+      const instanceNumber = existing?.instanceNumber ?? nextNumber;
+      if (!existing) nextInstanceNumberByEntity.set(bucket.dataId, nextNumber);
       instances.push({
         id: (existing?.id ?? createId()) as StructureInstanceId,
         accountTag,
         village: bucket.village,
         dataId: bucket.dataId,
+        instanceNumber,
         currentLevel: bucket.normalLevel,
         superchargeLevel: bucket.superchargeLevel,
         identityConfidence: sameBucketCount ? "stable" : "ambiguous",

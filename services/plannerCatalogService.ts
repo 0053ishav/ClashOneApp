@@ -38,11 +38,24 @@ export interface PlannerCatalogItem extends PlannerCatalogEntry {
   blockedBy: readonly UpgradePrerequisite[];
 }
 
+export interface PlannerCatalogDiagnosticsSummary {
+  datasetCandidates: number;
+  homeVillageCandidates: number;
+  knownLevelCandidates: number;
+  nextLevelCandidates: number;
+  categoryCandidates: number;
+  metadataCandidates: number;
+  belowMaxLevelCandidates: number;
+  queryCandidates: number;
+  returnedItems: number;
+}
+
 export interface PlannerCatalogResult {
   state: PlannerCatalogLoadState;
   items: readonly PlannerCatalogItem[];
   diagnostics: readonly ProgressionDiagnostic[];
   unavailableCategories: readonly string[];
+  diagnosticsSummary: PlannerCatalogDiagnosticsSummary;
 }
 
 function isPrerequisiteSatisfied(
@@ -88,25 +101,43 @@ export function buildPlannerCatalog(
   const currentLevels = filters.currentLevels;
   const seen = new Set<string>();
   const items: PlannerCatalogItem[] = [];
+  const diagnosticsSummary: PlannerCatalogDiagnosticsSummary = {
+    datasetCandidates: dataset.candidates.length,
+    homeVillageCandidates: 0,
+    knownLevelCandidates: 0,
+    nextLevelCandidates: 0,
+    categoryCandidates: 0,
+    metadataCandidates: 0,
+    belowMaxLevelCandidates: 0,
+    queryCandidates: 0,
+    returnedItems: 0,
+  };
 
   for (const candidate of dataset.candidates) {
     if (candidate.village !== "home") continue;
+    diagnosticsSummary.homeVillageCandidates += 1;
     // An absent level is unknown, not level zero. Never recommend an upgrade
     // from an invented account state.
     if (!Object.prototype.hasOwnProperty.call(currentLevels, candidate.entityId)) continue;
+    diagnosticsSummary.knownLevelCandidates += 1;
     const currentLevel = currentLevels[candidate.entityId];
     const targetLevel = currentLevel + 1;
     if (candidate.targetLevel !== targetLevel) continue;
     if (candidate.targetLevel > candidate.currentLevel + 1) continue;
+    diagnosticsSummary.nextLevelCandidates += 1;
     if (candidate.category !== filters.category && filters.category !== "all") continue;
+    diagnosticsSummary.categoryCandidates += 1;
 
     const name = metadata.namesByEntityId[candidate.entityId]?.trim();
     const maxLevel = metadata.maxLevelsByEntityId[candidate.entityId];
     if (!name || !Number.isSafeInteger(maxLevel) || maxLevel < 1) continue;
+    diagnosticsSummary.metadataCandidates += 1;
     if (currentLevel >= maxLevel || targetLevel > maxLevel) continue;
+    diagnosticsSummary.belowMaxLevelCandidates += 1;
     const search = filters.query.trim().toLocaleLowerCase();
     if (search && !name.toLocaleLowerCase().includes(search) &&
       !candidate.entityId.toLocaleLowerCase().includes(search)) continue;
+    diagnosticsSummary.queryCandidates += 1;
 
     const uniqueKey = candidate.entityId + ":" + candidate.targetLevel;
     if (seen.has(uniqueKey)) continue;
@@ -138,5 +169,9 @@ export function buildPlannerCatalog(
     items,
     diagnostics,
     unavailableCategories,
+    diagnosticsSummary: {
+      ...diagnosticsSummary,
+      returnedItems: items.length,
+    },
   };
 }

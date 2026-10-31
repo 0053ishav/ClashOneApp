@@ -12,7 +12,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useHomeColors } from "@/theme/useHomeColors";
 import { useAccountStore } from "@/stores/accountStore";
 import { useEntityStore } from "@/stores/entityStore";
-import { getBuildingProgress } from "@/services/accountService";
+import { getBuildingProgress, getStructureInstances } from "@/services/accountService";
+import type { StructureInstanceRecord } from "@/services/planner/structureInstanceService";
 import {
   loadPlannerCatalogLevelOverrides,
   savePlannerCatalogLevelOverrides,
@@ -68,6 +69,8 @@ export default function PlannerCatalogScreen() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<PlannerEntityCategory | "all">("all");
   const [currentLevels, setCurrentLevels] = useState<Record<string, number>>({});
+  const [structureInstances, setStructureInstances] = useState<StructureInstanceRecord[]>([]);
+  const [showStructureInstances, setShowStructureInstances] = useState(false);
   const [manualOverrides, setManualOverrides] = useState<Record<string, number>>({});
   const [levelDrafts, setLevelDrafts] = useState<Record<string, string>>({});
   const [levelErrors, setLevelErrors] = useState<Record<string, string>>({});
@@ -88,6 +91,8 @@ export default function PlannerCatalogScreen() {
 
     if (!activeTag) {
       setCurrentLevels({});
+      setStructureInstances([]);
+      setShowStructureInstances(false);
       setManualOverrides({});
       setIsLoading(false);
       return () => {
@@ -97,12 +102,17 @@ export default function PlannerCatalogScreen() {
     }
 
     setCurrentLevels({});
+    setStructureInstances([]);
+    setShowStructureInstances(false);
     setManualOverrides({});
     setLevelDrafts({});
     setIsLoading(true);
     const savedOverrides = loadPlannerCatalogLevelOverrides(activeTag);
-    void getBuildingProgress(activeTag)
-      .then((records) => {
+    void Promise.all([
+      getBuildingProgress(activeTag),
+      getStructureInstances(activeTag),
+    ])
+      .then(([records, instances]) => {
         if (cancelled) return;
         const levels: Record<string, number> = {};
         for (const record of records) {
@@ -112,6 +122,7 @@ export default function PlannerCatalogScreen() {
         const resolvedLevels = resolvePlannerCatalogLevelState(savedOverrides, levels);
         setCurrentLevels(resolvedLevels.currentLevels);
         setManualOverrides(resolvedLevels.manualOverrides);
+        setStructureInstances(instances);
       })
       .catch((loadError: unknown) => {
         if (!cancelled) {
@@ -279,6 +290,48 @@ export default function PlannerCatalogScreen() {
               <Text style={styles.accountName}>{activeAccount?.name ?? activeTag}</Text>
               <Text style={styles.muted}>Town Hall {townHallLevel || "unknown"} · {knownLevelCount} known entity levels</Text>
             </View>
+
+            {structureInstances.length > 0 && (
+              <View style={styles.stateCard}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: showStructureInstances }}
+                  onPress={() => setShowStructureInstances((visible) => !visible)}
+                  style={styles.itemTitleWrap}
+                >
+                  <Text style={styles.stateTitle}>
+                    Tracked structure copies ({structureInstances.length})
+                  </Text>
+                  <Text style={styles.muted}>{showStructureInstances ? "Hide" : "Show"}</Text>
+                </Pressable>
+                <Text style={styles.body}>
+                  Numbered labels are presentation only; the saved instance ID is the identity. Copies are marked uncertain when an import cannot prove which physical copy changed.
+                </Text>
+                {showStructureInstances && structureInstances
+                  .filter((instance) => entitiesById[String(instance.dataId)]?.type !== "wall")
+                  .slice(0, 100)
+                  .map((instance) => {
+                    const entity = entitiesById[String(instance.dataId)];
+                    const label = entity?.name.en ?? `Entity ${instance.dataId}`;
+                    return (
+                      <View key={instance.id} style={styles.levelEditor}>
+                        <View style={styles.itemTitleWrap}>
+                          <Text style={styles.itemName}>{label} #{instance.instanceNumber}</Text>
+                          <Text style={styles.muted}>Level {instance.currentLevel}</Text>
+                        </View>
+                        {instance.identityConfidence === "ambiguous" && (
+                          <Text style={styles.warning}>Identity needs confirmation after import changes.</Text>
+                        )}
+                      </View>
+                    );
+                  })}
+                {showStructureInstances && structureInstances.filter(
+                  (instance) => entitiesById[String(instance.dataId)]?.type !== "wall",
+                ).length > 100 && (
+                  <Text style={styles.muted}>Showing the first 100 non-wall copies.</Text>
+                )}
+              </View>
+            )}
 
             <TextInput
               accessibilityLabel="Search upgrades"

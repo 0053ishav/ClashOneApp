@@ -118,7 +118,7 @@ export function PlannerQueueList({
                   {!!editErrors[queuedItem.id] && <Text accessibilityRole="alert" style={styles.warning}>{editErrors[queuedItem.id]}</Text>}
                   <View style={styles.queueActions}>
                     <Pressable accessibilityRole="button" disabled={queueBusy} onPress={() => onSaveEdit(queuedItem)} style={styles.applyButton}>
-                      <Text style={styles.applyButtonText}>Save preview</Text>
+                      <Text style={styles.applyButtonText}>Save changes</Text>
                     </Pressable>
                     <Pressable accessibilityRole="button" disabled={queueBusy} onPress={onCancelEdit} style={styles.removeButton}>
                       <Text style={styles.removeButtonText}>Cancel</Text>

@@ -184,7 +184,7 @@ export function schedulePlanner(input: SchedulePlannerInput): readonly UpgradePr
   }
 
   const projections: UpgradeProjection[] = [];
-  const completionByCandidate = new Map<string, number>();
+  const completionByItemId = new Map<string, number>();
   const pendingItems = new Set(orderedItems.map((item) => String(item.id)));
   const itemById = new Map(orderedItems.map((item) => [String(item.id), item]));
   const maxPasses = orderedItems.length + 1;
@@ -239,7 +239,7 @@ export function schedulePlanner(input: SchedulePlannerInput): readonly UpgradePr
           : [];
         const waiting = dependencies.some((dependency) => pendingItems.has(String(dependency.id)));
         const dependencyCompletion = dependencies.reduce<number | undefined>((latest, dependency) => {
-          const completion = completionByCandidate.get(dependency.candidateId);
+          const completion = completionByItemId.get(String(dependency.id));
           return completion === undefined ? latest : Math.max(latest ?? completion, completion);
         }, undefined);
         if (waiting) continue;
@@ -313,13 +313,17 @@ export function schedulePlanner(input: SchedulePlannerInput): readonly UpgradePr
         if (prerequisite.kind !== "entity-level" || prerequisiteSatisfied(prerequisite, input.prerequisiteState)) {
           return latest;
         }
-        const dependency = orderedItems.find((possible) => {
-          const dependencyCandidate = candidateById.get(possible.candidateId);
-          return dependencyCandidate?.entityId === prerequisite.entityId &&
-            possible.targetLevel >= prerequisite.minimumLevel;
-        });
-        const completion = dependency ? completionByCandidate.get(dependency.candidateId) : undefined;
-        return completion === undefined ? latest : Math.max(latest, completion);
+        const dependencyCompletions = orderedItems
+          .filter((possible) => {
+            const dependencyCandidate = candidateById.get(possible.candidateId);
+            return dependencyCandidate?.entityId === prerequisite.entityId &&
+              possible.targetLevel >= prerequisite.minimumLevel;
+          })
+          .map((dependency) => completionByItemId.get(String(dependency.id)))
+          .filter((completion): completion is number => completion !== undefined);
+        return dependencyCompletions.length > 0
+          ? Math.max(latest, ...dependencyCompletions)
+          : latest;
       }, input.nowMs);
       const startsAtMs = Math.max(input.nowMs, reservation.availableAtMs, dependencyReadyAt);
       const durationMs = candidate.estimate.durationMs.value;
@@ -331,7 +335,7 @@ export function schedulePlanner(input: SchedulePlannerInput): readonly UpgradePr
         completesAtMs,
         estimate: candidate.estimate,
       });
-      completionByCandidate.set(candidate.candidateId, completesAtMs);
+      completionByItemId.set(itemId, completesAtMs);
       if (durationMs > 0) reservations.set(key, { availableAtMs: completesAtMs });
       pendingItems.delete(itemId);
       madeProgress = true;

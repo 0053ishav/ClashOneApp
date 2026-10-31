@@ -67,6 +67,22 @@ const context = {
 describe("recalculatePlannerProjection", () => {
   beforeEach(() => mockedGetPlannerPlan.mockReset());
 
+  it("rejects a blank account tag before accessing persistence", async () => {
+    await expect(recalculatePlannerProjection({
+      ...context,
+      accountTag: "   ",
+    })).rejects.toThrow("INVALID_ACCOUNT_TAG");
+    expect(mockedGetPlannerPlan).not.toHaveBeenCalled();
+  });
+
+  it("rejects a blank plan ID before accessing persistence", async () => {
+    await expect(recalculatePlannerProjection({
+      ...context,
+      planId: "   " as PlannerPlanId,
+    })).rejects.toThrow("INVALID_PLANNER_PLAN_ID");
+    expect(mockedGetPlannerPlan).not.toHaveBeenCalled();
+  });
+
   it("recalculates schedule output from the account-owned plan and current context", async () => {
     mockedGetPlannerPlan.mockResolvedValue(makePlan());
 

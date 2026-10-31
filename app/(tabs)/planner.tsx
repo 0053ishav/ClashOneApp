@@ -35,7 +35,7 @@ import type {
 } from "@/services/plannerCatalogService";
 import type { ObservedActiveUpgrade, PlannerEntityCategory, PlannerItemId, PlannerPlan, PlannerPlanId, PlannedUpgradeItem, ProgressionCandidate, UpgradeProjection } from "@/types/planner";
 import { recalculatePlannerProjection } from "@/services/plannerApplicationService";
-import type { PlannerLaneAvailability, PlannerPrerequisiteState } from "@/utils/planner/schedulePlanner";
+import { schedulePlanner, type PlannerLaneAvailability, type PlannerPrerequisiteState } from "@/utils/planner/schedulePlanner";
 import type { PlannerLaneAssignment } from "@/types/planner";
 import { acknowledgePlannerSnapshot, createPlannerPlan, listPlannerPlans, replacePlannerQueue } from "@/services/plannerPersistenceService";
 import { addPlannerQueueItem, getDefaultPlannerLane, movePlannerQueueItem, removePlannerQueueItem, updatePlannerQueueItem } from "@/services/planner/plannerQueueService";
@@ -99,6 +99,7 @@ export default function PlannerCatalogScreen() {
   const [queueTargetDrafts, setQueueTargetDrafts] = useState<Record<string, string>>({});
   const [queueLaneDrafts, setQueueLaneDrafts] = useState<Record<string, PlannerLaneAssignment>>({});
   const [queueEditErrors, setQueueEditErrors] = useState<Record<string, string>>({});
+  const [pendingQueueEdit, setPendingQueueEdit] = useState<{ itemId: PlannerItemId; items: PlannedUpgradeItem[]; projections: readonly UpgradeProjection[] } | null>(null);
   const [projections, setProjections] = useState<readonly UpgradeProjection[] | null>(null);
   const [projectionError, setProjectionError] = useState<string | null>(null);
   const nextItemId = useRef(0);
@@ -349,16 +350,25 @@ export default function PlannerCatalogScreen() {
       return;
     }
 
-    const saved = await persistQueue(updatedItems);
-    if (saved) {
-      setEditingQueueItemId(null);
-      setEditingQueueOwner(null);
-      setQueueEditErrors((previous) => {
-        const next = { ...previous };
-        delete next[item.id];
-        return next;
-      });
+    if (snapshotReviewRequired || observedUpgrades === null) {
+      setQueueEditErrors((previous) => ({
+        ...previous,
+        [item.id]: snapshotReviewRequired
+          ? "Review the latest village snapshot before previewing schedule changes."
+          : "A live timer has no confirmed lane; the edited schedule cannot be previewed safely.",
+      }));
+      return;
     }
+
+    const previewProjections = schedulePlanner({
+      nowMs: Date.now(),
+      candidates: plannerCandidates,
+      items: updatedItems,
+      observedActiveUpgrades: observedUpgrades,
+      prerequisiteState,
+      laneAvailability,
+    });
+    setPendingQueueEdit({ itemId: item.id, items: updatedItems, projections: previewProjections });
   };
 
   const addToQueue = (candidateId: string, targetLevel: number) => {
@@ -749,12 +759,28 @@ export default function PlannerCatalogScreen() {
               targetDrafts={queueTargetDrafts}
               laneDrafts={queueLaneDrafts}
               editErrors={queueEditErrors}
+              pendingEdit={pendingQueueEdit}
+              onConfirmEdit={() => {
+                if (!pendingQueueEdit || queueBusy) return;
+                void persistQueue(pendingQueueEdit.items).then((saved) => {
+                  if (!saved) return;
+                  setEditingQueueItemId(null);
+                  setEditingQueueOwner(null);
+                  setQueueEditErrors((previous) => {
+                    const next = { ...previous };
+                    delete next[pendingQueueEdit.itemId];
+                    return next;
+                  });
+                  setPendingQueueEdit(null);
+                });
+              }}
+              onCancelPreview={() => setPendingQueueEdit(null)}
               hasEditConflict={hasQueueEditConflict}
               onTargetDraftChange={(itemId, value) => setQueueTargetDrafts((previous) => ({ ...previous, [itemId]: value.replace(/[^0-9]/g, "") }))}
               onLaneDraftChange={(itemId, lane) => setQueueLaneDrafts((previous) => ({ ...previous, [itemId]: lane }))}
               onSaveEdit={(item) => void saveQueueItemEdit(item)}
               onBeginEdit={beginQueueItemEdit}
-              onCancelEdit={() => { setEditingQueueItemId(null); setEditingQueueOwner(null); }}
+              onCancelEdit={() => { setEditingQueueItemId(null); setEditingQueueOwner(null); setPendingQueueEdit(null); }}
               onRemove={removeFromQueue}
               onAssignNextBuilder={assignNextBuilder}
               onMove={moveQueueItem}

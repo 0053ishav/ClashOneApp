@@ -63,7 +63,7 @@ export default function PlannerCatalogScreen() {
   const [category, setCategory] = useState<PlannerEntityCategory | "all">("all");
   const [currentLevels, setCurrentLevels] = useState<Record<string, number>>({});
   const [levelDrafts, setLevelDrafts] = useState<Record<string, string>>({});
-  const [result, setResult = useState<PlannerCatalogResult | null>(null);
+  const [result, setResult] = useState<PlannerCatalogResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

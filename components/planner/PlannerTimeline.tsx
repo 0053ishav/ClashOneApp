@@ -173,15 +173,18 @@ export function PlannerTimeline({
         {(Object.keys(SCALE_CONFIG) as TimelineScale[]).map((option) => {
           const selected = option === scale;
           return (
-            <Text
+            <Pressable
               key={option}
               accessibilityRole="button"
+              accessibilityLabel={`Timeline scale: ${SCALE_CONFIG[option].label}`}
               accessibilityState={{ selected }}
               onPress={() => setScale(option)}
               style={[styles.scaleButton, selected && styles.scaleButtonSelected]}
             >
-              {SCALE_CONFIG[option].label}
-            </Text>
+              <Text style={[styles.scaleButtonText, selected && styles.scaleButtonTextSelected]}>
+                {SCALE_CONFIG[option].label}
+              </Text>
+            </Pressable>
           );
         })}
       </View>
@@ -199,6 +202,19 @@ export function PlannerTimeline({
                 <Text style={styles.axisLabel}>Lane</Text>
               </View>
               <View style={[styles.axis, { width: timelineWidth }]}>
+                {projectedFinish !== null &&
+                  projectedFinish >= nowMs &&
+                  projectedFinish <= nowMs + config.days * DAY_MS && (
+                    <View
+                      pointerEvents="none"
+                      style={[
+                        styles.finishMarker,
+                        { left: ((projectedFinish - nowMs) / DAY_MS) * config.pixelsPerDay },
+                      ]}
+                    >
+                      <Text style={styles.finishMarkerLabel}>Finish estimate</Text>
+                    </View>
+                  )}
                 {Array.from({ length: Math.floor(config.days / config.tickDays) + 1 }, (_, index) => {
                   const day = index * config.tickDays;
                   return (
@@ -417,8 +433,12 @@ function createStyles(colors: ReturnType<typeof useHomeColors>) {
     summaryLabel: { color: colors.textMuted, fontSize: 10, fontWeight: "700", textTransform: "uppercase" },
     summaryValue: { color: colors.textPrimary, fontSize: 12, fontWeight: "700" },
     scaleRow: { flexDirection: "row", gap: 6 },
-    scaleButton: { color: colors.textSecondary, backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7, overflow: "hidden", fontSize: 12, fontWeight: "700" },
-    scaleButtonSelected: { color: colors.textDark, backgroundColor: colors.gold, borderColor: colors.gold },
+    scaleButton: { minHeight: 44, minWidth: 64, alignItems: "center", justifyContent: "center", backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7, overflow: "hidden" },
+    scaleButtonSelected: { backgroundColor: colors.gold, borderColor: colors.gold },
+    scaleButtonText: { color: colors.textSecondary, fontSize: 12, fontWeight: "700" },
+    scaleButtonTextSelected: { color: colors.textDark },
+    finishMarker: { position: "absolute", zIndex: 2, top: 0, bottom: 0, width: 2, backgroundColor: colors.green },
+    finishMarkerLabel: { position: "absolute", top: 0, left: 4, width: 100, color: colors.green, fontSize: 10, fontWeight: "800" },
     emptyState: { backgroundColor: colors.background, borderRadius: 10, padding: 16, gap: 5 },
     emptyTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: "700" },
     timelineScroll: { paddingBottom: 4 },

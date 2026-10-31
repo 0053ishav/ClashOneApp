@@ -141,3 +141,46 @@ export function reconcileStructureInstances(
 
   return { instances, ambiguousEntityIds };
 }
+
+
+export interface ActiveStructureTimerIdentity {
+  dataId?: number;
+  currentLevel?: number;
+  upgradeKind?: "NORMAL" | "SUPERCHARGE";
+  currentSuperchargeLevel?: number;
+}
+
+/**
+ * Return an instance ID only when an active timer matches exactly one stable
+ * instance. Repeated copies at the same level intentionally remain unresolved.
+ */
+export function resolveActiveStructureTimerInstanceId(
+  timer: ActiveStructureTimerIdentity,
+  instances: readonly StructureInstanceRecord[],
+  claimedInstanceIds: ReadonlySet<string> = new Set(),
+): StructureInstanceId | undefined {
+  if (
+    timer.dataId === undefined ||
+    timer.currentLevel === undefined ||
+    !Number.isSafeInteger(timer.dataId) ||
+    !Number.isSafeInteger(timer.currentLevel)
+  ) return undefined;
+
+  const matches = instances.filter((instance) => {
+    if (instance.dataId !== timer.dataId || instance.currentLevel !== timer.currentLevel) return false;
+    if (instance.identityConfidence !== "stable" || claimedInstanceIds.has(instance.id)) return false;
+    if (
+      timer.upgradeKind === "SUPERCHARGE" &&
+      timer.currentSuperchargeLevel !== undefined &&
+      instance.superchargeLevel !== timer.currentSuperchargeLevel
+    ) return false;
+    if (
+      timer.upgradeKind !== "SUPERCHARGE" &&
+      timer.currentSuperchargeLevel !== undefined &&
+      instance.superchargeLevel !== timer.currentSuperchargeLevel
+    ) return false;
+    return true;
+  });
+
+  return matches.length === 1 ? matches[0].id : undefined;
+}

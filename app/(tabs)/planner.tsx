@@ -728,6 +728,9 @@ export default function PlannerCatalogScreen() {
               liveUpgrades={observedUpgrades ?? []}
               builderCount={activeTag ? profilesByTag[activeTag]?.normalBuilderCount ?? 0 : 0}
               nowMs={Date.now()}
+              queueBusy={queueBusy}
+              onEditPlannedItem={beginQueueItemEdit}
+              onRemovePlannedItem={removeFromQueue}
             />
 
             <PlannerQueueList

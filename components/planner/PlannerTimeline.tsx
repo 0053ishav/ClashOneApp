@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { UpgradeDetailSheet } from "@/components/planner/UpgradeDetailSheet";
 import { useHomeColors } from "@/theme/useHomeColors";
 import type {
   ObservedActiveUpgrade,
@@ -19,6 +20,9 @@ interface PlannerTimelineProps {
   liveUpgrades: readonly ObservedActiveUpgrade[];
   builderCount: number;
   nowMs: number;
+  queueBusy?: boolean;
+  onEditPlannedItem?: (item: PlannedUpgradeItem) => void;
+  onRemovePlannedItem?: (itemId: PlannedUpgradeItem["id"]) => void;
 }
 
 interface TimelineLane {
@@ -71,6 +75,9 @@ export function PlannerTimeline({
   liveUpgrades,
   builderCount,
   nowMs,
+  queueBusy = false,
+  onEditPlannedItem,
+  onRemovePlannedItem,
 }: PlannerTimelineProps) {
   const colors = useHomeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -362,6 +369,30 @@ export function PlannerTimeline({
           )}
         </View>
       )}
+
+
+      {(() => {
+        const selectedItem = items.find((item) => item.id === selectedItemId);
+        if (!selectedItem) return null;
+        const selectedCandidate = candidateById.get(selectedItem.candidateId);
+        const selectedProjection = projectionByItemId.get(selectedItem.id);
+        const selectedName = selectedCandidate
+          ? entityNamesById[selectedCandidate.entityId] ?? selectedItem.candidateId
+          : selectedItem.candidateId;
+        return (
+          <UpgradeDetailSheet
+            visible
+            item={selectedItem}
+            candidate={selectedCandidate}
+            projection={selectedProjection}
+            name={selectedName}
+            queueBusy={queueBusy}
+            onClose={() => setSelectedItemId(null)}
+            onEdit={onEditPlannedItem ? () => onEditPlannedItem(selectedItem) : undefined}
+            onRemove={onRemovePlannedItem ? () => onRemovePlannedItem(selectedItem.id) : undefined}
+          />
+        );
+      })()}
 
       {hasIncompleteWork && items.length > 0 && (
         <Text style={styles.incompleteNote}>

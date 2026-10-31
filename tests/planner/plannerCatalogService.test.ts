@@ -76,6 +76,24 @@ describe("buildPlannerCatalog", () => {
     });
   });
 
+  it("uses validated progression max levels when entity display metadata has no levels", () => {
+    const result = buildPlannerCatalog(dataset([
+      candidate({ entityId: "1", candidateId: "buildings:1:2", currentLevel: 1, targetLevel: 2 }),
+      candidate({ entityId: "1", candidateId: "buildings:1:3", currentLevel: 2, targetLevel: 3 }),
+    ]), {
+      namesByEntityId: { "1": "Hidden Tesla" },
+      maxLevelsByEntityId: {},
+    }, {
+      ...filters,
+      currentLevels: { "1": 1 },
+    });
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].name).toBe("Hidden Tesla");
+    expect(result.items[0].maxLevel).toBe(3);
+    expect(result.diagnosticsSummary.metadataCandidates).toBe(1);
+  });
+
   it("does not treat a missing current level as level zero", () => {
     const result = buildPlannerCatalog(dataset([
       candidate({ entityId: "untracked-building", candidateId: "buildings:untracked-building:1", currentLevel: 0, targetLevel: 1 }),

@@ -124,7 +124,7 @@ export function buildPlannerCatalog(
   }
 
   items.sort((a, b) =>
-    a.category.localeCompare(b.category) ||
+    a.candidate.category.localeCompare(b.candidate.category) ||
     a.name.localeCompare(b.name) ||
     a.candidate.targetLevel - b.candidate.targetLevel ||
     a.candidate.candidateId.localeCompare(b.candidate.candidateId),

@@ -1018,30 +1018,6 @@ export default function PlannerCatalogScreen() {
   );
 }
 
-function formatProjection(projection: UpgradeProjection | undefined): string {
-  if (!projection) return "Schedule not calculated";
-  if (projection.status === "scheduled") {
-    return `Scheduled · starts ${new Date(projection.startsAtMs).toLocaleString()} · finishes ${new Date(projection.completesAtMs).toLocaleString()}`;
-  }
-  if (projection.status === "unknown") {
-    const reason = projection.reasons[0];
-    return reason?.code === "estimate-unknown"
-      ? `Unknown estimate · ${reason.estimate} data unavailable`
-      : "Unknown estimate";
-  }
-  const reason = projection.reasons[0];
-  if (!reason) return "Blocked · reason unavailable";
-  switch (reason.code) {
-    case "candidate-unavailable": return "Blocked · progression candidate unavailable (sync game data or update this queue item)";
-    case "lane-unavailable": return "Blocked · assigned lane is occupied or unavailable";
-    case "lane-ineligible": return "Blocked · Goblin lane eligibility is not confirmed";
-    case "prerequisite-unmet": return "Blocked · prerequisite level is not met or confirmed";
-    case "invalid-target-level": return "Blocked · target level is outside the validated candidate range";
-    case "dependency-cycle": return "Blocked · planned upgrades contain a dependency cycle";
-    case "estimate-unknown": return "Unknown estimate · game data is incomplete";
-  }
-}
-
 function formatCostEstimate(
   estimate: PlannerCatalogResult["items"][number]["candidate"]["estimate"]["cost"],
 ): string {

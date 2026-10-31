@@ -396,6 +396,7 @@ async function migrateDatabase() {
         account_player_tag TEXT NOT NULL,
         village TEXT NOT NULL DEFAULT 'home' CHECK (village = 'home'),
         data_id INTEGER NOT NULL,
+        instance_number INTEGER NOT NULL,
         current_level INTEGER NOT NULL,
         supercharge_level INTEGER NOT NULL DEFAULT 0,
         identity_confidence TEXT NOT NULL DEFAULT 'stable'
@@ -405,6 +406,8 @@ async function migrateDatabase() {
 
       CREATE INDEX IF NOT EXISTS idx_structure_instances_account_entity
       ON structure_instances(account_player_tag, data_id);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_structure_instances_account_number
+      ON structure_instances(account_player_tag, data_id, instance_number);
     `);
     for (const statement of [
       "ALTER TABLE planner_plan_items ADD COLUMN structure_instance_id TEXT;",

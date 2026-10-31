@@ -413,13 +413,14 @@ export async function replaceImportedVillageSnapshot(
       for (const instance of structureInstances) {
         await db.runAsync(
           `INSERT INTO structure_instances
-            (id, account_player_tag, village, data_id, current_level, supercharge_level, identity_confidence)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            (id, account_player_tag, village, data_id, instance_number, current_level, supercharge_level, identity_confidence)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             instance.id,
             tag,
             instance.village,
             instance.dataId,
+            instance.instanceNumber,
             instance.currentLevel,
             instance.superchargeLevel,
             instance.identityConfidence,
@@ -477,12 +478,13 @@ export async function getStructureInstances(tag: string): Promise<StructureInsta
     account_player_tag: string;
     village: "home";
     data_id: number;
+    instance_number: number;
     current_level: number;
     supercharge_level: number;
     identity_confidence: "stable" | "ambiguous";
   }>(
-    "SELECT id, account_player_tag, village, data_id, current_level, supercharge_level, identity_confidence " +
-      "FROM structure_instances WHERE account_player_tag = ? ORDER BY data_id, current_level, supercharge_level, id",
+    "SELECT id, account_player_tag, village, data_id, instance_number, current_level, supercharge_level, identity_confidence " +
+      "FROM structure_instances WHERE account_player_tag = ? ORDER BY data_id, instance_number",
     [tag],
   );
   return rows.map((row) => ({
@@ -490,6 +492,7 @@ export async function getStructureInstances(tag: string): Promise<StructureInsta
     accountTag: row.account_player_tag,
     village: row.village,
     dataId: row.data_id,
+    instanceNumber: row.instance_number,
     currentLevel: row.current_level,
     superchargeLevel: row.supercharge_level,
     identityConfidence: row.identity_confidence,

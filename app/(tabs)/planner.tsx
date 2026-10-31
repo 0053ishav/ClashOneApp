@@ -33,7 +33,9 @@ import type {
   PlannerCatalogFilters,
   PlannerCatalogResult,
 } from "@/services/plannerCatalogService";
-import type { PlannerEntityCategory } from "@/types/planner";
+import type { PlannerEntityCategory, PlannerItemId, PlannerPlan, PlannerPlanId, PlannedUpgradeItem } from "@/types/planner";
+import { createPlannerPlan, listPlannerPlans, replacePlannerQueue } from "@/services/plannerPersistenceService";
+import { addPlannerQueueItem, removePlannerQueueItem } from "@/services/planner/plannerQueueService";
 import { resolvePlannerStructureLevels } from "@/services/plannerStructureLevelService";
 import { resolvePlannerCatalogLevelState } from "@/services/plannerCatalogLevelState";
 
@@ -80,6 +82,10 @@ export default function PlannerCatalogScreen() {
   const [result, setResult] = useState<PlannerCatalogResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [queuePlan, setQueuePlan] = useState<PlannerPlan | null>(null);
+  const [queueBusy, setQueueBusy] = useState(false);
+  const [queueError, setQueueError] = useState<string | null>(null);
+  const nextItemId = useRef(0);
 
   const activeAccount = accounts.find((account) => account.tag === activeTag);
   const townHallLevel =
@@ -517,6 +523,18 @@ export default function PlannerCatalogScreen() {
                     ).join(", ")}
                   </Text>
                 )}
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={queueBusy || !queuePlan}
+                  onPress={() => addToQueue(item.candidate.candidateId, item.candidate.targetLevel)}
+                  style={styles.applyButton}
+                >
+                  <Text style={styles.applyButtonText}>
+                    {queuePlan?.items.some((queued) => queued.candidateId === item.candidate.candidateId && queued.targetLevel === item.candidate.targetLevel)
+                      ? "Already queued"
+                      : "Add to queue"}
+                  </Text>
+                </Pressable>
               </View>
             ))}
           </>
@@ -594,5 +612,8 @@ function createStyles(colors: ReturnType<typeof useHomeColors>) {
     levelInput: { width: 64, color: colors.textPrimary, backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderWidth: 1, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 7, textAlign: "center" },
     applyButton: { backgroundColor: colors.gold, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 9 },
     applyButtonText: { color: colors.textDark, fontSize: 11, fontWeight: "800" },
+    queueRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 10, marginTop: 10, borderTopWidth: 1, borderTopColor: colors.border },
+    removeButton: { borderColor: colors.border, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
+    removeButtonText: { color: colors.textSecondary, fontSize: 11, fontWeight: "700" },
   });
 }

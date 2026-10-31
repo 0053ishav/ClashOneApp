@@ -14,6 +14,10 @@ import { useAccountStore } from "@/stores/accountStore";
 import { useEntityStore } from "@/stores/entityStore";
 import { getBuildingProgress } from "@/services/accountService";
 import {
+  loadPlannerCatalogLevelOverrides,
+  savePlannerCatalogLevelOverrides,
+} from "@/services/plannerCatalogLevelStorage";
+import {
   loadProgressionCategory,
   loadProgressionManifest,
 } from "@/storage/progressionStorage";
@@ -90,6 +94,7 @@ export default function PlannerCatalogScreen() {
     setCurrentLevels({});
     setLevelDrafts({});
     setIsLoading(true);
+    const savedOverrides = loadPlannerCatalogLevelOverrides(activeTag);
     void getBuildingProgress(activeTag)
       .then((records) => {
         if (cancelled) return;
@@ -98,7 +103,7 @@ export default function PlannerCatalogScreen() {
           const key = String(record.dataId);
           levels[key] = Math.max(levels[key] ?? 0, record.normalLevel);
         }
-        setCurrentLevels(levels);
+        setCurrentLevels({ ...savedOverrides, ...levels });
       })
       .catch((loadError: unknown) => {
         if (!cancelled) {
@@ -209,7 +214,12 @@ export default function PlannerCatalogScreen() {
     const draft = levelDrafts[String(entityId)] ?? "";
     const level = Number(draft);
     if (!Number.isSafeInteger(level) || level < 0 || level > maxLevel) return;
-    setCurrentLevels((previous) => ({ ...previous, [String(entityId)]: level }));
+    if (!activeTag) return;
+    setCurrentLevels((previous) => {
+      const next = { ...previous, [String(entityId)]: level };
+      savePlannerCatalogLevelOverrides(activeTag, next);
+      return next;
+    });
   };
 
   return (

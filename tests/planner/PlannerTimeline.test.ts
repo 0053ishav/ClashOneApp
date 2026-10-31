@@ -1,3 +1,19 @@
+jest.mock("@/theme/useHomeColors", () => ({
+  useHomeColors: () => ({
+    background: "#000000",
+    border: "#222222",
+    borderStrong: "#333333",
+    gold: "#fbbf24",
+    orangeLight: "#fb923c",
+    surface: "#111111",
+    surfaceRaised: "#222222",
+    textDark: "#000000",
+    textMuted: "#888888",
+    textPrimary: "#ffffff",
+    textSecondary: "#cccccc",
+  }),
+}));
+
 import { getBlockPosition } from "@/components/planner/PlannerTimeline";
 
 const DAY_MS = 24 * 60 * 60 * 1000;

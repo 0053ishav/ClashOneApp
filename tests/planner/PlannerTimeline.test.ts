@@ -120,4 +120,49 @@ describe("PlannerTimeline positioning", () => {
     expect(screen.getByText("Finish estimates include scheduled work only. Blocked or unknown upgrades do not receive invented dates.")).toBeTruthy();
   });
 
+
+  it("lets a user select blocked bars with accessible level and state labels", () => {
+    const item: PlannedUpgradeItem = {
+      id: "item-select" as PlannerItemId,
+      candidateId: "candidate-select",
+      targetLevel: 3,
+      lane: { lane: "normal-builders", builderIndex: 1 },
+      order: 0,
+      createdAtMs: nowMs,
+      updatedAtMs: nowMs,
+    };
+
+    render(React.createElement(PlannerTimeline, {
+      items: [item],
+      projections: [{
+        status: "blocked",
+        plannedItemId: item.id,
+        reasons: [{ code: "candidate-unavailable", candidateId: item.candidateId }],
+      }],
+      candidates: [{
+        candidateId: "candidate-select",
+        entityId: "entity-select",
+        category: "building",
+        village: "home",
+        currentLevel: 2,
+        targetLevel: 3,
+        prerequisites: [],
+        estimate: {
+          cost: { status: "unknown", reason: "missing-game-data" },
+          durationMs: { status: "unknown", reason: "missing-game-data" },
+        },
+      }],
+      entityNamesById: { "entity-select": "Archer Tower" },
+      liveUpgrades: [],
+      builderCount: 1,
+      nowMs,
+    }));
+
+    const bar = screen.getByRole("button", { name: /Archer Tower, level 2 to 3, blocked/ });
+    expect(bar.props.accessibilityState).toEqual({ selected: false });
+    fireEvent.press(bar);
+    expect(screen.getByRole("button", { name: /Archer Tower, level 2 to 3, blocked/ }).props.accessibilityState)
+      .toEqual({ selected: true });
+  });
+
 });

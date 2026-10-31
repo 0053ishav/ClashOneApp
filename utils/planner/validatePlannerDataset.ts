@@ -1,3 +1,4 @@
+import { ResourceType } from "@/types/resource";
 import type {
   Estimate,
   EstimateUnknownReason,
@@ -83,6 +84,7 @@ function resolveCost(
   category: string,
   entityId: string,
   level: number,
+  resource: unknown,
   diagnostics: ProgressionDiagnostic[],
 ): Estimate<{ gold?: number; elixir?: number; darkElixir?: number }> {
   if (value === undefined || value === null) {
@@ -93,9 +95,17 @@ function resolveCost(
     diagnostics.push({ code: "invalid-cost", category, entityId, level, detail: "Cost must be finite and non-negative." });
     return { status: "unknown", reason: "invalid-game-data" };
   }
-  // The existing progression schema stores a numeric cost and a separate resource.
-  // Resource conversion belongs in the data adapter, not this validator.
-  return { status: "known", value: { gold: value } };
+  switch (resource) {
+    case ResourceType.GOLD:
+      return { status: "known", value: { gold: value } };
+    case ResourceType.ELIXIR:
+      return { status: "known", value: { elixir: value } };
+    case ResourceType.DARK_ELIXIR:
+      return { status: "known", value: { darkElixir: value } };
+    default:
+      diagnostics.push({ code: "invalid-cost", category, entityId, level, detail: "Resource type is missing or unsupported for planner cost conversion." });
+      return { status: "unknown", reason: "invalid-game-data" };
+  }
 }
 
 function resolveDuration(
@@ -247,7 +257,7 @@ export function validatePlannerDataset(
           targetLevel: levelNumber,
           prerequisites,
           estimate: {
-            cost: resolveCost(level.cost, input.category, entityId, levelNumber, diagnostics),
+            cost: resolveCost(level.cost, progression.resource, input.category, entityId, levelNumber, diagnostics),
             durationMs: resolveDuration(level.upgradeTime, input.category, entityId, levelNumber, diagnostics),
           },
         });

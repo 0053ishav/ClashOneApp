@@ -198,7 +198,7 @@ export function PlannerTimeline({
         <View style={styles.timelineLayout}>
           <View style={styles.fixedLaneColumn}>
             <View style={[styles.axisRow, styles.fixedAxisRow]}>
-              <View style={styles.laneLabel}>
+              <View style={styles.laneHeaderLabel}>
                 <Text style={styles.axisLabel}>Lane</Text>
               </View>
             </View>
@@ -471,6 +471,7 @@ function createStyles(colors: ReturnType<typeof useHomeColors>) {
     timelineAxisRow: { borderBottomWidth: 1, borderBottomColor: colors.border },
     fixedLaneRow: { minHeight: 46, borderTopWidth: 1, borderTopColor: colors.border },
     trackRow: { minHeight: 46, borderTopWidth: 1, borderTopColor: colors.border },
+    laneHeaderLabel: { width: 84, height: 36, justifyContent: "center", paddingRight: 8, borderRightWidth: 1, borderRightColor: colors.border },
     laneLabel: { width: 84, minHeight: 46, justifyContent: "center", paddingRight: 8, borderRightWidth: 1, borderRightColor: colors.border },
     axis: { position: "relative", height: 36 },
     axisLabel: { color: colors.textMuted, fontSize: 9 },

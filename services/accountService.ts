@@ -229,9 +229,10 @@ export async function replaceUpgrades(tag: string, upgrades: Upgrade[]) {
     crafted_module_levels,
     upgrade_kind,
     current_supercharge_level,
-    next_supercharge_level
+    next_supercharge_level,
+    structure_instance_id
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           u.id,
           tag,
@@ -266,6 +267,7 @@ export async function replaceUpgrades(tag: string, upgrades: Upgrade[]) {
           u.upgradeKind ?? "NORMAL",
           u.currentSuperchargeLevel ?? null,
           u.nextSuperchargeLevel ?? null,
+          u.structureInstanceId ?? null,
         ]
       );
     }
@@ -369,8 +371,8 @@ export async function replaceImportedVillageSnapshot(
           next_level, start_time, duration_minutes, finish_timestamp,
           has_helper, recurrent_helper, helper_applied_seconds, is_completed,
           source, is_crafted, module_id, crafted_module_levels, upgrade_kind,
-          current_supercharge_level, next_supercharge_level
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          current_supercharge_level, next_supercharge_level, structure_instance_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           u.id, tag, u.village ?? "home", u.dataId ?? null, u.entity, u.type,
           u.subType ?? null, u.upgradeType,
@@ -384,6 +386,7 @@ export async function replaceImportedVillageSnapshot(
           u.upgradeKind ?? "NORMAL",
           u.currentSuperchargeLevel ?? null,
           u.nextSuperchargeLevel ?? null,
+          u.structureInstanceId ?? null,
         ],
       );
     }

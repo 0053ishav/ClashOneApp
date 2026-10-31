@@ -87,8 +87,7 @@ export function addPlannerQueueItem(
   const key = laneKey(item.lane);
   const laneItems = sortLane(items.filter((existing) => laneKey(existing.lane) === key));
   const normalized = compactLane(items, key);
-  const nextItem = { ...item, order: laneItems.length };
-  return sortPlannerQueue([...normalized, nextItem]);
+  return sortPlannerQueue([...normalized, { ...item, order: laneItems.length }]);
 }
 
 /** Updates an item, preserving its position unless it moves to another lane. */
@@ -112,16 +111,22 @@ export function updatePlannerQueueItem(
     updatedAtMs: Math.max(now, current.createdAtMs),
   };
   assertValidItem(updated);
-
   const newKey = laneKey(updated.lane);
-  const withoutCurrent = items.filter((item) => item.id !== itemId);
-  let normalized = compactLane(withoutCurrent, oldKey);
-  if (newKey !== oldKey) {
-    const newLaneItems = sortLane(normalized.filter((item) => laneKey(item.lane) === newKey));
-    normalized = compactLane(normalized, newKey);
-    updated.order = newLaneItems.length;
+
+  if (oldKey === newKey) {
+    const replaced = items.map((item) => item.id === itemId ? updated : item);
+    return sortPlannerQueue(compactLane(replaced, newKey));
   }
-  return sortPlannerQueue([...normalized, updated]);
+
+  const withoutCurrent = items.filter((item) => item.id !== itemId);
+  const oldLaneCompacted = compactLane(withoutCurrent, oldKey);
+  const newLaneItems = sortLane(
+    oldLaneCompacted.filter((item) => laneKey(item.lane) === newKey),
+  );
+  return sortPlannerQueue([
+    ...compactLane(oldLaneCompacted, newKey),
+    { ...updated, order: newLaneItems.length },
+  ]);
 }
 
 /** Removes an item and compacts its lane. */

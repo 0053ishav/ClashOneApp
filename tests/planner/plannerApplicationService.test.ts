@@ -17,6 +17,7 @@ function makePlan(): PlannerPlan {
     village: "home",
     createdAtMs: NOW - 1000,
     updatedAtMs: NOW,
+    snapshotAtMs: null,
     items: [{
       id: "item-1" as PlannerPlan["items"][number]["id"],
       candidateId: "building:1:2",

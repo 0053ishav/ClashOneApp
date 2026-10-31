@@ -256,7 +256,11 @@ export default function PlannerCatalogScreen() {
     const timestampedItems = items.map((item) => ({ ...item, updatedAtMs: Math.max(now, item.createdAtMs) }));
     try {
       await replacePlannerQueue(activeTag, queuePlan.id, timestampedItems, now);
-      setQueuePlan((previous) => previous ? { ...previous, items: timestampedItems, updatedAtMs: now } : previous);
+      setQueuePlan((previous) =>
+        previous && previous.accountTag === activeTag && previous.id === queuePlan.id
+          ? { ...previous, items: timestampedItems, updatedAtMs: now }
+          : previous,
+      );
     } catch (saveError: unknown) {
       setQueueError(saveError instanceof Error ? saveError.message : "Could not save the upgrade queue.");
     } finally {

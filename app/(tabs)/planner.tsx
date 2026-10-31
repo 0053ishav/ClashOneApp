@@ -32,6 +32,7 @@ import type {
 } from "@/services/plannerCatalogService";
 import type { PlannerEntityCategory } from "@/types/planner";
 import { resolvePlannerStructureLevels } from "@/services/plannerStructureLevelService";
+import { resolvePlannerCatalogLevelState } from "@/services/plannerCatalogLevelState";
 
 const CATEGORIES: { label: string; value: PlannerEntityCategory | "all" }[] = [
   { label: "All", value: "all" },
@@ -108,10 +109,9 @@ export default function PlannerCatalogScreen() {
           const key = String(record.dataId);
           levels[key] = Math.max(levels[key] ?? 0, record.normalLevel);
         }
-        setCurrentLevels({ ...savedOverrides, ...levels });
-        setManualOverrides(Object.fromEntries(
-          Object.entries(savedOverrides).filter(([key]) => !Object.prototype.hasOwnProperty.call(levels, key)),
-        ));
+        const resolvedLevels = resolvePlannerCatalogLevelState(savedOverrides, levels);
+        setCurrentLevels(resolvedLevels.currentLevels);
+        setManualOverrides(resolvedLevels.manualOverrides);
       })
       .catch((loadError: unknown) => {
         if (!cancelled) {

@@ -35,7 +35,7 @@ import type {
 } from "@/services/plannerCatalogService";
 import type { PlannerEntityCategory, PlannerItemId, PlannerPlan, PlannerPlanId, PlannedUpgradeItem } from "@/types/planner";
 import { createPlannerPlan, listPlannerPlans, replacePlannerQueue } from "@/services/plannerPersistenceService";
-import { addPlannerQueueItem, removePlannerQueueItem } from "@/services/planner/plannerQueueService";
+import { addPlannerQueueItem, movePlannerQueueItem, removePlannerQueueItem } from "@/services/planner/plannerQueueService";
 import { resolvePlannerStructureLevels } from "@/services/plannerStructureLevelService";
 import { resolvePlannerCatalogLevelState } from "@/services/plannerCatalogLevelState";
 
@@ -86,6 +86,7 @@ export default function PlannerCatalogScreen() {
   const [queueBusy, setQueueBusy] = useState(false);
   const [queueError, setQueueError] = useState<string | null>(null);
   const nextItemId = useRef(0);
+  const queueWriteInFlight = useRef(false);
 
   const activeAccount = accounts.find((account) => account.tag === activeTag);
   const townHallLevel =
@@ -243,7 +244,8 @@ export default function PlannerCatalogScreen() {
   }, [activeTag]);
 
   const persistQueue = async (items: readonly PlannedUpgradeItem[]) => {
-    if (!activeTag || !queuePlan || queueBusy) return;
+    if (!activeTag || !queuePlan || queueWriteInFlight.current) return;
+    queueWriteInFlight.current = true;
     setQueueBusy(true);
     setQueueError(null);
     const now = Date.now();
@@ -254,6 +256,7 @@ export default function PlannerCatalogScreen() {
     } catch (saveError: unknown) {
       setQueueError(saveError instanceof Error ? saveError.message : "Could not save the upgrade queue.");
     } finally {
+      queueWriteInFlight.current = false;
       setQueueBusy(false);
     }
   };
@@ -281,6 +284,28 @@ export default function PlannerCatalogScreen() {
       void persistQueue(removePlannerQueueItem(queuePlan.items, itemId));
     } catch (mutationError: unknown) {
       setQueueError(mutationError instanceof Error ? mutationError.message : "Could not update the upgrade queue.");
+    }
+  };
+
+  const moveQueueItem = (itemId: PlannerItemId, direction: -1 | 1) => {
+    if (!queuePlan || queueBusy) return;
+    const item = queuePlan.items.find((candidate) => candidate.id === itemId);
+    if (!item) return;
+    const laneItems = queuePlan.items
+      .filter((candidate) =>
+        candidate.lane.lane === item.lane.lane &&
+        (candidate.lane.lane !== "normal-builders" ||
+          (item.lane.lane === "normal-builders" &&
+            candidate.lane.builderIndex === item.lane.builderIndex)),
+      )
+      .sort((a, b) => a.order - b.order);
+    const currentIndex = laneItems.findIndex((candidate) => candidate.id === itemId);
+    const targetIndex = currentIndex + direction;
+    if (targetIndex < 0 || targetIndex >= laneItems.length) return;
+    try {
+      void persistQueue(movePlannerQueueItem(queuePlan.items, itemId, targetIndex));
+    } catch (mutationError: unknown) {
+      setQueueError(mutationError instanceof Error ? mutationError.message : "Could not reorder the upgrade queue.");
     }
   };
 
@@ -438,9 +463,29 @@ export default function PlannerCatalogScreen() {
                     <Text style={styles.itemName}>{result?.items.find((item) => item.candidate.candidateId === queuedItem.candidateId)?.name ?? queuedItem.candidateId}</Text>
                     <Text style={styles.muted}>Target level {queuedItem.targetLevel} · {queuedItem.lane.lane === "normal-builders" ? `Builder ${queuedItem.lane.builderIndex}` : queuedItem.lane.lane}</Text>
                   </View>
-                  <Pressable accessibilityRole="button" disabled={queueBusy} onPress={() => removeFromQueue(queuedItem.id)} style={styles.removeButton}>
-                    <Text style={styles.removeButtonText}>Remove</Text>
-                  </Pressable>
+                  <View style={styles.queueActions}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Move upgrade earlier"
+                      disabled={queueBusy || queuedItem.order === 0}
+                      onPress={() => moveQueueItem(queuedItem.id, -1)}
+                      style={styles.removeButton}
+                    >
+                      <Text style={styles.removeButtonText}>↑</Text>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Move upgrade later"
+                      disabled={queueBusy}
+                      onPress={() => moveQueueItem(queuedItem.id, 1)}
+                      style={styles.removeButton}
+                    >
+                      <Text style={styles.removeButtonText}>↓</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" disabled={queueBusy} onPress={() => removeFromQueue(queuedItem.id)} style={styles.removeButton}>
+                      <Text style={styles.removeButtonText}>Remove</Text>
+                    </Pressable>
+                  </View>
                 </View>
               ))}
             </View>
@@ -696,6 +741,7 @@ function createStyles(colors: ReturnType<typeof useHomeColors>) {
     applyButton: { backgroundColor: colors.gold, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 9 },
     applyButtonText: { color: colors.textDark, fontSize: 11, fontWeight: "800" },
     queueRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 10, marginTop: 10, borderTopWidth: 1, borderTopColor: colors.border },
+    queueActions: { flexDirection: "row", alignItems: "center", gap: 5 },
     removeButton: { borderColor: colors.border, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
     removeButtonText: { color: colors.textSecondary, fontSize: 11, fontWeight: "700" },
   });

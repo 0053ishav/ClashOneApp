@@ -111,7 +111,9 @@ export function reconcileStructureInstances(
     const levelDistributionChanged =
       priorLevels.size !== nextLevels.size ||
       [...priorLevels].some((level) => !nextLevels.has(level));
-    if (previousCount !== incomingCount || levelDistributionChanged) changedEntityIds.add(dataId);
+    if (previousCount > 0 && (previousCount !== incomingCount || levelDistributionChanged)) {
+      changedEntityIds.add(dataId);
+    }
   }
 
   const instances: StructureInstanceRecord[] = [];

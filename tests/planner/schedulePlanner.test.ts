@@ -226,6 +226,26 @@ describe("schedulePlanner", () => {
     );
   });
 
+  it("distinguishes unknown entity prerequisite levels from unmet known levels", () => {
+    const dependent = candidate("dependent", "building", {
+      prerequisites: [{ kind: "entity-level", entityId: "missing-entity", minimumLevel: 2 }],
+    });
+    const result = schedulePlanner(input({
+      candidates: [dependent],
+      items: [item("dependent-item", "dependent")],
+      prerequisiteState: {
+        townHallLevel: 16,
+        laboratoryLevel: 12,
+        petHouseLevel: 10,
+        entityLevels: {},
+      },
+    }));
+    expect(result[0]).toEqual(expect.objectContaining({
+      status: "blocked",
+      reasons: [expect.objectContaining({ code: "prerequisite-unknown" })],
+    }));
+  });
+
   it("reports unmet static prerequisites", () => {
     const blocked = candidate("a", "building", {
       prerequisites: [{ kind: "town-hall-level", minimumLevel: 17 }],

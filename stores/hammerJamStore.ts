@@ -24,7 +24,7 @@ export const useHammerJamStore = create<HammerJamState>((set, get) => ({
   availability: "loading",
   sync: async () => {
     // Fail closed during refresh; stale active config must not keep discounts on.
-    set({ availability: "loading" });
+    set({ availability: "loading", manifest: DEFAULT_HAMMER_JAM_MANIFEST });
     const result = await fetchHammerJamManifestResult();
     set({ manifest: result.manifest, availability: result.status });
   },

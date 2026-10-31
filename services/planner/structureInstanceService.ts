@@ -104,15 +104,25 @@ export function reconcileStructureInstances(
   for (const dataId of entityIds) {
     const previousCount = previousCountsByEntity.get(dataId) ?? 0;
     const incomingCount = incomingCountsByEntity.get(dataId) ?? 0;
-    const priorLevels = new Set(previousForAccount.filter((item) => item.dataId === dataId).map(
-      (item) => `${item.currentLevel}:${item.superchargeLevel}`,
-    ));
-    const nextLevels = new Set(incomingBuckets.filter((item) => item.dataId === dataId).map(
-      (item) => `${item.normalLevel}:${item.superchargeLevel}`,
-    ));
-    const levelDistributionChanged =
-      priorLevels.size !== nextLevels.size ||
-      [...priorLevels].some((level) => !nextLevels.has(level));
+    const priorBucketCounts = new Map<string, number>();
+    for (const item of previousForAccount.filter((candidate) => candidate.dataId === dataId)) {
+      const key = bucketKey({
+        dataId: item.dataId,
+        village: item.village,
+        normalLevel: item.currentLevel,
+        superchargeLevel: item.superchargeLevel,
+        count: 1,
+      });
+      priorBucketCounts.set(key, (priorBucketCounts.get(key) ?? 0) + 1);
+    }
+    const nextBucketCounts = new Map<string, number>();
+    for (const bucket of incomingBuckets.filter((candidate) => candidate.dataId === dataId)) {
+      nextBucketCounts.set(bucketKey(bucket), bucket.count);
+    }
+    const bucketKeys = new Set([...priorBucketCounts.keys(), ...nextBucketCounts.keys()]);
+    const levelDistributionChanged = [...bucketKeys].some(
+      (key) => (priorBucketCounts.get(key) ?? 0) !== (nextBucketCounts.get(key) ?? 0),
+    );
     if (previousCount > 0 && (previousCount !== incomingCount || levelDistributionChanged)) {
       changedEntityIds.add(dataId);
     }

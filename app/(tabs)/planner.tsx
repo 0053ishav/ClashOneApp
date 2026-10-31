@@ -296,6 +296,7 @@ export default function PlannerCatalogScreen() {
 
   const beginQueueItemEdit = (item: PlannedUpgradeItem) => {
     if (!activeTag || !queuePlan || queuePlan.accountTag !== activeTag || hasQueueEditConflict) return;
+    setPendingQueueEdit(null);
     setEditingQueueOwner({ accountTag: activeTag, planId: queuePlan.id });
     setEditingQueueItemId(item.id);
     setQueueTargetDrafts((previous) => ({ ...previous, [item.id]: String(item.targetLevel) }));

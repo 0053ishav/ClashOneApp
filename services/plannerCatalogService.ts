@@ -144,8 +144,10 @@ export function buildPlannerCatalog(
 
     const name = metadata.namesByEntityId[candidate.entityId]?.trim();
     const metadataMaxLevel = metadata.maxLevelsByEntityId[candidate.entityId];
-    const maxLevel = progressionMaxLevelsByEntityId.get(candidate.entityId)
-      ?? metadataMaxLevel;
+    const progressionMaxLevel = progressionMaxLevelsByEntityId.get(candidate.entityId);
+    const maxLevel = progressionMaxLevel !== undefined && metadataMaxLevel !== undefined
+      ? Math.max(progressionMaxLevel, metadataMaxLevel)
+      : progressionMaxLevel ?? metadataMaxLevel;
     if (!name || typeof maxLevel !== "number" || !Number.isSafeInteger(maxLevel) || maxLevel < 1) continue;
     diagnosticsSummary.metadataCandidates += 1;
     if (currentLevel >= maxLevel || targetLevel > maxLevel) continue;

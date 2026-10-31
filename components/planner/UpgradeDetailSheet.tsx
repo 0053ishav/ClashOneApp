@@ -158,7 +158,7 @@ export function UpgradeDetailSheet({
           {onEdit ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Edit planned upgrade"
+              accessibilityLabel="Edit upgrade"
               disabled={queueBusy}
               onPress={onEdit}
               style={[styles.primaryButton, queueBusy && styles.disabledButton]}
@@ -169,7 +169,7 @@ export function UpgradeDetailSheet({
           {onRemove ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Remove upgrade from plan"
+              accessibilityLabel="Remove from plan"
               disabled={queueBusy}
               onPress={onRemove}
               style={[styles.secondaryButton, queueBusy && styles.disabledButton]}

@@ -56,6 +56,7 @@ describe("reconcileStructureInstances", () => {
     );
 
     expect(result.instances).toHaveLength(3);
+    expect(result.instances.map(({ instanceNumber }) => instanceNumber)).toEqual([1, 2, 3]);
     expect(result.instances.map(({ id }) => id)).toEqual([
       "instance-1", "instance-2", "instance-3",
     ]);

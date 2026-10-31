@@ -37,7 +37,7 @@ import type { ObservedActiveUpgrade, PlannerEntityCategory, PlannerItemId, Plann
 import { recalculatePlannerProjection } from "@/services/plannerApplicationService";
 import type { PlannerLaneAvailability, PlannerPrerequisiteState } from "@/utils/planner/schedulePlanner";
 import { createPlannerPlan, listPlannerPlans, replacePlannerQueue } from "@/services/plannerPersistenceService";
-import { addPlannerQueueItem, movePlannerQueueItem, removePlannerQueueItem } from "@/services/planner/plannerQueueService";
+import { addPlannerQueueItem, getDefaultPlannerLane, movePlannerQueueItem, removePlannerQueueItem } from "@/services/planner/plannerQueueService";
 import { resolvePlannerStructureLevels } from "@/services/plannerStructureLevelService";
 import { resolvePlannerCatalogLevelState } from "@/services/plannerCatalogLevelState";
 
@@ -279,24 +279,7 @@ export default function PlannerCatalogScreen() {
       return;
     }
 
-    // Assign the lane from the upgrade's game domain, not a one-size-fits-all
-    // builder default: research uses the Laboratory, pets use the Pet House,
-    // and construction uses a normal Builder.
-    const lane: PlannedUpgradeItem["lane"] = (() => {
-      switch (candidate.category) {
-        case "troop":
-        case "spell":
-        case "siege":
-          return { lane: "laboratory" };
-        case "pet":
-          return { lane: "pets" };
-        case "building":
-        case "hero":
-        case "trap":
-        case "wall":
-          return { lane: "normal-builders", builderIndex: 1 };
-      }
-    })();
+    const lane = getDefaultPlannerLane(candidate.category);
     const now = Date.now();
     const laneItems = queuePlan.items.filter((item) =>
       item.lane.lane === lane.lane &&

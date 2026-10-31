@@ -388,8 +388,8 @@ export function PlannerTimeline({
             name={selectedName}
             queueBusy={queueBusy}
             onClose={() => setSelectedItemId(null)}
-            onEdit={onEditPlannedItem ? () => onEditPlannedItem(selectedItem) : undefined}
-            onRemove={onRemovePlannedItem ? () => onRemovePlannedItem(selectedItem.id) : undefined}
+            onEdit={onEditPlannedItem ? () => { setSelectedItemId(null); onEditPlannedItem(selectedItem); } : undefined}
+            onRemove={onRemovePlannedItem ? () => { setSelectedItemId(null); onRemovePlannedItem(selectedItem.id); } : undefined}
           />
         );
       })()}

@@ -122,6 +122,29 @@ describe("recalculatePlannerProjection", () => {
     }));
   });
 
+  it("reserves a lane until a confirmed active timer completes", async () => {
+    mockedGetPlannerPlan.mockResolvedValue(makePlan());
+
+    const result = await recalculatePlannerProjection({
+      ...context,
+      observedActiveUpgrades: [{
+        observedUpgradeId: "active-builder-1",
+        accountTag: "#PLAYER",
+        village: "home",
+        lane: { lane: "normal-builders", builderIndex: 1 },
+        startsAtMs: NOW - 1000,
+        completesAtMs: NOW + 90_000,
+        source: "manual",
+      }],
+    });
+
+    expect(result?.projections[0]).toEqual(expect.objectContaining({
+      status: "scheduled",
+      startsAtMs: NOW + 90_000,
+      completesAtMs: NOW + 150_000,
+    }));
+  });
+
   it("ignores observed timers belonging to another account", async () => {
     mockedGetPlannerPlan.mockResolvedValue(makePlan());
 

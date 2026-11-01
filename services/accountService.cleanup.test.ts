@@ -55,6 +55,7 @@ describe("account cleanup operations", () => {
       ["DELETE FROM upgrades WHERE account_player_tag = ?", ["#PLAYER"]],
       ["DELETE FROM entities WHERE account_player_tag = ?", ["#PLAYER"]],
       ["DELETE FROM building_progress WHERE account_player_tag = ?", ["#PLAYER"]],
+      ["DELETE FROM structure_instances WHERE account_player_tag = ?", ["#PLAYER"]],
       ["DELETE FROM magic_item_inventory WHERE account_player_tag = ?", ["#PLAYER"]],
       ["DELETE FROM active_magic_effects WHERE account_player_tag = ?", ["#PLAYER"]],
       ["DELETE FROM imported_boosts WHERE account_player_tag = ?", ["#PLAYER"]],

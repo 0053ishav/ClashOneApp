@@ -1,4 +1,8 @@
-import { addAccount, getAccountByTag, updateAccount } from "@/services/accountService";
+import { addAccount, getAccountByTag, getStructureInstances, updateAccount } from "@/services/accountService";
+import {
+  reconcileStructureInstances,
+  resolveActiveStructureTimerInstanceId,
+} from "@/services/planner/structureInstanceService";
 import { fetchPlayerFromApi } from "@/services/clashApi";
 import { ensureCraftedLoaded } from "@/services/craftedService";
 import { ProgressionApplicationService } from "@/services/progression";
@@ -260,6 +264,9 @@ function validateJson(data: any) {
   }
 
   for (const building of data.buildings ?? []) {
+    if (building.cnt != null && (!Number.isSafeInteger(building.cnt) || building.cnt < 1)) {
+      throw new Error("INVALID_STRUCTURE_COUNT");
+    }
     if (
       building.supercharge != null &&
       (!Number.isSafeInteger(building.supercharge) || building.supercharge < 0)
@@ -1260,7 +1267,54 @@ export async function importVillageJson(
   console.log("Writing upgrades:", newUpgrades.length);
 
   try {
-    await importJsonData(parsed.tag, newUpgrades, entities, buildingProgress);
+    const bucketCounts = new Map<string, BuildingProgressRecord>();
+    for (const building of buildingProgress) {
+      const key = [building.village, building.dataId, building.normalLevel, building.superchargeLevel].join(":");
+      const existing = bucketCounts.get(key);
+      if (existing) {
+        existing.count += building.count;
+      } else {
+        bucketCounts.set(key, { ...building, count: building.count });
+      }
+    }
+    const structureReconciliation = reconcileStructureInstances(
+      parsed.tag,
+      [...bucketCounts.values()],
+      await getStructureInstances(parsed.tag),
+      randomUUID,
+    );
+    if (structureReconciliation.ambiguousEntityIds.length > 0) {
+      console.warn(
+        "[JSON Import] Structure identity is ambiguous after count/level changes:",
+        structureReconciliation.ambiguousEntityIds,
+      );
+    }
+
+    const claimedInstanceIds = new Set<string>();
+    const upgradesWithStructureInstances = newUpgrades.map((upgrade) => {
+      if (upgrade.type !== "BUILDING" || upgrade.dataId === undefined) return upgrade;
+      const structureInstanceId = resolveActiveStructureTimerInstanceId(
+        {
+          dataId: upgrade.dataId,
+          currentLevel: upgrade.currentLevel,
+          upgradeKind: upgrade.upgradeKind,
+          currentSuperchargeLevel: upgrade.currentSuperchargeLevel,
+        },
+        structureReconciliation.instances,
+        claimedInstanceIds,
+      );
+      if (!structureInstanceId) return upgrade;
+      claimedInstanceIds.add(structureInstanceId);
+      return { ...upgrade, structureInstanceId };
+    });
+
+    await importJsonData(
+      parsed.tag,
+      upgradesWithStructureInstances,
+      entities,
+      buildingProgress,
+      structureReconciliation.instances,
+    );
     // Imported timers are authoritative; app-side simulated potion effects must not re-project them.
     await clearActiveMagicEffects(parsed.tag);
     await replaceImportedBoostSnapshot({

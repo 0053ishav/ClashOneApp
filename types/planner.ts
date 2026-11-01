@@ -9,6 +9,23 @@
 
 export type PlannerPlanId = string & { readonly __brand: "PlannerPlanId" };
 export type PlannerItemId = string & { readonly __brand: "PlannerItemId" };
+export type PlannerStructureInstanceId = string & { readonly __brand: "PlannerStructureInstanceId" };
+
+/** Confidence reflects what the grouped in-game export can actually prove. */
+export type StructureIdentityConfidence = "stable" | "ambiguous";
+
+/** App-owned identity for one structure copy; never a Clash API entity ID. */
+export interface PlannerStructureInstance {
+  id: PlannerStructureInstanceId;
+  accountTag: string;
+  village: PlannerVillage;
+  dataId: number;
+  /** Stable per-entity label ordinal; presentation only, never the primary key. */
+  instanceNumber: number;
+  currentLevel: number;
+  superchargeLevel: number;
+  identityConfidence: StructureIdentityConfidence;
+}
 
 export type PlannerVillage = "home";
 
@@ -70,10 +87,17 @@ export type UpgradePrerequisite =
   | { kind: "pet-house-level"; minimumLevel: number }
   | { kind: "entity-level"; entityId: string; minimumLevel: number };
 
+export type PlannerPrerequisiteStatus =
+  | { status: "met" }
+  | { status: "unmet" }
+  | { status: "unknown" };
+
 export interface ProgressionCandidate {
   /** Stable ID from Clash One's progression dataset, not a display name. */
   candidateId: string;
   entityId: string;
+  /** Explicit progression role derived from validated entity metadata. */
+  role?: "town-hall";
   category: PlannerEntityCategory;
   village: PlannerVillage;
   currentLevel: number;
@@ -99,6 +123,8 @@ export interface PlannedUpgradeItem {
   id: PlannerItemId;
   candidateId: ProgressionCandidate["candidateId"];
   targetLevel: number;
+  /** Optional for backward compatibility and shared-level/batch entities. */
+  structureInstanceId?: PlannerStructureInstanceId;
   lane: PlannerLaneAssignment;
   /** User-defined ordering within the assigned lane; lower values run first. */
   order: number;
@@ -113,15 +139,19 @@ export interface PlannerPlan {
   items: readonly PlannedUpgradeItem[];
   createdAtMs: number;
   updatedAtMs: number;
+  /** Last account snapshot explicitly reviewed for this plan; null means unverified. */
+  snapshotAtMs: number | null;
 }
 
 export type PlannerBlockReason =
   | { code: "prerequisite-unmet"; prerequisite: UpgradePrerequisite }
+  | { code: "prerequisite-unknown"; prerequisite: UpgradePrerequisite }
   | { code: "lane-unavailable"; lane: PlannerLaneId }
   | { code: "lane-ineligible"; lane: "goblin-builder" | "goblin-laboratory"; detail: string }
   | { code: "estimate-unknown"; estimate: "cost" | "duration"; reason: EstimateUnknownReason }
   | { code: "invalid-target-level"; targetLevel: number }
-  | { code: "candidate-unavailable"; candidateId: string };
+  | { code: "candidate-unavailable"; candidateId: string }
+  | { code: "dependency-cycle"; itemIds: readonly string[] };
 
 export type UpgradeProjection =
   | {

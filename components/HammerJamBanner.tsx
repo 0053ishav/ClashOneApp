@@ -1,5 +1,6 @@
 import type { HammerJamManifest } from "@/engine/magicItems/hammerJam";
 import { isHammerJamActive } from "@/engine/magicItems/hammerJam";
+import { useHammerJamStore } from "@/stores/hammerJamStore";
 import { formatCountdown } from "@/utils/formatCountdown";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
@@ -10,6 +11,7 @@ type Props = {
 };
 
 export function HammerJamBanner({ manifest }: Props) {
+  const availability = useHammerJamStore((state) => state.availability);
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -17,7 +19,11 @@ export function HammerJamBanner({ manifest }: Props) {
     return () => clearInterval(interval);
   }, []);
 
-  if (!isHammerJamActive(manifest, now) || !manifest.endsAt) {
+  if (
+    availability !== "active" ||
+    !isHammerJamActive(manifest, now) ||
+    !manifest.endsAt
+  ) {
     return null;
   }
 

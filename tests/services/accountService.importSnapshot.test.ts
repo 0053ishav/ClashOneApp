@@ -1,5 +1,6 @@
 import { replaceImportedVillageSnapshot } from "@/services/accountService";
 import type { BuildingProgressRecord, EntityRecord, Upgrade } from "@/types/upgrade";
+import type { StructureInstanceRecord } from "@/services/planner/structureInstanceService";
 
 const mockRunAsync = jest.fn();
 const mockExecAsync = jest.fn();
@@ -82,6 +83,30 @@ describe("replaceImportedVillageSnapshot", () => {
       expect.stringContaining("INSERT INTO building_progress"),
       expect.any(Array),
     );
+  });
+
+  it("persists app-owned structure identities in the same import transaction", async () => {
+    const instances: StructureInstanceRecord[] = [{
+      id: "cannon-instance" as StructureInstanceRecord["id"],
+      accountTag: "#TEST",
+      village: "home",
+      dataId: 1000077,
+      instanceNumber: 2,
+      currentLevel: 5,
+      superchargeLevel: 1,
+      identityConfidence: "stable",
+    }];
+
+    await replaceImportedVillageSnapshot("#TEST", [upgrade], [entity], buildingProgress, instances);
+
+    expect(mockRunAsync).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO structure_instances"),
+      ["cannon-instance", "#TEST", "home", 1000077, 2, 5, 1, "stable"],
+    );
+    expect(mockExecAsync.mock.calls.map(([sql]) => sql)).toEqual([
+      "BEGIN TRANSACTION",
+      "COMMIT",
+    ]);
   });
 
   it("rolls back both tables if any write fails", async () => {

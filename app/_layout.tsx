@@ -38,7 +38,7 @@ import * as Notifications from "expo-notifications";
 import { StatusBar } from "expo-status-bar";
 import { Redirect, Stack, usePathname, useRouter, type ErrorBoundaryProps } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { AppState, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 // Keep the native splash visible until React has committed the first themed frame.
 // The app preference is read synchronously from MMKV by themeStore/useHomeColors.
@@ -116,6 +116,47 @@ export default Sentry.wrap(function RootLayout() {
   const router = useRouter();
   const loadAccounts = useAccountStore((s) => s.loadAccounts);
   const loadLastSync = useAccountStore((s) => s.loadLastSync);
+
+  const hammerJamManifest = useHammerJamStore((state) => state.manifest);
+  const hammerJamAvailability = useHammerJamStore((state) => state.availability);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        void useHammerJamStore.getState().sync();
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
+    if (
+      hammerJamAvailability !== "active" &&
+      hammerJamAvailability !== "disabled"
+    ) {
+      return;
+    }
+
+    const now = Date.now();
+    const boundaries = [hammerJamManifest.startsAt, hammerJamManifest.endsAt]
+      .map((timestamp) => (timestamp ? Date.parse(timestamp) : NaN))
+      .filter((timestamp) => Number.isFinite(timestamp) && timestamp > now);
+
+    if (boundaries.length === 0) return;
+
+    const nextBoundary = Math.min(...boundaries);
+    const timeout = setTimeout(() => {
+      useHammerJamStore.getState().refreshAvailability();
+    }, Math.max(nextBoundary - now + 25, 0));
+
+    return () => clearTimeout(timeout);
+  }, [
+    hammerJamAvailability,
+    hammerJamManifest.startsAt,
+    hammerJamManifest.endsAt,
+    hammerJamManifest.enabled,
+  ]);
 
   const [retryCount, setRetryCount] = useState(0);
   const [showSupport, setShowSupport] = useState(false);

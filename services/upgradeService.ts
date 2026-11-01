@@ -40,6 +40,7 @@ export async function getUpgrades(tag: string): Promise<Upgrade[]> {
     accountTag: r.account_player_tag,
     village: r.village ?? "home",
     dataId: r.data_id,
+    structureInstanceId: r.structure_instance_id ?? undefined,
     entity: r.entity,
 
     type: r.type,
@@ -108,6 +109,7 @@ export async function getActiveUpgrades(tag: string): Promise<Upgrade[]> {
     village: r.village ?? "home",
 
     dataId: r.data_id,
+    structureInstanceId: r.structure_instance_id ?? undefined,
     entity: r.entity,
 
     type: r.type,
@@ -233,9 +235,10 @@ export async function addUpgrade(tag: string, upgrade: Upgrade) {
     crafted_module_levels,
     upgrade_kind,
     current_supercharge_level,
-    next_supercharge_level
+    next_supercharge_level,
+    structure_instance_id
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       upgrade.id,
       tag,
@@ -272,6 +275,7 @@ export async function addUpgrade(tag: string, upgrade: Upgrade) {
       upgrade.upgradeKind ?? "NORMAL",
       upgrade.currentSuperchargeLevel ?? null,
       upgrade.nextSuperchargeLevel ?? null,
+      upgrade.structureInstanceId ?? null,
     ]
   );
 }

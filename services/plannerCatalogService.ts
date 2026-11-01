@@ -3,6 +3,7 @@ import type {
   ProgressionCandidate,
   UpgradePrerequisite,
 } from "@/types/planner";
+import { checkPlannerPrerequisite } from "@/utils/planner/checkPlannerPrerequisite";
 import type {
   ProgressionDiagnostic,
   ValidatedPlannerDataset,
@@ -31,12 +32,24 @@ export interface PlannerCatalogFilters {
   petHouseLevel: number;
 }
 
-export interface PlannerCatalogItem extends PlannerCatalogEntry {
-  currentLevel: number;
-  isNextLevel: boolean;
-  canAdd: boolean;
-  blockedBy: readonly UpgradePrerequisite[];
-}
+export type PlannerCatalogItem = PlannerCatalogEntry & (
+  | {
+      currentLevel: number;
+      currentLevelStatus: "known";
+      isNextLevel: true;
+      canAdd: boolean;
+      blockedBy: readonly UpgradePrerequisite[];
+      unknownPrerequisites: readonly UpgradePrerequisite[];
+    }
+  | {
+      currentLevel: null;
+      currentLevelStatus: "unknown";
+      isNextLevel: false;
+      canAdd: false;
+      blockedBy: readonly UpgradePrerequisite[];
+      unknownPrerequisites: readonly UpgradePrerequisite[];
+    }
+);
 
 export interface PlannerCatalogDiagnosticsSummary {
   datasetCandidates: number;
@@ -56,22 +69,6 @@ export interface PlannerCatalogResult {
   diagnostics: readonly ProgressionDiagnostic[];
   unavailableCategories: readonly string[];
   diagnosticsSummary: PlannerCatalogDiagnosticsSummary;
-}
-
-function isPrerequisiteSatisfied(
-  prerequisite: UpgradePrerequisite,
-  filters: PlannerCatalogFilters,
-): boolean {
-  switch (prerequisite.kind) {
-    case "town-hall-level":
-      return filters.townHallLevel >= prerequisite.minimumLevel;
-    case "laboratory-level":
-      return filters.laboratoryLevel >= prerequisite.minimumLevel;
-    case "pet-house-level":
-      return filters.petHouseLevel >= prerequisite.minimumLevel;
-    case "entity-level":
-      return (filters.currentLevels[prerequisite.entityId] ?? 0) >= prerequisite.minimumLevel;
-  }
 }
 
 function getState(dataset: ValidatedPlannerDataset): PlannerCatalogLoadState {
@@ -99,12 +96,19 @@ export function buildPlannerCatalog(
     .sort();
 
   const currentLevels = filters.currentLevels;
+  const prerequisiteLevels = {
+    townHallLevel: filters.townHallLevel,
+    laboratoryLevel: filters.laboratoryLevel,
+    petHouseLevel: filters.petHouseLevel,
+    entityLevels: currentLevels,
+  };
   // The validated progression dataset is authoritative for upgradeable max
   // levels. Entity metadata levels primarily describe icons/display levels and
   // can be incomplete even when progression records are fully loaded.
   const progressionMaxLevelsByEntityId = new Map<string, number>();
   for (const candidate of dataset.candidates) {
     if (candidate.village !== "home") continue;
+    // Zero is the empty accumulator value, not an account level.
     progressionMaxLevelsByEntityId.set(
       candidate.entityId,
       Math.max(
@@ -114,6 +118,7 @@ export function buildPlannerCatalog(
     );
   }
   const seen = new Set<string>();
+  const seenUnknownLevelEntities = new Set<string>();
   const items: PlannerCatalogItem[] = [];
   const diagnosticsSummary: PlannerCatalogDiagnosticsSummary = {
     datasetCandidates: dataset.candidates.length,
@@ -127,14 +132,59 @@ export function buildPlannerCatalog(
     returnedItems: 0,
   };
 
-  for (const candidate of dataset.candidates) {
+  const candidates = [...dataset.candidates]
+    .filter((candidate) => candidate.village === "home")
+    .sort((a, b) =>
+      a.entityId.localeCompare(b.entityId) ||
+      a.targetLevel - b.targetLevel ||
+      a.candidateId.localeCompare(b.candidateId),
+    );
+  for (const candidate of candidates) {
     if (candidate.village !== "home") continue;
     diagnosticsSummary.homeVillageCandidates += 1;
-    // An absent level is unknown, not level zero. Never recommend an upgrade
-    // from an invented account state.
-    if (!Object.prototype.hasOwnProperty.call(currentLevels, candidate.entityId)) continue;
-    diagnosticsSummary.knownLevelCandidates += 1;
+
     const currentLevel = currentLevels[candidate.entityId];
+    if (
+      !Object.prototype.hasOwnProperty.call(currentLevels, candidate.entityId) ||
+      !Number.isSafeInteger(currentLevel) ||
+      currentLevel < 0
+    ) {
+      if (candidate.category !== filters.category && filters.category !== "all") continue;
+      const name = metadata.namesByEntityId[candidate.entityId]?.trim();
+      const metadataMaxLevel = metadata.maxLevelsByEntityId[candidate.entityId];
+      const progressionMaxLevel = progressionMaxLevelsByEntityId.get(candidate.entityId);
+      const maxLevel = progressionMaxLevel !== undefined && metadataMaxLevel !== undefined
+        ? Math.max(progressionMaxLevel, metadataMaxLevel)
+        : progressionMaxLevel ?? metadataMaxLevel;
+      if (!name || typeof maxLevel !== "number" || !Number.isSafeInteger(maxLevel) || maxLevel < 1) continue;
+      const search = filters.query.trim().toLocaleLowerCase();
+      if (search && !name.toLocaleLowerCase().includes(search) &&
+        !candidate.entityId.toLocaleLowerCase().includes(search)) continue;
+      if (seenUnknownLevelEntities.has(candidate.entityId)) continue;
+      seenUnknownLevelEntities.add(candidate.entityId);
+      const prerequisiteChecks = candidate.prerequisites.map((prerequisite) => ({
+        prerequisite,
+        status: checkPlannerPrerequisite(prerequisite, prerequisiteLevels),
+      }));
+      items.push({
+        candidate,
+        name,
+        maxLevel,
+        currentLevel: null,
+        currentLevelStatus: "unknown",
+        isNextLevel: false,
+        canAdd: false,
+        blockedBy: prerequisiteChecks
+          .filter((check) => check.status.status === "unmet")
+          .map((check) => check.prerequisite),
+        unknownPrerequisites: prerequisiteChecks
+          .filter((check) => check.status.status === "unknown")
+          .map((check) => check.prerequisite),
+      });
+      continue;
+    }
+
+    diagnosticsSummary.knownLevelCandidates += 1;
     const targetLevel = currentLevel + 1;
     if (candidate.targetLevel !== targetLevel) continue;
     if (candidate.targetLevel > candidate.currentLevel + 1) continue;
@@ -161,17 +211,26 @@ export function buildPlannerCatalog(
     if (seen.has(uniqueKey)) continue;
     seen.add(uniqueKey);
 
-    const blockedBy = candidate.prerequisites.filter(
-      (prerequisite) => !isPrerequisiteSatisfied(prerequisite, filters),
-    );
+    const prerequisiteChecks = candidate.prerequisites.map((prerequisite) => ({
+      prerequisite,
+      status: checkPlannerPrerequisite(prerequisite, prerequisiteLevels),
+    }));
+    const blockedBy = prerequisiteChecks
+      .filter((check) => check.status.status === "unmet")
+      .map((check) => check.prerequisite);
+    const unknownPrerequisites = prerequisiteChecks
+      .filter((check) => check.status.status === "unknown")
+      .map((check) => check.prerequisite);
     items.push({
       candidate,
       name,
       maxLevel,
       currentLevel,
+      currentLevelStatus: "known",
       isNextLevel: true,
-      canAdd: blockedBy.length === 0,
+      canAdd: blockedBy.length === 0 && unknownPrerequisites.length === 0,
       blockedBy,
+      unknownPrerequisites,
     });
   }
 

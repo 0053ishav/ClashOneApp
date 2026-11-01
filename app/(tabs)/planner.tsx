@@ -897,11 +897,13 @@ export default function PlannerCatalogScreen() {
                     village: entity.village,
                     type: entity.type,
                     subType: entity.subType,
-                    level: Math.max(1, item.currentLevel),
+                    level: Math.max(1, item.currentLevel ?? 1),
                     useTroopIcon: entity.type === "troop",
                   })
                 : undefined;
-              const costResources = getCostResources(item.candidate.estimate.cost);
+              const costResources = item.currentLevelStatus === "known"
+                ? getCostResources(item.candidate.estimate.cost)
+                : [];
               return (
               <View key={item.candidate.candidateId} style={styles.itemCard}>
                 <View style={styles.itemHeader}>
@@ -919,26 +921,69 @@ export default function PlannerCatalogScreen() {
                     </View>
                   </View>
                   <View style={styles.levelBadge}>
-                    <Text style={styles.levelText}>{item.currentLevel} → {item.candidate.targetLevel}</Text>
+                    <Text style={styles.levelText}>
+                      {item.currentLevelStatus === "known"
+                        ? `${item.currentLevel} → ${item.candidate.targetLevel}`
+                        : "Level unknown"}
+                    </Text>
                   </View>
                 </View>
-                <View style={styles.costAndTime}>
-                  <View style={styles.resourceCostRow}>
-                    {costResources.length === 0 ? (
-                      <Text style={styles.body}>Cost: {formatCostEstimate(item.candidate.estimate.cost)}</Text>
-                    ) : costResources.map(({ resource, amount }) => {
-                      const resourceIcon = resolveResourceIcon(resource);
-                      const resourceColor = getResourceColor(resource, colors);
-                      return (
-                        <View key={resource} style={[styles.resourceCostChip, { backgroundColor: resourceColor + "18" }]}>
-                          {resourceIcon ? <Image source={{ uri: resourceIcon }} style={styles.resourceIcon} contentFit="contain" /> : null}
-                          <Text style={[styles.resourceCostText, { color: resourceColor }]}>{amount.toLocaleString("en-US")}</Text>
-                        </View>
-                      );
-                    })}
+                {item.currentLevelStatus === "unknown" ? (
+                  <View style={styles.levelEditor}>
+                    <Text style={styles.warning}>Current level unknown. Set it to see the correct next upgrade.</Text>
+                    <TextInput
+                      accessibilityLabel={`Current level for ${item.name}`}
+                      keyboardType="number-pad"
+                      value={levelDrafts[String(entityId)] ?? ""}
+                      onChangeText={(value) => {
+                        setLevelDrafts((previous) => ({
+                          ...previous,
+                          [String(entityId)]: value.replace(/[^0-9]/g, ""),
+                        }));
+                        setLevelErrors((previous) => {
+                          if (!previous[String(entityId)]) return previous;
+                          const next = { ...previous };
+                          delete next[String(entityId)];
+                          return next;
+                        });
+                      }}
+                      placeholder={`Level 0-${item.maxLevel}`}
+                      placeholderTextColor={colors.textMuted}
+                      style={styles.levelInput}
+                    />
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Set current level for ${item.name}`}
+                      onPress={() => applyLevel(entityId, item.maxLevel)}
+                      style={styles.applyButton}
+                    >
+                      <Text style={styles.applyButtonText}>Set current level</Text>
+                    </Pressable>
+                    {!!levelErrors[String(entityId)] && (
+                      <Text accessibilityRole="alert" style={styles.warning}>
+                        {levelErrors[String(entityId)]}
+                      </Text>
+                    )}
                   </View>
-                  <Text style={styles.muted}>Time: {formatDurationEstimate(item.candidate.estimate.durationMs)}</Text>
-                </View>
+                ) : (
+                  <View style={styles.costAndTime}>
+                    <View style={styles.resourceCostRow}>
+                      {costResources.length === 0 ? (
+                        <Text style={styles.body}>Cost: {formatCostEstimate(item.candidate.estimate.cost)}</Text>
+                      ) : costResources.map(({ resource, amount }) => {
+                        const resourceIcon = resolveResourceIcon(resource);
+                        const resourceColor = getResourceColor(resource, colors);
+                        return (
+                          <View key={resource} style={[styles.resourceCostChip, { backgroundColor: resourceColor + "18" }]}>
+                            {resourceIcon ? <Image source={{ uri: resourceIcon }} style={styles.resourceIcon} contentFit="contain" /> : null}
+                            <Text style={[styles.resourceCostText, { color: resourceColor }]}>{amount.toLocaleString("en-US")}</Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                    <Text style={styles.muted}>Time: {formatDurationEstimate(item.candidate.estimate.durationMs)}</Text>
+                  </View>
+                )}
                 {item.blockedBy.length > 0 && (
                   <Text style={styles.warning}>
                     Prerequisites not confirmed: {item.blockedBy.map((prerequisite) =>
@@ -948,7 +993,16 @@ export default function PlannerCatalogScreen() {
                     ).join(", ")}
                   </Text>
                 )}
-                {item.canAdd ? (() => {
+                {item.unknownPrerequisites.length > 0 && (
+                  <Text style={styles.warning}>
+                    Current level unknown for prerequisite: {item.unknownPrerequisites.map((prerequisite) =>
+                      prerequisite.kind === "entity-level"
+                        ? prerequisite.entityId
+                        : prerequisite.kind,
+                    ).join(", ")}.
+                  </Text>
+                )}
+                {item.currentLevelStatus === "unknown" ? null : item.canAdd ? (() => {
                   const instanceCandidates = (item.candidate.category === "building" || item.candidate.category === "trap")
                     ? structureInstances.filter((instance) =>
                         instance.dataId === Number(item.candidate.entityId) &&

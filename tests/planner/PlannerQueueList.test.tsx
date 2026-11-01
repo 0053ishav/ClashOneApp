@@ -93,6 +93,29 @@ function renderQueue(overrides: Partial<React.ComponentProps<typeof PlannerQueue
 }
 
 describe("PlannerQueueList schedule preview", () => {
+  it("explains when an unknown prerequisite level prevents scheduling", () => {
+    renderQueue({
+      editingItemId: null,
+      pendingEdit: null,
+      projections: [{
+        status: "unknown",
+        plannedItemId: item.id,
+        reasons: [{
+          code: "prerequisite-unknown",
+          prerequisite: {
+            kind: "entity-level",
+            entityId: "missing-entity",
+            minimumLevel: 1,
+          },
+        }],
+      }],
+    });
+
+    expect(screen.getByText(
+      "Level unknown · enter or sync the prerequisite level to calculate this upgrade",
+    )).toBeTruthy();
+  });
+
   it("asks for explicit confirmation before the preview can be saved", () => {
     const callbacks = renderQueue();
 

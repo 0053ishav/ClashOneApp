@@ -94,7 +94,7 @@ describe("buildPlannerCatalog", () => {
     expect(result.diagnosticsSummary.metadataCandidates).toBe(1);
   });
 
-  it("does not treat a missing current level as level zero", () => {
+  it("keeps an entity with unknown current level visible without offering an upgrade", () => {
     const result = buildPlannerCatalog(dataset([
       candidate({ entityId: "untracked-building", candidateId: "buildings:untracked-building:1", currentLevel: 0, targetLevel: 1 }),
     ]), {
@@ -102,7 +102,16 @@ describe("buildPlannerCatalog", () => {
       maxLevelsByEntityId: { "untracked-building": 20 },
     }, { ...filters, currentLevels: {} });
 
-    expect(result.items).toEqual([]);
+    expect(result.items).toEqual([
+      expect.objectContaining({
+        name: "Archer Tower",
+        currentLevel: null,
+        currentLevelStatus: "unknown",
+        isNextLevel: false,
+        canAdd: false,
+        unknownPrerequisites: [],
+      }),
+    ]);
   });
 
   it("filters by category and case-insensitive name or stable entity ID", () => {
@@ -144,6 +153,51 @@ describe("buildPlannerCatalog", () => {
     expect(result.items[0].blockedBy).toEqual([
       { kind: "town-hall-level", minimumLevel: 11 },
     ]);
+  });
+
+  it("treats a known entity level zero as unmet, not unknown", () => {
+    const result = buildPlannerCatalog(dataset([
+      candidate({
+        entityId: "troop:3",
+        candidateId: "troops:3:1",
+        currentLevel: 0,
+        targetLevel: 1,
+        prerequisites: [{ kind: "entity-level", entityId: "troop:3", minimumLevel: 1 }],
+      }),
+    ]), metadata, {
+      ...filters,
+      currentLevels: { ...filters.currentLevels, "troop:3": 0 },
+    });
+
+    expect(result.items[0]).toEqual(expect.objectContaining({
+      currentLevel: 0,
+      currentLevelStatus: "known",
+      canAdd: false,
+      blockedBy: [{ kind: "entity-level", entityId: "troop:3", minimumLevel: 1 }],
+      unknownPrerequisites: [],
+    }));
+  });
+
+  it("reports an absent prerequisite entity level as unknown", () => {
+    const result = buildPlannerCatalog(dataset([
+      candidate({
+        prerequisites: [{
+          kind: "entity-level",
+          entityId: "missing-prerequisite",
+          minimumLevel: 1,
+        }],
+      }),
+    ]), metadata, filters);
+
+    expect(result.items[0]).toEqual(expect.objectContaining({
+      canAdd: false,
+      blockedBy: [],
+      unknownPrerequisites: [{
+        kind: "entity-level",
+        entityId: "missing-prerequisite",
+        minimumLevel: 1,
+      }],
+    }));
   });
 
   it("keeps valid partial data visible and reports unavailable categories", () => {

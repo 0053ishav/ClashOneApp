@@ -38,6 +38,7 @@ export function getPlannerViewModel(
     (totals, projection) => {
       const estimate = projection.estimate.cost;
       if (estimate.status !== "known") return totals;
+      // An omitted resource means this known upgrade has no cost in that resource.
       totals.gold += estimate.value.gold ?? 0;
       totals.elixir += estimate.value.elixir ?? 0;
       totals.darkElixir += estimate.value.darkElixir ?? 0;

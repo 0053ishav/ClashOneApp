@@ -87,6 +87,11 @@ export type UpgradePrerequisite =
   | { kind: "pet-house-level"; minimumLevel: number }
   | { kind: "entity-level"; entityId: string; minimumLevel: number };
 
+export type PlannerPrerequisiteStatus =
+  | { status: "met" }
+  | { status: "unmet" }
+  | { status: "unknown" };
+
 export interface ProgressionCandidate {
   /** Stable ID from Clash One's progression dataset, not a display name. */
   candidateId: string;

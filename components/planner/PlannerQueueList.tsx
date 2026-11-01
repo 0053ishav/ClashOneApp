@@ -200,9 +200,13 @@ function formatProjection(projection: UpgradeProjection | undefined): string {
   }
   if (projection.status === "unknown") {
     const reason = projection.reasons[0];
-    return reason?.code === "estimate-unknown"
-      ? `Unknown estimate · ${reason.estimate} data unavailable`
-      : "Unknown estimate";
+    if (reason?.code === "estimate-unknown") {
+      return `Unknown estimate · ${reason.estimate} data unavailable`;
+    }
+    if (reason?.code === "prerequisite-unknown") {
+      return "Level unknown · enter or sync the prerequisite level to calculate this upgrade";
+    }
+    return "Unknown estimate";
   }
   const reason = projection.reasons[0];
   if (!reason) return "Blocked · reason unavailable";

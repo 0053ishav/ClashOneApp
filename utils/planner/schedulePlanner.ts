@@ -5,10 +5,12 @@ import {
   type PlannerBlockReason,
   type PlannerLaneAssignment,
   type PlannerLaneId,
+  type PlannerPrerequisiteStatus,
   type ProgressionCandidate,
   type UpgradePrerequisite,
   type UpgradeProjection,
 } from "@/types/planner";
+import { checkPlannerPrerequisite } from "@/utils/planner/checkPlannerPrerequisite";
 
 export interface PlannerPrerequisiteState {
   townHallLevel: number;
@@ -48,22 +50,6 @@ const stableItemCompare = (a: PlannedUpgradeItem, b: PlannedUpgradeItem): number
   a.order - b.order ||
   a.createdAtMs - b.createdAtMs ||
   String(a.id).localeCompare(String(b.id));
-
-function prerequisiteSatisfied(
-  prerequisite: UpgradePrerequisite,
-  state: PlannerPrerequisiteState,
-): boolean {
-  switch (prerequisite.kind) {
-    case "town-hall-level":
-      return state.townHallLevel >= prerequisite.minimumLevel;
-    case "laboratory-level":
-      return state.laboratoryLevel >= prerequisite.minimumLevel;
-    case "pet-house-level":
-      return state.petHouseLevel >= prerequisite.minimumLevel;
-    case "entity-level":
-      return (state.entityLevels[prerequisite.entityId] ?? 0) >= prerequisite.minimumLevel;
-  }
-}
 
 function getLaneEligibilityReason(
   assignment: PlannerLaneAssignment,
@@ -105,7 +91,10 @@ function detectDependencyCycles(
     const dependencies: string[] = [];
     if (candidate) {
       for (const prerequisite of candidate.prerequisites) {
-        if (prerequisite.kind !== "entity-level" || prerequisiteSatisfied(prerequisite, state)) continue;
+        if (
+          prerequisite.kind !== "entity-level" ||
+          checkPlannerPrerequisite(prerequisite, state).status === "met"
+        ) continue;
         for (const possibleDependency of items) {
           const dependencyCandidate = candidateById.get(possibleDependency.candidateId);
           if (
@@ -142,21 +131,16 @@ function detectDependencyCycles(
   return cyclic;
 }
 
-function prerequisiteReasons(
-  candidate: ProgressionCandidate,
-  state: PlannerPrerequisiteState,
-): PlannerBlockReason[] {
-  return candidate.prerequisites
-    .filter((prerequisite) => !prerequisiteSatisfied(prerequisite, state))
-    .map((prerequisite) => {
-      if (
-        prerequisite.kind === "entity-level" &&
-        !Object.prototype.hasOwnProperty.call(state.entityLevels, prerequisite.entityId)
-      ) {
-        return { code: "prerequisite-unknown" as const, prerequisite };
-      }
-      return { code: "prerequisite-unmet" as const, prerequisite };
-    });
+function prerequisiteReason(
+  prerequisite: UpgradePrerequisite,
+  status: Exclude<PlannerPrerequisiteStatus, { status: "met" }>,
+): PlannerBlockReason {
+  switch (status.status) {
+    case "unmet":
+      return { code: "prerequisite-unmet", prerequisite };
+    case "unknown":
+      return { code: "prerequisite-unknown", prerequisite };
+  }
 }
 
 /**
@@ -232,31 +216,49 @@ export function schedulePlanner(input: SchedulePlannerInput): readonly UpgradePr
         continue;
       }
 
-      const unmet = prerequisiteReasons(candidate, input.prerequisiteState);
-      if (unmet.length > 0) {
-        const dependencies = itemById.size > 0
+      const prerequisiteReasons: PlannerBlockReason[] = [];
+      let dependencyReadyAt = input.nowMs;
+      let waitingForDependency = false;
+      for (const prerequisite of candidate.prerequisites) {
+        const status = checkPlannerPrerequisite(prerequisite, input.prerequisiteState);
+        if (status.status === "met") continue;
+
+        const dependencies = prerequisite.kind === "entity-level"
           ? orderedItems.filter((possibleDependency) => {
               if (possibleDependency.id === item.id) return false;
               const dependencyCandidate = candidateById.get(possibleDependency.candidateId);
-              return candidate.prerequisites.some((prerequisite) =>
-                prerequisite.kind === "entity-level" &&
-                dependencyCandidate?.entityId === prerequisite.entityId &&
-                possibleDependency.targetLevel >= prerequisite.minimumLevel
-              );
+              return dependencyCandidate?.entityId === prerequisite.entityId &&
+                possibleDependency.targetLevel >= prerequisite.minimumLevel;
             })
           : [];
-        const waiting = dependencies.some((dependency) => pendingItems.has(String(dependency.id)));
-        const dependencyCompletion = dependencies.reduce<number | undefined>((latest, dependency) => {
-          const completion = completionByItemId.get(String(dependency.id));
-          return completion === undefined ? latest : Math.max(latest ?? completion, completion);
-        }, undefined);
-        if (waiting) continue;
-        if (dependencyCompletion === undefined) {
-          projections.push({ status: "blocked", plannedItemId: item.id, reasons: unmet });
-          pendingItems.delete(itemId);
-          madeProgress = true;
+        if (dependencies.some((dependency) => pendingItems.has(String(dependency.id)))) {
+          waitingForDependency = true;
+          break;
+        }
+
+        const completionTimes = dependencies
+          .map((dependency) => completionByItemId.get(String(dependency.id)))
+          .filter((completion): completion is number => completion !== undefined);
+        if (completionTimes.length > 0) {
+          dependencyReadyAt = Math.max(dependencyReadyAt, ...completionTimes);
           continue;
         }
+
+        prerequisiteReasons.push(prerequisiteReason(prerequisite, status));
+      }
+      if (waitingForDependency) continue;
+      if (prerequisiteReasons.length > 0) {
+        const hasUnknownPrerequisite = prerequisiteReasons.some(
+          (reason) => reason.code === "prerequisite-unknown",
+        );
+        projections.push({
+          status: hasUnknownPrerequisite ? "unknown" : "blocked",
+          plannedItemId: item.id,
+          reasons: prerequisiteReasons,
+        });
+        pendingItems.delete(itemId);
+        madeProgress = true;
+        continue;
       }
 
       if (!isKnownEstimate(candidate.estimate.durationMs)) {
@@ -303,22 +305,6 @@ export function schedulePlanner(input: SchedulePlannerInput): readonly UpgradePr
         continue;
       }
 
-      const dependencyReadyAt = candidate.prerequisites.reduce<number>((latest, prerequisite) => {
-        if (prerequisite.kind !== "entity-level" || prerequisiteSatisfied(prerequisite, input.prerequisiteState)) {
-          return latest;
-        }
-        const dependencyCompletions = orderedItems
-          .filter((possible) => {
-            const dependencyCandidate = candidateById.get(possible.candidateId);
-            return dependencyCandidate?.entityId === prerequisite.entityId &&
-              possible.targetLevel >= prerequisite.minimumLevel;
-          })
-          .map((dependency) => completionByItemId.get(String(dependency.id)))
-          .filter((completion): completion is number => completion !== undefined);
-        return dependencyCompletions.length > 0
-          ? Math.max(latest, ...dependencyCompletions)
-          : latest;
-      }, input.nowMs);
       const startsAtMs = Math.max(input.nowMs, reservation.availableAtMs, dependencyReadyAt);
       const durationMs = candidate.estimate.durationMs.value;
       const completesAtMs = startsAtMs + durationMs;

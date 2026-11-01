@@ -210,6 +210,54 @@ describe("schedulePlanner", () => {
     );
   });
 
+  it("reports an absent entity prerequisite level as unknown", () => {
+    const dependent = candidate("dependent", "building", {
+      prerequisites: [{ kind: "entity-level", entityId: "unknown-entity", minimumLevel: 1 }],
+    });
+    const result = schedulePlanner(input({
+      candidates: [dependent],
+      items: [item("dependent-item", "dependent")],
+      prerequisiteState: {
+        townHallLevel: 16,
+        laboratoryLevel: 12,
+        petHouseLevel: 10,
+        entityLevels: {},
+      },
+    }));
+
+    expect(result[0]).toEqual(expect.objectContaining({
+      status: "unknown",
+      reasons: [{
+        code: "prerequisite-unknown",
+        prerequisite: { kind: "entity-level", entityId: "unknown-entity", minimumLevel: 1 },
+      }],
+    }));
+  });
+
+  it("treats a known level zero as unmet rather than unknown", () => {
+    const dependent = candidate("dependent", "building", {
+      prerequisites: [{ kind: "entity-level", entityId: "unbuilt-entity", minimumLevel: 1 }],
+    });
+    const result = schedulePlanner(input({
+      candidates: [dependent],
+      items: [item("dependent-item", "dependent")],
+      prerequisiteState: {
+        townHallLevel: 16,
+        laboratoryLevel: 12,
+        petHouseLevel: 10,
+        entityLevels: { "unbuilt-entity": 0 },
+      },
+    }));
+
+    expect(result[0]).toEqual(expect.objectContaining({
+      status: "blocked",
+      reasons: [{
+        code: "prerequisite-unmet",
+        prerequisite: { kind: "entity-level", entityId: "unbuilt-entity", minimumLevel: 1 },
+      }],
+    }));
+  });
+
   it("tracks completion per planned item when the same candidate is queued at multiple target levels", () => {
     const hall = candidate("hall", "building", {
       entityId: "hall-entity",
@@ -261,7 +309,7 @@ describe("schedulePlanner", () => {
       },
     }));
     expect(result[0]).toEqual(expect.objectContaining({
-      status: "blocked",
+      status: "unknown",
       reasons: [expect.objectContaining({ code: "prerequisite-unknown" })],
     }));
   });

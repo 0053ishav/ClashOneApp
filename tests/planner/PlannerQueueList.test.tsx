@@ -1,14 +1,17 @@
 jest.mock("@/theme/useHomeColors", () => ({
   useHomeColors: () => ({
     border: "#222222",
+    danger: "#ff0000",
     gold: "#fbbf24",
     orangeLight: "#fb923c",
+    success: "#00ff00",
     surface: "#111111",
     surfaceRaised: "#222222",
     textDark: "#000000",
     textMuted: "#888888",
     textPrimary: "#ffffff",
     textSecondary: "#cccccc",
+    background: "#000000",
   }),
 }));
 
@@ -31,7 +34,12 @@ const item: PlannedUpgradeItem = {
   createdAtMs: 100,
   updatedAtMs: 100,
 };
-
+const laterItem: PlannedUpgradeItem = {
+  ...item,
+  id: "item-2" as PlannerItemId,
+  candidateId: "candidate-2",
+  order: 1,
+};
 const candidate: ProgressionCandidate = {
   candidateId: "candidate-1",
   entityId: "entity-1",
@@ -45,7 +53,6 @@ const candidate: ProgressionCandidate = {
     durationMs: { status: "known", value: 60_000 },
   },
 };
-
 const preview: UpgradeProjection = {
   status: "scheduled",
   plannedItemId: item.id,
@@ -54,15 +61,11 @@ const preview: UpgradeProjection = {
   estimate: candidate.estimate,
 };
 
-function renderQueue(overrides: Partial<React.ComponentProps<typeof PlannerQueueList>> = {}) {
+function renderQueue(
+  overrides: Partial<React.ComponentProps<typeof PlannerQueueList>> = {},
+) {
   const callbacks = {
-    onConfirmEdit: jest.fn(),
-    onCancelPreview: jest.fn(),
-    onTargetDraftChange: jest.fn(),
-    onLaneDraftChange: jest.fn(),
-    onSaveEdit: jest.fn(),
     onBeginEdit: jest.fn(),
-    onCancelEdit: jest.fn(),
     onRemove: jest.fn(),
     onAssignNextBuilder: jest.fn(),
     onMove: jest.fn(),
@@ -79,12 +82,6 @@ function renderQueue(overrides: Partial<React.ComponentProps<typeof PlannerQueue
       queueError={null}
       projectionError={null}
       isCalculating={false}
-      editingItemId={item.id}
-      targetDrafts={{}}
-      laneDrafts={{}}
-      editErrors={{}}
-      pendingEdit={{ itemId: item.id, projections: [preview] }}
-      hasEditConflict={false}
       {...callbacks}
       {...overrides}
     />,
@@ -92,55 +89,86 @@ function renderQueue(overrides: Partial<React.ComponentProps<typeof PlannerQueue
   return callbacks;
 }
 
-describe("PlannerQueueList schedule preview", () => {
-  it("explains when an unknown prerequisite level prevents scheduling", () => {
-    renderQueue({
-      editingItemId: null,
-      pendingEdit: null,
-      projections: [{
-        status: "unknown",
-        plannedItemId: item.id,
-        reasons: [{
-          code: "prerequisite-unknown",
-          prerequisite: {
-            kind: "entity-level",
-            entityId: "missing-entity",
-            minimumLevel: 1,
-          },
-        }],
+describe("PlannerQueueList", () => {
+  it("shows compact level, lane, and schedule state", () => {
+    renderQueue();
+
+    expect(screen.getByText("Level 1 → 3 · Builder 1")).toBeTruthy();
+    expect(screen.getByText("Scheduled")).toBeTruthy();
+    expect(screen.getByText("Starts 1/1/1970")).toBeTruthy();
+  });
+
+  it("filters only unknown-duration projections for the duration warning", () => {
+    const otherItem = { ...laterItem, id: "item-3" as PlannerItemId, candidateId: "candidate-3" };
+    const callbacks = renderQueue({
+      items: [item, laterItem, otherItem],
+      projections: [
+        {
+          status: "unknown",
+          plannedItemId: item.id,
+          reasons: [{ code: "estimate-unknown", estimate: "duration", reason: "missing-game-data" }],
+        },
+        {
+          status: "unknown",
+          plannedItemId: laterItem.id,
+          reasons: [{
+            code: "prerequisite-unknown",
+            prerequisite: { kind: "entity-level", entityId: "missing", minimumLevel: 1 },
+          }],
+        },
+        {
+          status: "blocked",
+          plannedItemId: otherItem.id,
+          reasons: [{ code: "candidate-unavailable", candidateId: otherItem.candidateId }],
+        },
+      ],
+      statusFilter: "unknown-duration",
+      candidates: [candidate],
+    });
+
+    expect(screen.getByText("1 / 3")).toBeTruthy();
+    expect(screen.getByText("Unknown")).toBeTruthy();
+    expect(screen.queryByText("Blocked")).toBeNull();
+    expect(callbacks.onMove).not.toHaveBeenCalled();
+  });
+
+  it("preserves move-earlier and move-later callbacks for same-lane items", () => {
+    const callbacks = renderQueue({
+      items: [item, laterItem],
+      projections: [preview, {
+        ...preview,
+        plannedItemId: laterItem.id,
+        startsAtMs: 60_200,
+        completesAtMs: 120_200,
       }],
     });
 
-    expect(screen.getByText(
-      "Level unknown · enter or sync the prerequisite level to calculate this upgrade",
-    )).toBeTruthy();
+    fireEvent.press(screen.getAllByRole("button", { name: "Move upgrade later" })[0]);
+    fireEvent.press(screen.getAllByRole("button", { name: "Move upgrade earlier" })[1]);
+
+    expect(callbacks.onMove).toHaveBeenNthCalledWith(1, item.id, 1);
+    expect(callbacks.onMove).toHaveBeenNthCalledWith(2, laterItem.id, -1);
   });
 
-  it("asks for explicit confirmation before the preview can be saved", () => {
+  it("disables all queue actions while a preview is pending", () => {
+    renderQueue({ editBusy: true });
+
+    for (const label of [
+      "Edit planned upgrade",
+      "Move upgrade earlier",
+      "Move upgrade later",
+      "Remove planned upgrade",
+    ]) {
+      expect(screen.getByRole("button", { name: label }).props.accessibilityState.disabled).toBe(true);
+    }
+  });
+
+  it("requires confirmation before removing a queued item", () => {
     const callbacks = renderQueue();
 
-    expect(screen.getByText("Schedule preview")).toBeTruthy();
-    expect(screen.getByText("These are projected dates from the proposed queue. Nothing is saved until you confirm.")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Confirm and save" })).toBeTruthy();
-
-    fireEvent.press(screen.getByRole("button", { name: "Confirm and save" }));
-    expect(callbacks.onConfirmEdit).toHaveBeenCalledTimes(1);
-    expect(callbacks.onSaveEdit).not.toHaveBeenCalled();
-  });
-
-  it("allows the user to cancel a preview without confirming it", () => {
-    const callbacks = renderQueue();
-
-    fireEvent.press(screen.getByRole("button", { name: "Cancel preview" }));
-
-    expect(callbacks.onCancelPreview).toHaveBeenCalledTimes(1);
-    expect(callbacks.onConfirmEdit).not.toHaveBeenCalled();
-  });
-
-  it("disables preview actions while the queue is saving", () => {
-    renderQueue({ queueBusy: true });
-
-    expect(screen.getByRole("button", { name: "Confirm and save" }).props.accessibilityState.disabled).toBe(true);
-    expect(screen.getByRole("button", { name: "Cancel preview" }).props.accessibilityState.disabled).toBe(true);
+    fireEvent.press(screen.getByRole("button", { name: "Remove planned upgrade" }));
+    expect(callbacks.onRemove).not.toHaveBeenCalled();
+    fireEvent.press(screen.getByText("Remove"));
+    expect(callbacks.onRemove).toHaveBeenCalledWith(item.id);
   });
 });

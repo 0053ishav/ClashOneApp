@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { UpgradeDetailSheet } from "@/components/planner/UpgradeDetailSheet";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { useHomeColors } from "@/theme/useHomeColors";
 import type {
   ObservedActiveUpgrade,
@@ -9,10 +10,11 @@ import type {
   UpgradeProjection,
 } from "@/types/planner";
 import { getPlannerViewModel } from "@/utils/planner/plannerViewModel";
+import { preparePlannerScheduleInput } from "@/utils/planner/preparePlannerScheduleInput";
 
 type TimelineScale = "days" | "weeks" | "months";
 
-interface PlannerTimelineProps {
+export interface PlannerTimelineProps {
   items: readonly PlannedUpgradeItem[];
   projections: readonly UpgradeProjection[];
   candidates: readonly ProgressionCandidate[];
@@ -21,6 +23,7 @@ interface PlannerTimelineProps {
   builderCount: number;
   nowMs: number;
   queueBusy?: boolean;
+  showDetails?: boolean;
   onEditPlannedItem?: (item: PlannedUpgradeItem) => void;
   onRemovePlannedItem?: (itemId: PlannedUpgradeItem["id"]) => void;
 }
@@ -76,6 +79,7 @@ export function PlannerTimeline({
   builderCount,
   nowMs,
   queueBusy = false,
+  showDetails = true,
   onEditPlannedItem,
   onRemovePlannedItem,
 }: PlannerTimelineProps) {
@@ -83,6 +87,9 @@ export function PlannerTimeline({
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [scale, setScale] = useState<TimelineScale>("weeks");
   const [selectedItemId, setSelectedItemId] = useState<PlannedUpgradeItem["id"] | null>(null);
+  const [removeTargetId, setRemoveTargetId] = useState<PlannedUpgradeItem["id"] | null>(null);
+  const [timelineViewportWidth, setTimelineViewportWidth] = useState(0);
+  const timelineScrollRef = useRef<ScrollView>(null);
   const config = SCALE_CONFIG[scale];
   const timelineWidth = config.days * config.pixelsPerDay;
   const candidateById = useMemo(
@@ -93,6 +100,45 @@ export function PlannerTimeline({
     () => new Map(projections.map((projection) => [projection.plannedItemId, projection])),
     [projections],
   );
+  const detailCandidateByItemId = useMemo(() => {
+    const prepared = preparePlannerScheduleInput(candidates, items);
+    const preparedCandidateById = new Map(
+      prepared.candidates.map((candidate) => [candidate.candidateId, candidate]),
+    );
+    return new Map(prepared.items.map((item) => [
+      item.id,
+      preparedCandidateById.get(item.candidateId),
+    ]));
+  }, [candidates, items]);
+  useEffect(() => {
+    timelineScrollRef.current?.scrollTo({ x: 0, animated: false });
+  }, [scale]);
+  useEffect(() => {
+    if (!selectedItemId || timelineViewportWidth <= 0) return;
+    const projection = projectionByItemId.get(selectedItemId);
+    if (projection?.status !== "scheduled") return;
+    const position = getBlockPosition(
+      projection.startsAtMs,
+      projection.completesAtMs,
+      nowMs,
+      config.days,
+      config.pixelsPerDay,
+    );
+    if (!position) return;
+    const maxOffset = Math.max(0, timelineWidth - timelineViewportWidth);
+    timelineScrollRef.current?.scrollTo({
+      x: Math.max(0, Math.min(maxOffset, position.left - timelineViewportWidth / 2)),
+      animated: true,
+    });
+  }, [
+    config.days,
+    config.pixelsPerDay,
+    nowMs,
+    projectionByItemId,
+    selectedItemId,
+    timelineViewportWidth,
+    timelineWidth,
+  ]);
 
   const lanes = useMemo<TimelineLane[]>(() => {
     const result: TimelineLane[] = [];
@@ -210,7 +256,13 @@ export function PlannerTimeline({
               </View>
             ))}
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={styles.timelineScroll}>
+          <ScrollView
+            ref={timelineScrollRef}
+            horizontal
+            showsHorizontalScrollIndicator
+            contentContainerStyle={styles.timelineScroll}
+            onLayout={(event) => setTimelineViewportWidth(event.nativeEvent.layout.width)}
+          >
             <View>
               <View style={[styles.axisRow, styles.timelineAxisRow]}>
               <View style={[styles.axis, { width: timelineWidth }]}>
@@ -267,10 +319,10 @@ export function PlannerTimeline({
                     return (
                       <View
                         key={upgrade.observedUpgradeId}
-                        style={[styles.block, styles.liveBlock, { left: position.left, width: position.width }]}
+                        style={[styles.block, styles.liveBlock, { left: position.left, width: Math.max(44, position.width) }]}
                         accessibilityLabel={`Live upgrade locked on ${lane.label}`}
                       >
-                        <Text numberOfLines={1} style={styles.liveBlockText}>🔒 Live</Text>
+                        <Text style={styles.liveBlockText}>🔒</Text>
                       </View>
                     );
                   })}
@@ -294,11 +346,9 @@ export function PlannerTimeline({
                             styles.block,
                             styles.plannedBlock,
                             selected && styles.selectedPlannedBlock,
-                            { left: position.left, width: position.width },
+                            { left: position.left, width: Math.max(44, position.width) },
                           ]}
-                        >
-                          <Text numberOfLines={1} style={styles.plannedBlockText}>{name}</Text>
-                        </Pressable>
+                        />
                       );
                     }
                     const unknown = projection?.status === "unknown";
@@ -314,14 +364,10 @@ export function PlannerTimeline({
                             styles.block,
                             unknown ? styles.unknownBlock : styles.blockedBlock,
                             selected && styles.selectedUnscheduledBlock,
-                            { left: 3, width: Math.max(64, Math.min(150, timelineWidth * 0.28)) },
+                            { left: 3, width: Math.max(44, Math.min(150, timelineWidth * 0.28)) },
                           ]}
                           accessibilityLabel={`${name}, level ${candidate?.currentLevel ?? "unknown"} to ${item.targetLevel}, ${unknown ? "estimate unknown" : "blocked or not scheduled"}`}
-                        >
-                          <Text numberOfLines={1} style={unknown ? styles.unknownBlockText : styles.blockedBlockText}>
-                            {unknown ? "Unknown" : "Blocked"} · {name}
-                          </Text>
-                        </Pressable>
+                          />
                     );
                   })}
                 </View>
@@ -338,7 +384,7 @@ export function PlannerTimeline({
         <View style={styles.legendItem}><View style={[styles.legendSwatch, styles.blockedSwatch]} /><Text style={styles.legendText}>Blocked</Text></View>
         <View style={styles.legendItem}><View style={[styles.legendSwatch, styles.unknownSwatch]} /><Text style={styles.legendText}>Unknown</Text></View>
       </View>
-      {items.length > 0 && (
+      {showDetails && items.length > 0 && (
         <View style={styles.detailsSection}>
           <Text style={styles.detailsTitle}>Plan details</Text>
           <View style={styles.detailsGrid}>
@@ -371,7 +417,7 @@ export function PlannerTimeline({
         </View>
       )}
 
-      {items.length > 0 && (
+      {showDetails && items.length > 0 && (
         <View style={styles.detailsSection}>
           <Text style={styles.detailsTitle}>Known resource totals</Text>
           <Text style={styles.assumptionText}>Scheduler-provided costs for scheduled upgrades only.</Text>
@@ -411,7 +457,8 @@ export function PlannerTimeline({
       {(() => {
         const selectedItem = items.find((item) => item.id === selectedItemId);
         if (!selectedItem) return null;
-        const selectedCandidate = candidateById.get(selectedItem.candidateId);
+        const selectedCandidate = detailCandidateByItemId.get(selectedItem.id) ??
+          candidateById.get(selectedItem.candidateId);
         const selectedProjection = projectionByItemId.get(selectedItem.id);
         const selectedName = selectedCandidate
           ? entityNamesById[selectedCandidate.entityId] ?? selectedItem.candidateId
@@ -426,10 +473,27 @@ export function PlannerTimeline({
             queueBusy={queueBusy}
             onClose={() => setSelectedItemId(null)}
             onEdit={onEditPlannedItem ? () => { setSelectedItemId(null); onEditPlannedItem(selectedItem); } : undefined}
-            onRemove={onRemovePlannedItem ? () => { setSelectedItemId(null); onRemovePlannedItem(selectedItem.id); } : undefined}
+            onRemove={onRemovePlannedItem ? () => {
+              setSelectedItemId(null);
+              setRemoveTargetId(selectedItem.id);
+            } : undefined}
           />
         );
       })()}
+
+      <ConfirmModal
+        visible={removeTargetId !== null}
+        title="Remove upgrade?"
+        message="Remove this upgrade from the plan?"
+        confirmText="Remove"
+        cancelText="Cancel"
+        destructive
+        onCancel={() => setRemoveTargetId(null)}
+        onConfirm={() => {
+          if (removeTargetId) onRemovePlannedItem?.(removeTargetId);
+          setRemoveTargetId(null);
+        }}
+      />
 
       {hasIncompleteWork && items.length > 0 && (
         <Text style={styles.incompleteNote}>
@@ -481,15 +545,15 @@ function createStyles(colors: ReturnType<typeof useHomeColors>) {
     laneText: { color: colors.textSecondary, fontSize: 10, fontWeight: "700" },
     track: { position: "relative", height: 46, justifyContent: "center" },
     gridLine: { position: "absolute", top: 0, bottom: 0, width: 1, backgroundColor: colors.border, opacity: 0.5 },
-    block: { position: "absolute", top: 7, height: 30, borderRadius: 6, paddingHorizontal: 6, justifyContent: "center", overflow: "hidden" },
+    block: { position: "absolute", top: 7, height: 30, minWidth: 44, borderRadius: 6, paddingHorizontal: 6, justifyContent: "center", overflow: "hidden" },
     plannedBlock: { backgroundColor: colors.gold },
     selectedPlannedBlock: { borderWidth: 2, borderColor: colors.textPrimary },
     selectedUnscheduledBlock: { borderWidth: 2, borderColor: colors.textPrimary },
     plannedBlockText: { color: colors.textDark, fontSize: 10, fontWeight: "700" },
     liveBlock: { backgroundColor: colors.surfaceRaised, borderWidth: 1, borderColor: colors.borderStrong },
     liveBlockText: { color: colors.textSecondary, fontSize: 10, fontWeight: "700" },
-    blockedBlock: { backgroundColor: colors.background, borderWidth: 1, borderStyle: "dashed", borderColor: colors.orangeLight },
-    blockedBlockText: { color: colors.orangeLight, fontSize: 10, fontWeight: "700" },
+    blockedBlock: { backgroundColor: colors.background, borderWidth: 1, borderStyle: "dashed", borderColor: colors.danger },
+    blockedBlockText: { color: colors.danger, fontSize: 10, fontWeight: "700" },
     unknownBlock: { backgroundColor: colors.background, borderWidth: 1, borderStyle: "dashed", borderColor: colors.textMuted },
     unknownBlockText: { color: colors.textMuted, fontSize: 10, fontWeight: "700" },
     legend: { flexDirection: "row", flexWrap: "wrap", gap: 12 },

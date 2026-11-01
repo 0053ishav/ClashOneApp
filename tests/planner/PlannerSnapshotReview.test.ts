@@ -26,7 +26,7 @@ describe("PlannerSnapshotReview", () => {
     }));
 
     expect(screen.getByText("Village snapshot needs review")).toBeTruthy();
-    fireEvent.press(screen.getByRole("button", { name: "Review snapshot and recalculate plan" }));
+    fireEvent.press(screen.getByRole("button", { name: "Recalculate plan" }));
     expect(onReviewAndRecalculate).toHaveBeenCalledTimes(1);
   });
 
@@ -39,7 +39,7 @@ describe("PlannerSnapshotReview", () => {
       onReviewAndRecalculate: jest.fn(),
     }));
 
-    expect(screen.getByRole("button", { name: "Review snapshot and recalculate plan" }).props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByRole("button", { name: "Recalculate plan" }).props.accessibilityState.disabled).toBe(true);
     expect(screen.getByText("The latest village snapshot has no recorded sync time. Sync account data before recalculating. Your saved queue has not been changed.")).toBeTruthy();
   });
 

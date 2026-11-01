@@ -1,0 +1,17 @@
+# Upgrade Planner data sources
+
+| Field or calculation | Source and owner | Freshness/version | Validation | Fallback/meaning |
+|---|---|---|---|---|
+| Entity stable ID, category, display name, icon, display levels | Clash One entity metadata held by the entity store; catalog screen resolves icons using existing icon utilities | Metadata manifest/cache version | Entity store parses metadata; planner only joins via ID | Missing metadata does not become an invented entity or name; catalog can report missing metadata |
+| Upgrade target levels, resource cost, duration, supported prerequisites | Clash One cached progression manifest and category records, adapted by `plannerCatalogSourceService` and validated by `validatePlannerDataset` | Manifest/category cache | Runtime validation; invalid records emit diagnostics; missing categories are unavailable | Unknown cost/duration stays an explicit unknown estimate |
+| Current structure/entity levels | Imported account snapshot as read by account services | Account's last JSON sync time | Existing import/account service parsing; planner merges imported IDs with local manual levels | A missing level remains unknown; not assumed to be zero |
+| Manual current-level entry | Player input stored per account in MMKV by `plannerCatalogLevelStorage` | Updated on user save | Whole integer, non-negative; UI bounds it to known maximum | Used only where imported account data has no corresponding level; imported state wins |
+| Town Hall and builder count | Active account profile/store populated by app account/import flows | Current account snapshot | Existing account model; scheduler validates builder index against count | Unknown/zero builder count makes builder assignments unavailable |
+| Active upgrade and timer | Existing live-upgrade service/store | Current local/imported timer state | Existing upgrade model; planner refuses to infer unknown lane mapping | Observed timers reserve lanes only; they are not plan items |
+| Structure-copy identity | Clash One structure-instance reconciliation and SQLite state | Reconciled on account import | Counts/levels validated; ambiguity retained when physical copy is not provable | Ambiguous IDs are not treated as stable plan targets |
+| Plan ID, target, lane, order, snapshot acknowledgement | User-authored intent in SQLite via `plannerPersistenceService` | Updated on plan mutation/review | Account ownership, target/order/timestamp and lane shape checked | Invalid reads/writes surface errors; plan intent is not replaced by projections |
+| Start/end dates, schedule status, projected finish | Derived by `schedulePlanner` and planner view model | Recalculated from current inputs and explicit clock | Deterministic domain rules, estimate/prerequisite/lane validation | Blocked/unknown actions do not receive invented dates |
+| Resource totals | Derived from known cost estimates of scheduled projections | Same as current projection inputs | Only defined, finite, non-negative resource values are summed | Unknown costs are excluded and counted as incomplete |
+| Modifiers, inventory, events | Not an input to the planner scheduler | N/A | No planner-level modifier validation | No boost-adjusted date is claimed |
+
+The official [Clash of Clans API portal](https://developer.clashofclans.com/) is the reference for public API documentation. The planner's game progression source is the app's validated local/CDN dataset, not an assumption that the public API supplies every cost, duration, prerequisite, event, or timer.

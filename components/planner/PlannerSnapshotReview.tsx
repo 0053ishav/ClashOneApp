@@ -33,12 +33,12 @@ export function PlannerSnapshotReview({
       <Text style={styles.body}>{message}</Text>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Review snapshot and recalculate plan"
+        accessibilityLabel="Recalculate plan"
         disabled={busy || lastJsonSyncAtMs === undefined}
         onPress={onReviewAndRecalculate}
         style={[styles.applyButton, (busy || lastJsonSyncAtMs === undefined) && styles.disabledButton]}
       >
-        <Text style={styles.applyButtonText}>{busy ? "Recording review…" : "Review snapshot & recalculate"}</Text>
+        <Text style={styles.applyButtonText}>{busy ? "Recording review…" : "Recalculate plan"}</Text>
       </Pressable>
     </View>
   );

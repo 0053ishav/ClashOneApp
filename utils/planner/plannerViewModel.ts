@@ -7,6 +7,7 @@ export interface PlannerViewModel {
   scheduledCount: number;
   blockedCount: number;
   unknownCount: number;
+  unknownDurationCount: number;
   projectedFinishMs: number | null;
   hasIncompleteWork: boolean;
   knownCostProjections: readonly ScheduledProjection[];
@@ -27,6 +28,12 @@ export function getPlannerViewModel(
   );
   const blockedCount = projections.filter((projection) => projection.status === "blocked").length;
   const unknownCount = projections.filter((projection) => projection.status === "unknown").length;
+  const unknownDurationCount = projections.filter(
+    (projection) => projection.status === "unknown" &&
+      projection.reasons.some(
+        (reason) => reason.code === "estimate-unknown" && reason.estimate === "duration",
+      ),
+  ).length;
   const projectedFinishMs = scheduledProjections.reduce<number | null>(
     (latest, projection) => Math.max(latest ?? projection.completesAtMs, projection.completesAtMs),
     null,
@@ -52,6 +59,7 @@ export function getPlannerViewModel(
     scheduledCount: scheduledProjections.length,
     blockedCount,
     unknownCount,
+    unknownDurationCount,
     projectedFinishMs,
     hasIncompleteWork: blockedCount > 0 || unknownCount > 0 || projections.length < plannedItemCount,
     knownCostProjections,

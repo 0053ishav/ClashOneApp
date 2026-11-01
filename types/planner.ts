@@ -96,6 +96,8 @@ export interface ProgressionCandidate {
   /** Stable ID from Clash One's progression dataset, not a display name. */
   candidateId: string;
   entityId: string;
+  /** Explicit progression role derived from validated entity metadata. */
+  role?: "town-hall";
   category: PlannerEntityCategory;
   village: PlannerVillage;
   currentLevel: number;

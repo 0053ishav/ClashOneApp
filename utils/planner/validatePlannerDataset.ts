@@ -32,6 +32,8 @@ export type CategoryPayloadState =
 export interface PlannerMetadataRecord {
   id: string | number;
   village?: string;
+  type?: string;
+  subType?: string;
   maxLevel?: number;
   superTroop?: unknown;
   supercharge?: unknown;
@@ -251,6 +253,9 @@ export function validatePlannerDataset(
         candidates.push({
           candidateId: input.category + ":" + entityId + ":" + levelNumber,
           entityId,
+          ...(metadata.type === "townhall" || metadata.subType === "TOWNHALL"
+            ? { role: "town-hall" }
+            : {}),
           category: plannerCategory,
           village: "home",
           currentLevel: levelNumber - 1,

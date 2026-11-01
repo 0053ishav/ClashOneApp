@@ -25,6 +25,14 @@ const entities: EntityData[] = [
     name: { en: "Builder Base Defense" },
     levels: { 1: { level: 1, icon: "defense" } },
   },
+  {
+    id: 3,
+    slug: "town-hall",
+    type: "townhall",
+    village: "home",
+    name: { en: "Town Hall" },
+    levels: { 1: { level: 1, icon: "town-hall" }, 2: { level: 2, icon: "town-hall" } },
+  },
 ];
 
 const progression: ProgressionData[] = [
@@ -45,6 +53,16 @@ const progression: ProgressionData[] = [
     maxHallLevel: 1,
     levels: { 1: { hallLevel: 1, cost: 100, upgradeTime: 60 } },
   },
+  {
+    id: 3,
+    resource: ResourceType.GOLD,
+    maxLevel: 2,
+    maxHallLevel: 2,
+    levels: {
+      1: { hallLevel: 1, cost: 100, upgradeTime: 60 },
+      2: { hallLevel: 2, cost: 200, upgradeTime: 120 },
+    },
+  },
 ];
 
 describe("buildPlannerDatasetFromCache", () => {
@@ -55,8 +73,13 @@ describe("buildPlannerDatasetFromCache", () => {
       loadCategory: (category) => category === "buildings" ? progression : null,
     });
 
-    expect(result.candidates).toHaveLength(2);
+    expect(result.candidates).toHaveLength(4);
     expect(result.candidates.every((candidate) => candidate.village === "home")).toBe(true);
+    expect(result.candidates.filter((candidate) => candidate.role === "town-hall"))
+      .toEqual(expect.arrayContaining([
+        expect.objectContaining({ entityId: "3", targetLevel: 1, role: "town-hall" }),
+        expect.objectContaining({ entityId: "3", targetLevel: 2, role: "town-hall" }),
+      ]));
     expect(result.categoryStatus.buildings).toBe("loaded");
     expect(result.diagnostics.some((diagnostic) => diagnostic.code === "builder-base-excluded")).toBe(true);
   });

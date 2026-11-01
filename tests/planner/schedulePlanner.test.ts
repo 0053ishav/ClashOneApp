@@ -189,6 +189,49 @@ describe("schedulePlanner", () => {
     ]);
   });
 
+  it("preserves same-lane order when an earlier item waits for a planned dependency", () => {
+    const prerequisite = candidate("prerequisite", "building", {
+      entityId: "required-entity",
+      currentLevel: 0,
+      targetLevel: 1,
+    });
+    const dependent = candidate("dependent", "building", {
+      prerequisites: [{
+        kind: "entity-level",
+        entityId: "required-entity",
+        minimumLevel: 1,
+      }],
+    });
+    const later = candidate("later");
+    const result = schedulePlanner(input({
+      candidates: [prerequisite, dependent, later],
+      items: [
+        item("earlier-dependent", "dependent", { lane: "normal-builders", builderIndex: 1 }, 0),
+        item("dependency-work", "prerequisite", { lane: "normal-builders", builderIndex: 2 }, 1, 1),
+        item("later-same-lane", "later", { lane: "normal-builders", builderIndex: 1 }, 2),
+      ],
+      prerequisiteState: {
+        townHallLevel: 16,
+        laboratoryLevel: 12,
+        petHouseLevel: 10,
+        entityLevels: {},
+      },
+    }));
+    const dependentProjection = result.find(
+      (projection) => projection.plannedItemId === "earlier-dependent",
+    );
+    const laterProjection = result.find(
+      (projection) => projection.plannedItemId === "later-same-lane",
+    );
+
+    expect(dependentProjection).toEqual(expect.objectContaining({ status: "scheduled" }));
+    expect(laterProjection).toEqual(expect.objectContaining({ status: "scheduled" }));
+    if (dependentProjection?.status !== "scheduled" || laterProjection?.status !== "scheduled") {
+      throw new Error("Expected both same-lane items to be scheduled");
+    }
+    expect(laterProjection.startsAtMs).toBeGreaterThanOrEqual(dependentProjection.completesAtMs);
+  });
+
   it("waits for entity prerequisites satisfied by another planned upgrade", () => {
     const prerequisiteCandidate = candidate("hall", "building", {
       entityId: "town-hall",
@@ -208,6 +251,136 @@ describe("schedulePlanner", () => {
     expect(result.find((projection) => projection.plannedItemId === "dependent-item")).toEqual(
       expect.objectContaining({ status: "scheduled", startsAtMs: NOW + 60_000 }),
     );
+  });
+
+  it("does not treat an item's own upgrade as a dependency cycle", () => {
+    const selfDependent = candidate("self-dependent", "building", {
+      entityId: "self-dependent-entity",
+      currentLevel: 0,
+      targetLevel: 1,
+      prerequisites: [{
+        kind: "entity-level",
+        entityId: "self-dependent-entity",
+        minimumLevel: 1,
+      }],
+    });
+    const result = schedulePlanner(input({
+      candidates: [selfDependent],
+      items: [item("self-dependent-item", "self-dependent", undefined, 0, 1)],
+      prerequisiteState: {
+        townHallLevel: 16,
+        laboratoryLevel: 12,
+        petHouseLevel: 10,
+        entityLevels: { "self-dependent-entity": 0 },
+      },
+    }));
+
+    expect(result[0]).toEqual(expect.objectContaining({
+      status: "blocked",
+      reasons: [{
+        code: "prerequisite-unmet",
+        prerequisite: {
+          kind: "entity-level",
+          entityId: "self-dependent-entity",
+          minimumLevel: 1,
+        },
+      }],
+    }));
+  });
+
+  it("uses a planned Town Hall upgrade to satisfy a later Town Hall-level prerequisite", () => {
+    const townHall = candidate("town-hall-upgrade", "building", {
+      entityId: "town-hall",
+      role: "town-hall",
+      currentLevel: 16,
+      targetLevel: 17,
+    });
+    const dependent = candidate("town-hall-dependent", "building", {
+      prerequisites: [{ kind: "town-hall-level", minimumLevel: 17 }],
+    });
+    const result = schedulePlanner(input({
+      candidates: [townHall, dependent],
+      items: [
+        item("town-hall-item", "town-hall-upgrade", { lane: "normal-builders", builderIndex: 1 }, 0, 17),
+        item("after-town-hall-item", "town-hall-dependent", { lane: "normal-builders", builderIndex: 2 }, 1),
+      ],
+      prerequisiteState: {
+        townHallLevel: 16,
+        laboratoryLevel: 12,
+        petHouseLevel: 10,
+        entityLevels: {},
+      },
+    }));
+
+    expect(result.find((projection) => projection.plannedItemId === "after-town-hall-item"))
+      .toEqual(expect.objectContaining({
+        status: "scheduled",
+        startsAtMs: NOW + 60_000,
+      }));
+  });
+
+  it("never overlaps items on the same lane and schedules independent lanes concurrently", () => {
+    const first = candidate("first", "building", {
+      estimate: {
+        cost: { status: "known", value: { gold: 0 } },
+        durationMs: { status: "known", value: 60_000 },
+      },
+    });
+    const second = candidate("second", "building", {
+      estimate: {
+        cost: { status: "known", value: { gold: 0 } },
+        durationMs: { status: "known", value: 120_000 },
+      },
+    });
+    const research = candidate("research", "troop", {
+      estimate: {
+        cost: { status: "known", value: { elixir: 0 } },
+        durationMs: { status: "known", value: 60_000 },
+      },
+    });
+    const scenario = input({
+      candidates: [first, second, research],
+      items: [
+        item("builder-first", "first", { lane: "normal-builders", builderIndex: 1 }, 0),
+        item("builder-second", "second", { lane: "normal-builders", builderIndex: 1 }, 1),
+        item("research-item", "research", { lane: "laboratory" }, 0),
+      ],
+    });
+    const projections = schedulePlanner(scenario);
+    const repeatedProjections = schedulePlanner(scenario);
+    const scheduled = projections.filter(
+      (projection): projection is Extract<typeof projection, { status: "scheduled" }> =>
+        projection.status === "scheduled",
+    );
+
+    expect(repeatedProjections).toEqual(projections);
+    for (let leftIndex = 0; leftIndex < scheduled.length; leftIndex += 1) {
+      const left = scheduled[leftIndex];
+      const leftItem = scenario.items.find((planned) => planned.id === left.plannedItemId);
+      if (!leftItem) throw new Error(`Missing planned item ${left.plannedItemId}`);
+
+      for (let rightIndex = leftIndex + 1; rightIndex < scheduled.length; rightIndex += 1) {
+        const right = scheduled[rightIndex];
+        const rightItem = scenario.items.find((planned) => planned.id === right.plannedItemId);
+        if (!rightItem) throw new Error(`Missing planned item ${right.plannedItemId}`);
+        if (leftItem.lane.lane !== rightItem.lane.lane) continue;
+        if (
+          leftItem.lane.lane === "normal-builders" &&
+          rightItem.lane.lane === "normal-builders" &&
+          leftItem.lane.builderIndex !== rightItem.lane.builderIndex
+        ) continue;
+
+        expect(
+          left.completesAtMs <= right.startsAtMs ||
+          right.completesAtMs <= left.startsAtMs,
+        ).toBe(true);
+      }
+    }
+
+    expect(scheduled.find((projection) => projection.plannedItemId === "builder-first"))
+      .toEqual(expect.objectContaining({ startsAtMs: NOW }));
+    expect(scheduled.find((projection) => projection.plannedItemId === "research-item"))
+      .toEqual(expect.objectContaining({ startsAtMs: NOW }));
   });
 
   it("reports an absent entity prerequisite level as unknown", () => {

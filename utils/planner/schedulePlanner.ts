@@ -91,14 +91,15 @@ function detectDependencyCycles(
     const dependencies: string[] = [];
     if (candidate) {
       for (const prerequisite of candidate.prerequisites) {
-        if (
-          prerequisite.kind !== "entity-level" ||
-          checkPlannerPrerequisite(prerequisite, state).status === "met"
-        ) continue;
+        if (checkPlannerPrerequisite(prerequisite, state).status === "met") continue;
         for (const possibleDependency of items) {
+          if (possibleDependency.id === item.id) continue;
           const dependencyCandidate = candidateById.get(possibleDependency.candidateId);
           if (
-            dependencyCandidate?.entityId === prerequisite.entityId &&
+            ((prerequisite.kind === "entity-level" &&
+              dependencyCandidate?.entityId === prerequisite.entityId) ||
+              (prerequisite.kind === "town-hall-level" &&
+                dependencyCandidate?.role === "town-hall")) &&
             possibleDependency.targetLevel >= prerequisite.minimumLevel
           ) {
             dependencies.push(String(possibleDependency.id));
@@ -183,8 +184,11 @@ export function schedulePlanner(input: SchedulePlannerInput): readonly UpgradePr
 
   for (let pass = 0; pass < maxPasses && pendingItems.size > 0; pass += 1) {
     let madeProgress = false;
+    const lanesWithEarlierPendingItems = new Set<string>();
     for (const item of orderedItems) {
       const itemId = String(item.id);
+      const key = laneKey(item.lane);
+      if (lanesWithEarlierPendingItems.has(key)) continue;
       if (!pendingItems.has(itemId)) continue;
       const candidate = candidateById.get(item.candidateId);
       if (!candidate) {
@@ -223,11 +227,15 @@ export function schedulePlanner(input: SchedulePlannerInput): readonly UpgradePr
         const status = checkPlannerPrerequisite(prerequisite, input.prerequisiteState);
         if (status.status === "met") continue;
 
-        const dependencies = prerequisite.kind === "entity-level"
+        const dependencies = prerequisite.kind === "entity-level" ||
+          prerequisite.kind === "town-hall-level"
           ? orderedItems.filter((possibleDependency) => {
               if (possibleDependency.id === item.id) return false;
               const dependencyCandidate = candidateById.get(possibleDependency.candidateId);
-              return dependencyCandidate?.entityId === prerequisite.entityId &&
+              const matchesPrerequisite = prerequisite.kind === "entity-level"
+                ? dependencyCandidate?.entityId === prerequisite.entityId
+                : dependencyCandidate?.role === "town-hall";
+              return matchesPrerequisite &&
                 possibleDependency.targetLevel >= prerequisite.minimumLevel;
             })
           : [];
@@ -246,7 +254,10 @@ export function schedulePlanner(input: SchedulePlannerInput): readonly UpgradePr
 
         prerequisiteReasons.push(prerequisiteReason(prerequisite, status));
       }
-      if (waitingForDependency) continue;
+      if (waitingForDependency) {
+        lanesWithEarlierPendingItems.add(key);
+        continue;
+      }
       if (prerequisiteReasons.length > 0) {
         const hasUnknownPrerequisite = prerequisiteReasons.some(
           (reason) => reason.code === "prerequisite-unknown",
@@ -292,7 +303,6 @@ export function schedulePlanner(input: SchedulePlannerInput): readonly UpgradePr
         continue;
       }
 
-      const key = laneKey(item.lane);
       const reservation = reservations.get(key);
       if (!reservation || reservation.availableAtMs === null) {
         projections.push({

@@ -140,7 +140,10 @@ describe("PlannerTimeline positioning", () => {
     }));
 
     expect(screen.getByText("Estimate incomplete")).toBeTruthy();
-    expect(screen.getByText("Blocked · candidate-1")).toBeTruthy();
+    expect(screen.queryByText("Blocked · candidate-1")).toBeNull();
+    expect(screen.getByRole("button", {
+      name: "candidate-1, level unknown to 2, blocked or not scheduled",
+    })).toBeTruthy();
     expect(screen.getByText("Finish estimates include scheduled work only. Blocked or unknown upgrades do not receive invented dates.")).toBeTruthy();
   });
 

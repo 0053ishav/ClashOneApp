@@ -4,6 +4,7 @@ import {
   type PlannerLaneAvailability,
   type PlannerPrerequisiteState,
 } from "@/utils/planner/schedulePlanner";
+import { preparePlannerScheduleInput } from "@/utils/planner/preparePlannerScheduleInput";
 import type {
   ObservedActiveUpgrade,
   PlannerPlanId,
@@ -45,10 +46,11 @@ export async function recalculatePlannerProjection(
   const plan = await getPlannerPlan(input.accountTag, input.planId);
   if (!plan) return null;
 
+  const scheduleInput = preparePlannerScheduleInput(input.candidates, plan.items);
   const projections = schedulePlanner({
     nowMs: input.nowMs,
-    candidates: input.candidates,
-    items: plan.items,
+    candidates: scheduleInput.candidates,
+    items: scheduleInput.items,
     observedActiveUpgrades: input.observedActiveUpgrades.filter(
       (upgrade) => upgrade.accountTag === input.accountTag && upgrade.village === plan.village,
     ),

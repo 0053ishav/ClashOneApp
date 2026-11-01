@@ -9,6 +9,7 @@ import {
 
 const CATEGORY_BY_ENTITY_TYPE: Readonly<Record<string, string | undefined>> = {
   building: "buildings",
+  townhall: "buildings",
   hero: "heroes",
   troop: "troops",
   spell: "spells",
@@ -37,6 +38,8 @@ function toMetadataRecord(entity: EntityData): Record<string, unknown> {
   return {
     id: entity.id,
     village: entity.village,
+    type: entity.type,
+    subType: entity.subType,
     ...(levelNumbers.length > 0 ? { maxLevel: Math.max(...levelNumbers) } : {}),
   };
 }

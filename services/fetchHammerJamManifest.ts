@@ -1,5 +1,8 @@
 import { ENV } from "@/config/env";
-import { fetchManifest } from "@/services/cdnEntities/manifest";
+import {
+  fetchManifest,
+  invalidateManifestCache,
+} from "@/services/cdnEntities/manifest";
 import type { Village } from "@/types/entity";
 import {
   DEFAULT_HAMMER_JAM_MANIFEST,
@@ -125,8 +128,8 @@ export async function fetchHammerJamManifest(): Promise<HammerJamManifest> {
   }
 
   try {
-    const globalManifest = await fetchManifest();
-    const expectedVersion = globalManifest.events?.hammerJam;
+    let globalManifest = await fetchManifest();
+    let expectedVersion = globalManifest.events?.hammerJam;
 
     if (
       typeof expectedVersion !== "number" ||
@@ -136,13 +139,42 @@ export async function fetchHammerJamManifest(): Promise<HammerJamManifest> {
       return DEFAULT_HAMMER_JAM_MANIFEST;
     }
 
-    const response = await fetch(`${ENV.BACKEND}/v2/events/hammer-jam`);
+    let response = await fetch(`${ENV.BACKEND}/v2/events/hammer-jam`);
 
     if (!response.ok) {
       return DEFAULT_HAMMER_JAM_MANIFEST;
     }
 
-    const payload: unknown = await response.json();
+    let payload: unknown = await response.json();
+
+    // The global manifest is memory-cached for five minutes. If the event
+    // endpoint has already advanced to a different version, refresh the global
+    // manifest once before rejecting the event config as stale.
+    if (
+      isRecord(payload) &&
+      typeof payload.version === "number" &&
+      payload.version !== expectedVersion
+    ) {
+      invalidateManifestCache();
+      globalManifest = await fetchManifest();
+      expectedVersion = globalManifest.events?.hammerJam;
+
+      if (
+        typeof expectedVersion !== "number" ||
+        !Number.isInteger(expectedVersion) ||
+        expectedVersion < 1
+      ) {
+        return DEFAULT_HAMMER_JAM_MANIFEST;
+      }
+
+      response = await fetch(`${ENV.BACKEND}/v2/events/hammer-jam`);
+
+      if (!response.ok) {
+        return DEFAULT_HAMMER_JAM_MANIFEST;
+      }
+
+      payload = await response.json();
+    }
 
     return (
       parseHammerJamPayload(payload, expectedVersion) ??

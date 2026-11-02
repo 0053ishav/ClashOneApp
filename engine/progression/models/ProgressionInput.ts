@@ -10,15 +10,6 @@ import type {
 } from "./ResolvedEntity";
 
 /**
- * Event context for a prospective upgrade. The timestamp is explicit so
- * progression calculations stay deterministic and do not read the system clock.
- */
-export interface ProgressionUpgradeStartContext {
-  startsAt: number;
-  hammerJam: HammerJamManifest;
-}
-
-/**
  * Context for live resource production. This is evaluated at observation time,
  * independently from modifiers captured when an upgrade starts.
  */
@@ -32,7 +23,6 @@ export interface ProgressionInput {
   progression: ProgressionData;
   currentLevel: number;
   currentHallLevel: number;
-  upgradeStartContext?: ProgressionUpgradeStartContext;
   resourceProductionContext?: ResourceProductionContext;
   /** Event-bound Hammer Jam boost, resolved alongside account progression boosts. */
   hammerJamBoost?: HammerJamBoostSelection;

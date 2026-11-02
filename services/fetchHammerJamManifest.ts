@@ -19,10 +19,28 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isTimestampOrNull(value: unknown): value is string | null {
-  return value === null || (
-    typeof value === "string" && Number.isFinite(Date.parse(value))
-  );
+/**
+ * The event API sends Unix timestamps in seconds. Normalize them to ISO
+ * strings at the network boundary so the domain model and event resolver use
+ * one consistent timestamp representation. ISO strings remain accepted for
+ * backward compatibility with older manifest payloads.
+ */
+function normalizeTimestamp(value: unknown): string | null | undefined {
+  if (value === null) return null;
+
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) return undefined;
+
+    const milliseconds = value * 1000;
+    const date = new Date(milliseconds);
+    return Number.isFinite(date.getTime()) ? date.toISOString() : undefined;
+  }
+
+  if (typeof value === "string" && Number.isFinite(Date.parse(value))) {
+    return new Date(value).toISOString();
+  }
+
+  return undefined;
 }
 
 function isVillage(value: unknown): value is Village {
@@ -42,12 +60,14 @@ function parseHammerJamPayload(
   }
 
   const event = payload.hammerJam;
+  const startsAt = normalizeTimestamp(event.startsAt);
+  const endsAt = normalizeTimestamp(event.endsAt);
 
   if (
     typeof event.title !== "string" ||
     typeof event.enabled !== "boolean" ||
-    !isTimestampOrNull(event.startsAt) ||
-    !isTimestampOrNull(event.endsAt) ||
+    startsAt === undefined ||
+    endsAt === undefined ||
     typeof event.timeMultiplier !== "number" ||
     !Number.isFinite(event.timeMultiplier) ||
     event.timeMultiplier <= 0 ||
@@ -84,8 +104,8 @@ function parseHammerJamPayload(
   return {
     title: event.title,
     enabled: event.enabled,
-    startsAt: event.startsAt,
-    endsAt: event.endsAt,
+    startsAt,
+    endsAt,
     timeMultiplier: event.timeMultiplier,
     costMultiplier: event.costMultiplier,
     resourceMultiplier: event.resourceMultiplier,

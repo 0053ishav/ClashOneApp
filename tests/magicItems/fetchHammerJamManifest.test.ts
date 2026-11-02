@@ -29,7 +29,7 @@ const validPayload = {
     timeMultiplier: 0.5,
     costMultiplier: 0.5,
     resourceMultiplier: 2,
-    appliesTo: ["building", "troop", "spell", "hero", "pet"],
+    appliesTo: ["building", "trap", "troop", "spell", "hero", "pet"],
     villages: ["home"],
   },
 };
@@ -94,7 +94,7 @@ describe("fetchHammerJamManifest", () => {
         timeMultiplier: 0.5,
         costMultiplier: 0.5,
         resourceMultiplier: 2,
-        appliesTo: ["building", "troop", "spell", "hero", "pet"],
+        appliesTo: ["building", "trap", "troop", "spell", "hero", "pet"],
         villages: ["home"],
       },
     };
@@ -241,6 +241,17 @@ describe("fetchHammerJamManifest", () => {
     await expect(fetchHammerJamManifest()).resolves.toEqual(
       DEFAULT_HAMMER_JAM_MANIFEST,
     );
+  });
+
+  it("accepts traps as a Hammer Jam target from the server manifest", async () => {
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => validPayload,
+    });
+
+    const manifest = await fetchHammerJamManifest();
+
+    expect(manifest.appliesTo).toContain("trap");
   });
 
   it("preserves the resource production multiplier from the server", async () => {

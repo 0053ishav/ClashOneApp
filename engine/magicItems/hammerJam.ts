@@ -15,7 +15,7 @@ export const DEFAULT_HAMMER_JAM_MANIFEST: HammerJamManifest = {
   timeMultiplier: 0.5,
   costMultiplier: 0.5,
   resourceMultiplier: 2,
-  appliesTo: ["building", "troop", "spell", "hero", "pet"],
+  appliesTo: ["building", "trap", "troop", "spell", "hero", "pet"],
   villages: ["home"],
 };
 

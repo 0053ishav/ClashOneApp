@@ -75,8 +75,9 @@ describe("ProgressionEngine modifiers", () => {
       baseNextUpgradeTime: 120,
       nextUpgradeTime: 60,
       appliedModifierIds: ["hammer-jam"],
-      remainingCost: 3_000,
-      remainingUpgradeTime: 360,
+      // Hammer Jam discounts only the immediate next upgrade, not every future level.
+      remainingCost: 2_500,
+      remainingUpgradeTime: 300,
     });
   });
 
@@ -339,8 +340,9 @@ describe("ProgressionEngine modifiers", () => {
       baseNextUpgradeTime: 120,
       nextUpgradeTime: 48,
       nextCost: 400,
-      remainingCost: 2_400,
-      remainingUpgradeTime: 288,
+      // GP applies to all remaining levels; Hammer Jam only discounts the next one.
+      remainingCost: 2_000,
+      remainingUpgradeTime: 240,
       appliedModifierIds: ["hammer-jam", "gold-pass-builder-boost"],
     });
   });
@@ -496,8 +498,8 @@ describe("ProgressionEngine modifiers", () => {
       nextCost: 200,
       baseNextUpgradeTime: 120,
       nextUpgradeTime: 24,
-      remainingCost: 1_200,
-      remainingUpgradeTime: 144,
+      remainingCost: 1_000,
+      remainingUpgradeTime: 120,
       appliedModifierIds: [
         "hammer-jam",
         "gold-pass-builder-boost",

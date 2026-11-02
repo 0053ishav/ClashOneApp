@@ -38,7 +38,7 @@ import * as Notifications from "expo-notifications";
 import { StatusBar } from "expo-status-bar";
 import { Redirect, Stack, usePathname, useRouter, type ErrorBoundaryProps } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { AppState, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 // Keep the native splash visible until React has committed the first themed frame.
 // The app preference is read synchronously from MMKV by themeStore/useHomeColors.
@@ -116,6 +116,26 @@ export default Sentry.wrap(function RootLayout() {
   const router = useRouter();
   const loadAccounts = useAccountStore((s) => s.loadAccounts);
   const loadLastSync = useAccountStore((s) => s.loadLastSync);
+
+  const appStateRef = useRef(AppState.currentState);
+
+  // Event manifests can change while the app is open. Refresh Hammer Jam when
+  // the user returns to the foreground instead of requiring a cold restart.
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      const wasBackgrounded =
+        appStateRef.current === "background" ||
+        appStateRef.current === "inactive";
+
+      appStateRef.current = nextState;
+
+      if (wasBackgrounded && nextState === "active") {
+        void useHammerJamStore.getState().sync();
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   const [retryCount, setRetryCount] = useState(0);
   const [showSupport, setShowSupport] = useState(false);

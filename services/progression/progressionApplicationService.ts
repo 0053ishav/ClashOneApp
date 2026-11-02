@@ -8,10 +8,9 @@ import type {
   ProgressionApplicationResult,
   ProgressionInput,
   ProgressionOverviewResult,
-  ProgressionUpgradeStartContext,
 } from "@/engine/progression/models";
 
-import type { HammerJamManifest, HammerJamBoostSelection } from "@/types/hammerJam";
+import type { HammerJamBoostSelection } from "@/types/hammerJam";
 import type { Upgrade } from "@/types/upgrade";
 import type { GoldPassBoostSelection } from "@/types/goldPass";
 import type { ReEngagementBoostSelection } from "@/types/reEngagementBoost";
@@ -28,13 +27,6 @@ import { ProgressionAggregation } from "@/engine/progression/operations/progress
 export interface ResolveUpgradeOptions {
   /** First-class Hammer Jam boost for this upgrade projection. */
   hammerJamBoost?: HammerJamBoostSelection;
-  /** @deprecated Prefer hammerJamBoost; retained for existing callers. */
-  hammerJam?: HammerJamManifest;
-  /**
-   * Explicitly override the timestamp used to evaluate upgrade-start effects.
-   * If omitted, the application service evaluates them at the current time.
-   */
-  upgradeStartContext?: ProgressionUpgradeStartContext;
   /** Apply manually configured Gold Pass discounts to calculated costs and durations. */
   goldPassBoost?: GoldPassBoostSelection;
   /** Apply an active account-scoped return-to-game boost to calculated costs and durations. */
@@ -47,18 +39,9 @@ export class ProgressionApplicationService {
     options: ResolveUpgradeOptions = {},
   ): ProgressionApplicationResult | null {
     const now = Date.now();
-    const hammerJam =
-      options.hammerJamBoost?.manifest ??
-      options.hammerJam ??
-      options.upgradeStartContext?.hammerJam ??
-      useHammerJamStore.getState().manifest;
     const hammerJamBoost: HammerJamBoostSelection = options.hammerJamBoost ?? {
-      startsAt: options.upgradeStartContext?.startsAt ?? now,
-      manifest: hammerJam,
-    };
-    const upgradeStartContext: ProgressionUpgradeStartContext = {
-      startsAt: hammerJamBoost.startsAt,
-      hammerJam,
+      startsAt: now,
+      manifest: useHammerJamStore.getState().manifest,
     };
 
     /*
@@ -71,7 +54,7 @@ export class ProgressionApplicationService {
 
       return applyBoostsToCraftedProgressionResult(result, {
         village: upgrade.village,
-        upgradeStartContext,
+        hammerJamBoost,
         ...(options.goldPassBoost
           ? { goldPassBoost: options.goldPassBoost }
           : {}),
@@ -114,9 +97,8 @@ export class ProgressionApplicationService {
       currentHallLevel,
       resourceProductionContext: {
         at: now,
-        hammerJam,
+        hammerJam: hammerJamBoost.manifest,
       },
-      upgradeStartContext,
       hammerJamBoost,
       ...(options.goldPassBoost
         ? { goldPassBoost: options.goldPassBoost }

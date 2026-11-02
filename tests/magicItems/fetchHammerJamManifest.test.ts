@@ -163,12 +163,47 @@ describe("fetchHammerJamManifest", () => {
     expect(globalThis.fetch).toHaveBeenCalledTimes(2);
   });
 
-  it("returns the safe default when the global manifest has no Hammer Jam version", async () => {
+  it("uses the shared eventsVersion when no event-specific version is published", async () => {
     mockedFetchManifest.mockResolvedValueOnce({
       version: 6,
       metadataVersion: 6,
       progressionVersion: 6,
-      eventsVersion: 2,
+      eventsVersion: 3,
+      metadata: {},
+      progression: {},
+      events: {},
+    });
+
+    const serverPayload = {
+      version: 3,
+      hammerJam: {
+        ...validPayload.hammerJam,
+        startsAt: 1793520000,
+        endsAt: 1794816000,
+      },
+    };
+
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => serverPayload,
+    });
+
+    await expect(fetchHammerJamManifest()).resolves.toEqual({
+      ...serverPayload.hammerJam,
+      startsAt: "2026-11-01T00:00:00.000Z",
+      endsAt: "2026-11-16T00:00:00.000Z",
+    });
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${ENV.BACKEND}/v2/events/hammer-jam`,
+    );
+  });
+
+  it("returns the safe default when the global manifest has no valid event version", async () => {
+    mockedFetchManifest.mockResolvedValueOnce({
+      version: 6,
+      metadataVersion: 6,
+      progressionVersion: 6,
+      eventsVersion: 0,
       metadata: {},
       progression: {},
       events: {},

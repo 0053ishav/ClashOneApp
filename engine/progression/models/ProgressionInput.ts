@@ -1,5 +1,4 @@
-import type { HammerJamManifest } from "@/types/hammerJam";
-import type { HammerJamBoostSelection } from "@/types/hammerJam";
+import type { HammerJamBoostSelection, HammerJamManifest } from "@/types/hammerJam";
 import type { GoldPassBoostSelection } from "@/types/goldPass";
 import type { ReEngagementBoostSelection } from "@/types/reEngagementBoost";
 import type {

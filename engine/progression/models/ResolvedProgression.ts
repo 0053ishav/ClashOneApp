@@ -1,5 +1,6 @@
 import type { ProgressionData } from "@/types/progression";
 import type { GoldPassBoostSelection } from "@/types/goldPass";
+import type { HammerJamBoostSelection } from "@/types/hammerJam";
 import type { ReEngagementBoostSelection } from "@/types/reEngagementBoost";
 import type {
   ProgressionLevel,
@@ -20,6 +21,7 @@ export interface ResolvedProgression {
   maxLevel: number;
   upgradeStartContext?: ProgressionUpgradeStartContext;
   resourceProductionContext?: ResourceProductionContext;
+  hammerJamBoost?: HammerJamBoostSelection;
   goldPassBoost?: GoldPassBoostSelection;
   reEngagementBoost?: ReEngagementBoostSelection;
 }

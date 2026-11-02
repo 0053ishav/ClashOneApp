@@ -6,10 +6,7 @@ import type {
   ProgressionLevel,
 } from "./ProgressionLevel";
 import type { ResolvedEntity } from "./ResolvedEntity";
-import type {
-  ProgressionUpgradeStartContext,
-  ResourceProductionContext,
-} from "./ProgressionInput";
+import type { ResourceProductionContext } from "./ProgressionInput";
 
 export interface ResolvedProgression {
   entity: ResolvedEntity;
@@ -19,7 +16,6 @@ export interface ResolvedProgression {
   current?: ProgressionLevel;
   next?: ProgressionLevel;
   maxLevel: number;
-  upgradeStartContext?: ProgressionUpgradeStartContext;
   resourceProductionContext?: ResourceProductionContext;
   hammerJamBoost?: HammerJamBoostSelection;
   goldPassBoost?: GoldPassBoostSelection;

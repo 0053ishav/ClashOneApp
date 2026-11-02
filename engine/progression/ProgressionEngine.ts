@@ -12,9 +12,7 @@ import {
 import {
   getHallRequirement,
 } from "./selectors";
-import {
-  applyHammerJamToUpgradeStart,
-} from "@/engine/magicItems/applyHammerJamToUpgradeStart";
+import { resolveHammerJamBoostModifier } from "./resolveHammerJamBoost";
 import { resolveGoldPassBoostModifier } from "./resolveGoldPassBoost";
 import { resolveReEngagementBoostModifier } from "./resolveReEngagementBoost";
 import { isGoldPassBoostApplicable } from "./isGoldPassBoostApplicable";
@@ -190,25 +188,19 @@ export class ProgressionEngine {
 
     if (!isMaxLevel && next) {
       if (hammerJamBoost) {
-        if (!Number.isFinite(hammerJamBoost.startsAt)) {
-          throw new Error("INVALID_UPGRADE_START_TIMESTAMP");
-        }
-
         if (hammerJamTarget) {
-          const effectiveStartValues = applyHammerJamToUpgradeStart({
-            ...(baseNextCost == null ? {} : { baseCost: baseNextCost }),
-            baseDurationMinutes: baseNextUpgradeTime ?? 0,
+          const modifier = resolveHammerJamBoostModifier({
+            selection: hammerJamBoost,
             target: hammerJamTarget,
             village: progression.entity.village,
-            startsAt: hammerJamBoost.startsAt,
-            manifest: hammerJamBoost.manifest,
+            ...(baseNextCost == null ? {} : { baseCost: baseNextCost }),
+            baseDurationMinutes: baseNextUpgradeTime ?? 0,
           });
 
-          hammerJamCostMultiplier = effectiveStartValues.costMultiplier;
-          hammerJamTimeMultiplier = effectiveStartValues.timeMultiplier;
-          hasHammerJamDiscount =
-            effectiveStartValues.appliedModifierIds.length > 0;
-          appliedModifierIds = effectiveStartValues.appliedModifierIds;
+          hammerJamCostMultiplier = modifier.costMultiplier;
+          hammerJamTimeMultiplier = modifier.timeMultiplier;
+          hasHammerJamDiscount = modifier.appliedModifierIds.length > 0;
+          appliedModifierIds = modifier.appliedModifierIds;
         }
       }
 

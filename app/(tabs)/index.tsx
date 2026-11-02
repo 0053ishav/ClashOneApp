@@ -1028,15 +1028,6 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {showBanner && eventEndsAt && (
-          <GoblinEventBanner
-            eventEndsAt={eventEndsAt}
-            onDismiss={() => setGoblinBannerDismissedUntil(eventEndsAt)}
-          />
-        )}
-
-        <HammerJamBanner manifest={hammerJamManifest} />
-
         {/* Profile row and compact Magic Item shortcuts */}
         <View style={styles.profileActionsRow}>
           <Pressable
@@ -1218,6 +1209,19 @@ export default function HomeScreen() {
           />
         )}
       </View>
+
+      {/* Event banners float above the screen instead of changing header/content layout. */}
+      {(showBanner && eventEndsAt) || hammerJamManifest ? (
+        <View pointerEvents="box-none" style={styles.eventBannerOverlay}>
+          {showBanner && eventEndsAt && (
+            <GoblinEventBanner
+              eventEndsAt={eventEndsAt}
+              onDismiss={() => setGoblinBannerDismissedUntil(eventEndsAt)}
+            />
+          )}
+          <HammerJamBanner manifest={hammerJamManifest} />
+        </View>
+      ) : null}
 
       {/* ── Scrollable content ── */}
       <ScrollView
@@ -1911,6 +1915,15 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
   scrollContent: {
     paddingTop: 0,
     paddingBottom: 40,
+  },
+
+  eventBannerOverlay: {
+    position: "absolute",
+    top: 48,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    elevation: 100,
   },
 
   // ── Header ──

@@ -12,26 +12,38 @@ export async function buildSupportInfo() {
   const state = useAccountStore.getState();
   const notificationsEnabled =
     getNotificationsEnabled?.() ?? false;
-
   const notificationPermissions =
     await Notifications.getPermissionsAsync();
 
-  const activeProfile =
-    state.activeTag
-      ? state.profilesByTag?.[state.activeTag]
-      : null;
-
+  const accountCount = Object.keys(state.profilesByTag ?? {}).length;
   const isPremium = usePremiumStore.getState().isPremium;
 
+  // Report only the most recent sync timestamp across accounts. Do not
+  // include or select an account identifier in support diagnostics.
+  const syncTimestamps = Object.values(state.lastJsonSyncMap ?? {}).filter(
+    (timestamp): timestamp is number =>
+      typeof timestamp === "number" && Number.isFinite(timestamp),
+  );
+  const lastSync = syncTimestamps.length
+    ? Math.max(...syncTimestamps)
+    : null;
+
+  const installationTime = Application.getInstallationTimeAsync
+    ? await Application.getInstallationTimeAsync().catch(() => null)
+    : null;
+
   let revenueCatInfo = `
-RevenueCat:
-Unavailable
+------------------------
+RevenueCat
+------------------------
+
+Configured: Unknown
+Chief Entitlement: Unavailable
 `;
 
   try {
     const configured = Purchases.isConfigured();
-
-    const customerInfo = await configured
+    const customerInfo = configured
       ? await Purchases.getCustomerInfo()
       : null;
 
@@ -40,38 +52,36 @@ Unavailable
 RevenueCat
 ------------------------
 
-Configured: ${await configured ? "Yes" : "No"}
-
-RC User ID:
-${await configured ? customerInfo?.originalAppUserId ?? "Unknown" : "N/A"}
-
-Chief Entitlement:
-${await configured ? customerInfo?.entitlements.active["chief"] ? "Active" : "Inactive" : "N/A"}
-
+Configured: ${configured ? "Yes" : "No"}
+Chief Entitlement: ${configured
+        ? customerInfo?.entitlements.active["chief"]
+          ? "Active"
+          : "Inactive"
+        : "N/A"}
 `;
-  } catch (e: any) {
+  } catch {
+    // Do not expose raw SDK errors or customer identifiers in diagnostics.
     revenueCatInfo = `
 ------------------------
 RevenueCat
 ------------------------
 
-Error:
-${e?.message ?? "Unknown"}
+Configured: Yes
+Chief Entitlement: Unavailable
 `;
   }
 
   return `
 ------------------------
-Clash One Debug Info
+Clash One Support Info
 ------------------------
 
 App Version: ${Application.nativeApplicationVersion ?? "Unknown"}
 Build Number: ${Application.nativeBuildVersion ?? "Unknown"}
-Android Package:
-${Application.applicationId ?? "Unknown"}
+Android Package: ${Application.applicationId ?? "Unknown"}
 
 Platform: ${Platform.OS}
-Android API Level: ${Platform.OS === "android" ? Device.platformApiLevel : "N/A"}
+Android API Level: ${Platform.OS === "android" ? Device.platformApiLevel ?? "Unknown" : "N/A"}
 OS Version: ${Device.osVersion ?? "Unknown"}
 
 Manufacturer: ${Device.manufacturer ?? "Unknown"}
@@ -81,55 +91,23 @@ Device Type: ${Device.deviceType ?? "Unknown"}
 Design Name: ${Device.designName ?? "Unknown"}
 Is Physical Device: ${Device.isDevice ? "Yes" : "No"}
 
-Installation Time:
-${Application.getInstallationTimeAsync
-      ? (await Application.getInstallationTimeAsync()).toISOString()
-      : "Unknown"
-    }
-    
-    
+Installation Time: ${installationTime?.toISOString() ?? "Unknown"}
+
 Timezone: ${Localization.getCalendars()?.[0]?.timeZone ?? "Unknown"}
-Language:
-    ${Localization.getLocales()?.[0]?.languageTag ?? "Unknown"}
+Language: ${Localization.getLocales()?.[0]?.languageTag ?? "Unknown"}
 
-Active Account: ${state.activeTag
-      ? state.activeTag : "None"
-    }
+Accounts Count: ${accountCount}
 
-Accounts Count: ${Object.keys(state.profilesByTag ?? {}).length}
-Profile Tags:
-${Object.keys(state.profilesByTag ?? {}).join(", ")}
+Notifications Enabled: ${notificationsEnabled ? "Yes" : "No"}
+Notification Permission: ${notificationPermissions.granted ? "Granted" : "Denied"}
+Notification Status: ${notificationPermissions.status}
 
+Last JSON Sync: ${lastSync !== null ? new Date(lastSync).toISOString() : "Never"}
+Last Sync Age: ${lastSync !== null
+      ? `${Math.floor((Date.now() - lastSync) / 60000)} mins ago`
+      : "Never"}
 
-Player Name: ${activeProfile?.playerName ?? "Unknown"}
-Town Hall: ${activeProfile?.townHallLevel ?? "Unknown"}
-
-Notifications MMKV Enabled: ${notificationsEnabled ? "Yes" : "No"
-    }
-
-  Notification Permission:
-${notificationPermissions.granted ? "Granted" : "Denied"}
-
-Notification Status:
-${notificationPermissions.status}
-
-Last JSON Sync: 
-${state.activeTag && state.lastJsonSyncMap?.[state.activeTag]
-      ? new Date(state.lastJsonSyncMap[state.activeTag]).toISOString()
-      : "Never"
-    }
-
-Last Sync Age:
-${state.activeTag && state.lastJsonSyncMap?.[state.activeTag]
-      ? Math.floor(
-        (Date.now() -
-          state.lastJsonSyncMap[state.activeTag]) /
-        60000
-      ) + " mins ago"
-      : "Never"
-    }
-
-Has Premium: ${isPremium}
+Has Premium: ${isPremium ? "Yes" : "No"}
 
 ${revenueCatInfo}
 

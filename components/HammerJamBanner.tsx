@@ -47,7 +47,7 @@ export function HammerJamBanner({ manifest }: Props) {
 const styles = StyleSheet.create({
   container: {
     marginHorizontal: 16,
-    marginTop: 14,
+    marginTop: 8,
     padding: 14,
     borderRadius: 14,
     backgroundColor: "#fbbf24",

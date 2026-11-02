@@ -78,8 +78,7 @@ export class ProgressionEngine {
   static resolve(
     progression: ResolvedProgression,
   ): ProgressionResult {
-    // Validate caller-supplied context before entity/stat eligibility checks so
-    // malformed timestamps cannot be silently ignored for non-producing levels.
+    // Validate caller-supplied resource observation time before stat eligibility checks.
     if (
       progression.resourceProductionContext != null &&
       !Number.isFinite(progression.resourceProductionContext.at)
@@ -134,10 +133,7 @@ export class ProgressionEngine {
     let nextUpgradeTime = baseNextUpgradeTime;
     let appliedModifierIds: string[] = [];
 
-    const upgradeStartContext = progression.upgradeStartContext;
-    const hammerJamBoost = progression.hammerJamBoost ?? (upgradeStartContext
-      ? { startsAt: upgradeStartContext.startsAt, manifest: upgradeStartContext.hammerJam }
-      : undefined);
+    const hammerJamBoost = progression.hammerJamBoost;
     const hammerJamTarget = toHammerJamTarget(progression.entity.category);
     const noGoldPassModifier = {
       costMultiplier: 1,

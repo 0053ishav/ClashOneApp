@@ -818,10 +818,7 @@ export default function HomeScreen() {
         : undefined;
 
       return ProgressionApplicationService.resolveUpgrade(upgrade, {
-        upgradeStartContext: {
-          startsAt: Date.now(),
-          hammerJam: hammerJamManifest,
-        },
+        hammerJam: hammerJamManifest,
         goldPassBoost,
         reEngagementBoost,
       });
@@ -860,10 +857,7 @@ export default function HomeScreen() {
         if (goldPassProgressionRequestRef.current !== requestId) return;
         setSelectedProgression(
           ProgressionApplicationService.resolveUpgrade(upgrade, {
-            upgradeStartContext: {
-              startsAt: Date.now(),
-              hammerJam: useHammerJamStore.getState().manifest,
-            },
+            hammerJam: useHammerJamStore.getState().manifest,
           }),
         );
       });

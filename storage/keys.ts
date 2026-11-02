@@ -6,6 +6,7 @@ export const STORAGE_KEYS = {
   ONBOARDING_KEY: "onboarding_complete",
   NOTIFICATION_KEY: "notifications_enabled",
   GOBLIN_BANNER_DISMISSED_UNTIL: "goblin_banner_dismissed_until",
+  HAMMER_JAM_BANNER_DISMISSED_EVENT: "hammer_jam_banner_dismissed_event",
   REMOTE_CONFIG: "remote_config",
   LAST_JSON_SYNC: "last_json_sync",
   ACTIVE_KEY: "active_account",

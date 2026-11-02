@@ -1,6 +1,10 @@
 import type { HammerJamManifest } from "@/engine/magicItems/hammerJam";
 import { isHammerJamActive } from "@/engine/magicItems/hammerJam";
 import { formatCountdown } from "@/utils/formatCountdown";
+import {
+  setHammerJamBannerDismissedUntil,
+  shouldShowHammerJamBanner,
+} from "@/storage/hammerJamStorage";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -19,7 +23,9 @@ type Props = {
 
 export function HammerJamBanner({ manifest }: Props) {
   const [now, setNow] = useState(Date.now());
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(
+    () => !shouldShowHammerJamBanner(manifest.endsAt),
+  );
   const slideAnim = useRef(new Animated.Value(-100)).current;
   const active = isHammerJamActive(manifest, now) && Boolean(manifest.endsAt);
 
@@ -29,8 +35,9 @@ export function HammerJamBanner({ manifest }: Props) {
   }, []);
 
   useEffect(() => {
-    setDismissed(false);
-    if (!active) return;
+    const shouldShow = shouldShowHammerJamBanner(manifest.endsAt);
+    setDismissed(!shouldShow);
+    if (!active || !shouldShow) return;
 
     slideAnim.setValue(-100);
     Animated.timing(slideAnim, {
@@ -50,7 +57,12 @@ export function HammerJamBanner({ manifest }: Props) {
       easing: Easing.in(Easing.cubic),
       useNativeDriver: true,
     }).start(({ finished }) => {
-      if (finished) setDismissed(true);
+      if (finished) {
+        setDismissed(true);
+        if (manifest.endsAt) {
+          setHammerJamBannerDismissedUntil(manifest.endsAt);
+        }
+      }
     });
   };
 

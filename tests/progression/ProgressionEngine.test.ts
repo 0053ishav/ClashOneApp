@@ -350,9 +350,9 @@ describe("ProgressionEngine modifiers", () => {
   it("compounds Gold Pass with Hammer Jam without intermediate duration rounding", () => {
     const result = resolve({
       goldPassBoost: { target: "builder", percent: 20 },
-      upgradeStartContext: {
+      hammerJamBoost: {
         startsAt: EVENT_START,
-        hammerJam: activeHammerJam,
+        manifest: activeHammerJam,
       },
     });
 
@@ -506,9 +506,9 @@ describe("ProgressionEngine modifiers", () => {
     const result = resolve({
       goldPassBoost: { target: "builder", percent: 20 },
       reEngagementBoost: { target: "builder", percent: 50 },
-      upgradeStartContext: {
+      hammerJamBoost: {
         startsAt: EVENT_START,
-        hammerJam: activeHammerJam,
+        manifest: activeHammerJam,
       },
     });
 

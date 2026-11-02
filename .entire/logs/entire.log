@@ -1,0 +1,10 @@
+{"time":"2026-11-01T17:27:05.4074322+05:30","level":"INFO","msg":"redaction configured","component":"redaction","packs":0,"pack_rules":0,"inline_patterns":0,"active_rules":0,"pii":false,"opf":false}
+{"time":"2026-11-01T17:27:05.8948274+05:30","level":"INFO","msg":"redaction configured","component":"redaction","packs":0,"pack_rules":0,"inline_patterns":0,"active_rules":0,"pii":false,"opf":false}
+{"time":"2026-11-01T17:27:06.1695045+05:30","level":"INFO","msg":"redaction configured","component":"redaction","packs":0,"pack_rules":0,"inline_patterns":0,"active_rules":0,"pii":false,"opf":false}
+{"time":"2026-11-01T17:38:49.2718514+05:30","level":"INFO","msg":"redaction configured","session_id":"b3ee3377-9dd6-4042-b90a-eaf1685d94a5","component":"redaction","packs":0,"pack_rules":0,"inline_patterns":0,"active_rules":0,"pii":false,"opf":false}
+{"time":"2026-11-01T17:38:49.852725+05:30","level":"INFO","msg":"redaction configured","session_id":"b3ee3377-9dd6-4042-b90a-eaf1685d94a5","component":"redaction","packs":0,"pack_rules":0,"inline_patterns":0,"active_rules":0,"pii":false,"opf":false}
+{"time":"2026-11-01T17:38:50.225376+05:30","level":"INFO","msg":"redaction configured","session_id":"b3ee3377-9dd6-4042-b90a-eaf1685d94a5","component":"redaction","packs":0,"pack_rules":0,"inline_patterns":0,"active_rules":0,"pii":false,"opf":false}
+{"time":"2026-11-01T20:17:28.2228138+05:30","level":"INFO","msg":"redaction configured","component":"redaction","packs":0,"pack_rules":0,"inline_patterns":0,"active_rules":0,"pii":false,"opf":false}
+{"time":"2026-11-01T20:17:28.8030892+05:30","level":"INFO","msg":"redaction configured","component":"redaction","packs":0,"pack_rules":0,"inline_patterns":0,"active_rules":0,"pii":false,"opf":false}
+{"time":"2026-11-01T20:17:29.2054997+05:30","level":"INFO","msg":"redaction configured","component":"redaction","packs":0,"pack_rules":0,"inline_patterns":0,"active_rules":0,"pii":false,"opf":false}
+{"time":"2026-11-01T20:34:55.0274483+05:30","level":"INFO","msg":"redaction configured","component":"redaction","packs":0,"pack_rules":0,"inline_patterns":0,"active_rules":0,"pii":false,"opf":false}

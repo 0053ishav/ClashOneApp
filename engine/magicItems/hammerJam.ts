@@ -1,3 +1,4 @@
+import type { Village } from "@/types/entity";
 import type {
   ResolvedUpgradeStartModifiers,
   UpgradeStartModifier,

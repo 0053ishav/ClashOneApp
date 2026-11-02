@@ -50,6 +50,17 @@ function isVillage(value: unknown): value is Village {
   return value === "home" || value === "builderBase" || value === "global";
 }
 
+function resolveExpectedEventVersion(
+  manifest: Awaited<ReturnType<typeof fetchManifest>>,
+): number | null {
+  // Prefer the event-specific version when the global manifest publishes one.
+  // Fall back to eventsVersion, the shared version field used by the other
+  // versioned event manifests.
+  const version = manifest.events?.hammerJam ?? manifest.eventsVersion;
+
+  return Number.isInteger(version) && version > 0 ? version : null;
+}
+
 function parseHammerJamPayload(
   payload: unknown,
   expectedVersion: number,
@@ -129,13 +140,12 @@ export async function fetchHammerJamManifest(): Promise<HammerJamManifest> {
 
   try {
     let globalManifest = await fetchManifest();
-    let expectedVersion = globalManifest.events?.hammerJam;
+    let expectedVersion = resolveExpectedEventVersion(globalManifest);
 
-    if (
-      typeof expectedVersion !== "number" ||
-      !Number.isInteger(expectedVersion) ||
-      expectedVersion < 1
-    ) {
+    if (expectedVersion === null) {
+      console.warn(
+        "[HammerJam] Global manifest has no valid events.hammerJam or eventsVersion",
+      );
       return DEFAULT_HAMMER_JAM_MANIFEST;
     }
 
@@ -157,13 +167,12 @@ export async function fetchHammerJamManifest(): Promise<HammerJamManifest> {
     ) {
       invalidateManifestCache();
       globalManifest = await fetchManifest();
-      expectedVersion = globalManifest.events?.hammerJam;
+      expectedVersion = resolveExpectedEventVersion(globalManifest);
 
-      if (
-        typeof expectedVersion !== "number" ||
-        !Number.isInteger(expectedVersion) ||
-        expectedVersion < 1
-      ) {
+      if (expectedVersion === null) {
+        console.warn(
+          "[HammerJam] Refreshed global manifest has no valid event version",
+        );
         return DEFAULT_HAMMER_JAM_MANIFEST;
       }
 
@@ -176,11 +185,22 @@ export async function fetchHammerJamManifest(): Promise<HammerJamManifest> {
       payload = await response.json();
     }
 
-    return (
-      parseHammerJamPayload(payload, expectedVersion) ??
-      DEFAULT_HAMMER_JAM_MANIFEST
-    );
-  } catch {
+    const manifest = parseHammerJamPayload(payload, expectedVersion);
+
+    if (!manifest) {
+      const payloadVersion =
+        isRecord(payload) && typeof payload.version === "number"
+          ? payload.version
+          : "missing";
+      console.warn(
+        `[HammerJam] Rejected event manifest (expected version ${expectedVersion}, received ${payloadVersion})`,
+      );
+      return DEFAULT_HAMMER_JAM_MANIFEST;
+    }
+
+    return manifest;
+  } catch (error) {
+    console.warn("[HammerJam] Failed to fetch event manifest", error);
     return DEFAULT_HAMMER_JAM_MANIFEST;
   }
 }

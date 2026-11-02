@@ -57,14 +57,54 @@ describe("fetchHammerJamManifest", () => {
       json: async () => validPayload,
     });
 
-    await expect(fetchHammerJamManifest()).resolves.toEqual(
-      validPayload.hammerJam,
-    );
+    await expect(fetchHammerJamManifest()).resolves.toEqual({
+      ...validPayload.hammerJam,
+      startsAt: "2026-10-31T18:30:00.000Z",
+      endsAt: "2026-11-16T18:30:00.000Z",
+    });
 
     expect(mockedFetchManifest).toHaveBeenCalledTimes(1);
     expect(globalThis.fetch).toHaveBeenCalledWith(
       `${ENV.BACKEND}/v2/events/hammer-jam`,
     );
+  });
+
+  it("accepts the server's version 3 payload with Unix timestamps in seconds", async () => {
+    mockedFetchManifest.mockResolvedValueOnce({
+      version: 6,
+      metadataVersion: 6,
+      progressionVersion: 6,
+      eventsVersion: 3,
+      metadata: {},
+      progression: {},
+      events: { hammerJam: 3 },
+    });
+
+    const serverPayload = {
+      version: 3,
+      hammerJam: {
+        title: "Hammer Jam 2026",
+        enabled: true,
+        startsAt: 1793520000,
+        endsAt: 1794816000,
+        timeMultiplier: 0.5,
+        costMultiplier: 0.5,
+        resourceMultiplier: 2,
+        appliesTo: ["building", "troop", "spell", "hero", "pet"],
+        villages: ["home"],
+      },
+    };
+
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => serverPayload,
+    });
+
+    await expect(fetchHammerJamManifest()).resolves.toEqual({
+      ...serverPayload.hammerJam,
+      startsAt: "2026-11-01T00:00:00.000Z",
+      endsAt: "2026-11-16T00:00:00.000Z",
+    });
   });
 
   it("returns the safe default when the global manifest has no Hammer Jam version", async () => {

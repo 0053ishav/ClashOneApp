@@ -135,6 +135,9 @@ export class ProgressionEngine {
     let appliedModifierIds: string[] = [];
 
     const upgradeStartContext = progression.upgradeStartContext;
+    const hammerJamBoost = progression.hammerJamBoost ?? (upgradeStartContext
+      ? { startsAt: upgradeStartContext.startsAt, manifest: upgradeStartContext.hammerJam }
+      : undefined);
     const hammerJamTarget = toHammerJamTarget(progression.entity.category);
     const noGoldPassModifier = {
       costMultiplier: 1,
@@ -190,8 +193,8 @@ export class ProgressionEngine {
     let hasHammerJamDiscount = false;
 
     if (!isMaxLevel && next) {
-      if (upgradeStartContext) {
-        if (!Number.isFinite(upgradeStartContext.startsAt)) {
+      if (hammerJamBoost) {
+        if (!Number.isFinite(hammerJamBoost.startsAt)) {
           throw new Error("INVALID_UPGRADE_START_TIMESTAMP");
         }
 
@@ -201,8 +204,8 @@ export class ProgressionEngine {
             baseDurationMinutes: baseNextUpgradeTime ?? 0,
             target: hammerJamTarget,
             village: progression.entity.village,
-            startsAt: upgradeStartContext.startsAt,
-            manifest: upgradeStartContext.hammerJam,
+            startsAt: hammerJamBoost.startsAt,
+            manifest: hammerJamBoost.manifest,
           });
 
           hammerJamCostMultiplier = effectiveStartValues.costMultiplier;

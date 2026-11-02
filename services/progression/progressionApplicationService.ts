@@ -11,7 +11,7 @@ import type {
   ProgressionUpgradeStartContext,
 } from "@/engine/progression/models";
 
-import type { HammerJamManifest } from "@/engine/magicItems/hammerJam";
+import type { HammerJamManifest, HammerJamBoostSelection } from "@/types/hammerJam";
 import type { Upgrade } from "@/types/upgrade";
 import type { GoldPassBoostSelection } from "@/types/goldPass";
 import type { ReEngagementBoostSelection } from "@/types/reEngagementBoost";
@@ -26,7 +26,9 @@ import { ProgressionQueries } from "./progressionQueries";
 import { ProgressionAggregation } from "@/engine/progression/operations/progressionAggregation";
 
 export interface ResolveUpgradeOptions {
-  /** Active event configuration used when projecting the next upgrade. */
+  /** First-class Hammer Jam boost for this upgrade projection. */
+  hammerJamBoost?: HammerJamBoostSelection;
+  /** @deprecated Prefer hammerJamBoost; retained for existing callers. */
   hammerJam?: HammerJamManifest;
   /**
    * Explicitly override the timestamp used to evaluate upgrade-start effects.
@@ -46,11 +48,16 @@ export class ProgressionApplicationService {
   ): ProgressionApplicationResult | null {
     const now = Date.now();
     const hammerJam =
+      options.hammerJamBoost?.manifest ??
       options.hammerJam ??
       options.upgradeStartContext?.hammerJam ??
       useHammerJamStore.getState().manifest;
-    const upgradeStartContext: ProgressionUpgradeStartContext = {
+    const hammerJamBoost: HammerJamBoostSelection = options.hammerJamBoost ?? {
       startsAt: options.upgradeStartContext?.startsAt ?? now,
+      manifest: hammerJam,
+    };
+    const upgradeStartContext: ProgressionUpgradeStartContext = {
+      startsAt: hammerJamBoost.startsAt,
       hammerJam,
     };
 
@@ -110,6 +117,7 @@ export class ProgressionApplicationService {
         hammerJam,
       },
       upgradeStartContext,
+      hammerJamBoost,
       ...(options.goldPassBoost
         ? { goldPassBoost: options.goldPassBoost }
         : {}),

@@ -12,6 +12,7 @@ import {
 
 const VALID_TARGETS = new Set<HammerJamTarget>([
   "building",
+  "trap",
   "troop",
   "spell",
   "hero",

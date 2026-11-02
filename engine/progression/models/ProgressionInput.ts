@@ -1,4 +1,5 @@
-import type { HammerJamManifest } from "@/engine/magicItems/hammerJam";
+import type { HammerJamManifest } from "@/types/hammerJam";
+import type { HammerJamBoostSelection } from "@/types/hammerJam";
 import type { GoldPassBoostSelection } from "@/types/goldPass";
 import type { ReEngagementBoostSelection } from "@/types/reEngagementBoost";
 import type {
@@ -34,6 +35,8 @@ export interface ProgressionInput {
   currentHallLevel: number;
   upgradeStartContext?: ProgressionUpgradeStartContext;
   resourceProductionContext?: ResourceProductionContext;
+  /** Event-bound Hammer Jam boost, resolved alongside account progression boosts. */
+  hammerJamBoost?: HammerJamBoostSelection;
   /** Manually selected Gold Pass discount for cost and time projections. */
   goldPassBoost?: GoldPassBoostSelection;
   /** Active, account-scoped return-to-game discount for cost and time projections. */

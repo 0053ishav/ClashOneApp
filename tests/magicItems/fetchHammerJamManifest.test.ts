@@ -1,10 +1,14 @@
-import { fetchManifest } from "@/services/cdnEntities/manifest";
+import {
+  fetchManifest,
+  invalidateManifestCache,
+} from "@/services/cdnEntities/manifest";
 import { ENV } from "@/config/env";
 import { fetchHammerJamManifest } from "@/services/fetchHammerJamManifest";
 import { DEFAULT_HAMMER_JAM_MANIFEST } from "@/engine/magicItems/hammerJam";
 
 jest.mock("@/services/cdnEntities/manifest", () => ({
   fetchManifest: jest.fn(),
+  invalidateManifestCache: jest.fn(),
 }));
 
 jest.mock("@/config/env", () => ({
@@ -105,6 +109,58 @@ describe("fetchHammerJamManifest", () => {
       startsAt: "2026-11-01T00:00:00.000Z",
       endsAt: "2026-11-16T00:00:00.000Z",
     });
+  });
+
+
+  it("refreshes the cached global manifest when the event payload has advanced", async () => {
+    mockedFetchManifest
+      .mockResolvedValueOnce({
+        version: 6,
+        metadataVersion: 6,
+        progressionVersion: 6,
+        eventsVersion: 2,
+        metadata: {},
+        progression: {},
+        events: { hammerJam: 2 },
+      })
+      .mockResolvedValueOnce({
+        version: 7,
+        metadataVersion: 6,
+        progressionVersion: 6,
+        eventsVersion: 3,
+        metadata: {},
+        progression: {},
+        events: { hammerJam: 3 },
+      });
+
+    const advancedPayload = {
+      version: 3,
+      hammerJam: {
+        ...validPayload.hammerJam,
+        startsAt: 1793520000,
+        endsAt: 1794816000,
+      },
+    };
+
+    (globalThis.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => advancedPayload,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => advancedPayload,
+      });
+
+    await expect(fetchHammerJamManifest()).resolves.toEqual({
+      ...advancedPayload.hammerJam,
+      startsAt: "2026-11-01T00:00:00.000Z",
+      endsAt: "2026-11-16T00:00:00.000Z",
+    });
+
+    expect(invalidateManifestCache).toHaveBeenCalledTimes(1);
+    expect(mockedFetchManifest).toHaveBeenCalledTimes(2);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
   });
 
   it("returns the safe default when the global manifest has no Hammer Jam version", async () => {

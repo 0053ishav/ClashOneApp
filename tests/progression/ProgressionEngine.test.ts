@@ -81,6 +81,26 @@ describe("ProgressionEngine modifiers", () => {
     });
   });
 
+  it("does not apply a configured 0.5 multiplier while Hammer Jam is disabled", () => {
+    const result = resolve({
+      hammerJamBoost: {
+        startsAt: EVENT_START,
+        manifest: {
+          ...activeHammerJam,
+          enabled: false,
+          startsAt: null,
+          endsAt: null,
+        },
+      },
+    });
+
+    expect(result).toMatchObject({
+      nextCost: 1_000,
+      nextUpgradeTime: 120,
+      appliedModifierIds: [],
+    });
+  });
+
   it("does not apply Hammer Jam to unsupported entity categories", () => {
     const result = resolve({
       entity: {

@@ -1,27 +1,10 @@
-import type { Village } from "@/types/entity";
 import type {
   ResolvedUpgradeStartModifiers,
   UpgradeStartModifier,
 } from "@/types/magicItem";
 
-export type HammerJamTarget =
-  | "building"
-  | "troop"
-  | "spell"
-  | "hero"
-  | "pet";
-
-export type HammerJamManifest = {
-  title: string;
-  enabled: boolean;
-  startsAt: string | null;
-  endsAt: string | null;
-  timeMultiplier: number;
-  costMultiplier: number;
-  resourceMultiplier: number;
-  appliesTo: readonly HammerJamTarget[];
-  villages: readonly Village[];
-};
+import type { HammerJamManifest, HammerJamTarget } from "@/types/hammerJam";
+export type { HammerJamManifest, HammerJamTarget } from "@/types/hammerJam";
 
 export const DEFAULT_HAMMER_JAM_MANIFEST: HammerJamManifest = {
   title: "Hammer Jam 2026",

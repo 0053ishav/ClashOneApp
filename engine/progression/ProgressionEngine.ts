@@ -188,6 +188,10 @@ export class ProgressionEngine {
 
     if (!isMaxLevel && next) {
       if (hammerJamBoost) {
+        if (!Number.isFinite(hammerJamBoost.startsAt)) {
+          throw new Error("INVALID_UPGRADE_START_TIMESTAMP");
+        }
+
         if (hammerJamTarget) {
           const modifier = resolveHammerJamBoostModifier({
             selection: hammerJamBoost,

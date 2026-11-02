@@ -42,7 +42,7 @@ Chief Entitlement: Unavailable
 `;
 
   try {
-    const configured = Purchases.isConfigured();
+    const configured = await Purchases.isConfigured();
     const customerInfo = configured
       ? await Purchases.getCustomerInfo()
       : null;
@@ -66,7 +66,7 @@ Chief Entitlement: ${configured
 RevenueCat
 ------------------------
 
-Configured: Yes
+Configured: Unknown
 Chief Entitlement: Unavailable
 `;
   }

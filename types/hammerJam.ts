@@ -2,6 +2,7 @@ import type { Village } from "@/types/entity";
 
 export type HammerJamTarget =
   | "building"
+  | "trap"
   | "troop"
   | "spell"
   | "hero"

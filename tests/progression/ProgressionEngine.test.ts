@@ -63,9 +63,9 @@ describe("ProgressionEngine modifiers", () => {
 
   it("applies eligible time and cost multipliers to the next level while preserving base values", () => {
     const result = resolve({
-      upgradeStartContext: {
+      hammerJamBoost: {
         startsAt: EVENT_START,
-        hammerJam: activeHammerJam,
+        manifest: activeHammerJam,
       },
     });
 

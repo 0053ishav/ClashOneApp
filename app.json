@@ -2,7 +2,7 @@
   "expo": {
     "name": "Clash One",
     "slug": "clash-one",
-    "version": "1.2.1",
+    "version": "1.3.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "clashone",

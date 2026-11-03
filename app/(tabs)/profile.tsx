@@ -363,7 +363,7 @@ export default function ProfileScreen() {
             );
           }}
         >
-          {rowItems.map((entity, index) => (
+          {rowItems.map((entity) => (
             <EntityCard
               key={`${category.key}:${entity.village}:${entity.dataId}`}
               name={entity.name}
@@ -373,7 +373,7 @@ export default function ProfileScreen() {
               village={entity.village}
               isSuperTroop={entity.isSuperTroop}
               compact
-              compactWidth={armyGridLayout.cardWidth}
+              compactWidth={armyGridWidth > 0 ? armyGridLayout.cardWidth : undefined}
             />
           ))}
         </View>

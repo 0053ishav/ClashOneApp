@@ -1,4 +1,10 @@
+import { resolveUpgradeCompletionTime } from "@/engine/magicItems/resolveUpgradeCompletionTime";
+import type { ActiveMagicEffect } from "@/types/magicItem";
+import type { GoldPassBoostSelection } from "@/types/goldPass";
+import type { ReEngagementBoostSelection } from "@/types/reEngagementBoost";
 import type { ProgressionData, ProgressionLevel } from "@/types/progression";
+import { resolveGoldPassBoostModifier } from "../resolveGoldPassBoost";
+import { resolveReEngagementBoostModifier } from "../resolveReEngagementBoost";
 
 export interface SuperchargeProgression {
   currentLevel: number;
@@ -9,6 +15,7 @@ export interface SuperchargeProgression {
   nextUpgradeTime?: number;
   totalCost?: number;
   totalUpgradeTime?: number;
+  appliedModifierIds: string[];
 }
 
 /**
@@ -19,6 +26,17 @@ export interface SuperchargeProgression {
 export interface SuperchargeProgressionOptions {
   /** Charge level currently being upgraded; its cost has already been paid. */
   inProgressLevel?: number;
+  /** Gold Pass Builder Boost selected for this account. */
+  goldPassBoost?: GoldPassBoostSelection;
+  /** Active return-to-game Builder Boost selected for this account. */
+  reEngagementBoost?: ReEngagementBoostSelection;
+  /**
+   * Already-active timed effects. They are applied to the next charge only,
+   * never multiplied across all future charges.
+   */
+  activeMagicEffects?: readonly ActiveMagicEffect[];
+  /** Timestamp from which the next charge's active effects are evaluated. */
+  magicEffectsStartAt?: number;
 }
 
 export function calculateSuperchargeProgression(
@@ -49,6 +67,60 @@ export function calculateSuperchargeProgression(
     ),
   );
 
+  const goldPassModifier = options.goldPassBoost
+    ? resolveGoldPassBoostModifier(options.goldPassBoost)
+    : { costMultiplier: 1, timeMultiplier: 1, appliedModifierIds: [] };
+  const reEngagementModifier = options.reEngagementBoost
+    ? resolveReEngagementBoostModifier(options.reEngagementBoost)
+    : { costMultiplier: 1, timeMultiplier: 1, appliedModifierIds: [] };
+
+  // Supercharges are Home Village building upgrades. Only Builder-targeted
+  // boosts are applicable; Research-targeted selections are ignored.
+  const builderCostMultiplier =
+    (options.goldPassBoost?.target === "builder" ? goldPassModifier.costMultiplier : 1) *
+    (options.reEngagementBoost?.target === "builder" ? reEngagementModifier.costMultiplier : 1);
+  const builderTimeMultiplier =
+    (options.goldPassBoost?.target === "builder" ? goldPassModifier.timeMultiplier : 1) *
+    (options.reEngagementBoost?.target === "builder" ? reEngagementModifier.timeMultiplier : 1);
+  const appliedModifierIds = [
+    ...(options.goldPassBoost?.target === "builder" ? goldPassModifier.appliedModifierIds : []),
+    ...(options.reEngagementBoost?.target === "builder" ? reEngagementModifier.appliedModifierIds : []),
+  ];
+
+  const baseNextCost = nextData?.cost;
+  const baseNextUpgradeTime = nextData?.upgradeTime;
+  const nextCost = baseNextCost == null
+    ? undefined
+    : Math.round(baseNextCost * builderCostMultiplier);
+
+  let nextUpgradeTime = baseNextUpgradeTime == null
+    ? undefined
+    : Math.round(baseNextUpgradeTime * builderTimeMultiplier);
+
+  // Timed Magic Item effects are finite and apply to one active/planned charge.
+  // Books and Hammers are instant actions, not recurring discounts on future
+  // charge totals, so they remain outside this aggregate projection.
+  if (
+    nextUpgradeTime != null &&
+    options.activeMagicEffects != null &&
+    options.activeMagicEffects.length > 0
+  ) {
+    if (!Number.isFinite(options.magicEffectsStartAt)) {
+      throw new Error("INVALID_SUPERCHARGE_MAGIC_EFFECT_START_TIMESTAMP");
+    }
+
+    const startedAt = options.magicEffectsStartAt as number;
+    const baseDurationMs = nextUpgradeTime * 1000;
+    const completedAt = resolveUpgradeCompletionTime({
+      baseDurationMs,
+      startedAt,
+      effects: [...options.activeMagicEffects],
+      target: "builders",
+      village: "home",
+    });
+    nextUpgradeTime = Math.max(0, Math.ceil((completedAt - startedAt) / 1000));
+  }
+
   let totalCost = 0;
   let totalUpgradeTime = 0;
   let hasCompleteCostData = true;
@@ -73,9 +145,14 @@ export function calculateSuperchargeProgression(
     ...(nextLevel == null ? {} : { nextLevel }),
     maxLevel,
     remainingLevels: Math.max(0, maxLevel - completedThroughLevel),
-    ...(nextData?.cost == null ? {} : { nextCost: nextData.cost }),
-    ...(nextData?.upgradeTime == null ? {} : { nextUpgradeTime: nextData.upgradeTime }),
-    ...(hasCompleteCostData ? { totalCost } : {}),
-    ...(hasCompleteTimeData ? { totalUpgradeTime } : {}),
+    ...(nextCost == null ? {} : { nextCost }),
+    ...(nextUpgradeTime == null ? {} : { nextUpgradeTime }),
+    ...(hasCompleteCostData
+      ? { totalCost: Math.round(totalCost * builderCostMultiplier) }
+      : {}),
+    ...(hasCompleteTimeData
+      ? { totalUpgradeTime: Math.round(totalUpgradeTime * builderTimeMultiplier) }
+      : {}),
+    appliedModifierIds,
   };
 }

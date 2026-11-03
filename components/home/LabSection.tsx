@@ -198,7 +198,10 @@ function LabCard({
                   <View style={styles.helperRow}>
                     <Image
                       source={{
-                        uri: resolveEntityIcon(93000001),
+                        uri: resolveEntityIcon(93000001, {
+                          village: "home",
+                          type: "helper",
+                        }),
                       }}
                       style={styles.helperIcon}
                       contentFit="contain"

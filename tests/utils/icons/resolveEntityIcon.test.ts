@@ -62,13 +62,35 @@ describe("resolveEntityIcon", () => {
     ).toBe("https://cdn.test/v2/home/pets/73000011/1.png");
   });
 
-  it("resolves a helper's category asset without relying on metadata.icon", () => {
+  it("uses the canonical metadata icon for helpers instead of a level-image URL", () => {
+    useEntityStore.setState({
+      entitiesById: {
+        93000003: {
+          id: 93000003,
+          slug: "prospector",
+          type: "helper",
+          village: "home",
+          name: { en: "Prospector" },
+          icon: "https://cdn.test/v2/home/helpers/93000003/icon.png",
+        },
+      },
+    });
+
     expect(
       resolveEntityIcon(93000003, {
         village: "home",
         type: "helper",
       }),
-    ).toBe("https://cdn.test/v2/home/helpers/93000003/1.png");
+    ).toBe("https://cdn.test/v2/home/helpers/93000003/icon.png");
+  });
+
+  it("uses the shared fallback when helper metadata has not hydrated", () => {
+    expect(
+      resolveEntityIcon(93000003, {
+        village: "home",
+        type: "helper",
+      }),
+    ).toBe(FALLBACK_ICON);
   });
 
   it("uses the explicit entity category when metadata is not hydrated", () => {

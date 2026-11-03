@@ -44,7 +44,8 @@ export class ProgressionApplicationService {
 
     /*
      * Crafted progression has its own metadata, progression and engine.
-     * Apply the same event and account-scoped boost options at its boundary.
+     * Its dedicated boundary intentionally excludes Hammer Jam, Gold Pass,
+     * and Re-engagement modifiers.
      */
     if (upgrade.isCrafted) {
       const result = CraftedDefenseProgressionApplicationService.resolve(upgrade);

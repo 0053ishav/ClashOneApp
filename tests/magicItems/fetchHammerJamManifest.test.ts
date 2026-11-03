@@ -106,8 +106,8 @@ describe("fetchHammerJamManifest", () => {
 
     await expect(fetchHammerJamManifest()).resolves.toEqual({
       ...serverPayload.hammerJam,
-      startsAt: "2026-11-01T00:00:00.000Z",
-      endsAt: "2026-11-16T00:00:00.000Z",
+      startsAt: "2026-11-01T08:00:00.000Z",
+      endsAt: "2026-11-16T08:00:00.000Z",
     });
   });
 
@@ -154,8 +154,8 @@ describe("fetchHammerJamManifest", () => {
 
     await expect(fetchHammerJamManifest()).resolves.toEqual({
       ...advancedPayload.hammerJam,
-      startsAt: "2026-11-01T00:00:00.000Z",
-      endsAt: "2026-11-16T00:00:00.000Z",
+      startsAt: "2026-11-01T08:00:00.000Z",
+      endsAt: "2026-11-16T08:00:00.000Z",
     });
 
     expect(invalidateManifestCache).toHaveBeenCalledTimes(1);
@@ -190,8 +190,8 @@ describe("fetchHammerJamManifest", () => {
 
     await expect(fetchHammerJamManifest()).resolves.toEqual({
       ...serverPayload.hammerJam,
-      startsAt: "2026-11-01T00:00:00.000Z",
-      endsAt: "2026-11-16T00:00:00.000Z",
+      startsAt: "2026-11-01T08:00:00.000Z",
+      endsAt: "2026-11-16T08:00:00.000Z",
     });
     expect(globalThis.fetch).toHaveBeenCalledWith(
       `${ENV.BACKEND}/v2/events/hammer-jam`,

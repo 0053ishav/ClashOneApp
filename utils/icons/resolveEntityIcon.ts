@@ -122,11 +122,13 @@ export function resolveEntityIcon(
   const entityStore = useEntityStore.getState();
   const directEntity = entityStore.entitiesById[entityId];
   const village = options?.village ?? directEntity?.village;
-  const requestedName = options?.entityName?.trim().toLowerCase();
+  const entityName = options?.entityName?.trim();
   const directName = directEntity?.name.en.trim().toLowerCase();
   const mappedId =
-    requestedName && village && requestedName !== directName
-      ? entityStore.getEntityId(options.entityName!, village)
+    entityName &&
+    village &&
+    entityName.toLowerCase() !== directName
+      ? entityStore.getEntityId(entityName, village)
       : null;
   const entity =
     mappedId != null
@@ -155,12 +157,17 @@ export function resolveEntityIcon(
 
   // Town Hall and Builder Hall have dedicated level-based asset namespaces.
   if (
-    (village === "home" &&
-      (type === "townhall" || subType === "TOWNHALL")) ||
-    (village === "builderBase" &&
-      (type === "builderhall" || subType === "BUILDERHALL"))
+    village === "home" &&
+    (type === "townhall" || subType === "TOWNHALL")
   ) {
-    return resolveHallIcon(village, options?.level);
+    return resolveHallIcon("home", options?.level);
+  }
+
+  if (
+    village === "builderBase" &&
+    (type === "builderhall" || subType === "BUILDERHALL")
+  ) {
+    return resolveHallIcon("builderBase", options?.level);
   }
 
   if (village === "home" && type === "hero") {

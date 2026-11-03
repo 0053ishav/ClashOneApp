@@ -12,8 +12,10 @@ import type {
 
 import type { HammerJamBoostSelection } from "@/types/hammerJam";
 import type { Upgrade } from "@/types/upgrade";
-import type { GoldPassBoostSelection } from "@/types/goldPass";
-import type { ReEngagementBoostSelection } from "@/types/reEngagementBoost";
+import { getGoldPassBoostSettings } from "@/services/goldPassBoostService";
+import { getReEngagementBoostSettings } from "@/services/reEngagementBoostService";
+import { resolveGoldPassBoostForUpgradeType } from "@/engine/progression/resolveGoldPassBoostForUpgradeType";
+import { resolveReEngagementBoostForUpgradeType } from "@/engine/progression/resolveReEngagementBoostForUpgradeType";
 
 import { useAccountStore } from "@/stores/accountStore";
 import { useHammerJamStore } from "@/stores/hammerJamStore";
@@ -27,17 +29,13 @@ import { ProgressionAggregation } from "@/engine/progression/operations/progress
 export interface ResolveUpgradeOptions {
   /** First-class Hammer Jam boost for this upgrade projection. */
   hammerJamBoost?: HammerJamBoostSelection;
-  /** Apply manually configured Gold Pass discounts to calculated costs and durations. */
-  goldPassBoost?: GoldPassBoostSelection;
-  /** Apply an active account-scoped return-to-game boost to calculated costs and durations. */
-  reEngagementBoost?: ReEngagementBoostSelection;
 }
 
 export class ProgressionApplicationService {
-  static resolveUpgrade(
+  static async resolveUpgrade(
     upgrade: Upgrade,
     options: ResolveUpgradeOptions = {},
-  ): ProgressionApplicationResult | null {
+  ): Promise<ProgressionApplicationResult | null> {
     const now = Date.now();
     const hammerJamBoost: HammerJamBoostSelection = options.hammerJamBoost ?? {
       startsAt: now,
@@ -55,12 +53,6 @@ export class ProgressionApplicationService {
       return applyBoostsToCraftedProgressionResult(result, {
         village: upgrade.village,
         hammerJamBoost,
-        ...(options.goldPassBoost
-          ? { goldPassBoost: options.goldPassBoost }
-          : {}),
-        ...(options.reEngagementBoost
-          ? { reEngagementBoost: options.reEngagementBoost }
-          : {}),
       });
     }
 
@@ -89,6 +81,25 @@ export class ProgressionApplicationService {
       return null;
     }
 
+    const [goldPassSettings, reEngagementSettings] = await Promise.all([
+      getGoldPassBoostSettings(upgrade.accountTag),
+      getReEngagementBoostSettings(upgrade.accountTag),
+    ]);
+    const boostContext = {
+      upgradeType: upgrade.upgradeType,
+      entityType: entity.type,
+      village: upgrade.village,
+    };
+    const goldPassBoost = resolveGoldPassBoostForUpgradeType(
+      boostContext,
+      goldPassSettings,
+    );
+    const reEngagementBoost = resolveReEngagementBoostForUpgradeType(
+      boostContext,
+      reEngagementSettings,
+      now,
+    );
+
     const progressionEntity = EntityProgressionService.create(entity, progression);
     const input: ProgressionInput = {
       entity: progressionEntity,
@@ -100,37 +111,34 @@ export class ProgressionApplicationService {
         hammerJam: hammerJamBoost.manifest,
       },
       hammerJamBoost,
-      ...(options.goldPassBoost
-        ? { goldPassBoost: options.goldPassBoost }
-        : {}),
-      ...(options.reEngagementBoost
-        ? { reEngagementBoost: options.reEngagementBoost }
-        : {}),
+      ...(goldPassBoost ? { goldPassBoost } : {}),
+      ...(reEngagementBoost ? { reEngagementBoost } : {}),
     };
 
     return ProgressionService.resolve(input);
   }
 
-  static resolveAll(
+  static async resolveAll(
     upgrades: Upgrade[],
-  ): ProgressionApplicationResult[] {
-    return upgrades
-      .map((upgrade) => this.resolveUpgrade(upgrade))
-      .filter(
-        (result): result is ProgressionApplicationResult => result !== null,
-      );
+  ): Promise<ProgressionApplicationResult[]> {
+    const results = await Promise.all(
+      upgrades.map((upgrade) => this.resolveUpgrade(upgrade)),
+    );
+    return results.filter(
+      (result): result is ProgressionApplicationResult => result !== null,
+    );
   }
 
-  static resolveOverallProgression(
+  static async resolveOverallProgression(
     upgrades: Upgrade[],
-  ): OverallProgressionResult {
-    return this.resolveAccountProgression(upgrades).overall;
+  ): Promise<OverallProgressionResult> {
+    return (await this.resolveAccountProgression(upgrades)).overall;
   }
 
-  static resolveAccountProgression(
+  static async resolveAccountProgression(
     upgrades: Upgrade[],
-  ): ProgressionOverviewResult {
-    const entities = this.resolveAll(upgrades);
+  ): Promise<ProgressionOverviewResult> {
+    const entities = await this.resolveAll(upgrades);
     const overall = ProgressionAggregation.aggregate(entities);
 
     return {

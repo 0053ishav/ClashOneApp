@@ -3,10 +3,7 @@ import { fetchPlayerFromApi } from "@/services/clashApi";
 import { ensureCraftedLoaded } from "@/services/craftedService";
 import { ProgressionApplicationService } from "@/services/progression";
 import { ProgressionQueries } from "@/services/progression/progressionQueries";
-import { getGoldPassBoostSettings } from "@/services/goldPassBoostService";
-import { resolveGoldPassBoostForImport } from "@/services/jsonImport/resolveGoldPassBoostForImport";
 import { reconstructImportedUpgradeTiming } from "@/services/jsonImport/reconstructImportedUpgradeTiming";
-import type { GoldPassBoostSelection, GoldPassBoostSettings } from "@/types/goldPass";
 import { setLastJsonSync } from "@/storage/jsonSyncStorage";
 import { syncProfileFromApi } from "@/storage/playerProfile";
 import { useAccountStore } from "@/stores/accountStore";
@@ -326,9 +323,6 @@ export async function importVillageJson(
   validateJson(parsed);
 
   await ensureCraftedLoaded();
-  // Gold Pass perks are not in the export; use the player-maintained setting.
-  const goldPassSettings = await getGoldPassBoostSettings(parsed.tag);
-
   console.log("📥 Import JSON tag:", parsed.tag);
 
   const setLastSync = useAccountStore.getState().setLastSync;
@@ -909,14 +903,6 @@ export async function importVillageJson(
     }
 
     const upgradeType = resolveUpgradeType(entity.type);
-    const goldPassBoost = resolveGoldPassBoostForImport(
-      {
-        upgradeType,
-        entityType: entity.type,
-        village: item.village,
-      },
-      goldPassSettings,
-    );
     const targetSuperchargeLevel =
       item.supercharge != null ? item.supercharge + 1 : undefined;
 
@@ -948,7 +934,7 @@ export async function importVillageJson(
               nextUpgradeTime: superchargeLevel.upgradeTime,
             };
           })()
-        : ProgressionApplicationService.resolveUpgrade({
+        : await ProgressionApplicationService.resolveUpgrade({
             id: randomUUID(),
             accountTag: parsed.tag,
             village: item.village,
@@ -969,7 +955,7 @@ export async function importVillageJson(
 
             isCompleted: false,
             source: "JSON",
-          }, { goldPassBoost });
+          });
 
     if (!progressionResult) {
       console.warn(
@@ -1120,16 +1106,8 @@ export async function importVillageJson(
       continue;
     }
 
-    const goldPassBoost = resolveGoldPassBoostForImport(
-      {
-        upgradeType: "LAB",
-        entityType: entity.type,
-        village: lab.village,
-      },
-      goldPassSettings,
-    );
     const progressionResult =
-      ProgressionApplicationService.resolveUpgrade({
+      await ProgressionApplicationService.resolveUpgrade({
         id: randomUUID(),
         accountTag: parsed.tag,
 
@@ -1150,7 +1128,7 @@ export async function importVillageJson(
 
         isCompleted: false,
         source: "JSON",
-      }, { goldPassBoost });
+      });
 
     if (!progressionResult) {
       console.warn(

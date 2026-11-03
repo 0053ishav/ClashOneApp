@@ -87,6 +87,7 @@ describe("syncProgression", () => {
       version: 2,
       categories: { troops: 8 },
     });
-    expect(saveProgressionGlobalManifestVersion).toHaveBeenCalledWith(2);
+    // The global version was already current; a redundant write is unnecessary.
+    expect(saveProgressionGlobalManifestVersion).not.toHaveBeenCalled();
   });
 });

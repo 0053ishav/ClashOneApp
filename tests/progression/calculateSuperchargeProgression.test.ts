@@ -168,4 +168,23 @@ describe("calculateSuperchargeProgression", () => {
     ).toThrow("INVALID_SUPERCHARGE_MAGIC_EFFECT_START_TIMESTAMP");
   });
 
+  it("does not apply a new potion projection to an already-started charge", () => {
+    expect(
+      calculateSuperchargeProgression(data, 0, {
+        inProgressLevel: 1,
+        magicEffectsStartAt: 1_800_000_000_000,
+        activeMagicEffects: [{
+          id: "active-builder-potion",
+          itemId: "builder-potion",
+          startedAt: 1_800_000_000_000,
+          expiresAt: 1_800_003_600_000,
+          village: "home",
+        }],
+      }),
+    ).toMatchObject({
+      nextUpgradeTime: 3_600,
+      totalUpgradeTime: 14_400,
+    });
+  });
+
 });

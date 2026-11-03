@@ -6,6 +6,7 @@ import {
 } from "@/services/cdnEntities";
 import {
   loadEntityGlobalManifestVersion,
+  loadEntityManifest,
   loadEntityVersion,
   saveEntityCategory,
   saveEntityGlobalManifestVersion,
@@ -15,12 +16,11 @@ import {
 
 export async function syncEntities(): Promise<void> {
   const manifest = await fetchManifest();
+  const localManifest = loadEntityManifest();
   const localGlobalVersion = loadEntityGlobalManifestVersion();
 
-  if (localGlobalVersion === manifest.version) {
-    return;
-  }
-
+  // Category versions are authoritative. Always inspect them, even when the
+  // global version matches, so installs affected by the old retry bug recover.
   const categories = Object.entries(manifest.metadata) as [string, number][];
   let allCategoriesSynced = true;
 
@@ -47,21 +47,34 @@ export async function syncEntities(): Promise<void> {
         extra: {
           local_category_version: localVersion ?? null,
           remote_category_version: remoteVersion,
+          local_global_version: localGlobalVersion ?? null,
           remote_manifest_version: manifest.version,
         },
       });
     }
   }
 
-  // Advance either checkpoint only after every required category succeeded.
-  // Keeping the global version behind makes the next launch retry failed work.
+  // Never advance either checkpoint after a partial sync. The next launch
+  // will inspect category versions again and retry any failed download.
   if (!allCategoriesSynced) {
     return;
   }
 
-  saveEntityManifest({
-    version: manifest.metadataVersion,
-    categories: manifest.metadata,
-  });
-  saveEntityGlobalManifestVersion(manifest.version);
+  const manifestMatches =
+    localManifest?.version === manifest.metadataVersion &&
+    Object.keys(localManifest.categories).length === categories.length &&
+    categories.every(
+      ([category, version]) => localManifest.categories[category] === version,
+    );
+
+  if (!manifestMatches) {
+    saveEntityManifest({
+      version: manifest.metadataVersion,
+      categories: manifest.metadata,
+    });
+  }
+
+  if (localGlobalVersion !== manifest.version) {
+    saveEntityGlobalManifestVersion(manifest.version);
+  }
 }

@@ -179,16 +179,22 @@ export function resolveEntityIcon(
   }
 
   /*
-   * Pets, guardians, spells, and helpers use category assets. Their image
-   * does not depend on the current upgrade level, so missing level data must
-   * not route them through the legacy metadata.icon fallback.
+   * Helper metadata owns its icon URL. Unlike upgradeable entities, helpers
+   * do not have a level-image directory, so constructing /helpers/{id}/1.png
+   * produces a broken URL. Prefer the canonical metadata icon and fail
+   * explicitly to the shared fallback if metadata has not hydrated.
+   */
+  if (village === "home" && type === "helper") {
+    return entity?.icon ?? FALLBACK_ICON;
+  }
+
+  /*
+   * Pets, guardians, and spells use level-independent category assets.
+   * Their image does not depend on the current upgrade level.
    */
   if (
     village === "home" &&
-    (type === "pet" ||
-      type === "guardian" ||
-      type === "spell" ||
-      type === "helper")
+    (type === "pet" || type === "guardian" || type === "spell")
   ) {
     const category = HOME_ICON_CATEGORIES[type];
     return category

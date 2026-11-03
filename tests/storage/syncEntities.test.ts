@@ -2,6 +2,7 @@ import * as Sentry from "@sentry/react-native";
 import { fetchCategory, fetchManifest } from "@/services/cdnEntities";
 import {
   loadEntityGlobalManifestVersion,
+  loadEntityManifest,
   loadEntityVersion,
   saveEntityCategory,
   saveEntityGlobalManifestVersion,
@@ -19,6 +20,7 @@ jest.mock("@/services/cdnEntities", () => ({
 }));
 jest.mock("@/storage/entityStorage", () => ({
   loadEntityGlobalManifestVersion: jest.fn(),
+  loadEntityManifest: jest.fn(),
   loadEntityVersion: jest.fn(),
   saveEntityCategory: jest.fn(),
   saveEntityGlobalManifestVersion: jest.fn(),
@@ -29,6 +31,7 @@ jest.mock("@/storage/entityStorage", () => ({
 const mockedFetchManifest = jest.mocked(fetchManifest);
 const mockedFetchCategory = jest.mocked(fetchCategory);
 const mockedLoadGlobalVersion = jest.mocked(loadEntityGlobalManifestVersion);
+const mockedLoadManifest = jest.mocked(loadEntityManifest);
 const mockedLoadCategoryVersion = jest.mocked(loadEntityVersion);
 
 describe("syncEntities", () => {
@@ -43,7 +46,8 @@ describe("syncEntities", () => {
       progression: {},
       events: {},
     });
-    mockedLoadGlobalVersion.mockReturnValue(1);
+    mockedLoadGlobalVersion.mockReturnValue(2);
+    mockedLoadManifest.mockReturnValue(null);
     mockedLoadCategoryVersion.mockReturnValue(4);
   });
 

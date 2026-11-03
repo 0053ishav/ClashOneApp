@@ -129,7 +129,10 @@ function EntityCard({
 
   if (!onPress) {
     return (
-      <View style={compact ? styles.pressableCompact : fillContainer ? styles.pressableFill : styles.pressable}>
+      <View style={[
+        compact ? styles.pressableCompact : fillContainer ? styles.pressableFill : styles.pressable,
+        compactWidth != null && { width: compactWidth },
+      ]}>
         {content}
       </View>
     );

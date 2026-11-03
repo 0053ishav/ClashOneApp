@@ -15,7 +15,7 @@ export interface SuperchargeProgression {
   nextUpgradeTime?: number;
   totalCost?: number;
   totalUpgradeTime?: number;
-  appliedModifierIds: string[];
+  appliedModifierIds?: string[];
 }
 
 /**
@@ -153,6 +153,6 @@ export function calculateSuperchargeProgression(
     ...(hasCompleteTimeData
       ? { totalUpgradeTime: Math.round(totalUpgradeTime * builderTimeMultiplier) }
       : {}),
-    appliedModifierIds,
+    ...(appliedModifierIds.length > 0 ? { appliedModifierIds } : {}),
   };
 }

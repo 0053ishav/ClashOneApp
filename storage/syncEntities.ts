@@ -1,14 +1,11 @@
+import * as Sentry from "@sentry/react-native";
+
 import {
   fetchCategory,
-
-  fetchManifest
+  fetchManifest,
 } from "@/services/cdnEntities";
-
-
-
 import {
   loadEntityGlobalManifestVersion,
-  loadEntityManifest,
   loadEntityVersion,
   saveEntityCategory,
   saveEntityGlobalManifestVersion,
@@ -16,168 +13,55 @@ import {
   saveEntityVersion,
 } from "@/storage/entityStorage";
 
-export async function syncEntities() {
-  const manifest =
-    await fetchManifest();
+export async function syncEntities(): Promise<void> {
+  const manifest = await fetchManifest();
+  const localGlobalVersion = loadEntityGlobalManifestVersion();
 
-  // console.log(
-  //   "[EntitySync] REMOTE MANIFEST",
-  //   manifest,
-  // );
-
-  // ─────────────────────────────
-  // 1. GLOBAL MANIFEST VERSION
-  // ─────────────────────────────
-
-  const localGlobalVersion =
-    loadEntityGlobalManifestVersion();
-
-  // console.log(
-  //   "[EntitySync] GLOBAL VERSION CHECK",
-  //   {
-  //     localVersion:
-  //       localGlobalVersion ?? null,
-  //     remoteVersion:
-  //       manifest.version,
-  //   },
-  // );
-
-  if (
-    localGlobalVersion ===
-    manifest.version
-  ) {
-    // console.log(
-    //   "[EntitySync] Global manifest up to date",
-    // );
-
+  if (localGlobalVersion === manifest.version) {
     return;
   }
 
-  // ─────────────────────────────
-  // 2. METADATA VERSION
-  // ─────────────────────────────
-
-  const localManifest =
-    loadEntityManifest();
-
-  console.log(
-    "[EntitySync] METADATA VERSION CHECK",
-    {
-      localVersion:
-        localManifest?.version ?? null,
-      remoteVersion:
-        manifest.metadataVersion,
-    },
-  );
-
-  // Metadata itself has not changed.
-  if (
-    localManifest?.version ===
-    manifest.metadataVersion
-  ) {
-    console.log(
-      "[EntitySync] Metadata version unchanged",
-    );
-
-    saveEntityGlobalManifestVersion(
-      manifest.version,
-    );
-
-    return;
-  }
-
-  // ─────────────────────────────
-  // 3. CATEGORY VERSIONS
-  // ─────────────────────────────
-
-  // console.log(
-  //   "[EntitySync] Metadata version changed",
-  //   {
-  //     localVersion:
-  //       localManifest?.version ?? null,
-  //     remoteVersion:
-  //       manifest.metadataVersion,
-  //   },
-  // );
-
-  const categories =
-    Object.entries(
-      manifest.metadata,
-    ) as [string, number][];
-
+  const categories = Object.entries(manifest.metadata) as [string, number][];
   let allCategoriesSynced = true;
 
-  for (const [
-    category,
-    remoteVersion,
-  ] of categories) {
-    const localVersion =
-      loadEntityVersion(category);
+  for (const [category, remoteVersion] of categories) {
+    const localVersion = loadEntityVersion(category);
 
-    // console.log(
-    //   "[EntitySync] CATEGORY VERSION CHECK",
-    //   {
-    //     category,
-    //     localVersion,
-    //     remoteVersion,
-    //   },
-    // );
-
-    if (
-      localVersion === remoteVersion
-    ) {
+    if (localVersion === remoteVersion) {
       continue;
     }
 
     try {
-      const entities =
-        await fetchCategory(category);
+      const entities = await fetchCategory(category);
 
-      saveEntityCategory(
-        category,
-        entities,
-      );
-
-      saveEntityVersion(
-        category,
-        remoteVersion,
-      );
-
-      // console.log(
-      //   `[EntitySync] Synced entities ${category}`,
-      // );
-    } catch {
+      saveEntityCategory(category, entities);
+      saveEntityVersion(category, remoteVersion);
+    } catch (error: unknown) {
       allCategoriesSynced = false;
 
-      // console.log(
-      //   `[EntitySync] Failed syncing entities ${category}`,
-      //   err,
-      // );
+      Sentry.captureException(error, {
+        tags: {
+          sync_dataset: "entity_metadata",
+          sync_category: category,
+        },
+        extra: {
+          local_category_version: localVersion ?? null,
+          remote_category_version: remoteVersion,
+          remote_manifest_version: manifest.version,
+        },
+      });
     }
   }
 
-  // Only update local metadata manifest
-  // when all category syncs succeeded.
-  if (allCategoriesSynced) {
-    saveEntityManifest({
-      version:
-        manifest.metadataVersion,
-      categories:
-        manifest.metadata,
-    });
-
-    // console.log(
-    //   "[EntitySync] Metadata sync complete",
-    //   {
-    //     version:
-    //       manifest.metadataVersion,
-    //   },
-    // );
+  // Advance either checkpoint only after every required category succeeded.
+  // Keeping the global version behind makes the next launch retry failed work.
+  if (!allCategoriesSynced) {
+    return;
   }
 
-  // Global manifest version is independent
-  // of metadata category synchronization.
-  saveEntityGlobalManifestVersion(
-    manifest.version,
-  );
+  saveEntityManifest({
+    version: manifest.metadataVersion,
+    categories: manifest.metadata,
+  });
+  saveEntityGlobalManifestVersion(manifest.version);
 }

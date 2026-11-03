@@ -87,7 +87,6 @@ jest.mock("@/services/magicItemService", () => ({
 }));
 
 const accountTag = "#TEST123";
-const otherAccountTag = "#OTHER456";
 const exportTimestampMs = Date.UTC(2026, 0, 10, 12, 0, 0);
 const exportedRemainingSeconds = 60 * 60;
 

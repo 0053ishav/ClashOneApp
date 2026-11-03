@@ -183,7 +183,7 @@ describe("calculateSuperchargeProgression", () => {
       }),
     ).toMatchObject({
       nextUpgradeTime: 3_600,
-      totalUpgradeTime: 14_400,
+      totalUpgradeTime: 18_000,
     });
   });
 

@@ -80,6 +80,26 @@ describe("resolveEntityIcon", () => {
     ).toBe("https://cdn.test/v2/home/pets/73000011/1.png");
   });
 
+  it("resolves a stored upgrade through its canonical entity name when its ID is stale", () => {
+    useEntityStore.getState().setEntities([
+      {
+        id: 4000000,
+        slug: "barbarian",
+        type: "troop",
+        village: "home",
+        name: { en: "Barbarian" },
+      },
+    ]);
+
+    expect(
+      resolveEntityIcon(4999999, {
+        village: "home",
+        type: "troop",
+        entityName: "Barbarian",
+      }),
+    ).toBe("https://cdn.test/v2/home/troops/4000000/1.png");
+  });
+
   it("returns the fallback when both metadata and explicit category context are absent", () => {
     expect(resolveEntityIcon(99999999)).toBe(FALLBACK_ICON);
   });

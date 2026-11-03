@@ -1,16 +1,10 @@
 import { importVillageJson } from "@/services/jsonImport/jsonImportService";
-import {
-  getGoldPassBoostSettings,
-  saveGoldPassBoostSettings,
-} from "@/services/goldPassBoostService";
 import { ProgressionApplicationService } from "@/services/progression";
 import { ProgressionQueries } from "@/services/progression/progressionQueries";
 import { useAccountStore } from "@/stores/accountStore";
 import { getAccountByTag, updateAccount } from "@/services/accountService";
 import { fetchPlayerFromApi } from "@/services/clashApi";
-import { saveReEngagementBoostSettings } from "@/services/reEngagementBoostService";
 import type { BuildingProgressRecord, Upgrade } from "@/types/upgrade";
-import type { GoldPassBoostSettings } from "@/types/goldPass";
 
 jest.mock("@/services/accountService", () => ({
   addAccount: jest.fn(),
@@ -38,15 +32,6 @@ jest.mock("@/services/progression/progressionQueries", () => ({
   },
 }));
 
-jest.mock("@/services/goldPassBoostService", () => ({
-  getGoldPassBoostSettings: jest.fn(),
-  saveGoldPassBoostSettings: jest.fn(),
-}));
-
-jest.mock("@/services/reEngagementBoostService", () => ({
-  getReEngagementBoostSettings: jest.fn(),
-  saveReEngagementBoostSettings: jest.fn(),
-}));
 
 jest.mock("@/storage/jsonSyncStorage", () => ({
   setLastJsonSync: jest.fn(),
@@ -106,19 +91,6 @@ const otherAccountTag = "#OTHER456";
 const exportTimestampMs = Date.UTC(2026, 0, 10, 12, 0, 0);
 const exportedRemainingSeconds = 60 * 60;
 
-const originalSettings: GoldPassBoostSettings = {
-  accountTag,
-  builderBoostPercent: 15,
-  researchBoostPercent: 20,
-};
-
-const otherAccountSettings: GoldPassBoostSettings = {
-  accountTag: otherAccountTag,
-  builderBoostPercent: 10,
-  researchBoostPercent: 0,
-};
-
-const persistedSettings = new Map<string, GoldPassBoostSettings>();
 const importedUpgradeSnapshots: Upgrade[][] = [];
 const importedBuildingProgressSnapshots: BuildingProgressRecord[][] = [];
 
@@ -152,34 +124,19 @@ describe("importVillageJson Gold Pass regression coverage", () => {
     jest.restoreAllMocks();
     jest.clearAllMocks();
 
-    persistedSettings.clear();
-    persistedSettings.set(accountTag, { ...originalSettings });
-    persistedSettings.set(otherAccountTag, { ...otherAccountSettings });
     importedUpgradeSnapshots.length = 0;
     importedBuildingProgressSnapshots.length = 0;
 
     jest.spyOn(Date, "now").mockReturnValue(exportTimestampMs + 1_000);
 
-    jest.mocked(getGoldPassBoostSettings).mockImplementation(async (tag) => {
-      return persistedSettings.get(tag) ?? {
-        accountTag: tag,
-        builderBoostPercent: 0,
-        researchBoostPercent: 0,
-      };
-    });
-
-    jest.mocked(saveGoldPassBoostSettings).mockImplementation(async (settings) => {
-      persistedSettings.set(settings.accountTag, { ...settings });
-    });
-
     jest.mocked(getAccountByTag).mockResolvedValue(null as never);
     jest.mocked(fetchPlayerFromApi).mockResolvedValue(null as never);
 
-    jest.mocked(ProgressionApplicationService.resolveUpgrade).mockReturnValue({
+    jest.mocked(ProgressionApplicationService.resolveUpgrade).mockResolvedValue({
       currentLevel: 1,
       nextLevel: 2,
       nextUpgradeTime: 24 * 60 * 60,
-    } as unknown as ReturnType<typeof ProgressionApplicationService.resolveUpgrade>);
+    } as unknown as Awaited<ReturnType<typeof ProgressionApplicationService.resolveUpgrade>>);
 
     jest.mocked(useAccountStore.getState).mockReturnValue(
       mockAccountStoreState as unknown as ReturnType<typeof useAccountStore.getState>,
@@ -364,19 +321,12 @@ describe("importVillageJson Gold Pass regression coverage", () => {
     expect(mockImportJsonData).not.toHaveBeenCalled();
   });
 
-  it("preserves manually configured Gold Pass settings during JSON import", async () => {
+  it("delegates account-scoped boost resolution to the application service during import", async () => {
     await importVillageJson(makeExport());
 
-    expect(getGoldPassBoostSettings).toHaveBeenCalledWith(accountTag);
-    expect(saveGoldPassBoostSettings).not.toHaveBeenCalled();
-    expect(persistedSettings.get(accountTag)).toEqual(originalSettings);
-    expect(persistedSettings.get(otherAccountTag)).toEqual(otherAccountSettings);
-  });
-
-  it("does not overwrite account-scoped re-engagement settings during import", async () => {
-    await importVillageJson(makeExport());
-
-    expect(saveReEngagementBoostSettings).not.toHaveBeenCalled();
+    expect(ProgressionApplicationService.resolveUpgrade).toHaveBeenCalledWith(
+      expect.objectContaining({ accountTag }),
+    );
   });
 
   it("re-importing the same export does not discount its remaining timer a second time", async () => {

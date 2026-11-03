@@ -43,6 +43,7 @@ export function PetSection({
     activePet?.dataId != null
       ? resolveEntityIcon(activePet.dataId, {
           village: "home",
+          type: "pet",
           level: activePet.currentLevel,
         })
       : null;

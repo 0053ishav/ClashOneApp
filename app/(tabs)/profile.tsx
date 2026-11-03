@@ -12,6 +12,7 @@ import {
   type VirtualizedArmyListItem,
 } from "@/utils/profile/buildVirtualizedArmyList";
 import { parseArmy } from "@/utils/profile/parseArmy";
+import { getArmyGridLayout } from "@/utils/profile/getArmyGridLayout";
 import { fetchFullPlayer } from "@/services/clashApi";
 import {
   getCachedPlayerProfile,
@@ -49,6 +50,11 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [profileUpdatedAt, setProfileUpdatedAt] = useState<number | null>(null);
+  const [armyGridWidth, setArmyGridWidth] = useState(0);
+  const armyGridLayout = useMemo(
+    () => getArmyGridLayout(armyGridWidth),
+    [armyGridWidth],
+  );
 
   const activeTag = useAccountStore((s) => s.activeTag);
   // parseArmy reads entity metadata from the Zustand store. Subscribe to its
@@ -61,8 +67,10 @@ export default function ProfileScreen() {
   const progressionSheetRef = useRef<ProgressionBreakdownSheetRef>(null);
   const router = useRouter();
   const armyList = useMemo(
-    () => (visibleData ? buildVirtualizedArmyList(parseArmy(visibleData)) : { categories: [], items: [] }),
-    [visibleData, entityMetadataByName],
+    () => (visibleData
+      ? buildVirtualizedArmyList(parseArmy(visibleData), armyGridLayout.columns)
+      : { categories: [], items: [] }),
+    [visibleData, entityMetadataByName, armyGridLayout.columns],
   );
 
   useEffect(() => {
@@ -346,10 +354,18 @@ export default function ProfileScreen() {
             )}
           </View>
         )}
-        <View style={styles.armyGrid}>
+        <View
+          style={styles.armyGrid}
+          onLayout={(event) => {
+            const width = event.nativeEvent.layout.width;
+            setArmyGridWidth((currentWidth) =>
+              Math.abs(currentWidth - width) > 1 ? width : currentWidth,
+            );
+          }}
+        >
           {rowItems.map((entity, index) => (
             <EntityCard
-              key={`${entity.dataId}-${entity.level}-${rowIndex * 6 + index}`}
+              key={`${category.key}:${entity.village}:${entity.dataId}`}
               name={entity.name}
               dataId={entity.dataId}
               level={entity.level}
@@ -357,6 +373,7 @@ export default function ProfileScreen() {
               village={entity.village}
               isSuperTroop={entity.isSuperTroop}
               compact
+              compactWidth={armyGridLayout.cardWidth}
             />
           ))}
         </View>

@@ -66,6 +66,46 @@ export function UpgradeActionModal({
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
 
   const [now, setNow] = React.useState(Date.now());
+  const [superchargeProgression, setSuperchargeProgression] = React.useState<Awaited<ReturnType<typeof calculateSuperchargeProgression>> | null>(null);
+  const superchargeRequestRef = React.useRef(0);
+  const superchargeDataForUpgrade = React.useMemo(
+    () => upgrade?.upgradeKind === "SUPERCHARGE" && upgrade.dataId != null
+      ? ProgressionQueries.getProgression(upgrade.dataId)
+      : undefined,
+    [upgrade?.dataId, upgrade?.upgradeKind],
+  );
+
+  React.useEffect(() => {
+    const requestId = ++superchargeRequestRef.current;
+    if (!visible || !upgrade || !superchargeDataForUpgrade) {
+      setSuperchargeProgression(null);
+      return;
+    }
+
+    void calculateSuperchargeProgression(
+      superchargeDataForUpgrade,
+      upgrade.currentSuperchargeLevel ?? 0,
+      {
+        accountTag: upgrade.accountTag,
+        inProgressLevel: upgrade.nextSuperchargeLevel,
+      },
+    ).then((result) => {
+      if (superchargeRequestRef.current === requestId) {
+        setSuperchargeProgression(result);
+      }
+    }).catch((error: unknown) => {
+      if (superchargeRequestRef.current === requestId) {
+        console.error("Failed to calculate Supercharge progression", error);
+        setSuperchargeProgression(null);
+      }
+    });
+
+    return () => {
+      if (superchargeRequestRef.current === requestId) {
+        superchargeRequestRef.current += 1;
+      }
+    };
+  }, [visible, upgrade, superchargeDataForUpgrade]);
 
   /*
    * -------------------------------------------------------
@@ -318,18 +358,7 @@ export function UpgradeActionModal({
    * -------------------------------------------------------
    */
 
-  const superchargeData =
-    upgrade.upgradeKind === "SUPERCHARGE" && upgrade.dataId != null
-      ? ProgressionQueries.getProgression(upgrade.dataId)
-      : undefined;
-
-  const superchargeProgression = superchargeData
-    ? calculateSuperchargeProgression(
-        superchargeData,
-        upgrade.currentSuperchargeLevel ?? 0,
-        { inProgressLevel: upgrade.nextSuperchargeLevel },
-      )
-    : null;
+  const superchargeData = superchargeDataForUpgrade;
 
   const resourceType = progression?.resource ?? superchargeData?.resource;
 

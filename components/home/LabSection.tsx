@@ -139,6 +139,7 @@ function LabCard({
     lab.dataId != null
       ? resolveEntityIcon(lab.dataId, {
           village: village,
+          entityName: lab.entity,
           level: lab.currentLevel,
         })
       : null;

@@ -1,7 +1,10 @@
 import { resolveUpgradeCompletionTime } from "@/engine/magicItems/resolveUpgradeCompletionTime";
 import type { ActiveMagicEffect } from "@/types/magicItem";
-import type { GoldPassBoostSelection } from "@/types/goldPass";
-import type { ReEngagementBoostSelection } from "@/types/reEngagementBoost";
+import { getGoldPassBoostSettings } from "@/services/goldPassBoostService";
+import { getReEngagementBoostSettings } from "@/services/reEngagementBoostService";
+import { getActiveMagicEffects } from "@/services/magicItemService";
+import { resolveGoldPassBoostForUpgradeType } from "../resolveGoldPassBoostForUpgradeType";
+import { resolveReEngagementBoostForUpgradeType } from "../resolveReEngagementBoostForUpgradeType";
 import type { ProgressionData, ProgressionLevel } from "@/types/progression";
 import { resolveGoldPassBoostModifier } from "../resolveGoldPassBoost";
 import { resolveReEngagementBoostModifier } from "../resolveReEngagementBoost";
@@ -26,24 +29,36 @@ export interface SuperchargeProgression {
 export interface SuperchargeProgressionOptions {
   /** Charge level currently being upgraded; its cost has already been paid. */
   inProgressLevel?: number;
-  /** Gold Pass Builder Boost selected for this account. */
-  goldPassBoost?: GoldPassBoostSelection;
-  /** Active return-to-game Builder Boost selected for this account. */
-  reEngagementBoost?: ReEngagementBoostSelection;
-  /**
-   * Already-active timed effects. They are applied to the next charge only,
-   * never multiplied across all future charges.
-   */
-  activeMagicEffects?: readonly ActiveMagicEffect[];
-  /** Timestamp from which the next charge's active effects are evaluated. */
-  magicEffectsStartAt?: number;
+  /** Account whose Gold Pass, return-to-game, and Magic Item state is used. */
+  accountTag: string;
 }
 
-export function calculateSuperchargeProgression(
+export async function calculateSuperchargeProgression(
   progression: Pick<ProgressionData, "scMaxLevel" | "supercharge">,
   currentLevel: number,
-  options: SuperchargeProgressionOptions = {},
-): SuperchargeProgression {
+  options: SuperchargeProgressionOptions,
+): Promise<SuperchargeProgression> {
+  if (!options.accountTag.trim()) {
+    throw new Error("INVALID_ACCOUNT_TAG");
+  }
+
+  const now = Date.now();
+  const [goldPassSettings, reEngagementSettings, activeMagicEffects] = await Promise.all([
+    getGoldPassBoostSettings(options.accountTag),
+    getReEngagementBoostSettings(options.accountTag),
+    getActiveMagicEffects(options.accountTag),
+  ]);
+  const upgradeContext = {
+    upgradeType: "BUILDER" as const,
+    entityType: "building" as const,
+    village: "home" as const,
+  };
+  const goldPassBoost = resolveGoldPassBoostForUpgradeType(upgradeContext, goldPassSettings);
+  const reEngagementBoost = resolveReEngagementBoostForUpgradeType(
+    upgradeContext,
+    reEngagementSettings,
+    now,
+  );
   const declaredMaxLevel = progression.scMaxLevel ?? Math.max(
     0,
     ...Object.keys(progression.supercharge ?? {}).map(Number).filter(Number.isFinite),
@@ -67,24 +82,24 @@ export function calculateSuperchargeProgression(
     ),
   );
 
-  const goldPassModifier = options.goldPassBoost
-    ? resolveGoldPassBoostModifier(options.goldPassBoost)
+  const goldPassModifier = goldPassBoost
+    ? resolveGoldPassBoostModifier(goldPassBoost)
     : { costMultiplier: 1, timeMultiplier: 1, appliedModifierIds: [] };
-  const reEngagementModifier = options.reEngagementBoost
-    ? resolveReEngagementBoostModifier(options.reEngagementBoost)
+  const reEngagementModifier = reEngagementBoost
+    ? resolveReEngagementBoostModifier(reEngagementBoost)
     : { costMultiplier: 1, timeMultiplier: 1, appliedModifierIds: [] };
 
   // Supercharges are Home Village building upgrades. Only Builder-targeted
   // boosts are applicable; Research-targeted selections are ignored.
   const builderCostMultiplier =
-    (options.goldPassBoost?.target === "builder" ? goldPassModifier.costMultiplier : 1) *
-    (options.reEngagementBoost?.target === "builder" ? reEngagementModifier.costMultiplier : 1);
+    (goldPassBoost?.target === "builder" ? goldPassModifier.costMultiplier : 1) *
+    (reEngagementBoost?.target === "builder" ? reEngagementModifier.costMultiplier : 1);
   const builderTimeMultiplier =
-    (options.goldPassBoost?.target === "builder" ? goldPassModifier.timeMultiplier : 1) *
-    (options.reEngagementBoost?.target === "builder" ? reEngagementModifier.timeMultiplier : 1);
+    (goldPassBoost?.target === "builder" ? goldPassModifier.timeMultiplier : 1) *
+    (reEngagementBoost?.target === "builder" ? reEngagementModifier.timeMultiplier : 1);
   const appliedModifierIds = [
-    ...(options.goldPassBoost?.target === "builder" ? goldPassModifier.appliedModifierIds : []),
-    ...(options.reEngagementBoost?.target === "builder" ? reEngagementModifier.appliedModifierIds : []),
+    ...(goldPassBoost?.target === "builder" ? goldPassModifier.appliedModifierIds : []),
+    ...(reEngagementBoost?.target === "builder" ? reEngagementModifier.appliedModifierIds : []),
   ];
 
   const baseNextCost = nextData?.cost;
@@ -103,19 +118,14 @@ export function calculateSuperchargeProgression(
   if (
     nextUpgradeTime != null &&
     options.inProgressLevel == null &&
-    options.activeMagicEffects != null &&
-    options.activeMagicEffects.length > 0
+    activeMagicEffects.length > 0
   ) {
-    if (!Number.isFinite(options.magicEffectsStartAt)) {
-      throw new Error("INVALID_SUPERCHARGE_MAGIC_EFFECT_START_TIMESTAMP");
-    }
-
-    const startedAt = options.magicEffectsStartAt as number;
+    const startedAt = now;
     const baseDurationMs = nextUpgradeTime * 1000;
     const completedAt = resolveUpgradeCompletionTime({
       baseDurationMs,
       startedAt,
-      effects: [...options.activeMagicEffects],
+      effects: activeMagicEffects,
       target: "builders",
       village: "home",
     });

@@ -82,6 +82,7 @@ export function UpgradeActionModal({
       return;
     }
 
+    setSuperchargeProgression(null);
     void calculateSuperchargeProgression(
       superchargeDataForUpgrade,
       upgrade.currentSuperchargeLevel ?? 0,

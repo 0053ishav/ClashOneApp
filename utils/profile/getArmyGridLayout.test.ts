@@ -2,11 +2,11 @@ import { getArmyGridLayout } from "@/utils/profile/getArmyGridLayout";
 
 describe("getArmyGridLayout", () => {
   it.each([
-    [264, 5],
-    [304, 6],
-    [374, 7],
-    [700, 8],
-  ])("uses %i columns at %i points of available width", (width, columns) => {
+    [5, 264],
+    [6, 304],
+    [7, 374],
+    [8, 700],
+  ])("uses %i columns at %i points of available width", (columns, width) => {
     expect(getArmyGridLayout(width).columns).toBe(columns);
   });
 

@@ -86,4 +86,86 @@ describe("calculateSuperchargeProgression", () => {
     });
     expect(calculateSuperchargeProgression(data, -5).currentLevel).toBe(0);
   });
+  it("applies Gold Pass and Re-engagement Builder Boosts multiplicatively", () => {
+    expect(
+      calculateSuperchargeProgression(data, 0, {
+        goldPassBoost: { target: "builder", percent: 20 },
+        reEngagementBoost: { target: "builder", percent: 50 },
+      }),
+    ).toMatchObject({
+      nextCost: 400,
+      nextUpgradeTime: 1_440,
+      totalCost: 2_400,
+      totalUpgradeTime: 8_640,
+      appliedModifierIds: [
+        "gold-pass-builder-boost",
+        "re-engagement-builder-boost",
+      ],
+    });
+  });
+
+  it("ignores Research-targeted boosts for building Supercharges", () => {
+    expect(
+      calculateSuperchargeProgression(data, 0, {
+        goldPassBoost: { target: "research", percent: 20 },
+        reEngagementBoost: { target: "research", percent: 50 },
+      }),
+    ).toMatchObject({
+      nextCost: 1_000,
+      nextUpgradeTime: 3_600,
+      totalCost: 6_000,
+      totalUpgradeTime: 21_600,
+    });
+  });
+
+  it("applies active Builder Potion effects to the next charge only", () => {
+    const result = calculateSuperchargeProgression(data, 0, {
+      magicEffectsStartAt: 1_800_000_000_000,
+      activeMagicEffects: [{
+        id: "active-builder-potion",
+        itemId: "builder-potion",
+        startedAt: 1_800_000_000_000,
+        expiresAt: 1_800_003_600_000,
+        village: "home",
+      }],
+    });
+
+    expect(result).toMatchObject({
+      nextUpgradeTime: 360,
+      totalUpgradeTime: 21_600,
+    });
+  });
+
+  it("does not apply timed effects to future charges after the next one", () => {
+    const result = calculateSuperchargeProgression(data, 0, {
+      goldPassBoost: { target: "builder", percent: 20 },
+      magicEffectsStartAt: 1_800_000_000_000,
+      activeMagicEffects: [{
+        id: "active-builder-bite",
+        itemId: "builder-bite",
+        startedAt: 1_800_000_000_000,
+        expiresAt: 1_800_003_600_000,
+        village: "home",
+      }],
+    });
+
+    expect(result.nextUpgradeTime).toBe(1_440);
+    // Gold Pass applies to all future levels; Builder Bite is consumed by
+    // the next charge only and does not reduce the aggregate future estimate.
+    expect(result.totalUpgradeTime).toBe(17_280);
+  });
+
+  it("requires a deterministic start timestamp when active magic effects are supplied", () => {
+    expect(() =>
+      calculateSuperchargeProgression(data, 0, {
+        activeMagicEffects: [{
+          id: "active-builder-potion",
+          itemId: "builder-potion",
+          startedAt: 1_800_000_000_000,
+          village: "home",
+        }],
+      }),
+    ).toThrow("INVALID_SUPERCHARGE_MAGIC_EFFECT_START_TIMESTAMP");
+  });
+
 });

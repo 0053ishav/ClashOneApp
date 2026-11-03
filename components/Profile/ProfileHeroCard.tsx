@@ -6,6 +6,7 @@ import { EntityRecord } from "@/types/upgrade";
 import {
   resolveBuilderBaseLeagueIcon,
   resolveEntityIcon,
+  resolveHallIcon,
 } from "@/utils/icons/resolveEntityIcon";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -73,10 +74,7 @@ export default function ProfileHeroCard({
           <View style={styles.hallPill}>
             <Image
               source={{
-                uri: resolveEntityIcon(1000001, {
-                  village: "home",
-                  level: data.townHallLevel,
-                }),
+                uri: resolveHallIcon("home", data.townHallLevel),
               }}
               style={styles.hallIcon}
               contentFit="contain"
@@ -89,10 +87,7 @@ export default function ProfileHeroCard({
             <View style={[styles.hallPill, styles.hallPillBuilder]}>
               <Image
                 source={{
-                  uri: resolveEntityIcon(1000034, {
-                    village: "builderBase",
-                    level: data.builderHallLevel,
-                  }),
+                  uri: resolveHallIcon("builderBase", data.builderHallLevel),
                 }}
                 style={styles.hallIcon}
                 contentFit="contain"
@@ -273,7 +268,12 @@ export default function ProfileHeroCard({
                   style={[styles.chip, styles.helperChip]}
                 >
                   <Image
-                    source={{ uri: resolveEntityIcon(helper.dataId) }}
+                    source={{
+                      uri: resolveEntityIcon(helper.dataId, {
+                        village: "home",
+                        type: "helper",
+                      }),
+                    }}
                     style={styles.chipIcon}
                     contentFit="contain"
                     cachePolicy="memory-disk"
@@ -297,7 +297,12 @@ export default function ProfileHeroCard({
                   style={[styles.chip, styles.guardianChip]}
                 >
                   <Image
-                    source={{ uri: resolveEntityIcon(guardian.dataId) }}
+                    source={{
+                      uri: resolveEntityIcon(guardian.dataId, {
+                        village: "home",
+                        type: "guardian",
+                      }),
+                    }}
                     style={styles.chipIcon}
                     contentFit="contain"
                     cachePolicy="memory-disk"

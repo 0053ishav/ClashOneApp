@@ -1,5 +1,4 @@
 import { resolveUpgradeCompletionTime } from "@/engine/magicItems/resolveUpgradeCompletionTime";
-import type { ActiveMagicEffect } from "@/types/magicItem";
 import { getGoldPassBoostSettings } from "@/services/goldPassBoostService";
 import { getReEngagementBoostSettings } from "@/services/reEngagementBoostService";
 import { getActiveMagicEffects } from "@/services/magicItemService";

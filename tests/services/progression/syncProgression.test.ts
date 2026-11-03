@@ -5,6 +5,7 @@ import {
 } from "@/services/progression/progression";
 import {
   loadProgressionGlobalManifestVersion,
+  loadProgressionManifest,
   loadProgressionVersion,
   saveProgressionCategory,
   saveProgressionGlobalManifestVersion,
@@ -24,6 +25,7 @@ jest.mock("@/services/progression/progression", () => ({
 }));
 jest.mock("@/storage/progressionStorage", () => ({
   loadProgressionGlobalManifestVersion: jest.fn(),
+  loadProgressionManifest: jest.fn(),
   loadProgressionVersion: jest.fn(),
   saveProgressionCategory: jest.fn(),
   saveProgressionGlobalManifestVersion: jest.fn(),
@@ -34,6 +36,7 @@ jest.mock("@/storage/progressionStorage", () => ({
 const mockedFetchManifest = jest.mocked(fetchManifest);
 const mockedFetchCategory = jest.mocked(fetchProgressionCategory);
 const mockedLoadGlobalVersion = jest.mocked(loadProgressionGlobalManifestVersion);
+const mockedLoadManifest = jest.mocked(loadProgressionManifest);
 const mockedLoadCategoryVersion = jest.mocked(loadProgressionVersion);
 
 describe("syncProgression", () => {
@@ -48,7 +51,8 @@ describe("syncProgression", () => {
       progression: { troops: 8 },
       events: {},
     });
-    mockedLoadGlobalVersion.mockReturnValue(1);
+    mockedLoadGlobalVersion.mockReturnValue(2);
+    mockedLoadManifest.mockReturnValue(null);
     mockedLoadCategoryVersion.mockReturnValue(7);
   });
 

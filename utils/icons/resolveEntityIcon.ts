@@ -14,6 +14,8 @@ interface ResolveEntityIconOptions {
   village?: Village;
   type?: EntityType;
   subType?: string;
+  /** Resolve a stale/mismatched stored ID through the canonical village name mapping. */
+  entityName?: string;
   level?: number;
   isSuperTroop?: boolean;
   /** Use the level-independent troop icon asset instead of a level-specific image. */
@@ -117,8 +119,20 @@ export function resolveEntityIcon(
     return `${ENV.CDN_BASE}/v2/crafted/${entityId}/${iconLevel}.png`;
   }
 
-  const entity = useEntityStore.getState().entitiesById[entityId];
-  const village = options?.village ?? entity?.village;
+  const entityStore = useEntityStore.getState();
+  const directEntity = entityStore.entitiesById[entityId];
+  const village = options?.village ?? directEntity?.village;
+  const requestedName = options?.entityName?.trim().toLowerCase();
+  const directName = directEntity?.name.en.trim().toLowerCase();
+  const mappedId =
+    requestedName && village && requestedName !== directName
+      ? entityStore.getEntityId(options.entityName!, village)
+      : null;
+  const entity =
+    mappedId != null
+      ? entityStore.entitiesById[mappedId]
+      : directEntity;
+  const resolvedEntityId = entity?.id ?? entityId;
   const type = options?.type ?? entity?.type;
   const subType = options?.subType ?? entity?.subType;
 
@@ -136,7 +150,7 @@ export function resolveEntityIcon(
   // Troop cards can use a stable icon asset independent of the troop's level.
   if (options?.useTroopIcon && type === "troop" && village) {
     const villagePath = village === "builderBase" ? "builder" : "home";
-    return `${ENV.CDN_BASE}/v2/${villagePath}/troops/${entityId}/icon.png`;
+    return `${ENV.CDN_BASE}/v2/${villagePath}/troops/${resolvedEntityId}/icon.png`;
   }
 
   // Town Hall and Builder Hall have dedicated level-based asset namespaces.
@@ -150,11 +164,11 @@ export function resolveEntityIcon(
   }
 
   if (village === "home" && type === "hero") {
-    return `${ENV.CDN_BASE}/v2/home/heroes/${entityId}/icon.png`;
+    return `${ENV.CDN_BASE}/v2/home/heroes/${resolvedEntityId}/icon.png`;
   }
 
   if (village === "builderBase" && type === "hero") {
-    return `${ENV.CDN_BASE}/v2/builder/heroes/${entityId}/icon.png`;
+    return `${ENV.CDN_BASE}/v2/builder/heroes/${resolvedEntityId}/icon.png`;
   }
 
   /*
@@ -171,7 +185,7 @@ export function resolveEntityIcon(
   ) {
     const category = HOME_ICON_CATEGORIES[type];
     return category
-      ? `${ENV.CDN_BASE}/v2/home/${category}/${entityId}/1.png`
+      ? `${ENV.CDN_BASE}/v2/home/${category}/${resolvedEntityId}/1.png`
       : entity?.icon ?? FALLBACK_ICON;
   }
 
@@ -186,8 +200,8 @@ export function resolveEntityIcon(
     const category = type ? HOME_ICON_CATEGORIES[type] : undefined;
 
     if (category) {
-      const iconLevel = resolveLevelBasedIconLevel(entityId, safeLevel);
-      return `${ENV.CDN_BASE}/v2/home/${category}/${entityId}/${iconLevel}.png`;
+      const iconLevel = resolveLevelBasedIconLevel(resolvedEntityId, safeLevel);
+      return `${ENV.CDN_BASE}/v2/home/${category}/${resolvedEntityId}/${iconLevel}.png`;
     }
   }
 
@@ -195,8 +209,8 @@ export function resolveEntityIcon(
     const category = type ? BUILDER_ICON_CATEGORIES[type] : undefined;
 
     if (category) {
-      const iconLevel = resolveLevelBasedIconLevel(entityId, safeLevel);
-      return `${ENV.CDN_BASE}/v2/builder/${category}/${entityId}/${iconLevel}.png`;
+      const iconLevel = resolveLevelBasedIconLevel(resolvedEntityId, safeLevel);
+      return `${ENV.CDN_BASE}/v2/builder/${category}/${resolvedEntityId}/${iconLevel}.png`;
     }
   }
 

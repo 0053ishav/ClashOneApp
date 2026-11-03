@@ -102,6 +102,7 @@ export function calculateSuperchargeProgression(
   // charge totals, so they remain outside this aggregate projection.
   if (
     nextUpgradeTime != null &&
+    options.inProgressLevel == null &&
     options.activeMagicEffects != null &&
     options.activeMagicEffects.length > 0
   ) {

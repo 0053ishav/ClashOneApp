@@ -4,7 +4,7 @@ import { useHomeColors } from "@/theme/useHomeColors";
 import { useMemo } from "react";
 import { PlayerProfile } from "@/types/player";
 import { EntityRecord } from "@/types/upgrade";
-import { formatCountdown } from "@/utils/formatCountdown";
+import { formatHelperCooldown } from "@/utils/helpers/formatHelperCooldown";
 import {
   resolveBuilderBaseLeagueIcon,
   resolveEntityIcon,
@@ -294,7 +294,7 @@ export default function ProfileHeader({
                           color={colors.dangerLight}
                         />
                         <Text style={styles.cooldownText}>
-                          {formatCountdown(helper.cooldown as number)}
+                          {formatHelperCooldown(helper.cooldown as number)}
                         </Text>
                       </View>
                     ) : (

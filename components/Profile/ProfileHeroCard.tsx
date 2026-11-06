@@ -298,7 +298,7 @@ export default function ProfileHeroCard({
                           color={colors.dangerLight}
                         />
                         <Text style={styles.cooldownText}>
-                          {formatHelperCooldown(helper.cooldown!)}
+                          {formatHelperCooldown(helper.cooldown ?? 0)}
                         </Text>
                       </View>
                     ) : (

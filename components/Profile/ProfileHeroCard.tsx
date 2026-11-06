@@ -3,6 +3,7 @@ import type { HomeColors } from "@/theme/home";
 import { useHomeColors } from "@/theme/useHomeColors";
 import { PlayerFull } from "@/types/playerFull";
 import { EntityRecord } from "@/types/upgrade";
+import { formatHelperCooldown } from "@/utils/helpers/formatHelperCooldown";
 import {
   resolveBuilderBaseLeagueIcon,
   resolveEntityIcon,
@@ -262,25 +263,50 @@ export default function ProfileHeroCard({
                 <Text style={styles.captionText}>Helpers</Text>
               </View>
 
-              {helpers.map((helper) => (
-                <View
-                  key={`helper-${helper.id}`}
-                  style={[styles.chip, styles.helperChip]}
-                >
-                  <Image
-                    source={{
-                      uri: resolveEntityIcon(helper.dataId, {
-                        village: "home",
-                        type: "helper",
-                      }),
-                    }}
-                    style={styles.chipIcon}
-                    contentFit="contain"
-                    cachePolicy="memory-disk"
-                  />
-                  <Text style={styles.helperLevel}>Lv {helper.level}</Text>
-                </View>
-              ))}
+              {helpers.map((helper) => {
+                const cooling =
+                  typeof helper.cooldown === "number" &&
+                  Number.isFinite(helper.cooldown) &&
+                  helper.cooldown > 0;
+
+                return (
+                  <View
+                    key={`helper-${helper.id}`}
+                    accessible
+                    accessibilityLabel={`Helper level ${helper.level}, ${
+                      cooling ? "on cooldown" : "ready"
+                    }`}
+                    style={[styles.chip, styles.helperChip]}
+                  >
+                    <Image
+                      source={{
+                        uri: resolveEntityIcon(helper.dataId, {
+                          village: "home",
+                          type: "helper",
+                        }),
+                      }}
+                      style={styles.chipIcon}
+                      contentFit="contain"
+                      cachePolicy="memory-disk"
+                    />
+                    <Text style={styles.helperLevel}>Lv {helper.level}</Text>
+                    {cooling ? (
+                      <View style={styles.cooldownInline}>
+                        <Ionicons
+                          name="time-outline"
+                          size={11}
+                          color={colors.dangerLight}
+                        />
+                        <Text style={styles.cooldownText}>
+                          {formatHelperCooldown(helper.cooldown!)}
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={styles.readyDot} />
+                    )}
+                  </View>
+                );
+              })}
             </View>
           )}
 
@@ -675,6 +701,22 @@ const createStyles = (colors: HomeColors) => StyleSheet.create({
     fontSize: 12,
     fontWeight: "800",
     color: colors.orangeLight,
+  },
+  cooldownInline: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  cooldownText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: colors.dangerLight,
+  },
+  readyDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.success,
   },
   guardianLevel: {
     fontSize: 12,

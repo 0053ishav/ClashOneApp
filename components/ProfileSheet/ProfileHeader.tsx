@@ -262,7 +262,9 @@ export default function ProfileHeader({
 
               {helpers.map((helper) => {
                 const cooling =
-                  typeof helper.cooldown === "number" && helper.cooldown > 0;
+                  typeof helper.cooldown === "number" &&
+                  Number.isFinite(helper.cooldown) &&
+                  helper.cooldown > 0;
 
                 return (
                   <View
@@ -294,7 +296,7 @@ export default function ProfileHeader({
                           color={colors.dangerLight}
                         />
                         <Text style={styles.cooldownText}>
-                          {formatHelperCooldown(helper.cooldown as number)}
+                          {formatHelperCooldown(helper.cooldown ?? 0)}
                         </Text>
                       </View>
                     ) : (

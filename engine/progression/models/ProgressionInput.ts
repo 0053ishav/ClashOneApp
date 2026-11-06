@@ -1,4 +1,4 @@
-import type { HammerJamManifest } from "@/engine/magicItems/hammerJam";
+import type { HammerJamBoostSelection, HammerJamManifest } from "@/types/hammerJam";
 import type { GoldPassBoostSelection } from "@/types/goldPass";
 import type { ReEngagementBoostSelection } from "@/types/reEngagementBoost";
 import type {
@@ -8,15 +8,6 @@ import type {
 import type {
   ResolvedEntity,
 } from "./ResolvedEntity";
-
-/**
- * Event context for a prospective upgrade. The timestamp is explicit so
- * progression calculations stay deterministic and do not read the system clock.
- */
-export interface ProgressionUpgradeStartContext {
-  startsAt: number;
-  hammerJam: HammerJamManifest;
-}
 
 /**
  * Context for live resource production. This is evaluated at observation time,
@@ -32,8 +23,9 @@ export interface ProgressionInput {
   progression: ProgressionData;
   currentLevel: number;
   currentHallLevel: number;
-  upgradeStartContext?: ProgressionUpgradeStartContext;
   resourceProductionContext?: ResourceProductionContext;
+  /** Event-bound Hammer Jam boost, resolved alongside account progression boosts. */
+  hammerJamBoost?: HammerJamBoostSelection;
   /** Manually selected Gold Pass discount for cost and time projections. */
   goldPassBoost?: GoldPassBoostSelection;
   /** Active, account-scoped return-to-game discount for cost and time projections. */

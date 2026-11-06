@@ -1,12 +1,12 @@
 import type { CraftedProgressionResult } from "@/engine/crafted/model";
-import type { ProgressionUpgradeStartContext } from "@/engine/progression/models";
+import type { HammerJamBoostSelection } from "@/types/hammerJam";
 import type { Village } from "@/types/entity";
 import type { GoldPassBoostSelection } from "@/types/goldPass";
 import type { ReEngagementBoostSelection } from "@/types/reEngagementBoost";
 
 type ApplyCraftedBoostsInput = {
   village: Village;
-  upgradeStartContext?: ProgressionUpgradeStartContext;
+  hammerJamBoost?: HammerJamBoostSelection;
   goldPassBoost?: GoldPassBoostSelection;
   reEngagementBoost?: ReEngagementBoostSelection;
 };

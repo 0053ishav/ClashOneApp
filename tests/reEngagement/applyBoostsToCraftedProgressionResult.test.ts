@@ -45,10 +45,7 @@ describe("applyBoostsToCraftedProgressionResult", () => {
     const original = makeCraftedResult();
     const result = applyBoostsToCraftedProgressionResult(original, {
       village: "home",
-      upgradeStartContext: {
-        startsAt,
-        hammerJam,
-      },
+      hammerJamBoost: { startsAt, manifest: hammerJam },
       goldPassBoost: { target: "builder", percent: 20 },
       reEngagementBoost: { target: "builder", percent: 50 },
     });
@@ -67,10 +64,7 @@ describe("applyBoostsToCraftedProgressionResult", () => {
     const original = makeCraftedResult();
     const result = applyBoostsToCraftedProgressionResult(original, {
       village: "builderBase",
-      upgradeStartContext: {
-        startsAt,
-        hammerJam,
-      },
+      hammerJamBoost: { startsAt, manifest: hammerJam },
       goldPassBoost: { target: "builder", percent: 20 },
       reEngagementBoost: { target: "builder", percent: 50 },
     });

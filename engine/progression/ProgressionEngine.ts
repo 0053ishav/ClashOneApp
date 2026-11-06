@@ -12,9 +12,7 @@ import {
 import {
   getHallRequirement,
 } from "./selectors";
-import {
-  applyHammerJamToUpgradeStart,
-} from "@/engine/magicItems/applyHammerJamToUpgradeStart";
+import { resolveHammerJamBoostModifier } from "./resolveHammerJamBoost";
 import { resolveGoldPassBoostModifier } from "./resolveGoldPassBoost";
 import { resolveReEngagementBoostModifier } from "./resolveReEngagementBoost";
 import { isGoldPassBoostApplicable } from "./isGoldPassBoostApplicable";
@@ -78,8 +76,7 @@ export class ProgressionEngine {
   static resolve(
     progression: ResolvedProgression,
   ): ProgressionResult {
-    // Validate caller-supplied context before entity/stat eligibility checks so
-    // malformed timestamps cannot be silently ignored for non-producing levels.
+    // Validate caller-supplied resource observation time before stat eligibility checks.
     if (
       progression.resourceProductionContext != null &&
       !Number.isFinite(progression.resourceProductionContext.at)
@@ -134,7 +131,7 @@ export class ProgressionEngine {
     let nextUpgradeTime = baseNextUpgradeTime;
     let appliedModifierIds: string[] = [];
 
-    const upgradeStartContext = progression.upgradeStartContext;
+    const hammerJamBoost = progression.hammerJamBoost;
     const hammerJamTarget = toHammerJamTarget(progression.entity.category);
     const noGoldPassModifier = {
       costMultiplier: 1,
@@ -185,39 +182,43 @@ export class ProgressionEngine {
       goldPassModifier.appliedModifierIds.length > 0 ||
       reEngagementModifier.appliedModifierIds.length > 0;
 
-    if (!isMaxLevel && next) {
-      let hammerJamTimeMultiplier = 1;
-      let shouldAdjustDuration = hasUpgradeDiscount;
+    let hammerJamCostMultiplier = 1;
+    let hammerJamTimeMultiplier = 1;
+    let hasHammerJamDiscount = false;
 
-      if (upgradeStartContext) {
-        if (!Number.isFinite(upgradeStartContext.startsAt)) {
+    if (!isMaxLevel && next) {
+      if (hammerJamBoost) {
+        if (!Number.isFinite(hammerJamBoost.startsAt)) {
           throw new Error("INVALID_UPGRADE_START_TIMESTAMP");
         }
 
         if (hammerJamTarget) {
-          const effectiveStartValues = applyHammerJamToUpgradeStart({
-            ...(baseNextCost == null ? {} : { baseCost: baseNextCost }),
-            baseDurationMinutes: baseNextUpgradeTime ?? 0,
+          const modifier = resolveHammerJamBoostModifier({
+            selection: hammerJamBoost,
             target: hammerJamTarget,
             village: progression.entity.village,
-            startsAt: upgradeStartContext.startsAt,
-            manifest: upgradeStartContext.hammerJam,
+            ...(baseNextCost == null ? {} : { baseCost: baseNextCost }),
+            baseDurationMinutes: baseNextUpgradeTime ?? 0,
           });
 
-          nextCost = effectiveStartValues.cost ?? baseNextCost;
-          hammerJamTimeMultiplier = effectiveStartValues.timeMultiplier;
-          appliedModifierIds = effectiveStartValues.appliedModifierIds;
-          shouldAdjustDuration = true;
+          hammerJamCostMultiplier = modifier.costMultiplier;
+          hammerJamTimeMultiplier = modifier.timeMultiplier;
+          hasHammerJamDiscount = modifier.appliedModifierIds.length > 0;
+          appliedModifierIds = modifier.appliedModifierIds;
         }
       }
 
-      // Every cost/time discount composes multiplicatively. Apply the combined
-      // discount to the event-adjusted cost, and round duration once at the end.
-      if (nextCost != null && combinedCostMultiplier !== 1) {
-        nextCost = Math.round(nextCost * combinedCostMultiplier);
+      // Compose every multiplier against the original base value and round once.
+      if (baseNextCost != null) {
+        nextCost = Math.round(
+          baseNextCost * hammerJamCostMultiplier * combinedCostMultiplier,
+        );
       }
 
-      if (baseNextUpgradeTime != null && shouldAdjustDuration) {
+      if (
+        baseNextUpgradeTime != null &&
+        (hasHammerJamDiscount || hasUpgradeDiscount)
+      ) {
         nextUpgradeTime = Math.round(
           baseNextUpgradeTime *
             hammerJamTimeMultiplier *
@@ -231,6 +232,41 @@ export class ProgressionEngine {
         ...reEngagementModifier.appliedModifierIds,
       ];
     }
+
+    // Gold Pass and Re-engagement are treated as ongoing planning assumptions
+    // across the remaining levels. Hammer Jam is event-bound, so only the
+    // immediate next upgrade is discounted; later levels may start after the
+    // event expires and must not inherit its multiplier.
+    const remainingCostWithAccountBoost =
+      hasUpgradeDiscount
+        ? Math.round(remaining.remainingCost * combinedCostMultiplier)
+        : remaining.remainingCost;
+    const remainingTimeWithAccountBoost =
+      hasUpgradeDiscount
+        ? Math.round(remaining.remainingUpgradeTime * combinedTimeMultiplier)
+        : remaining.remainingUpgradeTime;
+    const nextCostWithoutHammerJam =
+      baseNextCost == null
+        ? undefined
+        : Math.round(baseNextCost * combinedCostMultiplier);
+    const nextTimeWithoutHammerJam =
+      baseNextUpgradeTime == null
+        ? undefined
+        : Math.round(baseNextUpgradeTime * combinedTimeMultiplier);
+    const remainingCost =
+      remainingCostWithAccountBoost +
+      (hasHammerJamDiscount &&
+      nextCost != null &&
+      nextCostWithoutHammerJam != null
+        ? nextCost - nextCostWithoutHammerJam
+        : 0);
+    const remainingUpgradeTime =
+      remainingTimeWithAccountBoost +
+      (hasHammerJamDiscount &&
+      nextUpgradeTime != null &&
+      nextTimeWithoutHammerJam != null
+        ? nextUpgradeTime - nextTimeWithoutHammerJam
+        : 0);
 
     const baseCurrentStats = progression.current?.stats ?? {};
     const baseNextStats = progression.next?.stats ?? {};
@@ -268,14 +304,8 @@ export class ProgressionEngine {
           ...nextStatsResult.appliedModifierIds,
         ]),
       ],
-      remainingCost:
-        hasUpgradeDiscount
-          ? Math.round(remaining.remainingCost * combinedCostMultiplier)
-          : remaining.remainingCost,
-      remainingUpgradeTime:
-        hasUpgradeDiscount
-          ? Math.round(remaining.remainingUpgradeTime * combinedTimeMultiplier)
-          : remaining.remainingUpgradeTime,
+      remainingCost,
+      remainingUpgradeTime,
       currentHallLevel: progression.currentHallLevel,
       requiredHallLevel: getHallRequirement(progression),
       currentXp: progression.current?.xp,

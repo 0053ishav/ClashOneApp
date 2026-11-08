@@ -372,6 +372,34 @@ async function migrateDatabase() {
     version = 12;
   }
 
+
+  // V13 - Persist the normalized Magic Item category on each usage event.
+  if (version < 13) {
+    await db.execAsync(`
+      ALTER TABLE magic_item_usage_events
+      ADD COLUMN item_type TEXT NOT NULL DEFAULT 'unknown';
+
+      UPDATE magic_item_usage_events
+      SET item_type = CASE
+        WHEN item_id IN (
+          'builder-potion',
+          'research-potion',
+          'pet-potion',
+          'clock-tower-potion'
+        ) THEN 'potion'
+        WHEN item_id IN ('study-soup', 'builder-bite') THEN 'snack'
+        WHEN item_id LIKE 'book-of-%' THEN 'book'
+        WHEN item_id LIKE 'hammer-of-%' THEN 'hammer'
+        ELSE 'unknown'
+      END;
+
+      CREATE INDEX IF NOT EXISTS idx_magic_item_usage_account_type_time
+      ON magic_item_usage_events(account_player_tag, item_type, used_at);
+    `);
+    await setSchemaVersion(db, 13);
+    version = 13;
+  }
+
   // log("✅ Database ready. Version:", version);
 
   // Debug only

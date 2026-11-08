@@ -259,6 +259,9 @@ describe("magicItemService", () => {
       builderBoostSeconds: -1,
       labBoostSeconds: 0,
       clocktowerBoostSeconds: 0,
+      builderConsumableSeconds: 0,
+      labConsumableSeconds: 0,
+      petBoostSeconds: 0,
       exportedAt: 1_700_000_000_000,
     })).rejects.toThrow("INVALID_BUILDER_BOOST_SECONDS");
     expect(db.runAsync).not.toHaveBeenCalled();
@@ -289,3 +292,5 @@ describe("magicItemService", () => {
       { itemId: "pet-potion", startedAt: 1_700_000_000_000, expiresAt: 1_700_000_300_000, village: "home" },
     ]);
   });
+
+});

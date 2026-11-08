@@ -115,7 +115,7 @@ export async function addMagicItem(
 }
 
 /**
- * Activate one Magic Item and record its usage atomically.
+ * Activate one or more identical Magic Items and record usage atomically.
  *
  * A missing inventory row means stock is untracked and does not block use.
  * An explicitly tracked zero requires allowZeroInventory confirmation.

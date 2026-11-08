@@ -247,11 +247,11 @@ export function MagicItemsQuickModal({
           ? `This consumes ${requestedQuantity} items from inventory. Their durations are queued consecutively; boost strength does not multiply.`
           : "This consumes one item from your tracked inventory and activates its effect for this village.";
     setDialog({
-      title: requestedQuantity > 1 ? `Use ${requestedQuantity} ${item.name}s?` : `Use ${item.name}?`,
+      title: requestedQuantity > 1 ? `Use ${requestedQuantity} × ${item.name}?` : `Use ${item.name}?`,
       message: confirmationMessage,
       item,
       tone: "confirm",
-      confirmLabel: "Use item",
+      confirmLabel: requestedQuantity > 1 ? `Use ${requestedQuantity}` : "Use item",
       onConfirm: async () => {
         setDialog(null);
         await activateNow(item, requestedQuantity);

@@ -89,6 +89,7 @@ export type MagicItemUsageEvent = {
   id: string;
   accountTag: string;
   itemId: string;
+  itemType: MagicItemType | "unknown";
   quantity: number;
   usedAt: number;
   source: "manual" | "import";

@@ -375,10 +375,17 @@ async function migrateDatabase() {
 
   // V13 - Persist the normalized Magic Item category on each usage event.
   if (version < 13) {
-    await db.execAsync(`
-      ALTER TABLE magic_item_usage_events
-      ADD COLUMN item_type TEXT NOT NULL DEFAULT 'unknown';
+    try {
+      await db.execAsync(`
+        ALTER TABLE magic_item_usage_events
+        ADD COLUMN item_type TEXT NOT NULL DEFAULT 'unknown';
+      `);
+    } catch (error) {
+      // A prior interrupted migration may already have added the column.
+      log("⏭️ magic_item_usage_events.item_type already exists", error);
+    }
 
+    await db.execAsync(`
       UPDATE magic_item_usage_events
       SET item_type = CASE
         WHEN item_id IN (

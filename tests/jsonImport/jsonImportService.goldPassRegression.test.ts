@@ -450,6 +450,52 @@ describe("importVillageJson Gold Pass regression coverage", () => {
     );
   });
 
+
+  it("persists all imported potion and consumable timers", async () => {
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      boosts: {
+        builder_boost: 3600,
+        lab_boost: 1800,
+        clocktower_boost: 900,
+        builder_consumable: 1200,
+        lab_consumable: 600,
+        pet_boost: 300,
+      },
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 123456, lvl: 1, timer: exportedRemainingSeconds },
+      ],
+    });
+
+    await importVillageJson(rawExport);
+
+    const { replaceImportedBoostSnapshot } = jest.requireMock("@/services/magicItemService");
+    expect(replaceImportedBoostSnapshot).toHaveBeenCalledWith({
+      accountTag,
+      builderBoostSeconds: 3600,
+      labBoostSeconds: 1800,
+      clocktowerBoostSeconds: 900,
+      builderConsumableSeconds: 1200,
+      labConsumableSeconds: 600,
+      petBoostSeconds: 300,
+      exportedAt: exportTimestampMs,
+    });
+  });
+
+  it("rejects negative imported consumable timers", async () => {
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      boosts: { pet_boost: -1 },
+      buildings: [],
+    });
+
+    await expect(importVillageJson(rawExport)).rejects.toThrow("INVALID_BOOSTS");
+    expect(mockImportJsonData).not.toHaveBeenCalled();
+  });
+
   it("keeps active timers distinct when the export contains repeated building entries", async () => {
     const rawExport = JSON.stringify({
       tag: accountTag,

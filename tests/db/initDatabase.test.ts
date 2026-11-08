@@ -69,8 +69,11 @@ describe("initDatabase", () => {
     expect(executedSql).toContain("ADD COLUMN next_supercharge_level INTEGER");
     expect(executedSql).toContain("CREATE TABLE IF NOT EXISTS building_progress");
     expect(executedSql).toContain("CREATE TABLE IF NOT EXISTS player_profile_cache");
+    expect(executedSql).toContain("ALTER TABLE imported_boosts ADD COLUMN builder_consumable_seconds INTEGER NOT NULL DEFAULT 0");
+    expect(executedSql).toContain("ALTER TABLE imported_boosts ADD COLUMN lab_consumable_seconds INTEGER NOT NULL DEFAULT 0");
+    expect(executedSql).toContain("ALTER TABLE imported_boosts ADD COLUMN pet_boost_seconds INTEGER NOT NULL DEFAULT 0");
 
-    expect(database.runAsync).toHaveBeenCalledTimes(11);
+    expect(database.runAsync).toHaveBeenCalledTimes(12);
     expect(database.getAllAsync).toHaveBeenCalledWith(
       "PRAGMA table_info(upgrades)",
     );

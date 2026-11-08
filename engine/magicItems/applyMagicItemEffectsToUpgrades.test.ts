@@ -45,6 +45,26 @@ describe("applyMagicItemEffectsToUpgrades", () => {
     expect(source.magicItemTimeSavedMs).toBeUndefined();
   });
 
+
+  it("applies an imported boost only to work remaining after the export timestamp", () => {
+    const exportTime = START + 5 * HOUR;
+    const importedUpgrade = upgrade({ startTime: START, endTime: START + 20 * HOUR });
+    const importedEffect: ActiveMagicEffect = {
+      id: "imported:builder-potion",
+      itemId: "builder-potion",
+      startedAt: exportTime,
+      expiresAt: exportTime + HOUR,
+      village: "home",
+    };
+
+    const [result] = applyMagicItemEffectsToUpgrades([importedUpgrade], [importedEffect]);
+
+    // Five hours of work precede export; the one-hour potion window completes
+    // nine hours of work, leaving six hours after the potion expires.
+    expect(result.endTime).toBe(exportTime + 7 * HOUR);
+    expect(result.magicItemTimeSavedMs).toBe(8 * HOUR);
+  });
+
   it("returns the original list when there are no effects", () => {
     const upgrades = [upgrade()];
     expect(applyMagicItemEffectsToUpgrades(upgrades, [])).toBe(upgrades);

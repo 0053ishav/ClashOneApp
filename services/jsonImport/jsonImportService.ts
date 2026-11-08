@@ -21,7 +21,14 @@ import { clearActiveMagicEffects, replaceImportedBoostSnapshot } from "@/service
 type RawExport = {
   tag: string;
   timestamp: number;
-  boosts?: { builder_boost?: number; lab_boost?: number; clocktower_boost?: number };
+  boosts?: {
+    builder_boost?: number;
+    lab_boost?: number;
+    clocktower_boost?: number;
+    builder_consumable?: number;
+    lab_consumable?: number;
+    pet_boost?: number;
+  };
 
   buildings?: {
     data: number;
@@ -242,7 +249,7 @@ function validateJson(data: any) {
   }
   if (data.boosts != null) {
     if (typeof data.boosts !== "object" || Array.isArray(data.boosts)) throw new Error("INVALID_BOOSTS");
-    for (const key of ["builder_boost", "lab_boost", "clocktower_boost"] as const) {
+    for (const key of ["builder_boost", "lab_boost", "clocktower_boost", "builder_consumable", "lab_consumable", "pet_boost"] as const) {
       const value = data.boosts[key];
       if (value != null && (!Number.isSafeInteger(value) || value < 0)) throw new Error("INVALID_BOOSTS");
     }
@@ -860,6 +867,9 @@ export async function importVillageJson(
       builderBoostSeconds: parsed.boosts?.builder_boost ?? 0,
       labBoostSeconds: parsed.boosts?.lab_boost ?? 0,
       clocktowerBoostSeconds: parsed.boosts?.clocktower_boost ?? 0,
+      builderConsumableSeconds: parsed.boosts?.builder_consumable ?? 0,
+      labConsumableSeconds: parsed.boosts?.lab_consumable ?? 0,
+      petBoostSeconds: parsed.boosts?.pet_boost ?? 0,
       exportedAt: exportTimestampMs,
     });
 
@@ -1246,6 +1256,9 @@ export async function importVillageJson(
       builderBoostSeconds: parsed.boosts?.builder_boost ?? 0,
       labBoostSeconds: parsed.boosts?.lab_boost ?? 0,
       clocktowerBoostSeconds: parsed.boosts?.clocktower_boost ?? 0,
+      builderConsumableSeconds: parsed.boosts?.builder_consumable ?? 0,
+      labConsumableSeconds: parsed.boosts?.lab_consumable ?? 0,
+      petBoostSeconds: parsed.boosts?.pet_boost ?? 0,
       exportedAt: exportTimestampMs,
     });
     track("json_pipeline", {

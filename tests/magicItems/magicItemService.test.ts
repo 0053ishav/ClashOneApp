@@ -7,6 +7,7 @@ import {
   addMagicItem,
   clearActiveMagicEffects,
   getImportedBoostSnapshot,
+  getImportedBoostEffects,
   replaceImportedBoostSnapshot,
   consumeMagicItem,
   consumeMagicItemQuantity,
@@ -228,12 +229,15 @@ describe("magicItemService", () => {
       builderBoostSeconds: 3595,
       labBoostSeconds: 3598,
       clocktowerBoostSeconds: 60652,
+      builderConsumableSeconds: 3590,
+      labConsumableSeconds: 3580,
+      petBoostSeconds: 3570,
       exportedAt: 1_700_000_000_000,
     };
     await replaceImportedBoostSnapshot(snapshot);
     expect(db.runAsync).toHaveBeenCalledWith(
       expect.stringContaining("INSERT INTO imported_boosts"),
-      ["#ACCOUNT", 3595, 3598, 60652, 1_700_000_000_000],
+      ["#ACCOUNT", 3595, 3598, 60652, 3590, 3580, 3570, 1_700_000_000_000],
     );
 
     db.getFirstAsync.mockResolvedValue({
@@ -241,6 +245,9 @@ describe("magicItemService", () => {
       builder_boost_seconds: 3595,
       lab_boost_seconds: 3598,
       clocktower_boost_seconds: 60652,
+      builder_consumable_seconds: 3590,
+      lab_consumable_seconds: 3580,
+      pet_boost_seconds: 3570,
       exported_at: 1_700_000_000_000,
     });
     await expect(getImportedBoostSnapshot("#ACCOUNT")).resolves.toEqual(snapshot);
@@ -258,3 +265,29 @@ describe("magicItemService", () => {
   });
 
 });
+
+
+  it("maps imported timers to the existing potion and snack effect definitions", async () => {
+    db.getFirstAsync.mockResolvedValue({
+      account_player_tag: "#ACCOUNT",
+      builder_boost_seconds: 3600,
+      lab_boost_seconds: 1800,
+      clocktower_boost_seconds: 900,
+      builder_consumable_seconds: 1200,
+      lab_consumable_seconds: 600,
+      pet_boost_seconds: 300,
+      exported_at: 1_700_000_000_000,
+    });
+
+    const effects = await getImportedBoostEffects("#ACCOUNT");
+    expect(effects.map(({ itemId, startedAt, expiresAt, village }) => ({
+      itemId, startedAt, expiresAt, village,
+    }))).toEqual([
+      { itemId: "builder-potion", startedAt: 1_700_000_000_000, expiresAt: 1_700_003_600_000, village: "home" },
+      { itemId: "research-potion", startedAt: 1_700_000_000_000, expiresAt: 1_700_001_800_000, village: "home" },
+      { itemId: "clock-tower-potion", startedAt: 1_700_000_000_000, expiresAt: 1_700_000_900_000, village: "builderBase" },
+      { itemId: "builder-bite", startedAt: 1_700_000_000_000, expiresAt: 1_700_001_200_000, village: "home" },
+      { itemId: "study-soup", startedAt: 1_700_000_000_000, expiresAt: 1_700_000_600_000, village: "home" },
+      { itemId: "pet-potion", startedAt: 1_700_000_000_000, expiresAt: 1_700_000_300_000, village: "home" },
+    ]);
+  });

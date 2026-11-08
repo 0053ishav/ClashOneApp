@@ -95,7 +95,7 @@ export function MagicItemsQuickModal({
     setIsLoading(true);
     try {
       const [inventory, effects, totalUsed] = await Promise.all([
-        getMagicItemInventory(accountTag),
+        getMagicItemInventory(accountTag).catch(() => []),
         getActiveMagicEffects(accountTag),
         getMagicItemUsageCount(accountTag),
       ]);
@@ -104,12 +104,6 @@ export function MagicItemsQuickModal({
       );
       setTrackedItemIds(new Set(inventory.map((entry) => entry.itemId)));
       setUsageCount(totalUsed);
-      setSelectedQuantities((current) =>
-        Object.fromEntries(inventory.map((entry) => [
-          entry.itemId,
-          Math.min(Math.max(current[entry.itemId] ?? 1, 1), Math.max(entry.quantity, 1)),
-        ])),
-      );
       const now = Date.now();
       setActiveEffectIds(
         new Set(
@@ -148,14 +142,12 @@ export function MagicItemsQuickModal({
 
   const activateNow = async (item: MagicItem, requestedQuantity: number) => {
     if (!accountTag || activatingItemId) return;
-    const isTracked = trackedItemIds.has(item.id);
-    const available = quantities[item.id] ?? 0;
-    if (!Number.isSafeInteger(requestedQuantity) || requestedQuantity <= 0 || (isTracked && available > 0 && requestedQuantity > available)) {
+    if (!Number.isSafeInteger(requestedQuantity) || requestedQuantity <= 0) {
       setDialog({
-        title: "No items available",
-        message: `Add ${item.name} to your tracked inventory first.`,
+        title: "Invalid quantity",
+        message: "Choose a valid quantity greater than zero.",
         item,
-        tone: "info",
+        tone: "error",
       });
       return;
     }
@@ -174,7 +166,6 @@ export function MagicItemsQuickModal({
           now,
           effectId,
           quantity: requestedQuantity,
-          allowZeroInventory: isTracked && available === 0,
         });
         if (!result.activated) {
           setDialog({
@@ -204,7 +195,6 @@ export function MagicItemsQuickModal({
           now,
           effectId,
           quantity: requestedQuantity,
-          allowZeroInventory: isTracked && available === 0,
         });
         if (!result.activated) {
           setDialog({
@@ -220,10 +210,7 @@ export function MagicItemsQuickModal({
       didActivate = true;
     } catch (error) {
       console.error("[MAGIC_ITEMS] Activation failed:", error);
-      const message =
-        error instanceof Error && error.message === "MAGIC_ITEM_NOT_IN_INVENTORY"
-          ? "Your inventory quantity changed. Refresh and try again."
-          : "Please try again.";
+      const message = "Please try again.";
       setDialog({
         title: "Could not activate item",
         message,
@@ -260,15 +247,9 @@ export function MagicItemsQuickModal({
   const activate = (item: MagicItem) => {
     if (!accountTag || activatingItemId) return;
     const requestedQuantity = selectedQuantities[item.id] ?? 1;
-    const isTracked = trackedItemIds.has(item.id);
-    const available = quantities[item.id] ?? 0;
-    const confirmationMessage = !isTracked
-      ? `Inventory is not tracked for this item. Use ${requestedQuantity}? Clash One will record the activation without changing inventory.`
-      : available === 0
-        ? `Your tracked inventory is zero. If you still have ${requestedQuantity} in-game, confirm to activate. Inventory will remain at zero and usage history will update.`
-        : requestedQuantity > 1
-          ? `This consumes ${requestedQuantity} items from inventory. Their durations are queued consecutively; boost strength does not multiply.`
-          : "This consumes one item from your tracked inventory and activates its effect for this village.";
+    const confirmationMessage = requestedQuantity > 1
+      ? `Activate ${requestedQuantity} uses? Their durations are queued consecutively; boost strength does not multiply.`
+      : "Activate this Magic Item and record its use for this village?";
     setDialog({
       title: requestedQuantity > 1 ? `Use ${requestedQuantity} × ${item.name}?` : `Use ${item.name}?`,
       message: confirmationMessage,
@@ -345,7 +326,7 @@ export function MagicItemsQuickModal({
             ) : isLoading ? (
               <View style={styles.loading}>
                 <ActivityIndicator color={colors.gold} />
-                <Text style={styles.muted}>Loading inventory…</Text>
+                <Text style={styles.muted}>Loading Magic Items…</Text>
               </View>
             ) : (
               <ScrollView contentContainerStyle={styles.content}>
@@ -357,7 +338,7 @@ export function MagicItemsQuickModal({
                   const quantity = quantities[item.id] ?? 0;
                   const selectedQuantity = selectedQuantities[item.id] ?? 1;
                   const isTracked = trackedItemIds.has(item.id);
-                  const maxSelectable = isTracked ? Math.max(quantity, 1) : 10;
+                  const maxSelectable = 10;
                   const active = activeEffectIds.has(item.id);
                   const queued = queuedEffectIds.has(item.id);
                   const isActivating = activatingItemId === item.id;

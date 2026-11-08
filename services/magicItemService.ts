@@ -150,27 +150,24 @@ export async function addMagicItem(
 }
 
 /**
- * Activate one or more identical Magic Items and record usage atomically.
+ * Record a Magic Item activation and its effect atomically.
  *
- * A missing inventory row means stock is untracked and does not block use.
- * An explicitly tracked zero requires allowZeroInventory confirmation.
- * Positive tracked stock is decremented. Effect and usage writes share the
- * same transaction so a failed activation cannot create a usage event.
+ * Inventory is intentionally not read or mutated here. The inventory screen
+ * manages tracked stock independently from activation. Effect scheduling and
+ * usage history are committed together so failed activations leave no partial
+ * records.
  */
-export async function consumeMagicItem({
+export async function recordMagicItemActivation({
   accountTag,
   itemId,
   effect,
   quantity = 1,
-  allowZeroInventory = false,
 }: {
   accountTag: string;
   itemId: string;
   effect?: ActiveMagicEffect;
   /** Number of identical items activated in one action. */
   quantity?: number;
-  /** Explicitly allow activation when a tracked inventory row is zero. */
-  allowZeroInventory?: boolean;
 }): Promise<void> {
   assertAccountAndItem(accountTag, itemId);
   assertPositiveQuantity(quantity);
@@ -182,27 +179,6 @@ export async function consumeMagicItem({
   const db = await getDB();
   await db.execAsync("BEGIN TRANSACTION");
   try {
-    const result = await db.runAsync(
-      `UPDATE magic_item_inventory
-       SET quantity = quantity - ?
-       WHERE account_player_tag = ? AND item_id = ? AND quantity >= ?`,
-      [quantity, accountTag, itemId, quantity],
-    );
-
-    if (result.changes !== 1) {
-      const inventoryRow = await db.getFirstAsync<{ quantity: number }>(
-        `SELECT quantity FROM magic_item_inventory
-         WHERE account_player_tag = ? AND item_id = ?`,
-        [accountTag, itemId],
-      );
-
-      // Missing inventory means "not tracked", not "confirmed empty".
-      // A recorded zero requires an explicit user confirmation.
-      if (inventoryRow && (!allowZeroInventory || Number(inventoryRow.quantity) > 0)) {
-        throw new Error("MAGIC_ITEM_NOT_IN_INVENTORY");
-      }
-    }
-
     if (effect) {
       const durationMs =
         effect.expiresAt == null ? undefined : effect.expiresAt - effect.startedAt;

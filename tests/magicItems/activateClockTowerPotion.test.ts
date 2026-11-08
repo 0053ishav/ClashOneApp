@@ -1,9 +1,9 @@
 jest.mock("@/services/magicItemService", () => ({
-  consumeMagicItem: jest.fn(),
+  recordMagicItemActivation: jest.fn(),
 }));
 
 import { activateClockTowerPotion } from "@/services/activateClockTowerPotion";
-import { consumeMagicItem } from "@/services/magicItemService";
+import { recordMagicItemActivation } from "@/services/magicItemService";
 
 describe("activateClockTowerPotion", () => {
   beforeEach(() => jest.clearAllMocks());
@@ -28,7 +28,7 @@ describe("activateClockTowerPotion", () => {
       },
     });
 
-    expect(consumeMagicItem).toHaveBeenCalledWith({
+    expect(recordMagicItemActivation).toHaveBeenCalledWith({
       accountTag: "#ACCOUNT",
       itemId: "clock-tower-potion",
       effect: {
@@ -61,24 +61,23 @@ describe("activateClockTowerPotion", () => {
         village: "builderBase",
       },
     });
-    expect(consumeMagicItem).toHaveBeenCalledWith(
+    expect(recordMagicItemActivation).toHaveBeenCalledWith(
       expect.objectContaining({ quantity: 3 }),
     );
   });
 
-  it("passes explicit zero-inventory confirmation to the atomic service", async () => {
+  it("records Clock Tower activation without passing inventory state", async () => {
+    const effect = {
+      id: "clock-effect-untracked", itemId: "clock-tower-potion", startedAt: 10_000,
+      expiresAt: 7_210_000, village: "builderBase",
+    };
     await activateClockTowerPotion({
-      accountTag: "#ACCOUNT",
-      itemId: "clock-tower-potion",
-      village: "builderBase",
-      now: 10_000,
-      effectId: "clock-effect-confirmed",
-      allowZeroInventory: true,
+      accountTag: "#ACCOUNT", itemId: "clock-tower-potion", village: "builderBase",
+      now: 10_000, effectId: "clock-effect-untracked", quantity: 4,
     });
-
-    expect(consumeMagicItem).toHaveBeenCalledWith(
-      expect.objectContaining({ allowZeroInventory: true }),
-    );
+    expect(recordMagicItemActivation).toHaveBeenCalledWith({
+      accountTag: "#ACCOUNT", itemId: "clock-tower-potion", effect, quantity: 4,
+    });
   });
 
   it("rejects Clock Tower Potion in Home Village without consuming it", async () => {
@@ -95,7 +94,7 @@ describe("activateClockTowerPotion", () => {
       reason: "unsupported-village",
     });
 
-    expect(consumeMagicItem).not.toHaveBeenCalled();
+    expect(recordMagicItemActivation).not.toHaveBeenCalled();
   });
 
   it("rejects a non-Clock-Tower item", async () => {
@@ -112,6 +111,6 @@ describe("activateClockTowerPotion", () => {
       reason: "not-clock-tower-potion",
     });
 
-    expect(consumeMagicItem).not.toHaveBeenCalled();
+    expect(recordMagicItemActivation).not.toHaveBeenCalled();
   });
 });

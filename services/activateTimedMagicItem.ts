@@ -1,5 +1,5 @@
 import { getMagicItem } from "@/config/magicItems";
-import { consumeMagicItem } from "@/services/magicItemService";
+import { recordMagicItemActivation } from "@/services/magicItemService";
 import type { ActiveMagicEffect, MagicItemTarget } from "@/types/magicItem";
 import type { Village } from "@/types/entity";
 
@@ -11,7 +11,6 @@ export type ActivateTimedMagicItemInput = {
   now?: number;
   effectId: string;
   quantity?: number;
-  allowZeroInventory?: boolean;
 };
 
 export type ActivateTimedMagicItemResult =
@@ -28,8 +27,8 @@ export type ActivateTimedMagicItemResult =
 /**
  * Validates and activates a timed speed item for one account.
  *
- * The inventory decrement and active-effect insert are performed by
- * consumeMagicItem in a single SQLite transaction.
+ * The active effect and usage event are recorded atomically. Inventory is
+ * deliberately independent from this activation flow.
  */
 export async function activateTimedMagicItem({
   accountTag,
@@ -39,7 +38,6 @@ export async function activateTimedMagicItem({
   now = Date.now(),
   effectId,
   quantity = 1,
-  allowZeroInventory = false,
 }: ActivateTimedMagicItemInput): Promise<ActivateTimedMagicItemResult> {
   if (!Number.isSafeInteger(quantity) || quantity <= 0) {
     throw new Error("INVALID_MAGIC_ITEM_QUANTITY");
@@ -74,12 +72,11 @@ export async function activateTimedMagicItem({
     village,
   };
 
-  await consumeMagicItem({
+  await recordMagicItemActivation({
     accountTag,
     itemId,
     effect,
     ...(quantity > 1 ? { quantity } : {}),
-    ...(allowZeroInventory ? { allowZeroInventory: true } : {}),
   });
 
   return { activated: true, effect };

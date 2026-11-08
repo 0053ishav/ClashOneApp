@@ -1,9 +1,9 @@
 import { getMagicItem } from "@/config/magicItems";
 import { activateTimedMagicItem } from "@/services/activateTimedMagicItem";
-import { consumeMagicItem } from "@/services/magicItemService";
+import { recordMagicItemActivation } from "@/services/magicItemService";
 
 jest.mock("@/services/magicItemService", () => ({
-  consumeMagicItem: jest.fn(),
+  recordMagicItemActivation: jest.fn(),
 }));
 
 describe("activateTimedMagicItem", () => {
@@ -29,7 +29,7 @@ describe("activateTimedMagicItem", () => {
         village: "home",
       },
     });
-    expect(consumeMagicItem).toHaveBeenCalledWith({
+    expect(recordMagicItemActivation).toHaveBeenCalledWith({
       accountTag: "#ACCOUNT",
       itemId: "study-soup",
       effect: {
@@ -63,25 +63,23 @@ describe("activateTimedMagicItem", () => {
         village: "home",
       },
     });
-    expect(consumeMagicItem).toHaveBeenCalledWith(
+    expect(recordMagicItemActivation).toHaveBeenCalledWith(
       expect.objectContaining({ quantity: 3 }),
     );
   });
 
-  it("passes explicit zero-inventory confirmation to the atomic service", async () => {
+  it("records activation without passing inventory state", async () => {
+    const effect = {
+      id: "effect-untracked", itemId: "study-soup", startedAt: 1_000,
+      expiresAt: 3_601_000, village: "home",
+    };
     await activateTimedMagicItem({
-      accountTag: "#ACCOUNT",
-      itemId: "study-soup",
-      village: "home",
-      target: "research",
-      now: 1_000,
-      effectId: "effect-confirmed",
-      allowZeroInventory: true,
+      accountTag: "#ACCOUNT", itemId: "study-soup", village: "home",
+      target: "research", now: 1_000, effectId: "effect-untracked", quantity: 4,
     });
-
-    expect(consumeMagicItem).toHaveBeenCalledWith(
-      expect.objectContaining({ allowZeroInventory: true }),
-    );
+    expect(recordMagicItemActivation).toHaveBeenCalledWith({
+      accountTag: "#ACCOUNT", itemId: "study-soup", effect, quantity: 4,
+    });
   });
 
   it("rejects Builder Bite in Builder Base without consuming inventory", async () => {
@@ -99,7 +97,7 @@ describe("activateTimedMagicItem", () => {
       reason: "unsupported-village",
     });
 
-    expect(consumeMagicItem).not.toHaveBeenCalled();
+    expect(recordMagicItemActivation).not.toHaveBeenCalled();
   });
 
   it("rejects a timed item used on an incompatible target", async () => {
@@ -117,7 +115,7 @@ describe("activateTimedMagicItem", () => {
       reason: "incompatible-target",
     });
 
-    expect(consumeMagicItem).not.toHaveBeenCalled();
+    expect(recordMagicItemActivation).not.toHaveBeenCalled();
   });
 
   it("rejects Books and Hammers from the timed-item path", async () => {
@@ -138,6 +136,6 @@ describe("activateTimedMagicItem", () => {
       reason: "not-a-timed-speed-item",
     });
 
-    expect(consumeMagicItem).not.toHaveBeenCalled();
+    expect(recordMagicItemActivation).not.toHaveBeenCalled();
   });
 });

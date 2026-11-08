@@ -11,6 +11,7 @@ export type ActivateTimedMagicItemInput = {
   now?: number;
   effectId: string;
   quantity?: number;
+  allowZeroInventory?: boolean;
 };
 
 export type ActivateTimedMagicItemResult =
@@ -38,6 +39,7 @@ export async function activateTimedMagicItem({
   now = Date.now(),
   effectId,
   quantity = 1,
+  allowZeroInventory = false,
 }: ActivateTimedMagicItemInput): Promise<ActivateTimedMagicItemResult> {
   if (!Number.isSafeInteger(quantity) || quantity <= 0) {
     throw new Error("INVALID_MAGIC_ITEM_QUANTITY");
@@ -77,6 +79,7 @@ export async function activateTimedMagicItem({
     itemId,
     effect,
     ...(quantity > 1 ? { quantity } : {}),
+    ...(allowZeroInventory ? { allowZeroInventory: true } : {}),
   });
 
   return { activated: true, effect };

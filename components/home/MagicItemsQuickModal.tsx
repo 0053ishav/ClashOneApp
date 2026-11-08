@@ -8,6 +8,7 @@ import { activateTimedMagicItem } from "@/services/activateTimedMagicItem";
 import {
   getActiveMagicEffects,
   getMagicItemInventory,
+  getMagicItemUsageCount,
 } from "@/services/magicItemService";
 import { useAccountStore } from "@/stores/accountStore";
 import type { Village } from "@/types/entity";
@@ -56,6 +57,8 @@ export function MagicItemsQuickModal({
   const accounts = useAccountStore((state) => state.accounts);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
+  const [trackedItemIds, setTrackedItemIds] = useState<Set<string>>(new Set());
+  const [usageCount, setUsageCount] = useState(0);
   const [activeEffectIds, setActiveEffectIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [activatingItemId, setActivatingItemId] = useState<string | null>(null);
@@ -79,19 +82,24 @@ export function MagicItemsQuickModal({
     if (!accountTag) {
       setQuantities({});
       setSelectedQuantities({});
+      setTrackedItemIds(new Set());
+      setUsageCount(0);
       setActiveEffectIds(new Set());
       return;
     }
 
     setIsLoading(true);
     try {
-      const [inventory, effects] = await Promise.all([
+      const [inventory, effects, totalUsed] = await Promise.all([
         getMagicItemInventory(accountTag),
         getActiveMagicEffects(accountTag),
+        getMagicItemUsageCount(accountTag),
       ]);
       setQuantities(
         Object.fromEntries(inventory.map((entry) => [entry.itemId, entry.quantity])),
       );
+      setTrackedItemIds(new Set(inventory.map((entry) => entry.itemId)));
+      setUsageCount(totalUsed);
       setSelectedQuantities((current) =>
         Object.fromEntries(inventory.map((entry) => [
           entry.itemId,
@@ -132,7 +140,9 @@ export function MagicItemsQuickModal({
 
   const activateNow = async (item: MagicItem, requestedQuantity: number) => {
     if (!accountTag || activatingItemId) return;
-    if (!Number.isSafeInteger(requestedQuantity) || requestedQuantity <= 0 || requestedQuantity > (quantities[item.id] ?? 0)) {
+    const isTracked = trackedItemIds.has(item.id);
+    const available = quantities[item.id] ?? 0;
+    if (!Number.isSafeInteger(requestedQuantity) || requestedQuantity <= 0 || (isTracked && available > 0 && requestedQuantity > available)) {
       setDialog({
         title: "No items available",
         message: `Add ${item.name} to your tracked inventory first.`,
@@ -155,6 +165,7 @@ export function MagicItemsQuickModal({
           now,
           effectId,
           quantity: requestedQuantity,
+          allowZeroInventory: isTracked && available === 0,
         });
         if (!result.activated) {
           setDialog({
@@ -184,6 +195,7 @@ export function MagicItemsQuickModal({
           now,
           effectId,
           quantity: requestedQuantity,
+          allowZeroInventory: isTracked && available === 0,
         });
         if (!result.activated) {
           setDialog({
@@ -234,11 +246,18 @@ export function MagicItemsQuickModal({
       return;
     }
     const requestedQuantity = selectedQuantities[item.id] ?? 1;
+    const isTracked = trackedItemIds.has(item.id);
+    const available = quantities[item.id] ?? 0;
+    const confirmationMessage = !isTracked
+      ? `Inventory is not tracked for this item. Use ${requestedQuantity}? Clash One will record the activation without changing inventory.`
+      : available === 0
+        ? `Your tracked inventory is zero. If you still have ${requestedQuantity} in-game, confirm to activate. Inventory will remain at zero and usage history will update.`
+        : requestedQuantity > 1
+          ? `This consumes ${requestedQuantity} items from inventory. Their durations are queued consecutively; boost strength does not multiply.`
+          : "This consumes one item from your tracked inventory and activates its effect for this village.";
     setDialog({
       title: requestedQuantity > 1 ? `Use ${requestedQuantity} ${item.name}s?` : `Use ${item.name}?`,
-      message: requestedQuantity > 1
-        ? `This consumes ${requestedQuantity} items from your tracked inventory. Their durations are queued consecutively; the boost multiplier does not multiply.`
-        : "This consumes one item from your tracked inventory and activates its effect for this village.",
+      message: confirmationMessage,
       item,
       tone: "confirm",
       confirmLabel: "Use item",
@@ -316,7 +335,11 @@ export function MagicItemsQuickModal({
               </View>
             ) : (
               <ScrollView contentContainerStyle={styles.content}>
-                {!items.some((item) => (quantities[item.id] ?? 0) > 0) && (
+                <View style={styles.usageSummary}>
+                  <Text style={styles.usageSummaryText}>Tracked uses</Text>
+                  <Text style={styles.usageSummaryValue}>{usageCount}</Text>
+                </View>
+                {!items.some((item) => trackedItemIds.has(item.id) && (quantities[item.id] ?? 0) > 0) && (
                   <View style={styles.emptyInventoryHint}>
                     <Ionicons
                       name="information-circle-outline"
@@ -325,11 +348,11 @@ export function MagicItemsQuickModal({
                     />
                     <View style={styles.emptyInventoryText}>
                       <Text style={styles.emptyInventoryTitle}>
-                        No Potions or Snacks available
+                        Inventory is optional
                       </Text>
                       <Text style={styles.emptyInventoryBody}>
-                        Open Inventory to add the quantities you have. Items with nothing
-                        recorded will show 0 available.
+                        You can activate items without setting up inventory first. Track
+                        quantities only if you want Clash One to reconcile your stock.
                       </Text>
                     </View>
                   </View>
@@ -337,6 +360,8 @@ export function MagicItemsQuickModal({
                 {items.map((item) => {
                   const quantity = quantities[item.id] ?? 0;
                   const selectedQuantity = selectedQuantities[item.id] ?? 1;
+                  const isTracked = trackedItemIds.has(item.id);
+                  const maxSelectable = isTracked ? Math.max(quantity, 1) : 10;
                   const active = activeEffectIds.has(item.id);
                   const isActivating = activatingItemId === item.id;
                   return (
@@ -358,7 +383,7 @@ export function MagicItemsQuickModal({
                           {item.description}
                         </Text>
                         <Text style={styles.quantity}>
-                          {quantity} available{active ? " · Active" : ""}
+                          {isTracked ? `${quantity} available` : "Inventory not tracked"}{active ? " · Active" : ""}
                         </Text>
                       </View>
                       <View style={styles.useControls}>
@@ -383,10 +408,10 @@ export function MagicItemsQuickModal({
                           <Pressable
                             accessibilityRole="button"
                             accessibilityLabel={`Use more ${item.name}s`}
-                            disabled={selectedQuantity >= quantity || isActivating || !!activatingItemId}
+                            disabled={selectedQuantity >= maxSelectable || isActivating || !!activatingItemId}
                             onPress={() => setSelectedQuantities((current) => ({
                               ...current,
-                              [item.id]: Math.min(quantity, selectedQuantity + 1),
+                              [item.id]: Math.min(maxSelectable, selectedQuantity + 1),
                             }))}
                             style={({ pressed }) => [
                               styles.stepperButton,
@@ -400,11 +425,11 @@ export function MagicItemsQuickModal({
                         <Pressable
                           accessibilityRole="button"
                           accessibilityLabel={`Activate ${selectedQuantity} ${item.name}${selectedQuantity === 1 ? "" : "s"}`}
-                          disabled={quantity <= 0 || isActivating || !!activatingItemId}
+                          disabled={isActivating || !!activatingItemId}
                           onPress={() => void activate(item)}
                           style={({ pressed }) => [
                             styles.activateButton,
-                            (quantity <= 0 || isActivating || !!activatingItemId) && styles.disabled,
+                            (isActivating || !!activatingItemId) && styles.disabled,
                             pressed && styles.pressed,
                           ]}
                         >
@@ -420,7 +445,7 @@ export function MagicItemsQuickModal({
                 })}
                 <Text style={styles.footnote}>
                   Choose how many identical items to use. Their boost durations are queued
-                  one after another; using more does not multiply the boost strength.
+                  one after another; using more does not multiply boost strength. Usage history counts activations from this update onward.
                 </Text>
               </ScrollView>
             )}
@@ -511,6 +536,19 @@ const createStyles = (colors: HomeColors) =>
       justifyContent: "center",
     },
     content: { padding: 16, gap: 10 },
+    usageSummary: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 13,
+      paddingVertical: 10,
+      borderRadius: 12,
+      backgroundColor: colors.surfaceRaised,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    usageSummaryText: { color: colors.textSecondary, fontSize: 11, fontWeight: "700" },
+    usageSummaryValue: { color: colors.gold, fontSize: 16, fontWeight: "900" },
     emptyInventoryHint: {
       flexDirection: "row",
       alignItems: "flex-start",

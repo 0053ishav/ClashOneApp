@@ -10,6 +10,7 @@ export type ActivateClockTowerPotionInput = {
   now?: number;
   effectId: string;
   quantity?: number;
+  allowZeroInventory?: boolean;
 };
 
 export type ActivateClockTowerPotionResult =
@@ -45,6 +46,7 @@ export async function activateClockTowerPotion({
   now = Date.now(),
   effectId,
   quantity = 1,
+  allowZeroInventory = false,
 }: ActivateClockTowerPotionInput): Promise<ActivateClockTowerPotionResult> {
   if (!Number.isSafeInteger(quantity) || quantity <= 0) {
     throw new Error("INVALID_MAGIC_ITEM_QUANTITY");
@@ -80,6 +82,7 @@ export async function activateClockTowerPotion({
     itemId,
     effect,
     ...(quantity > 1 ? { quantity } : {}),
+    ...(allowZeroInventory ? { allowZeroInventory: true } : {}),
   });
 
   return { activated: true, effect };

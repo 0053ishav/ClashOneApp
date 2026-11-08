@@ -350,6 +350,28 @@ async function migrateDatabase() {
   }
 
 
+  // V12 - Record manually consumed Magic Items for account-level usage totals.
+  if (version < 12) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS magic_item_usage_events (
+        event_id TEXT PRIMARY KEY,
+        account_player_tag TEXT NOT NULL,
+        item_id TEXT NOT NULL,
+        quantity INTEGER NOT NULL CHECK (quantity > 0),
+        used_at INTEGER NOT NULL,
+        source TEXT NOT NULL DEFAULT 'manual',
+        FOREIGN KEY(account_player_tag)
+        REFERENCES accounts(player_tag)
+        ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_magic_item_usage_account_source_time
+      ON magic_item_usage_events(account_player_tag, source, used_at);
+    `);
+    await setSchemaVersion(db, 12);
+    version = 12;
+  }
+
   // log("✅ Database ready. Version:", version);
 
   // Debug only

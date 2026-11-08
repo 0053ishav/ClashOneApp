@@ -1,4 +1,5 @@
 import { getMagicItem } from "@/config/magicItems";
+import { recordMagicItemUsageEvent } from "@/services/magicItemService";
 import { resolveInstantMagicItem } from "@/engine/magicItems/resolveInstantMagicItem";
 import { getDB } from "@/db/database";
 import { getEntity } from "@/utils/getEntity";
@@ -121,6 +122,13 @@ export async function applyBookToActiveUpgrade({
     if (deleted.changes !== 1) {
       throw new Error("UPGRADE_CHANGED_DURING_BOOK_USE");
     }
+
+    await recordMagicItemUsageEvent(db, {
+      accountTag,
+      itemId,
+      quantity: 1,
+      usedAt: now,
+    });
 
     await db.execAsync("COMMIT");
     return { used: true, itemId, upgradeId };

@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import * as Crypto from "expo-crypto";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -54,6 +55,7 @@ export function MagicItemsQuickModal({
   const colors = useHomeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const accounts = useAccountStore((state) => state.accounts);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
@@ -124,11 +126,7 @@ export function MagicItemsQuickModal({
         new Set(effects.filter((effect) => effect.startedAt > now).map((effect) => effect.itemId)),
       );
     } catch {
-      setDialog({
-        title: "Inventory unavailable",
-        message: "Could not load Magic Items. Please close and try again.",
-        tone: "error",
-      });
+      // Keep the last successfully loaded inventory state; do not interrupt the quick modal.
     } finally {
       setIsLoading(false);
     }
@@ -396,7 +394,7 @@ export function MagicItemsQuickModal({
                             }))}
                             style={({ pressed }) => [
                               styles.stepperButton,
-                              (selectedQuantity >= quantity || isActivating || !!activatingItemId) && styles.disabled,
+                              (selectedQuantity >= maxSelectable || isActivating || !!activatingItemId) && styles.disabled,
                               pressed && styles.pressed,
                             ]}
                           >
@@ -458,7 +456,7 @@ const createStyles = (colors: HomeColors) =>
       borderTopRightRadius: 24,
       borderTopWidth: 1,
       borderColor: colors.border,
-      paddingBottom: 24,
+      paddingBottom: Math.max(insets.bottom, 16) + 8,
     },
     handle: {
       alignSelf: "center",
@@ -558,8 +556,8 @@ const createStyles = (colors: HomeColors) =>
     useControls: { alignItems: "center", gap: 6 },
     quantityStepper: { flexDirection: "row", alignItems: "center", gap: 5 },
     stepperButton: {
-      width: 24,
-      height: 24,
+      width: 34,
+      height: 34,
       borderRadius: 7,
       backgroundColor: colors.surface,
       borderWidth: 1,
@@ -567,18 +565,18 @@ const createStyles = (colors: HomeColors) =>
       alignItems: "center",
       justifyContent: "center",
     },
-    stepperText: { color: colors.textPrimary, fontSize: 15, fontWeight: "800" },
+    stepperText: { color: colors.textPrimary, fontSize: 19, fontWeight: "800" },
     selectedQuantity: { minWidth: 16, textAlign: "center", color: colors.textPrimary, fontSize: 11, fontWeight: "800" },
     activateButton: {
-      minWidth: 62,
-      height: 32,
+      minWidth: 56,
+      height: 29,
       borderRadius: 9,
       backgroundColor: colors.gold,
       alignItems: "center",
       justifyContent: "center",
-      paddingHorizontal: 10,
+      paddingHorizontal: 8,
     },
-    activateText: { color: colors.textDark, fontSize: 11, fontWeight: "900" },
+    activateText: { color: colors.textDark, fontSize: 10, fontWeight: "900" },
     disabled: { opacity: 0.35 },
     pressed: { opacity: 0.65 },
     emptyState: {

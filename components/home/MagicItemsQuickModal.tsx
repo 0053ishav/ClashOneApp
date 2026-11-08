@@ -183,6 +183,7 @@ export function MagicItemsQuickModal({
           target,
           now,
           effectId,
+          quantity: requestedQuantity,
         });
         if (!result.activated) {
           setDialog({

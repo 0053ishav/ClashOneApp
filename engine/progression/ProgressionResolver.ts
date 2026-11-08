@@ -37,12 +37,10 @@ export class ProgressionResolver {
       ),
       maxLevel:
         input.progression.maxLevel,
-      ...(input.upgradeStartContext
-        ? { upgradeStartContext: input.upgradeStartContext }
-        : {}),
       ...(input.resourceProductionContext
         ? { resourceProductionContext: input.resourceProductionContext }
         : {}),
+      ...(input.hammerJamBoost ? { hammerJamBoost: input.hammerJamBoost } : {}),
       ...(input.goldPassBoost ? { goldPassBoost: input.goldPassBoost } : {}),
       ...(input.reEngagementBoost
         ? { reEngagementBoost: input.reEngagementBoost }

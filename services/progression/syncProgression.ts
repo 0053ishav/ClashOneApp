@@ -1,11 +1,6 @@
-import {
-  fetchProgressionCategory,
-} from "./progression";
+import * as Sentry from "@sentry/react-native";
 
-import {
-  fetchManifest,
-} from "@/services/cdnEntities";
-
+import { fetchManifest } from "@/services/cdnEntities";
 import {
   loadProgressionGlobalManifestVersion,
   loadProgressionManifest,
@@ -16,173 +11,69 @@ import {
   saveProgressionVersion,
 } from "@/storage/progressionStorage";
 
-export async function syncProgression() {
-  const manifest =
-    await fetchManifest();
+import { fetchProgressionCategory } from "./progression";
 
-  // console.log(
-  //   "[ProgressionSync] REMOTE MANIFEST",
-  //   manifest,
-  // );
+export async function syncProgression(): Promise<void> {
+  const manifest = await fetchManifest();
+  const localManifest = loadProgressionManifest();
+  const localGlobalVersion = loadProgressionGlobalManifestVersion();
 
-  // ─────────────────────────────
-  // 1. GLOBAL MANIFEST VERSION
-  // ─────────────────────────────
-
-  const localGlobalVersion =
-    loadProgressionGlobalManifestVersion();
-
-  // console.log(
-  //   "[ProgressionSync] GLOBAL VERSION CHECK",
-  //   {
-  //     localVersion:
-  //       localGlobalVersion ?? null,
-  //     remoteVersion:
-  //       manifest.version,
-  //   },
-  // );
-
-  if (
-    localGlobalVersion ===
-    manifest.version
-  ) {
-    // console.log(
-    //   "[ProgressionSync] Global manifest up to date",
-    // );
-
-    return;
-  }
-
-  // ─────────────────────────────
-  // 2. PROGRESSION VERSION
-  // ─────────────────────────────
-
-  const localManifest =
-    loadProgressionManifest();
-
-  // console.log(
-  //   "[ProgressionSync] PROGRESSION VERSION CHECK",
-  //   {
-  //     localVersion:
-  //       localManifest?.version ?? null,
-  //     remoteVersion:
-  //       manifest.progressionVersion,
-  //   },
-  // );
-
-  if (
-    localManifest?.version ===
-    manifest.progressionVersion
-  ) {
-    // console.log(
-    //   "[ProgressionSync] Progression version unchanged",
-    // );
-
-    saveProgressionGlobalManifestVersion(
-      manifest.version,
-    );
-
-    return;
-  }
-
-  // console.log(
-  //   "[ProgressionSync] Progression version changed",
-  //   {
-  //     localVersion:
-  //       localManifest?.version ?? null,
-  //     remoteVersion:
-  //       manifest.progressionVersion,
-  //   },
-  // );
-
-  // ─────────────────────────────
-  // 3. CATEGORY VERSIONS
-  // ─────────────────────────────
-
-  const categories =
-    Object.entries(
-      manifest.progression,
-    ) as [string, number][];
-
+  // Category versions are authoritative. Always inspect them, even when the
+  // global version matches, so installs affected by the old retry bug recover.
+  const categories = Object.entries(manifest.progression) as [string, number][];
   let allCategoriesSynced = true;
 
-  for (const [
-    category,
-    remoteVersion,
-  ] of categories) {
-    const localVersion =
-      loadProgressionVersion(
-        category,
-      );
+  for (const [category, remoteVersion] of categories) {
+    const localVersion = loadProgressionVersion(category);
 
-    // console.log(
-    //   "[ProgressionSync] CATEGORY VERSION CHECK",
-    //   {
-    //     category,
-    //     localVersion,
-    //     remoteVersion,
-    //   },
-    // );
-
-    if (
-      localVersion === remoteVersion
-    ) {
+    if (localVersion === remoteVersion) {
       continue;
     }
 
     try {
-      const progression =
-        await fetchProgressionCategory(
-          category,
-        );
+      const progression = await fetchProgressionCategory(category);
 
-      saveProgressionCategory(
-        category,
-        progression,
-      );
-
-      saveProgressionVersion(
-        category,
-        remoteVersion,
-      );
-
-      // console.log(
-      //   `[ProgressionSync] Synced progression ${category}`,
-      // );
-    } catch {
+      saveProgressionCategory(category, progression);
+      saveProgressionVersion(category, remoteVersion);
+    } catch (error: unknown) {
       allCategoriesSynced = false;
 
-      // console.log(
-      //   `[ProgressionSync] Failed syncing progression ${category}`,
-      //   err,
-      // );
+      Sentry.captureException(error, {
+        tags: {
+          sync_dataset: "progression",
+          sync_category: category,
+        },
+        extra: {
+          local_category_version: localVersion ?? null,
+          remote_category_version: remoteVersion,
+          local_global_version: localGlobalVersion ?? null,
+          remote_manifest_version: manifest.version,
+        },
+      });
     }
   }
 
-  // ─────────────────────────────
-  // SAVE LOCAL PROGRESSION MANIFEST
-  // ─────────────────────────────
-
-  if (allCategoriesSynced) {
-    saveProgressionManifest({
-      version:
-        manifest.progressionVersion,
-      categories:
-        manifest.progression,
-    });
-
-    // console.log(
-    //   "[ProgressionSync] Progression sync complete",
-    //   {
-    //     version:
-    //       manifest.progressionVersion,
-    //   },
-    // );
+  // Never advance either checkpoint after a partial sync. The next launch
+  // will inspect category versions again and retry any failed download.
+  if (!allCategoriesSynced) {
+    return;
   }
 
-  // Global manifest version is updated
-  // after this sync attempt.
-  saveProgressionGlobalManifestVersion(
-    manifest.version,
-  );
+  const manifestMatches =
+    localManifest?.version === manifest.progressionVersion &&
+    Object.keys(localManifest.categories).length === categories.length &&
+    categories.every(
+      ([category, version]) => localManifest.categories[category] === version,
+    );
+
+  if (!manifestMatches) {
+    saveProgressionManifest({
+      version: manifest.progressionVersion,
+      categories: manifest.progression,
+    });
+  }
+
+  if (localGlobalVersion !== manifest.version) {
+    saveProgressionGlobalManifestVersion(manifest.version);
+  }
 }

@@ -4,10 +4,11 @@ import { useHomeColors } from "@/theme/useHomeColors";
 import { useMemo } from "react";
 import { PlayerProfile } from "@/types/player";
 import { EntityRecord } from "@/types/upgrade";
-import { formatCountdown } from "@/utils/formatCountdown";
+import { formatHelperCooldown } from "@/utils/helpers/formatHelperCooldown";
 import {
   resolveBuilderBaseLeagueIcon,
   resolveEntityIcon,
+  resolveHallIcon,
 } from "@/utils/icons/resolveEntityIcon";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -70,10 +71,7 @@ export default function ProfileHeader({
           <View style={styles.hallPill}>
             <Image
               source={{
-                uri: resolveEntityIcon(1000001, {
-                  village: "home",
-                  level: profile.townHallLevel,
-                }),
+                uri: resolveHallIcon("home", profile.townHallLevel),
               }}
               style={styles.hallIcon}
               contentFit="contain"
@@ -86,10 +84,7 @@ export default function ProfileHeader({
             <View style={[styles.hallPill, styles.hallPillBuilder]}>
               <Image
                 source={{
-                  uri: resolveEntityIcon(1000034, {
-                    village: "builderBase",
-                    level: profile.builderHallLevel,
-                  }),
+                  uri: resolveHallIcon("builderBase", profile.builderHallLevel),
                 }}
                 style={styles.hallIcon}
                 contentFit="contain"
@@ -267,7 +262,9 @@ export default function ProfileHeader({
 
               {helpers.map((helper) => {
                 const cooling =
-                  typeof helper.cooldown === "number" && helper.cooldown > 0;
+                  typeof helper.cooldown === "number" &&
+                  Number.isFinite(helper.cooldown) &&
+                  helper.cooldown > 0;
 
                 return (
                   <View
@@ -279,7 +276,12 @@ export default function ProfileHeader({
                     style={[styles.chip, styles.helperChip]}
                   >
                     <Image
-                      source={{ uri: resolveEntityIcon(helper.dataId) }}
+                      source={{
+                        uri: resolveEntityIcon(helper.dataId, {
+                          village: "home",
+                          type: "helper",
+                        }),
+                      }}
                       style={styles.chipIcon}
                       contentFit="contain"
                       cachePolicy="memory-disk"
@@ -294,7 +296,7 @@ export default function ProfileHeader({
                           color={colors.dangerLight}
                         />
                         <Text style={styles.cooldownText}>
-                          {formatCountdown(helper.cooldown as number)}
+                          {formatHelperCooldown(helper.cooldown ?? 0)}
                         </Text>
                       </View>
                     ) : (
@@ -319,7 +321,12 @@ export default function ProfileHeader({
                   style={[styles.chip, styles.guardianChip]}
                 >
                   <Image
-                    source={{ uri: resolveEntityIcon(guardian.dataId) }}
+                    source={{
+                      uri: resolveEntityIcon(guardian.dataId, {
+                        village: "home",
+                        type: "guardian",
+                      }),
+                    }}
                     style={styles.chipIcon}
                     contentFit="contain"
                     cachePolicy="memory-disk"

@@ -20,6 +20,8 @@ interface EntityCardProps {
   fillContainer?: boolean;
   /** Dense icon-only tile for grouped profile sections. */
   compact?: boolean;
+  /** Explicit width for responsive compact Army grids. */
+  compactWidth?: number;
   isSuperTroop?: boolean;
 }
 
@@ -32,6 +34,7 @@ function EntityCard({
   village,
   fillContainer = false,
   compact = false,
+  compactWidth,
   isSuperTroop = false,
 }: EntityCardProps) {
   const colors = useHomeColors();
@@ -126,7 +129,10 @@ function EntityCard({
 
   if (!onPress) {
     return (
-      <View style={compact ? styles.pressableCompact : fillContainer ? styles.pressableFill : styles.pressable}>
+      <View style={[
+        compact ? styles.pressableCompact : fillContainer ? styles.pressableFill : styles.pressable,
+        compactWidth != null && { width: compactWidth },
+      ]}>
         {content}
       </View>
     );
@@ -143,6 +149,7 @@ function EntityCard({
       onPress={onPress}
       style={({ pressed }) => [
         compact ? styles.pressableCompact : fillContainer ? styles.pressableFill : styles.pressable,
+        compactWidth != null && { width: compactWidth },
         pressed && styles.pressablePressed,
       ]}
     >

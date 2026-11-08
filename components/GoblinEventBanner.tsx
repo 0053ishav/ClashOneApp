@@ -32,7 +32,7 @@ export default function GoblinEventBanner({ eventEndsAt, onDismiss }: Props) {
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
-  });
+  }, [slideAnim]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -40,7 +40,7 @@ export default function GoblinEventBanner({ eventEndsAt, onDismiss }: Props) {
     }, 1000);
 
     return () => clearInterval(interval);
-  });
+  }, [eventEndsAt]);
 
   const handleDismiss = () => {
     Animated.timing(slideAnim, {
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: "#16a34a",
     marginHorizontal: 16,
-    marginTop: 30,
+    marginTop: 0,
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 16,

@@ -49,7 +49,7 @@ const activeHammerJam = {
 };
 
 describe("ProgressionEngine modifiers", () => {
-  it("preserves base values when no upgrade start context is supplied", () => {
+  it("preserves base values when no Hammer Jam boost is supplied", () => {
     const result = resolve();
 
     expect(result).toMatchObject({
@@ -63,9 +63,9 @@ describe("ProgressionEngine modifiers", () => {
 
   it("applies eligible time and cost multipliers to the next level while preserving base values", () => {
     const result = resolve({
-      upgradeStartContext: {
+      hammerJamBoost: {
         startsAt: EVENT_START,
-        hammerJam: activeHammerJam,
+        manifest: activeHammerJam,
       },
     });
 
@@ -75,8 +75,29 @@ describe("ProgressionEngine modifiers", () => {
       baseNextUpgradeTime: 120,
       nextUpgradeTime: 60,
       appliedModifierIds: ["hammer-jam"],
-      remainingCost: 3_000,
-      remainingUpgradeTime: 360,
+      // Hammer Jam discounts only the immediate next upgrade, not every future level.
+      remainingCost: 2_500,
+      remainingUpgradeTime: 300,
+    });
+  });
+
+  it("does not apply a configured 0.5 multiplier while Hammer Jam is disabled", () => {
+    const result = resolve({
+      hammerJamBoost: {
+        startsAt: EVENT_START,
+        manifest: {
+          ...activeHammerJam,
+          enabled: false,
+          startsAt: null,
+          endsAt: null,
+        },
+      },
+    });
+
+    expect(result).toMatchObject({
+      nextCost: 1_000,
+      nextUpgradeTime: 120,
+      appliedModifierIds: [],
     });
   });
 
@@ -89,10 +110,7 @@ describe("ProgressionEngine modifiers", () => {
         village: "home",
         maxLevel: 3,
       },
-      upgradeStartContext: {
-        startsAt: EVENT_START,
-        hammerJam: activeHammerJam,
-      },
+      hammerJamBoost: { startsAt: EVENT_START, manifest: activeHammerJam },
     });
 
     expect(result).toMatchObject({
@@ -113,10 +131,7 @@ describe("ProgressionEngine modifiers", () => {
         village: "builderBase",
         maxLevel: 3,
       },
-      upgradeStartContext: {
-        startsAt: EVENT_START,
-        hammerJam: activeHammerJam,
-      },
+      hammerJamBoost: { startsAt: EVENT_START, manifest: activeHammerJam },
     });
 
     expect(result.nextCost).toBe(1_000);
@@ -126,10 +141,7 @@ describe("ProgressionEngine modifiers", () => {
 
   it("uses base values when the upgrade start is outside the event window", () => {
     const result = resolve({
-      upgradeStartContext: {
-        startsAt: EVENT_START - 1,
-        hammerJam: activeHammerJam,
-      },
+      hammerJamBoost: { startsAt: EVENT_START - 1, manifest: activeHammerJam },
     });
 
     expect(result.nextCost).toBe(1_000);
@@ -140,10 +152,7 @@ describe("ProgressionEngine modifiers", () => {
   it("does not calculate event-adjusted values when the entity is already maxed", () => {
     const result = resolve({
       currentLevel: 3,
-      upgradeStartContext: {
-        startsAt: EVENT_START,
-        hammerJam: activeHammerJam,
-      },
+      hammerJamBoost: { startsAt: EVENT_START, manifest: activeHammerJam },
     });
 
     expect(result.baseNextCost).toBeUndefined();
@@ -164,10 +173,7 @@ describe("ProgressionEngine modifiers", () => {
 
     const result = resolve({
       progression: dataWithoutDuration,
-      upgradeStartContext: {
-        startsAt: EVENT_START,
-        hammerJam: activeHammerJam,
-      },
+      hammerJamBoost: { startsAt: EVENT_START, manifest: activeHammerJam },
     });
 
     expect(result.nextCost).toBe(500);
@@ -188,10 +194,7 @@ describe("ProgressionEngine modifiers", () => {
 
     const result = resolve({
       progression: dataWithoutCost,
-      upgradeStartContext: {
-        startsAt: EVENT_START,
-        hammerJam: activeHammerJam,
-      },
+      hammerJamBoost: { startsAt: EVENT_START, manifest: activeHammerJam },
     });
 
     expect(result.baseNextCost).toBeUndefined();
@@ -295,10 +298,7 @@ describe("ProgressionEngine modifiers", () => {
   it("rejects invalid start timestamps instead of silently using the base values", () => {
     expect(() =>
       resolve({
-        upgradeStartContext: {
-          startsAt: Number.NaN,
-          hammerJam: activeHammerJam,
-        },
+        hammerJamBoost: { startsAt: Number.NaN, manifest: activeHammerJam },
       }),
     ).toThrow("INVALID_UPGRADE_START_TIMESTAMP");
   });
@@ -329,9 +329,9 @@ describe("ProgressionEngine modifiers", () => {
   it("compounds Gold Pass with Hammer Jam without intermediate duration rounding", () => {
     const result = resolve({
       goldPassBoost: { target: "builder", percent: 20 },
-      upgradeStartContext: {
+      hammerJamBoost: {
         startsAt: EVENT_START,
-        hammerJam: activeHammerJam,
+        manifest: activeHammerJam,
       },
     });
 
@@ -339,8 +339,9 @@ describe("ProgressionEngine modifiers", () => {
       baseNextUpgradeTime: 120,
       nextUpgradeTime: 48,
       nextCost: 400,
-      remainingCost: 2_400,
-      remainingUpgradeTime: 288,
+      // GP applies to all remaining levels; Hammer Jam only discounts the next one.
+      remainingCost: 2_000,
+      remainingUpgradeTime: 240,
       appliedModifierIds: ["hammer-jam", "gold-pass-builder-boost"],
     });
   });
@@ -484,9 +485,9 @@ describe("ProgressionEngine modifiers", () => {
     const result = resolve({
       goldPassBoost: { target: "builder", percent: 20 },
       reEngagementBoost: { target: "builder", percent: 50 },
-      upgradeStartContext: {
+      hammerJamBoost: {
         startsAt: EVENT_START,
-        hammerJam: activeHammerJam,
+        manifest: activeHammerJam,
       },
     });
 
@@ -496,8 +497,8 @@ describe("ProgressionEngine modifiers", () => {
       nextCost: 200,
       baseNextUpgradeTime: 120,
       nextUpgradeTime: 24,
-      remainingCost: 1_200,
-      remainingUpgradeTime: 144,
+      remainingCost: 1_000,
+      remainingUpgradeTime: 120,
       appliedModifierIds: [
         "hammer-jam",
         "gold-pass-builder-boost",
@@ -555,10 +556,7 @@ describe("ProgressionEngine modifiers", () => {
           target: "builder",
           percent: 12 as unknown as 0 | 10 | 15 | 20,
         },
-        upgradeStartContext: {
-          startsAt: EVENT_START,
-          hammerJam: activeHammerJam,
-        },
+        hammerJamBoost: { startsAt: EVENT_START, manifest: activeHammerJam },
       }),
     ).toThrow("INVALID_GOLD_PASS_BOOST_PERCENT");
   });

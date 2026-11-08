@@ -41,10 +41,7 @@ describe("applyBoostsToCraftedProgressionResult", () => {
   it("does not apply Hammer Jam, Gold Pass, or Re-engagement to crafted defenses", () => {
     const result = applyBoostsToCraftedProgressionResult(baseResult, {
       village: "home",
-      upgradeStartContext: {
-        startsAt: EVENT_START,
-        hammerJam: activeHammerJam,
-      },
+      hammerJamBoost: { startsAt: EVENT_START, manifest: activeHammerJam },
       goldPassBoost: { target: "builder", percent: 20 },
       reEngagementBoost: { target: "builder", percent: 50 },
     });

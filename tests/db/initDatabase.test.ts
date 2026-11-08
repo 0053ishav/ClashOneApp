@@ -73,7 +73,7 @@ describe("initDatabase", () => {
     expect(executedSql).toContain("ALTER TABLE imported_boosts ADD COLUMN lab_consumable_seconds INTEGER NOT NULL DEFAULT 0");
     expect(executedSql).toContain("ALTER TABLE imported_boosts ADD COLUMN pet_boost_seconds INTEGER NOT NULL DEFAULT 0");
 
-    expect(database.runAsync).toHaveBeenCalledTimes(12);
+    expect(database.runAsync).toHaveBeenCalledTimes(11);
     expect(database.getAllAsync).toHaveBeenCalledWith(
       "PRAGMA table_info(upgrades)",
     );

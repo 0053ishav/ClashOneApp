@@ -340,24 +340,6 @@ export function MagicItemsQuickModal({
                   <Text style={styles.usageSummaryText}>Tracked uses</Text>
                   <Text style={styles.usageSummaryValue}>{usageCount}</Text>
                 </View>
-                {!items.some((item) => trackedItemIds.has(item.id) && (quantities[item.id] ?? 0) > 0) && (
-                  <View style={styles.emptyInventoryHint}>
-                    <Ionicons
-                      name="information-circle-outline"
-                      size={20}
-                      color={colors.blue}
-                    />
-                    <View style={styles.emptyInventoryText}>
-                      <Text style={styles.emptyInventoryTitle}>
-                        Inventory is optional
-                      </Text>
-                      <Text style={styles.emptyInventoryBody}>
-                        You can activate items without setting up inventory first. Track
-                        quantities only if you want Clash One to reconcile your stock.
-                      </Text>
-                    </View>
-                  </View>
-                )}
                 {items.map((item) => {
                   const quantity = quantities[item.id] ?? 0;
                   const selectedQuantity = selectedQuantities[item.id] ?? 1;
@@ -381,9 +363,6 @@ export function MagicItemsQuickModal({
                       </View>
                       <View style={styles.itemInfo}>
                         <Text style={styles.itemName}>{item.name}</Text>
-                        <Text style={styles.description} numberOfLines={2}>
-                          {item.description}
-                        </Text>
                         <Text style={styles.quantity}>
                           {isTracked ? `${quantity} available` : "Inventory not tracked"}{active ? " · Active" : queued ? " · Queued" : ""}
                         </Text>
@@ -445,10 +424,6 @@ export function MagicItemsQuickModal({
                     </View>
                   );
                 })}
-                <Text style={styles.footnote}>
-                  Choose how many identical items to use. Their boost durations are queued
-                  one after another; using more does not multiply boost strength. Usage history starts with this update; earlier uses cannot be reconstructed.
-                </Text>
               </ScrollView>
             )}
           </View>
@@ -551,28 +526,6 @@ const createStyles = (colors: HomeColors) =>
     },
     usageSummaryText: { color: colors.textSecondary, fontSize: 11, fontWeight: "700" },
     usageSummaryValue: { color: colors.gold, fontSize: 16, fontWeight: "900" },
-    emptyInventoryHint: {
-      flexDirection: "row",
-      alignItems: "flex-start",
-      gap: 9,
-      padding: 12,
-      borderRadius: 12,
-      backgroundColor: colors.surfaceRaised,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    emptyInventoryText: { flex: 1 },
-    emptyInventoryTitle: {
-      color: colors.textPrimary,
-      fontSize: 12,
-      fontWeight: "800",
-    },
-    emptyInventoryBody: {
-      marginTop: 4,
-      color: colors.textSecondary,
-      fontSize: 11,
-      lineHeight: 15,
-    },
     itemCard: {
       flexDirection: "row",
       alignItems: "center",
@@ -596,12 +549,6 @@ const createStyles = (colors: HomeColors) =>
     itemIcon: { width: 38, height: 38 },
     itemInfo: { flex: 1, minWidth: 0 },
     itemName: { color: colors.textPrimary, fontSize: 12, fontWeight: "800" },
-    description: {
-      marginTop: 3,
-      color: colors.textSecondary,
-      fontSize: 10,
-      lineHeight: 14,
-    },
     quantity: {
       marginTop: 5,
       color: colors.gold,
@@ -653,10 +600,4 @@ const createStyles = (colors: HomeColors) =>
       gap: 10,
     },
     muted: { color: colors.textSecondary, fontSize: 12 },
-    footnote: {
-      color: colors.textMuted,
-      fontSize: 10,
-      lineHeight: 15,
-      marginTop: 4,
-    },
   });

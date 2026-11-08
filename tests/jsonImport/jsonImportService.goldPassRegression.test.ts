@@ -82,8 +82,7 @@ jest.mock("expo-crypto", () => {
 });
 
 jest.mock("@/services/magicItemService", () => ({
-  clearActiveMagicEffects: jest.fn(),
-  replaceImportedBoostSnapshot: jest.fn(),
+  replaceActiveMagicEffects: jest.fn(),
 }));
 
 const accountTag = "#TEST123";
@@ -476,7 +475,7 @@ describe("importVillageJson Gold Pass regression coverage", () => {
   });
 
 
-  it("persists all imported potion and consumable timers", async () => {
+  it("imports all potion and consumable timers as active magic effects", async () => {
     const rawExport = JSON.stringify({
       tag: accountTag,
       timestamp: exportTimestampMs / 1000,
@@ -496,17 +495,15 @@ describe("importVillageJson Gold Pass regression coverage", () => {
 
     await importVillageJson(rawExport);
 
-    const { replaceImportedBoostSnapshot } = jest.requireMock("@/services/magicItemService");
-    expect(replaceImportedBoostSnapshot).toHaveBeenCalledWith({
-      accountTag,
-      builderBoostSeconds: 3600,
-      labBoostSeconds: 1800,
-      clocktowerBoostSeconds: 900,
-      builderConsumableSeconds: 1200,
-      labConsumableSeconds: 600,
-      petBoostSeconds: 300,
-      exportedAt: exportTimestampMs,
-    });
+    const { replaceActiveMagicEffects } = jest.requireMock("@/services/magicItemService");
+    expect(replaceActiveMagicEffects).toHaveBeenCalledWith(accountTag, [
+      { id: `imported:builder-potion:${exportTimestampMs}`, itemId: "builder-potion", startedAt: exportTimestampMs, expiresAt: exportTimestampMs + 3_600_000, village: "home" },
+      { id: `imported:research-potion:${exportTimestampMs}`, itemId: "research-potion", startedAt: exportTimestampMs, expiresAt: exportTimestampMs + 1_800_000, village: "home" },
+      { id: `imported:clock-tower-potion:${exportTimestampMs}`, itemId: "clock-tower-potion", startedAt: exportTimestampMs, expiresAt: exportTimestampMs + 900_000, village: "builderBase" },
+      { id: `imported:builder-bite:${exportTimestampMs}`, itemId: "builder-bite", startedAt: exportTimestampMs, expiresAt: exportTimestampMs + 1_200_000, village: "home" },
+      { id: `imported:study-soup:${exportTimestampMs}`, itemId: "study-soup", startedAt: exportTimestampMs, expiresAt: exportTimestampMs + 600_000, village: "home" },
+      { id: `imported:pet-potion:${exportTimestampMs}`, itemId: "pet-potion", startedAt: exportTimestampMs, expiresAt: exportTimestampMs + 300_000, village: "home" },
+    ]);
   });
 
   it("rejects negative imported consumable timers", async () => {

@@ -450,6 +450,31 @@ describe("importVillageJson Gold Pass regression coverage", () => {
     );
   });
 
+  it("keeps active timers distinct when the export contains repeated building entries", async () => {
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 123456, lvl: 1, timer: exportedRemainingSeconds },
+        { data: 123456, lvl: 1, timer: exportedRemainingSeconds + 60 },
+      ],
+    });
+
+    await importVillageJson(rawExport);
+
+    const matchingUpgrades = importedUpgradeSnapshots[0].filter(
+      (upgrade) => upgrade.dataId === 123456,
+    );
+    expect(matchingUpgrades).toHaveLength(2);
+    expect(matchingUpgrades.map((upgrade) => upgrade.endTime).sort((a, b) => a - b))
+      .toEqual([
+        exportTimestampMs + exportedRemainingSeconds * 1_000,
+        exportTimestampMs + (exportedRemainingSeconds + 60) * 1_000,
+      ]);
+    expect(new Set(matchingUpgrades.map((upgrade) => upgrade.id)).size).toBe(2);
+  });
+
 
   it("persists all imported potion and consumable timers", async () => {
     const rawExport = JSON.stringify({
@@ -494,31 +519,6 @@ describe("importVillageJson Gold Pass regression coverage", () => {
 
     await expect(importVillageJson(rawExport)).rejects.toThrow("INVALID_BOOSTS");
     expect(mockImportJsonData).not.toHaveBeenCalled();
-  });
-
-  it("keeps active timers distinct when the export contains repeated building entries", async () => {
-    const rawExport = JSON.stringify({
-      tag: accountTag,
-      timestamp: exportTimestampMs / 1000,
-      buildings: [
-        { data: 1000015, lvl: 5, cnt: 5 },
-        { data: 123456, lvl: 1, timer: exportedRemainingSeconds },
-        { data: 123456, lvl: 1, timer: exportedRemainingSeconds + 60 },
-      ],
-    });
-
-    await importVillageJson(rawExport);
-
-    const matchingUpgrades = importedUpgradeSnapshots[0].filter(
-      (upgrade) => upgrade.dataId === 123456,
-    );
-    expect(matchingUpgrades).toHaveLength(2);
-    expect(matchingUpgrades.map((upgrade) => upgrade.endTime).sort((a, b) => a - b))
-      .toEqual([
-        exportTimestampMs + exportedRemainingSeconds * 1_000,
-        exportTimestampMs + (exportedRemainingSeconds + 60) * 1_000,
-      ]);
-    expect(new Set(matchingUpgrades.map((upgrade) => upgrade.id)).size).toBe(2);
   });
 
 });

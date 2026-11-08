@@ -104,6 +104,6 @@ describe("initDatabase", () => {
     // The connection was opened once successfully; only schema setup retries.
     expect(mockOpenDatabaseAsync).toHaveBeenCalledTimes(1);
     expect(database.getFirstAsync).toHaveBeenCalledTimes(1);
-    expect(database.runAsync).toHaveBeenCalledTimes(11);
+    expect(database.runAsync).toHaveBeenCalledTimes(12);
   });
 });

@@ -72,6 +72,9 @@ describe("initDatabase", () => {
     expect(executedSql).toContain("CREATE TABLE IF NOT EXISTS magic_item_usage_events");
     expect(executedSql).toContain("ADD COLUMN item_type TEXT NOT NULL DEFAULT 'unknown'");
     expect(executedSql).toContain("idx_magic_item_usage_account_type_time");
+    expect(executedSql).toContain("WHEN item_id IN ('study-soup', 'builder-bite') THEN 'snack'");
+    expect(executedSql).toContain("WHEN item_id LIKE 'book-of-%' THEN 'book'");
+    expect(executedSql).toContain("WHEN item_id LIKE 'hammer-of-%' THEN 'hammer'");
 
     expect(database.runAsync).toHaveBeenCalledTimes(13);
     expect(database.getAllAsync).toHaveBeenCalledWith(

@@ -10,6 +10,7 @@ export type ActivateTimedMagicItemInput = {
   target: MagicItemTarget;
   now?: number;
   effectId: string;
+  quantity?: number;
 };
 
 export type ActivateTimedMagicItemResult =
@@ -36,7 +37,12 @@ export async function activateTimedMagicItem({
   target,
   now = Date.now(),
   effectId,
+  quantity = 1,
 }: ActivateTimedMagicItemInput): Promise<ActivateTimedMagicItemResult> {
+  if (!Number.isSafeInteger(quantity) || quantity <= 0) {
+    throw new Error("INVALID_MAGIC_ITEM_QUANTITY");
+  }
+
   const item = getMagicItem(itemId);
 
   if (!item) return { activated: false, reason: "unknown-item" };
@@ -62,11 +68,11 @@ export async function activateTimedMagicItem({
     id: effectId,
     itemId: item.id,
     startedAt: now,
-    expiresAt: now + durationMinutes * 60_000,
+    expiresAt: now + durationMinutes * 60_000 * quantity,
     village,
   };
 
-  await consumeMagicItem({ accountTag, itemId, effect });
+  await consumeMagicItem({ accountTag, itemId, effect, quantity });
 
   return { activated: true, effect };
 }

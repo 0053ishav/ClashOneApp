@@ -264,8 +264,6 @@ describe("magicItemService", () => {
     expect(db.runAsync).not.toHaveBeenCalled();
   });
 
-});
-
 
   it("maps imported timers to the existing potion and snack effect definitions", async () => {
     db.getFirstAsync.mockResolvedValue({

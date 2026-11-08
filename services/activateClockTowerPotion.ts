@@ -9,7 +9,6 @@ export type ActivateClockTowerPotionInput = {
   village: Village;
   now?: number;
   effectId: string;
-  allowZeroInventory?: boolean;
 };
 
 export type ActivateClockTowerPotionResult =
@@ -44,7 +43,6 @@ export async function activateClockTowerPotion({
   village,
   now = Date.now(),
   effectId,
-  allowZeroInventory = false,
 }: ActivateClockTowerPotionInput): Promise<ActivateClockTowerPotionResult> {
   const item = getMagicItem(itemId);
 
@@ -71,7 +69,7 @@ export async function activateClockTowerPotion({
     village,
   } as const;
 
-  await consumeMagicItem({ accountTag, itemId, effect, allowZeroInventory });
+  await consumeMagicItem({ accountTag, itemId, effect });
 
   return { activated: true, effect };
 }

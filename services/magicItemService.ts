@@ -115,8 +115,12 @@ export async function addMagicItem(
 }
 
 /**
- * Consume one item and optionally record its timed effect atomically.
- * Throws when the item is not in inventory; neither write is committed.
+ * Activate one Magic Item and record its usage atomically.
+ *
+ * A missing inventory row means stock is untracked and does not block use.
+ * An explicitly tracked zero requires allowZeroInventory confirmation.
+ * Positive tracked stock is decremented. Effect and usage writes share the
+ * same transaction so a failed activation cannot create a usage event.
  */
 export async function consumeMagicItem({
   accountTag,

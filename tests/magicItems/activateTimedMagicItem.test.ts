@@ -42,6 +42,22 @@ describe("activateTimedMagicItem", () => {
     });
   });
 
+  it("passes explicit zero-inventory confirmation to the atomic service", async () => {
+    await activateTimedMagicItem({
+      accountTag: "#ACCOUNT",
+      itemId: "study-soup",
+      village: "home",
+      target: "research",
+      now: 1_000,
+      effectId: "effect-confirmed",
+      allowZeroInventory: true,
+    });
+
+    expect(consumeMagicItem).toHaveBeenCalledWith(
+      expect.objectContaining({ allowZeroInventory: true }),
+    );
+  });
+
   it("rejects Builder Bite in Builder Base without consuming inventory", async () => {
     await expect(
       activateTimedMagicItem({

@@ -12,6 +12,7 @@ import {
   getActiveMagicEffects,
   getMagicItemInventory,
   getMagicItemQuantity,
+  getMagicItemUsageCount,
   removeExpiredMagicEffects,
   setMagicItemQuantity,
 } from "@/services/magicItemService";
@@ -122,22 +123,80 @@ describe("magicItemService", () => {
       expect.stringContaining("INSERT INTO active_magic_effects"),
       ["effect-1", "#ACCOUNT", "builder-potion", 100, 3_600_100, "home"],
     );
+    expect(db.runAsync).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO magic_item_usage_events"),
+      ["#ACCOUNT", "builder-potion", 100],
+    );
     expect(db.execAsync).toHaveBeenLastCalledWith("COMMIT");
   });
 
-  it("rolls back when the account has no item to consume", async () => {
+  it("allows activation when inventory has never been tracked", async () => {
+    db.runAsync.mockResolvedValueOnce({ changes: 0 });
+    db.getFirstAsync.mockResolvedValueOnce(null);
+
+    await expect(
+      consumeMagicItem({
+        accountTag: "#ACCOUNT",
+        itemId: "builder-potion",
+        effect: {
+          id: "effect-untracked",
+          itemId: "builder-potion",
+          startedAt: 200,
+          expiresAt: 3_600_200,
+        },
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(db.runAsync).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO magic_item_usage_events"),
+      ["#ACCOUNT", "builder-potion", 200],
+    );
+    expect(db.execAsync).toHaveBeenLastCalledWith("COMMIT");
+  });
+
+  it("requires confirmation before using an explicitly tracked zero quantity", async () => {
+    db.runAsync.mockResolvedValueOnce({ changes: 0 });
+    db.getFirstAsync.mockResolvedValueOnce({ quantity: 0 });
+
+    await expect(
+      consumeMagicItem({
+        accountTag: "#ACCOUNT",
+        itemId: "builder-potion",
+        effect: {
+          id: "effect-zero",
+          itemId: "builder-potion",
+          startedAt: 300,
+          expiresAt: 3_600_300,
+        },
+      }),
+    ).rejects.toThrow("MAGIC_ITEM_NOT_IN_INVENTORY");
+
+    expect(db.execAsync).toHaveBeenCalledWith("ROLLBACK");
+    expect(db.execAsync).not.toHaveBeenCalledWith("COMMIT");
+  });
+
+  it("allows confirmed activation at tracked zero without making inventory negative", async () => {
     db.runAsync.mockResolvedValueOnce({ changes: 0 });
 
     await expect(
       consumeMagicItem({
         accountTag: "#ACCOUNT",
         itemId: "builder-potion",
+        allowZeroInventory: true,
+        effect: {
+          id: "effect-confirmed-zero",
+          itemId: "builder-potion",
+          startedAt: 400,
+          expiresAt: 3_600_400,
+        },
       }),
-    ).rejects.toThrow("MAGIC_ITEM_NOT_IN_INVENTORY");
+    ).resolves.toBeUndefined();
 
-    expect(db.execAsync).toHaveBeenCalledWith("ROLLBACK");
-    expect(db.execAsync).not.toHaveBeenCalledWith("COMMIT");
-    expect(db.runAsync).toHaveBeenCalledTimes(1);
+    expect(db.runAsync).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO magic_item_usage_events"),
+      ["#ACCOUNT", "builder-potion", 400],
+    );
+    expect(db.execAsync).toHaveBeenLastCalledWith("COMMIT");
   });
 
   it("rejects effects for a different item", async () => {
@@ -176,6 +235,16 @@ describe("magicItemService", () => {
 
     expect(db.execAsync).toHaveBeenCalledWith("ROLLBACK");
     expect(db.execAsync).not.toHaveBeenCalledWith("COMMIT");
+  });
+
+  it("returns lifetime manual usage for one account", async () => {
+    db.getFirstAsync.mockResolvedValue({ total: 28 });
+
+    await expect(getMagicItemUsageCount("#ACCOUNT")).resolves.toBe(28);
+    expect(db.getFirstAsync).toHaveBeenCalledWith(
+      expect.stringContaining("WHERE account_player_tag = ? AND source = 'manual'"),
+      ["#ACCOUNT"],
+    );
   });
 
   it("reads active effects scoped to one account", async () => {

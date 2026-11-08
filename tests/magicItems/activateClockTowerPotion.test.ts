@@ -41,6 +41,21 @@ describe("activateClockTowerPotion", () => {
     });
   });
 
+  it("passes explicit zero-inventory confirmation to the atomic service", async () => {
+    await activateClockTowerPotion({
+      accountTag: "#ACCOUNT",
+      itemId: "clock-tower-potion",
+      village: "builderBase",
+      now: 10_000,
+      effectId: "clock-effect-confirmed",
+      allowZeroInventory: true,
+    });
+
+    expect(consumeMagicItem).toHaveBeenCalledWith(
+      expect.objectContaining({ allowZeroInventory: true }),
+    );
+  });
+
   it("rejects Clock Tower Potion in Home Village without consuming it", async () => {
     await expect(
       activateClockTowerPotion({

@@ -10,7 +10,6 @@ export type ActivateTimedMagicItemInput = {
   target: MagicItemTarget;
   now?: number;
   effectId: string;
-  allowZeroInventory?: boolean;
 };
 
 export type ActivateTimedMagicItemResult =
@@ -37,7 +36,6 @@ export async function activateTimedMagicItem({
   target,
   now = Date.now(),
   effectId,
-  allowZeroInventory = false,
 }: ActivateTimedMagicItemInput): Promise<ActivateTimedMagicItemResult> {
   const item = getMagicItem(itemId);
 
@@ -68,7 +66,7 @@ export async function activateTimedMagicItem({
     village,
   };
 
-  await consumeMagicItem({ accountTag, itemId, effect, allowZeroInventory });
+  await consumeMagicItem({ accountTag, itemId, effect });
 
   return { activated: true, effect };
 }

@@ -236,15 +236,6 @@ export function MagicItemsQuickModal({
 
   const activate = (item: MagicItem) => {
     if (!accountTag || activatingItemId) return;
-    if ((quantities[item.id] ?? 0) <= 0) {
-      setDialog({
-        title: "No items available",
-        message: `Add ${item.name} to your tracked inventory first.`,
-        item,
-        tone: "info",
-      });
-      return;
-    }
     const requestedQuantity = selectedQuantities[item.id] ?? 1;
     const isTracked = trackedItemIds.has(item.id);
     const available = quantities[item.id] ?? 0;
@@ -445,7 +436,7 @@ export function MagicItemsQuickModal({
                 })}
                 <Text style={styles.footnote}>
                   Choose how many identical items to use. Their boost durations are queued
-                  one after another; using more does not multiply boost strength. Usage history counts activations from this update onward.
+                  one after another; using more does not multiply boost strength. Usage history starts with this update; earlier uses cannot be reconstructed.
                 </Text>
               </ScrollView>
             )}

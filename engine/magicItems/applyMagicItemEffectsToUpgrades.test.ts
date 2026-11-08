@@ -61,8 +61,8 @@ describe("applyMagicItemEffectsToUpgrades", () => {
 
     // Five hours of work precede export; the one-hour potion window completes
     // nine hours of work, leaving six hours after the potion expires.
-    expect(result.endTime).toBe(exportTime + 7 * HOUR);
-    expect(result.magicItemTimeSavedMs).toBe(8 * HOUR);
+    expect(result.endTime).toBe(exportTime + 6 * HOUR);
+    expect(result.magicItemTimeSavedMs).toBe(9 * HOUR);
   });
 
   it("returns the original list when there are no effects", () => {

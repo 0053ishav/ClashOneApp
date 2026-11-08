@@ -179,7 +179,7 @@ describe("magicItemService", () => {
 
     expect(db.runAsync).toHaveBeenCalledWith(
       expect.stringContaining("INSERT INTO magic_item_usage_events"),
-      ["#ACCOUNT", "builder-potion", 200],
+      ["#ACCOUNT", "builder-potion", 1, 200],
     );
     expect(db.execAsync).toHaveBeenLastCalledWith("COMMIT");
   });
@@ -225,7 +225,7 @@ describe("magicItemService", () => {
 
     expect(db.runAsync).toHaveBeenCalledWith(
       expect.stringContaining("INSERT INTO magic_item_usage_events"),
-      ["#ACCOUNT", "builder-potion", 400],
+      ["#ACCOUNT", "builder-potion", 1, 400],
     );
     expect(db.execAsync).toHaveBeenLastCalledWith("COMMIT");
   });

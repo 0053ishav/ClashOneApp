@@ -1,10 +1,7 @@
 import { getDB } from "@/db/database";
 import { Upgrade } from "@/types/upgrade";
 import { deriveCompletionState } from "@/utils/deriveCompletionState";
-import {
-  getActiveMagicEffects,
-  getImportedBoostEffects,
-} from "@/services/magicItemService";
+import { getActiveMagicEffects } from "@/services/magicItemService";
 import { applyMagicItemEffectsToUpgrades } from "@/engine/magicItems/applyMagicItemEffectsToUpgrades";
 
 function parseCraftedModuleLevels(value: unknown): Record<number, number> | undefined {
@@ -87,15 +84,9 @@ export async function getUpgrades(tag: string): Promise<Upgrade[]> {
     currentSuperchargeLevel: r.current_supercharge_level ?? undefined,
     nextSuperchargeLevel: r.next_supercharge_level ?? undefined,
   }));
-  const [activeEffects, importedBoostEffects] = await Promise.all([
-    getActiveMagicEffects(tag),
-    getImportedBoostEffects(tag),
-  ]);
+  const activeEffects = await getActiveMagicEffects(tag);
   return deriveCompletionState(
-    applyMagicItemEffectsToUpgrades(normalized, [
-      ...activeEffects,
-      ...importedBoostEffects,
-    ]),
+    applyMagicItemEffectsToUpgrades(normalized, activeEffects),
   );
 }
 
@@ -160,14 +151,9 @@ export async function getActiveUpgrades(tag: string): Promise<Upgrade[]> {
     isCompleted: !!r.is_completed,
     source: r.source,
   }));
-  const [activeEffects, importedBoostEffects] = await Promise.all([
-    getActiveMagicEffects(tag),
-    getImportedBoostEffects(tag),
-  ]);
-  return applyMagicItemEffectsToUpgrades(normalized, [
-    ...activeEffects,
-    ...importedBoostEffects,
-  ]).filter((upgrade) => !upgrade.isCompleted && upgrade.endTime > now);
+  const activeEffects = await getActiveMagicEffects(tag);
+  return applyMagicItemEffectsToUpgrades(normalized, activeEffects)
+    .filter((upgrade) => !upgrade.isCompleted && upgrade.endTime > now);
 }
 
 

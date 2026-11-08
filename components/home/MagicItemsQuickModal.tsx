@@ -60,6 +60,7 @@ export function MagicItemsQuickModal({
   const [trackedItemIds, setTrackedItemIds] = useState<Set<string>>(new Set());
   const [usageCount, setUsageCount] = useState(0);
   const [activeEffectIds, setActiveEffectIds] = useState<Set<string>>(new Set());
+  const [queuedEffectIds, setQueuedEffectIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [activatingItemId, setActivatingItemId] = useState<string | null>(null);
   const [dialog, setDialog] = useState<{
@@ -85,6 +86,7 @@ export function MagicItemsQuickModal({
       setTrackedItemIds(new Set());
       setUsageCount(0);
       setActiveEffectIds(new Set());
+      setQueuedEffectIds(new Set());
       return;
     }
 
@@ -106,12 +108,20 @@ export function MagicItemsQuickModal({
           Math.min(Math.max(current[entry.itemId] ?? 1, 1), Math.max(entry.quantity, 1)),
         ])),
       );
+      const now = Date.now();
       setActiveEffectIds(
         new Set(
           effects
-            .filter((effect) => effect.expiresAt == null || effect.expiresAt > Date.now())
+            .filter(
+              (effect) =>
+                effect.startedAt <= now &&
+                (effect.expiresAt == null || effect.expiresAt > now),
+            )
             .map((effect) => effect.itemId),
         ),
+      );
+      setQueuedEffectIds(
+        new Set(effects.filter((effect) => effect.startedAt > now).map((effect) => effect.itemId)),
       );
     } catch {
       setDialog({
@@ -354,6 +364,7 @@ export function MagicItemsQuickModal({
                   const isTracked = trackedItemIds.has(item.id);
                   const maxSelectable = isTracked ? Math.max(quantity, 1) : 10;
                   const active = activeEffectIds.has(item.id);
+                  const queued = queuedEffectIds.has(item.id);
                   const isActivating = activatingItemId === item.id;
                   return (
                     <View key={item.id} style={styles.itemCard}>
@@ -374,7 +385,7 @@ export function MagicItemsQuickModal({
                           {item.description}
                         </Text>
                         <Text style={styles.quantity}>
-                          {isTracked ? `${quantity} available` : "Inventory not tracked"}{active ? " · Active" : ""}
+                          {isTracked ? `${quantity} available` : "Inventory not tracked"}{active ? " · Active" : queued ? " · Queued" : ""}
                         </Text>
                       </View>
                       <View style={styles.useControls}>

@@ -25,6 +25,7 @@
     },
     "plugins": [
       "expo-router",
+      "./plugins/withR8OptimizeProguard.js",
       [
         "expo-splash-screen",
         {
@@ -132,6 +133,15 @@
           "url": "https://sentry.io/",
           "project": "clash-one",
           "organization": "strnge-labs"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
         }
       ]
     ],

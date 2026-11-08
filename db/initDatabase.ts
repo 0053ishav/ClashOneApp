@@ -350,6 +350,29 @@ async function migrateDatabase() {
   }
 
 
+  // V12 - Append-only account-scoped Magic Item usage history.
+  if (version < 12) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS magic_item_usage_events (
+        event_id TEXT PRIMARY KEY,
+        account_player_tag TEXT NOT NULL,
+        item_id TEXT NOT NULL,
+        quantity INTEGER NOT NULL CHECK (quantity > 0),
+        used_at INTEGER NOT NULL,
+        source TEXT NOT NULL CHECK (source IN ('manual', 'import')),
+        FOREIGN KEY(account_player_tag)
+        REFERENCES accounts(player_tag)
+        ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_magic_item_usage_account_time
+      ON magic_item_usage_events(account_player_tag, used_at);
+      CREATE INDEX IF NOT EXISTS idx_magic_item_usage_account_item
+      ON magic_item_usage_events(account_player_tag, item_id);
+    `);
+    await setSchemaVersion(db, 12);
+    version = 12;
+  }
+
   // log("✅ Database ready. Version:", version);
 
   // Debug only

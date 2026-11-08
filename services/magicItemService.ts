@@ -122,10 +122,13 @@ export async function consumeMagicItem({
   accountTag,
   itemId,
   effect,
+  allowZeroInventory = false,
 }: {
   accountTag: string;
   itemId: string;
   effect?: ActiveMagicEffect;
+  /** Explicitly allow activation when a tracked inventory row is zero. */
+  allowZeroInventory?: boolean;
 }): Promise<void> {
   assertAccountAndItem(accountTag, itemId);
 
@@ -144,7 +147,17 @@ export async function consumeMagicItem({
     );
 
     if (result.changes !== 1) {
-      throw new Error("MAGIC_ITEM_NOT_IN_INVENTORY");
+      const inventoryRow = await db.getFirstAsync<{ quantity: number }>(
+        `SELECT quantity FROM magic_item_inventory
+         WHERE account_player_tag = ? AND item_id = ?`,
+        [accountTag, itemId],
+      );
+
+      // Missing inventory means "not tracked", not "confirmed empty".
+      // A recorded zero requires an explicit user confirmation.
+      if (inventoryRow && (!allowZeroInventory || Number(inventoryRow.quantity) > 0)) {
+        throw new Error("MAGIC_ITEM_NOT_IN_INVENTORY");
+      }
     }
 
     if (effect) {
@@ -162,6 +175,13 @@ export async function consumeMagicItem({
         ],
       );
     }
+
+    await db.runAsync(
+      `INSERT INTO magic_item_usage_events
+         (event_id, account_player_tag, item_id, quantity, used_at, source)
+       VALUES (lower(hex(randomblob(16))), ?, ?, 1, ?, 'manual')`,
+      [accountTag, itemId, effect?.startedAt ?? Date.now()],
+    );
 
     await db.execAsync("COMMIT");
   } catch (error) {
@@ -200,6 +220,19 @@ export async function consumeMagicItemQuantity(
     await db.execAsync("ROLLBACK");
     throw error;
   }
+}
+
+/** Total manually activated Magic Items for one account. Imported timers are not usage events. */
+export async function getMagicItemUsageCount(accountTag: string): Promise<number> {
+  assertNonEmpty(accountTag, "account_tag");
+  const db = await getDB();
+  const row = await db.getFirstAsync<{ total: number | null }>(
+    `SELECT COALESCE(SUM(quantity), 0) AS total
+     FROM magic_item_usage_events
+     WHERE account_player_tag = ? AND source = 'manual'`,
+    [accountTag],
+  );
+  return Number(row?.total ?? 0);
 }
 
 /** Read timed effects for one account, including expired records for reconciliation. */

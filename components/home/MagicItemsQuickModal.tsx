@@ -281,7 +281,7 @@ export function MagicItemsQuickModal({
             onPress={onClose}
             accessibilityLabel="Close Magic Items"
           />
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
             <View style={styles.handle} />
             <View style={styles.header}>
               <View style={styles.headerIcon}>
@@ -456,7 +456,6 @@ const createStyles = (colors: HomeColors) =>
       borderTopRightRadius: 24,
       borderTopWidth: 1,
       borderColor: colors.border,
-      paddingBottom: Math.max(insets.bottom, 16) + 8,
     },
     handle: {
       alignSelf: "center",

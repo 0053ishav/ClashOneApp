@@ -68,6 +68,11 @@ describe("applyBookToActiveUpgrade", () => {
       expect.stringContaining("DELETE FROM upgrades"),
       ["upgrade-1", "#ACCOUNT", 1_000],
     );
+    expect(db.runAsync).toHaveBeenNthCalledWith(
+      3,
+      expect.stringContaining("INSERT INTO magic_item_usage_events"),
+      ["#ACCOUNT", "book-of-building", "book", 1, 1_000, "manual"],
+    );
     expect(db.execAsync).toHaveBeenLastCalledWith("COMMIT");
   });
 

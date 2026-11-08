@@ -71,7 +71,7 @@ describe("activateTimedMagicItem", () => {
   it("records activation without passing inventory state", async () => {
     const effect = {
       id: "effect-untracked", itemId: "study-soup", startedAt: 1_000,
-      expiresAt: 3_601_000, village: "home",
+      expiresAt: 14_401_000, village: "home",
     };
     await activateTimedMagicItem({
       accountTag: "#ACCOUNT", itemId: "study-soup", village: "home",

@@ -161,6 +161,7 @@ export function MagicItemsQuickModal({
     }
 
     setActivatingItemId(item.id);
+    let didActivate = false;
     try {
       const now = Date.now();
       const effectId = `${item.id}-${Crypto.randomUUID()}`;
@@ -216,17 +217,9 @@ export function MagicItemsQuickModal({
         }
       }
 
-      await loadItems();
-      await onActivated();
-      setDialog({
-        title: requestedQuantity > 1 ? "Magic Items activated" : "Magic Item activated",
-        message: requestedQuantity > 1
-          ? `${requestedQuantity} ${item.name}s activated. Their boost duration is queued after the current effect.`
-          : `${item.name} is now active.`,
-        item,
-        tone: "success",
-      });
+      didActivate = true;
     } catch (error) {
+      console.error("[MAGIC_ITEMS] Activation failed:", error);
       const message =
         error instanceof Error && error.message === "MAGIC_ITEM_NOT_IN_INVENTORY"
           ? "Your inventory quantity changed. Refresh and try again."
@@ -240,6 +233,28 @@ export function MagicItemsQuickModal({
     } finally {
       setActivatingItemId(null);
     }
+
+    if (!didActivate) return;
+
+    setDialog({
+      title: requestedQuantity > 1 ? "Magic Items activated" : "Magic Item activated",
+      message: requestedQuantity > 1
+        ? `${requestedQuantity} ${item.name}s activated. Their boost duration is queued after the current effect.`
+        : `${item.name} is now active.`,
+      item,
+      tone: "success",
+    });
+
+    // Refreshing progression/widgets/notifications is follow-up work. A failure
+    // here must not report a committed Magic Item activation as failed.
+    void (async () => {
+      try {
+        await loadItems();
+        await onActivated();
+      } catch (error) {
+        console.error("[MAGIC_ITEMS] Post-activation refresh failed:", error);
+      }
+    })();
   };
 
   const activate = (item: MagicItem) => {

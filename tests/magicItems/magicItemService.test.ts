@@ -125,7 +125,7 @@ describe("magicItemService", () => {
     );
     expect(db.runAsync).toHaveBeenCalledWith(
       expect.stringContaining("INSERT INTO magic_item_usage_events"),
-      ["#ACCOUNT", "builder-potion", 1, 100],
+      ["#ACCOUNT", "builder-potion", "potion", 1, 100, "manual"],
     );
     expect(db.execAsync).toHaveBeenLastCalledWith("COMMIT");
   });
@@ -156,7 +156,7 @@ describe("magicItemService", () => {
     );
     expect(db.runAsync).toHaveBeenCalledWith(
       expect.stringContaining("INSERT INTO magic_item_usage_events"),
-      ["#ACCOUNT", "builder-potion", 3, 1_000],
+      ["#ACCOUNT", "builder-potion", "potion", 3, 1_000, "manual"],
     );
   });
 
@@ -179,7 +179,7 @@ describe("magicItemService", () => {
 
     expect(db.runAsync).toHaveBeenCalledWith(
       expect.stringContaining("INSERT INTO magic_item_usage_events"),
-      ["#ACCOUNT", "builder-potion", 1, 200],
+      ["#ACCOUNT", "builder-potion", "potion", 1, 200, "manual"],
     );
     expect(db.execAsync).toHaveBeenLastCalledWith("COMMIT");
   });
@@ -225,7 +225,7 @@ describe("magicItemService", () => {
 
     expect(db.runAsync).toHaveBeenCalledWith(
       expect.stringContaining("INSERT INTO magic_item_usage_events"),
-      ["#ACCOUNT", "builder-potion", 1, 400],
+      ["#ACCOUNT", "builder-potion", "potion", 1, 400, "manual"],
     );
     expect(db.execAsync).toHaveBeenLastCalledWith("COMMIT");
   });
@@ -253,6 +253,18 @@ describe("magicItemService", () => {
     expect(db.runAsync).toHaveBeenCalledWith(
       expect.stringContaining("quantity >= ?"),
       [2, "#ACCOUNT", "builder-potion", 2],
+    );
+    expect(db.execAsync).toHaveBeenLastCalledWith("COMMIT");
+  });
+
+  it("records the normalized category when consuming a non-effect Magic Item", async () => {
+    await expect(
+      consumeMagicItemQuantity("#ACCOUNT", "book-of-building", 1),
+    ).resolves.toBe(true);
+
+    expect(db.runAsync).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO magic_item_usage_events"),
+      ["#ACCOUNT", "book-of-building", "book", 1, expect.any(Number), "manual"],
     );
     expect(db.execAsync).toHaveBeenLastCalledWith("COMMIT");
   });

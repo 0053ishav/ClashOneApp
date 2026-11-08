@@ -1,8 +1,43 @@
 import { getDB } from "@/db/database";
+import type * as SQLite from "expo-sqlite";
+import { getMagicItem } from "@/config/magicItems";
 import type {
   ActiveMagicEffect,
   MagicItemInventory,
 } from "@/types/magicItem";
+
+export type RecordMagicItemUsageInput = {
+  accountTag: string;
+  itemId: string;
+  quantity: number;
+  usedAt: number;
+  source?: "manual" | "import";
+};
+
+/**
+ * Insert a usage event inside the caller's existing SQLite transaction.
+ * The item category is resolved from the canonical Magic Item registry.
+ */
+export async function recordMagicItemUsageEvent(
+  db: SQLite.SQLiteDatabase,
+  { accountTag, itemId, quantity, usedAt, source = "manual" }: RecordMagicItemUsageInput,
+): Promise<void> {
+  assertAccountAndItem(accountTag, itemId);
+  assertPositiveQuantity(quantity);
+  if (!Number.isSafeInteger(usedAt) || usedAt < 0) {
+    throw new Error("INVALID_MAGIC_ITEM_USAGE_TIMESTAMP");
+  }
+
+  const item = getMagicItem(itemId);
+  if (!item) throw new Error("UNKNOWN_MAGIC_ITEM");
+
+  await db.runAsync(
+    `INSERT INTO magic_item_usage_events
+       (event_id, account_player_tag, item_id, item_type, quantity, used_at, source)
+     VALUES (lower(hex(randomblob(16))), ?, ?, ?, ?, ?, ?)`,
+    [accountTag, itemId, item.itemType, quantity, usedAt, source],
+  );
+}
 
 export type SetMagicItemQuantityInput = {
   accountTag: string;
@@ -199,12 +234,12 @@ export async function consumeMagicItem({
       );
     }
 
-    await db.runAsync(
-      `INSERT INTO magic_item_usage_events
-         (event_id, account_player_tag, item_id, quantity, used_at, source)
-       VALUES (lower(hex(randomblob(16))), ?, ?, ?, ?, 'manual')`,
-      [accountTag, itemId, quantity, effect?.startedAt ?? Date.now()],
-    );
+    await recordMagicItemUsageEvent(db, {
+      accountTag,
+      itemId,
+      quantity,
+      usedAt: effect?.startedAt ?? Date.now(),
+    });
 
     await db.execAsync("COMMIT");
   } catch (error) {
@@ -236,6 +271,13 @@ export async function consumeMagicItemQuantity(
       await db.execAsync("ROLLBACK");
       return false;
     }
+
+    await recordMagicItemUsageEvent(db, {
+      accountTag,
+      itemId,
+      quantity,
+      usedAt: Date.now(),
+    });
 
     await db.execAsync("COMMIT");
     return true;

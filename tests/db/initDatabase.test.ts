@@ -70,8 +70,10 @@ describe("initDatabase", () => {
     expect(executedSql).toContain("CREATE TABLE IF NOT EXISTS building_progress");
     expect(executedSql).toContain("CREATE TABLE IF NOT EXISTS player_profile_cache");
     expect(executedSql).toContain("CREATE TABLE IF NOT EXISTS magic_item_usage_events");
+    expect(executedSql).toContain("ADD COLUMN item_type TEXT NOT NULL DEFAULT 'unknown'");
+    expect(executedSql).toContain("idx_magic_item_usage_account_type_time");
 
-    expect(database.runAsync).toHaveBeenCalledTimes(12);
+    expect(database.runAsync).toHaveBeenCalledTimes(13);
     expect(database.getAllAsync).toHaveBeenCalledWith(
       "PRAGMA table_info(upgrades)",
     );
@@ -102,6 +104,6 @@ describe("initDatabase", () => {
     // The connection was opened once successfully; only schema setup retries.
     expect(mockOpenDatabaseAsync).toHaveBeenCalledTimes(1);
     expect(database.getFirstAsync).toHaveBeenCalledTimes(1);
-    expect(database.runAsync).toHaveBeenCalledTimes(12);
+    expect(database.runAsync).toHaveBeenCalledTimes(13);
   });
 });

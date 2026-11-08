@@ -55,6 +55,7 @@ export function MagicItemsQuickModal({
   const router = useRouter();
   const accounts = useAccountStore((state) => state.accounts);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
   const [activeEffectIds, setActiveEffectIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [activatingItemId, setActivatingItemId] = useState<string | null>(null);
@@ -77,6 +78,7 @@ export function MagicItemsQuickModal({
   const loadItems = useCallback(async () => {
     if (!accountTag) {
       setQuantities({});
+      setSelectedQuantities({});
       setActiveEffectIds(new Set());
       return;
     }
@@ -89,6 +91,12 @@ export function MagicItemsQuickModal({
       ]);
       setQuantities(
         Object.fromEntries(inventory.map((entry) => [entry.itemId, entry.quantity])),
+      );
+      setSelectedQuantities((current) =>
+        Object.fromEntries(inventory.map((entry) => [
+          entry.itemId,
+          Math.min(Math.max(current[entry.itemId] ?? 1, 1), Math.max(entry.quantity, 1)),
+        ])),
       );
       setActiveEffectIds(
         new Set(
@@ -122,9 +130,9 @@ export function MagicItemsQuickModal({
     [village],
   );
 
-  const activateNow = async (item: MagicItem) => {
+  const activateNow = async (item: MagicItem, requestedQuantity: number) => {
     if (!accountTag || activatingItemId) return;
-    if ((quantities[item.id] ?? 0) <= 0) {
+    if (!Number.isSafeInteger(requestedQuantity) || requestedQuantity <= 0 || requestedQuantity > (quantities[item.id] ?? 0)) {
       setDialog({
         title: "No items available",
         message: `Add ${item.name} to your tracked inventory first.`,
@@ -146,6 +154,7 @@ export function MagicItemsQuickModal({
           village,
           now,
           effectId,
+          quantity: requestedQuantity,
         });
         if (!result.activated) {
           setDialog({
@@ -189,8 +198,10 @@ export function MagicItemsQuickModal({
       await loadItems();
       await onActivated();
       setDialog({
-        title: "Magic Item activated",
-        message: `${item.name} is now active.`,
+        title: requestedQuantity > 1 ? "Magic Items activated" : "Magic Item activated",
+        message: requestedQuantity > 1
+          ? `${requestedQuantity} ${item.name}s activated. Their boost duration is queued after the current effect.`
+          : `${item.name} is now active.`,
         item,
         tone: "success",
       });
@@ -221,16 +232,18 @@ export function MagicItemsQuickModal({
       });
       return;
     }
+    const requestedQuantity = selectedQuantities[item.id] ?? 1;
     setDialog({
-      title: `Use ${item.name}?`,
-      message:
-        "This consumes one item from your tracked inventory and activates its effect for this village.",
+      title: requestedQuantity > 1 ? `Use ${requestedQuantity} ${item.name}s?` : `Use ${item.name}?`,
+      message: requestedQuantity > 1
+        ? `This consumes ${requestedQuantity} items from your tracked inventory. Their durations are queued consecutively; the boost multiplier does not multiply.`
+        : "This consumes one item from your tracked inventory and activates its effect for this village.",
       item,
       tone: "confirm",
       confirmLabel: "Use item",
       onConfirm: async () => {
         setDialog(null);
-        await activateNow(item);
+        await activateNow(item, requestedQuantity);
       },
     });
   };
@@ -322,6 +335,7 @@ export function MagicItemsQuickModal({
                 )}
                 {items.map((item) => {
                   const quantity = quantities[item.id] ?? 0;
+                  const selectedQuantity = selectedQuantities[item.id] ?? 1;
                   const active = activeEffectIds.has(item.id);
                   const isActivating = activatingItemId === item.id;
                   return (
@@ -346,30 +360,66 @@ export function MagicItemsQuickModal({
                           {quantity} available{active ? " · Active" : ""}
                         </Text>
                       </View>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Activate ${item.name}`}
-                        disabled={quantity <= 0 || isActivating || !!activatingItemId}
-                        onPress={() => void activate(item)}
-                        style={({ pressed }) => [
-                          styles.activateButton,
-                          (quantity <= 0 || isActivating || !!activatingItemId) &&
-                            styles.disabled,
-                          pressed && styles.pressed,
-                        ]}
-                      >
-                        {isActivating ? (
-                          <ActivityIndicator size="small" color={colors.textDark} />
-                        ) : (
-                          <Text style={styles.activateText}>Use</Text>
-                        )}
-                      </Pressable>
+                      <View style={styles.useControls}>
+                        <View style={styles.quantityStepper}>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Use fewer ${item.name}s`}
+                            disabled={selectedQuantity <= 1 || isActivating || !!activatingItemId}
+                            onPress={() => setSelectedQuantities((current) => ({
+                              ...current,
+                              [item.id]: Math.max(1, selectedQuantity - 1),
+                            }))}
+                            style={({ pressed }) => [
+                              styles.stepperButton,
+                              (selectedQuantity <= 1 || isActivating || !!activatingItemId) && styles.disabled,
+                              pressed && styles.pressed,
+                            ]}
+                          >
+                            <Text style={styles.stepperText}>−</Text>
+                          </Pressable>
+                          <Text style={styles.selectedQuantity}>{selectedQuantity}</Text>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Use more ${item.name}s`}
+                            disabled={selectedQuantity >= quantity || isActivating || !!activatingItemId}
+                            onPress={() => setSelectedQuantities((current) => ({
+                              ...current,
+                              [item.id]: Math.min(quantity, selectedQuantity + 1),
+                            }))}
+                            style={({ pressed }) => [
+                              styles.stepperButton,
+                              (selectedQuantity >= quantity || isActivating || !!activatingItemId) && styles.disabled,
+                              pressed && styles.pressed,
+                            ]}
+                          >
+                            <Text style={styles.stepperText}>+</Text>
+                          </Pressable>
+                        </View>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Activate ${selectedQuantity} ${item.name}${selectedQuantity === 1 ? "" : "s"}`}
+                          disabled={quantity <= 0 || isActivating || !!activatingItemId}
+                          onPress={() => void activate(item)}
+                          style={({ pressed }) => [
+                            styles.activateButton,
+                            (quantity <= 0 || isActivating || !!activatingItemId) && styles.disabled,
+                            pressed && styles.pressed,
+                          ]}
+                        >
+                          {isActivating ? (
+                            <ActivityIndicator size="small" color={colors.textDark} />
+                          ) : (
+                            <Text style={styles.activateText}>Use ×{selectedQuantity}</Text>
+                          )}
+                        </Pressable>
+                      </View>
                     </View>
                   );
                 })}
                 <Text style={styles.footnote}>
-                  Inventory is manual. Activating an item consumes one tracked item and
-                  records its effect.
+                  Choose how many identical items to use. Their boost durations are queued
+                  one after another; using more does not multiply the boost strength.
                 </Text>
               </ScrollView>
             )}
@@ -517,8 +567,22 @@ const createStyles = (colors: HomeColors) =>
       fontSize: 10,
       fontWeight: "700",
     },
+    useControls: { alignItems: "center", gap: 6 },
+    quantityStepper: { flexDirection: "row", alignItems: "center", gap: 5 },
+    stepperButton: {
+      width: 24,
+      height: 24,
+      borderRadius: 7,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    stepperText: { color: colors.textPrimary, fontSize: 15, fontWeight: "800" },
+    selectedQuantity: { minWidth: 16, textAlign: "center", color: colors.textPrimary, fontSize: 11, fontWeight: "800" },
     activateButton: {
-      minWidth: 46,
+      minWidth: 62,
       height: 32,
       borderRadius: 9,
       backgroundColor: colors.gold,

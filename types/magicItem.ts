@@ -80,6 +80,21 @@ export type ActiveMagicEffect = {
 };
 
 /**
+ * Append-only record of a Magic Item activation.
+ *
+ * Imported active timers are observations of current game state, not proof of
+ * a historical consumption event, so they are not added to manual usage totals.
+ */
+export type MagicItemUsageEvent = {
+  id: string;
+  accountTag: string;
+  itemId: string;
+  quantity: number;
+  usedAt: number;
+  source: "manual" | "import";
+};
+
+/**
  * Modifier evaluated when an upgrade starts.
  *
  * Hammer Jam belongs here, not in ActiveMagicEffect.

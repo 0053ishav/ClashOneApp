@@ -6,9 +6,7 @@ import { getDB } from "@/db/database";
 import {
   addMagicItem,
   clearActiveMagicEffects,
-  getImportedBoostSnapshot,
-  getImportedBoostEffects,
-  replaceImportedBoostSnapshot,
+  replaceActiveMagicEffects,
   consumeMagicItem,
   consumeMagicItemQuantity,
   getActiveMagicEffects,
@@ -223,74 +221,46 @@ describe("magicItemService", () => {
     );
   });
 
-  it("persists and reads imported boost durations as a separate snapshot", async () => {
-    const snapshot = {
-      accountTag: "#ACCOUNT",
-      builderBoostSeconds: 3595,
-      labBoostSeconds: 3598,
-      clocktowerBoostSeconds: 60652,
-      builderConsumableSeconds: 3590,
-      labConsumableSeconds: 3580,
-      petBoostSeconds: 3570,
-      exportedAt: 1_700_000_000_000,
-    };
-    await replaceImportedBoostSnapshot(snapshot);
-    expect(db.runAsync).toHaveBeenCalledWith(
-      expect.stringContaining("INSERT INTO imported_boosts"),
-      ["#ACCOUNT", 3595, 3598, 60652, 3590, 3580, 3570, 1_700_000_000_000],
+  it("replaces imported effects in the existing active_magic_effects table", async () => {
+    const effects = [{
+      id: "imported:builder-potion:1700000000000",
+      itemId: "builder-potion",
+      startedAt: 1_700_000_000_000,
+      expiresAt: 1_700_003_600_000,
+      village: "home" as const,
+    }];
+
+    await replaceActiveMagicEffects("#ACCOUNT", effects);
+
+    expect(db.runAsync).toHaveBeenNthCalledWith(
+      1,
+      "DELETE FROM active_magic_effects WHERE account_player_tag = ?",
+      ["#ACCOUNT"],
     );
-
-    db.getFirstAsync.mockResolvedValue({
-      account_player_tag: "#ACCOUNT",
-      builder_boost_seconds: 3595,
-      lab_boost_seconds: 3598,
-      clocktower_boost_seconds: 60652,
-      builder_consumable_seconds: 3590,
-      lab_consumable_seconds: 3580,
-      pet_boost_seconds: 3570,
-      exported_at: 1_700_000_000_000,
-    });
-    await expect(getImportedBoostSnapshot("#ACCOUNT")).resolves.toEqual(snapshot);
+    expect(db.runAsync).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining("INSERT INTO active_magic_effects"),
+      [
+        "imported:builder-potion:1700000000000",
+        "#ACCOUNT",
+        "builder-potion",
+        1_700_000_000_000,
+        1_700_003_600_000,
+        "home",
+      ],
+    );
+    expect(db.execAsync).toHaveBeenNthCalledWith(1, "BEGIN TRANSACTION");
+    expect(db.execAsync).toHaveBeenNthCalledWith(2, "COMMIT");
   });
 
-  it("rejects negative imported boost durations before writing", async () => {
-    await expect(replaceImportedBoostSnapshot({
-      accountTag: "#ACCOUNT",
-      builderBoostSeconds: -1,
-      labBoostSeconds: 0,
-      clocktowerBoostSeconds: 0,
-      builderConsumableSeconds: 0,
-      labConsumableSeconds: 0,
-      petBoostSeconds: 0,
-      exportedAt: 1_700_000_000_000,
-    })).rejects.toThrow("INVALID_BUILDER_BOOST_SECONDS");
+  it("rejects invalid imported effect expiry before writing", async () => {
+    await expect(replaceActiveMagicEffects("#ACCOUNT", [{
+      id: "imported:builder-potion",
+      itemId: "builder-potion",
+      startedAt: 100,
+      expiresAt: 100,
+    }])).rejects.toThrow("INVALID_MAGIC_ITEM_EFFECT_EXPIRES_AT");
     expect(db.runAsync).not.toHaveBeenCalled();
-  });
-
-
-  it("maps imported timers to the existing potion and snack effect definitions", async () => {
-    db.getFirstAsync.mockResolvedValue({
-      account_player_tag: "#ACCOUNT",
-      builder_boost_seconds: 3600,
-      lab_boost_seconds: 1800,
-      clocktower_boost_seconds: 900,
-      builder_consumable_seconds: 1200,
-      lab_consumable_seconds: 600,
-      pet_boost_seconds: 300,
-      exported_at: 1_700_000_000_000,
-    });
-
-    const effects = await getImportedBoostEffects("#ACCOUNT");
-    expect(effects.map(({ itemId, startedAt, expiresAt, village }) => ({
-      itemId, startedAt, expiresAt, village,
-    }))).toEqual([
-      { itemId: "builder-potion", startedAt: 1_700_000_000_000, expiresAt: 1_700_003_600_000, village: "home" },
-      { itemId: "research-potion", startedAt: 1_700_000_000_000, expiresAt: 1_700_001_800_000, village: "home" },
-      { itemId: "clock-tower-potion", startedAt: 1_700_000_000_000, expiresAt: 1_700_000_900_000, village: "builderBase" },
-      { itemId: "builder-bite", startedAt: 1_700_000_000_000, expiresAt: 1_700_001_200_000, village: "home" },
-      { itemId: "study-soup", startedAt: 1_700_000_000_000, expiresAt: 1_700_000_600_000, village: "home" },
-      { itemId: "pet-potion", startedAt: 1_700_000_000_000, expiresAt: 1_700_000_300_000, village: "home" },
-    ]);
   });
 
 });

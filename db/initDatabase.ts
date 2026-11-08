@@ -349,22 +349,6 @@ async function migrateDatabase() {
     version = 11;
   }
 
-  // V12 - Persist imported consumable timers without resetting existing snapshots.
-  if (version < 12) {
-    for (const [column, definition] of [
-      ["builder_consumable_seconds", "INTEGER NOT NULL DEFAULT 0"],
-      ["lab_consumable_seconds", "INTEGER NOT NULL DEFAULT 0"],
-      ["pet_boost_seconds", "INTEGER NOT NULL DEFAULT 0"],
-    ] as const) {
-      try {
-        await db.execAsync(`ALTER TABLE imported_boosts ADD COLUMN ${column} ${definition};`);
-      } catch (error) {
-        log(`⏭️ ${column} already exists`, error);
-      }
-    }
-    await setSchemaVersion(db, 12);
-    version = 12;
-  }
 
   // log("✅ Database ready. Version:", version);
 

@@ -177,6 +177,7 @@ describe("magicItemService", () => {
 
   it("allows confirmed activation at tracked zero without making inventory negative", async () => {
     db.runAsync.mockResolvedValueOnce({ changes: 0 });
+    db.getFirstAsync.mockResolvedValueOnce({ quantity: 0 });
 
     await expect(
       consumeMagicItem({

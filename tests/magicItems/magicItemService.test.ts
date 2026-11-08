@@ -14,6 +14,7 @@ import {
   getMagicItemQuantity,
   getMagicItemUsageCount,
   removeExpiredMagicEffects,
+  recordMagicItemUsageEvent,
   setMagicItemQuantity,
 } from "@/services/magicItemService";
 
@@ -255,6 +256,25 @@ describe("magicItemService", () => {
       [2, "#ACCOUNT", "builder-potion", 2],
     );
     expect(db.execAsync).toHaveBeenLastCalledWith("COMMIT");
+  });
+
+  it.each([
+    ["builder-potion", "potion"],
+    ["builder-bite", "snack"],
+    ["book-of-building", "book"],
+    ["hammer-of-building", "hammer"],
+  ] as const)("records the registry category for %s", async (itemId, itemType) => {
+    await recordMagicItemUsageEvent(db as never, {
+      accountTag: "#ACCOUNT",
+      itemId,
+      quantity: 1,
+      usedAt: 500,
+    });
+
+    expect(db.runAsync).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO magic_item_usage_events"),
+      ["#ACCOUNT", itemId, itemType, 1, 500, "manual"],
+    );
   });
 
   it("records the normalized category when consuming a non-effect Magic Item", async () => {

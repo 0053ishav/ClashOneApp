@@ -343,106 +343,54 @@ export async function clearActiveMagicEffects(accountTag: string): Promise<void>
   await db.runAsync("DELETE FROM active_magic_effects WHERE account_player_tag = ?", [accountTag]);
 }
 
-export type ImportedBoostSnapshot = {
-  accountTag: string;
-  builderBoostSeconds: number;
-  labBoostSeconds: number;
-  clocktowerBoostSeconds: number;
-  builderConsumableSeconds: number;
-  labConsumableSeconds: number;
-  petBoostSeconds: number;
-  exportedAt: number;
-};
-
-function assertRemainingSeconds(value: number, field: string): void {
-  if (!Number.isSafeInteger(value) || value < 0) throw new Error(`INVALID_${field.toUpperCase()}`);
-}
-
-/** Persist export boost timers separately from simulated Magic Item effects. */
-export async function replaceImportedBoostSnapshot(snapshot: ImportedBoostSnapshot): Promise<void> {
-  assertNonEmpty(snapshot.accountTag, "account_tag");
-  assertRemainingSeconds(snapshot.builderBoostSeconds, "builder_boost_seconds");
-  assertRemainingSeconds(snapshot.labBoostSeconds, "lab_boost_seconds");
-  assertRemainingSeconds(snapshot.clocktowerBoostSeconds, "clocktower_boost_seconds");
-  assertRemainingSeconds(snapshot.builderConsumableSeconds, "builder_consumable_seconds");
-  assertRemainingSeconds(snapshot.labConsumableSeconds, "lab_consumable_seconds");
-  assertRemainingSeconds(snapshot.petBoostSeconds, "pet_boost_seconds");
-  if (!Number.isSafeInteger(snapshot.exportedAt) || snapshot.exportedAt < 0) throw new Error("INVALID_EXPORTED_AT");
-  const db = await getDB();
-  await db.runAsync(`INSERT INTO imported_boosts
-    (account_player_tag, builder_boost_seconds, lab_boost_seconds, clocktower_boost_seconds, builder_consumable_seconds, lab_consumable_seconds, pet_boost_seconds, exported_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(account_player_tag) DO UPDATE SET
-      builder_boost_seconds = excluded.builder_boost_seconds,
-      lab_boost_seconds = excluded.lab_boost_seconds,
-      clocktower_boost_seconds = excluded.clocktower_boost_seconds,
-      builder_consumable_seconds = excluded.builder_consumable_seconds,
-      lab_consumable_seconds = excluded.lab_consumable_seconds,
-      pet_boost_seconds = excluded.pet_boost_seconds,
-      exported_at = excluded.exported_at`, [snapshot.accountTag, snapshot.builderBoostSeconds, snapshot.labBoostSeconds, snapshot.clocktowerBoostSeconds, snapshot.builderConsumableSeconds, snapshot.labConsumableSeconds, snapshot.petBoostSeconds, snapshot.exportedAt]);
-}
-
-export async function getImportedBoostSnapshot(accountTag: string): Promise<ImportedBoostSnapshot | null> {
-  assertNonEmpty(accountTag, "account_tag");
-  const db = await getDB();
-  const row = await db.getFirstAsync<{
-    account_player_tag: string;
-    builder_boost_seconds: number;
-    lab_boost_seconds: number;
-    clocktower_boost_seconds: number;
-    builder_consumable_seconds: number;
-    lab_consumable_seconds: number;
-    pet_boost_seconds: number;
-    exported_at: number;
-  }>(
-    `SELECT account_player_tag, builder_boost_seconds, lab_boost_seconds,
-            clocktower_boost_seconds, builder_consumable_seconds,
-            lab_consumable_seconds, pet_boost_seconds, exported_at
-     FROM imported_boosts
-     WHERE account_player_tag = ?`,
-    [accountTag],
-  );
-  if (!row) return null;
-  return {
-    accountTag: row.account_player_tag,
-    builderBoostSeconds: Number(row.builder_boost_seconds),
-    labBoostSeconds: Number(row.lab_boost_seconds),
-    clocktowerBoostSeconds: Number(row.clocktower_boost_seconds),
-    builderConsumableSeconds: Number(row.builder_consumable_seconds),
-    labConsumableSeconds: Number(row.lab_consumable_seconds),
-    petBoostSeconds: Number(row.pet_boost_seconds),
-    exportedAt: Number(row.exported_at),
-  };
-}
-
-
 /**
- * Convert imported village boost timers into the existing timed-effect model.
- * Effects begin at the export timestamp, so only work remaining after export
- * is accelerated; the reconstructed pre-export duration stays authoritative.
+ * Replace imported potion timers using the same effect records used by
+ * manually consumed Magic Items. Imported records are identifiable by ID.
  */
-export async function getImportedBoostEffects(
+export async function replaceActiveMagicEffects(
   accountTag: string,
-): Promise<ActiveMagicEffect[]> {
-  const snapshot = await getImportedBoostSnapshot(accountTag);
-  if (!snapshot) return [];
+  effects: ActiveMagicEffect[],
+): Promise<void> {
+  assertNonEmpty(accountTag, "account_tag");
+  for (const effect of effects) {
+    assertAccountAndItem(accountTag, effect.itemId);
+    assertNonEmpty(effect.id, "effect_id");
+    if (!Number.isSafeInteger(effect.startedAt) || effect.startedAt < 0) {
+      throw new Error("INVALID_MAGIC_ITEM_EFFECT_STARTED_AT");
+    }
+    if (
+      effect.expiresAt != null &&
+      (!Number.isSafeInteger(effect.expiresAt) || effect.expiresAt <= effect.startedAt)
+    ) {
+      throw new Error("INVALID_MAGIC_ITEM_EFFECT_EXPIRES_AT");
+    }
+  }
 
-  const definitions = [
-    { itemId: "builder-potion", seconds: snapshot.builderBoostSeconds, village: "home" as const },
-    { itemId: "research-potion", seconds: snapshot.labBoostSeconds, village: "home" as const },
-    { itemId: "clock-tower-potion", seconds: snapshot.clocktowerBoostSeconds, village: "builderBase" as const },
-    { itemId: "builder-bite", seconds: snapshot.builderConsumableSeconds, village: "home" as const },
-    { itemId: "study-soup", seconds: snapshot.labConsumableSeconds, village: "home" as const },
-    { itemId: "pet-potion", seconds: snapshot.petBoostSeconds, village: "home" as const },
-  ] as const;
-
-  return definitions
-    .filter(({ seconds }) => seconds > 0)
-    .map(({ itemId, seconds, village }) => ({
-      id: `imported:${itemId}:${snapshot.exportedAt}`,
-      itemId,
-      startedAt: snapshot.exportedAt,
-      expiresAt: snapshot.exportedAt + seconds * 1_000,
-      village,
-    }));
+  const db = await getDB();
+  await db.execAsync("BEGIN TRANSACTION");
+  try {
+    await db.runAsync(
+      "DELETE FROM active_magic_effects WHERE account_player_tag = ?",
+      [accountTag],
+    );
+    for (const effect of effects) {
+      await db.runAsync(
+        `INSERT INTO active_magic_effects
+          (id, account_player_tag, item_id, started_at, expires_at, village)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          effect.id,
+          accountTag,
+          effect.itemId,
+          effect.startedAt,
+          effect.expiresAt ?? null,
+          effect.village ?? null,
+        ],
+      );
+    }
+    await db.execAsync("COMMIT");
+  } catch (error) {
+    await db.execAsync("ROLLBACK");
+    throw error;
+  }
 }

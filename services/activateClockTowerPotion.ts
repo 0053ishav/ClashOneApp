@@ -75,7 +75,12 @@ export async function activateClockTowerPotion({
     village,
   } as const;
 
-  await consumeMagicItem({ accountTag, itemId, effect, quantity });
+  await consumeMagicItem({
+    accountTag,
+    itemId,
+    effect,
+    ...(quantity > 1 ? { quantity } : {}),
+  });
 
   return { activated: true, effect };
 }

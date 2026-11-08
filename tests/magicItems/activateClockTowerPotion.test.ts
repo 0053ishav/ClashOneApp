@@ -41,6 +41,31 @@ describe("activateClockTowerPotion", () => {
     });
   });
 
+  it("extends Clock Tower Potion duration by the requested quantity", async () => {
+    const result = await activateClockTowerPotion({
+      accountTag: "#ACCOUNT",
+      itemId: "clock-tower-potion",
+      village: "builderBase",
+      now: 10_000,
+      effectId: "clock-effect-three",
+      quantity: 3,
+    });
+
+    expect(result).toEqual({
+      activated: true,
+      effect: {
+        id: "clock-effect-three",
+        itemId: "clock-tower-potion",
+        startedAt: 10_000,
+        expiresAt: 5_410_000,
+        village: "builderBase",
+      },
+    });
+    expect(consumeMagicItem).toHaveBeenCalledWith(
+      expect.objectContaining({ quantity: 3 }),
+    );
+  });
+
   it("passes explicit zero-inventory confirmation to the atomic service", async () => {
     await activateClockTowerPotion({
       accountTag: "#ACCOUNT",

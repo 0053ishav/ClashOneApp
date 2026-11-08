@@ -72,7 +72,12 @@ export async function activateTimedMagicItem({
     village,
   };
 
-  await consumeMagicItem({ accountTag, itemId, effect, quantity });
+  await consumeMagicItem({
+    accountTag,
+    itemId,
+    effect,
+    ...(quantity > 1 ? { quantity } : {}),
+  });
 
   return { activated: true, effect };
 }

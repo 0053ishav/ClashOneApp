@@ -116,8 +116,8 @@ describe("magicItemService", () => {
 
     expect(db.execAsync).toHaveBeenNthCalledWith(1, "BEGIN TRANSACTION");
     expect(db.runAsync).toHaveBeenCalledWith(
-      expect.stringContaining("quantity = quantity - 1"),
-      ["#ACCOUNT", "builder-potion"],
+      expect.stringContaining("quantity = quantity - ?"),
+      [1, "#ACCOUNT", "builder-potion", 1],
     );
     expect(db.runAsync).toHaveBeenCalledWith(
       expect.stringContaining("INSERT INTO active_magic_effects"),
@@ -125,9 +125,39 @@ describe("magicItemService", () => {
     );
     expect(db.runAsync).toHaveBeenCalledWith(
       expect.stringContaining("INSERT INTO magic_item_usage_events"),
-      ["#ACCOUNT", "builder-potion", 100],
+      ["#ACCOUNT", "builder-potion", 1, 100],
     );
     expect(db.execAsync).toHaveBeenLastCalledWith("COMMIT");
+  });
+
+  it("consumes multiple items and queues their duration after the current effect", async () => {
+    db.getFirstAsync.mockResolvedValueOnce({ expires_at: 3_600_100 });
+
+    await consumeMagicItem({
+      accountTag: "#ACCOUNT",
+      itemId: "builder-potion",
+      quantity: 3,
+      effect: {
+        id: "effect-stack",
+        itemId: "builder-potion",
+        startedAt: 1_000,
+        expiresAt: 10_801_000,
+        village: "home",
+      },
+    });
+
+    expect(db.runAsync).toHaveBeenCalledWith(
+      expect.stringContaining("quantity = quantity - ?"),
+      [3, "#ACCOUNT", "builder-potion", 3],
+    );
+    expect(db.runAsync).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO active_magic_effects"),
+      ["effect-stack", "#ACCOUNT", "builder-potion", 3_600_100, 14_400_100, "home"],
+    );
+    expect(db.runAsync).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO magic_item_usage_events"),
+      ["#ACCOUNT", "builder-potion", 3, 1_000],
+    );
   });
 
   it("allows activation when inventory has never been tracked", async () => {

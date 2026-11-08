@@ -42,6 +42,32 @@ describe("activateTimedMagicItem", () => {
     });
   });
 
+  it("extends the effect duration by the requested quantity", async () => {
+    const result = await activateTimedMagicItem({
+      accountTag: "#ACCOUNT",
+      itemId: "study-soup",
+      village: "home",
+      target: "research",
+      now: 1_000,
+      effectId: "effect-three",
+      quantity: 3,
+    });
+
+    expect(result).toEqual({
+      activated: true,
+      effect: {
+        id: "effect-three",
+        itemId: "study-soup",
+        startedAt: 1_000,
+        expiresAt: 10_801_000,
+        village: "home",
+      },
+    });
+    expect(consumeMagicItem).toHaveBeenCalledWith(
+      expect.objectContaining({ quantity: 3 }),
+    );
+  });
+
   it("passes explicit zero-inventory confirmation to the atomic service", async () => {
     await activateTimedMagicItem({
       accountTag: "#ACCOUNT",

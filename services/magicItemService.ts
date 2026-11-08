@@ -126,15 +126,19 @@ export async function consumeMagicItem({
   accountTag,
   itemId,
   effect,
+  quantity = 1,
   allowZeroInventory = false,
 }: {
   accountTag: string;
   itemId: string;
   effect?: ActiveMagicEffect;
+  /** Number of identical items activated in one action. */
+  quantity?: number;
   /** Explicitly allow activation when a tracked inventory row is zero. */
   allowZeroInventory?: boolean;
 }): Promise<void> {
   assertAccountAndItem(accountTag, itemId);
+  assertPositiveQuantity(quantity);
 
   if (effect && effect.itemId !== itemId) {
     throw new Error("MAGIC_ITEM_EFFECT_ITEM_MISMATCH");
@@ -145,9 +149,9 @@ export async function consumeMagicItem({
   try {
     const result = await db.runAsync(
       `UPDATE magic_item_inventory
-       SET quantity = quantity - 1
-       WHERE account_player_tag = ? AND item_id = ? AND quantity > 0`,
-      [accountTag, itemId],
+       SET quantity = quantity - ?
+       WHERE account_player_tag = ? AND item_id = ? AND quantity >= ?`,
+      [quantity, accountTag, itemId, quantity],
     );
 
     if (result.changes !== 1) {
@@ -165,17 +169,32 @@ export async function consumeMagicItem({
     }
 
     if (effect) {
+      const durationMs =
+        effect.expiresAt == null ? undefined : effect.expiresAt - effect.startedAt;
+      const latestEffect = await db.getFirstAsync<{ expires_at: number | null }>(
+        "SELECT MAX(expires_at) AS expires_at FROM active_magic_effects WHERE account_player_tag = ? AND item_id = ? AND village IS ? AND expires_at > ?",
+        [accountTag, itemId, effect.village ?? null, effect.startedAt],
+      );
+      const queuedStartAt = Math.max(
+        effect.startedAt,
+        Number(latestEffect?.expires_at ?? effect.startedAt),
+      );
+      const queuedEffect = {
+        ...effect,
+        startedAt: queuedStartAt,
+        expiresAt: durationMs == null ? undefined : queuedStartAt + durationMs,
+      };
       await db.runAsync(
         `INSERT INTO active_magic_effects
            (id, account_player_tag, item_id, started_at, expires_at, village)
          VALUES (?, ?, ?, ?, ?, ?)`,
         [
-          effect.id,
+          queuedEffect.id,
           accountTag,
           itemId,
-          effect.startedAt,
-          effect.expiresAt ?? null,
-          effect.village ?? null,
+          queuedEffect.startedAt,
+          queuedEffect.expiresAt ?? null,
+          queuedEffect.village ?? null,
         ],
       );
     }
@@ -183,8 +202,8 @@ export async function consumeMagicItem({
     await db.runAsync(
       `INSERT INTO magic_item_usage_events
          (event_id, account_player_tag, item_id, quantity, used_at, source)
-       VALUES (lower(hex(randomblob(16))), ?, ?, 1, ?, 'manual')`,
-      [accountTag, itemId, effect?.startedAt ?? Date.now()],
+       VALUES (lower(hex(randomblob(16))), ?, ?, ?, ?, 'manual')`,
+      [accountTag, itemId, quantity, effect?.startedAt ?? Date.now()],
     );
 
     await db.execAsync("COMMIT");

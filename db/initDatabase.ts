@@ -407,6 +407,31 @@ async function migrateDatabase() {
     version = 13;
   }
 
+
+  // Reconcile critical tables even when schema_version is ahead of the
+  // physical schema (for example, after an interrupted/older migration).
+  // This is intentionally idempotent and preserves all existing rows.
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS magic_item_usage_events (
+      event_id TEXT PRIMARY KEY,
+      account_player_tag TEXT NOT NULL,
+      item_id TEXT NOT NULL,
+      item_type TEXT NOT NULL DEFAULT 'unknown',
+      quantity INTEGER NOT NULL CHECK (quantity > 0),
+      used_at INTEGER NOT NULL,
+      source TEXT NOT NULL DEFAULT 'manual',
+      FOREIGN KEY(account_player_tag)
+      REFERENCES accounts(player_tag)
+      ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_magic_item_usage_account_source_time
+    ON magic_item_usage_events(account_player_tag, source, used_at);
+
+    CREATE INDEX IF NOT EXISTS idx_magic_item_usage_account_type_time
+    ON magic_item_usage_events(account_player_tag, item_type, used_at);
+  `);
+
   // log("✅ Database ready. Version:", version);
 
   // Debug only

@@ -1,10 +1,22 @@
 import { getDB } from "@/db/database";
+import { initDatabase } from "@/db/initDatabase";
 import type * as SQLite from "expo-sqlite";
 import { getMagicItem } from "@/config/magicItems";
 import type {
   ActiveMagicEffect,
   MagicItemInventory,
 } from "@/types/magicItem";
+
+
+/**
+ * Magic Item persistence must never assume the root layout has already run
+ * migrations. Keep this boundary safe for every caller while sharing the same
+ * database connection.
+ */
+async function getInitializedDB(): Promise<SQLite.SQLiteDatabase> {
+  await initDatabase();
+  return getDB();
+}
 
 export type RecordMagicItemUsageInput = {
   accountTag: string;
@@ -74,7 +86,7 @@ export async function getMagicItemInventory(
 ): Promise<MagicItemInventory[]> {
   assertNonEmpty(accountTag, "account_tag");
 
-  const db = await getDB();
+  const db = await getInitializedDB();
   const rows = await db.getAllAsync<{
     item_id: string;
     quantity: number;
@@ -97,7 +109,7 @@ export async function getMagicItemQuantity(
   itemId: string,
 ): Promise<number> {
   assertAccountAndItem(accountTag, itemId);
-  const db = await getDB();
+  const db = await getInitializedDB();
   const row = await db.getFirstAsync<{ quantity: number }>(
     `SELECT quantity FROM magic_item_inventory
      WHERE account_player_tag = ? AND item_id = ?`,
@@ -117,7 +129,7 @@ export async function setMagicItemQuantity({
   assertAccountAndItem(accountTag, itemId);
   assertQuantity(quantity);
 
-  const db = await getDB();
+  const db = await getInitializedDB();
   await db.runAsync(
     `INSERT INTO magic_item_inventory
        (account_player_tag, item_id, quantity)
@@ -137,7 +149,7 @@ export async function addMagicItem(
   assertAccountAndItem(accountTag, itemId);
   assertPositiveQuantity(quantity);
 
-  const db = await getDB();
+  const db = await getInitializedDB();
   await db.runAsync(
     `INSERT INTO magic_item_inventory
        (account_player_tag, item_id, quantity)
@@ -176,7 +188,7 @@ export async function recordMagicItemActivation({
     throw new Error("MAGIC_ITEM_EFFECT_ITEM_MISMATCH");
   }
 
-  const db = await getDB();
+  const db = await getInitializedDB();
   await db.execAsync("BEGIN TRANSACTION");
   try {
     if (effect) {
@@ -233,7 +245,7 @@ export async function consumeMagicItemQuantity(
   assertAccountAndItem(accountTag, itemId);
   assertPositiveQuantity(quantity);
 
-  const db = await getDB();
+  const db = await getInitializedDB();
   await db.execAsync("BEGIN TRANSACTION");
   try {
     const result = await db.runAsync(
@@ -266,7 +278,7 @@ export async function consumeMagicItemQuantity(
 /** Total manually activated Magic Items for one account. Imported timers are not usage events. */
 export async function getMagicItemUsageCount(accountTag: string): Promise<number> {
   assertNonEmpty(accountTag, "account_tag");
-  const db = await getDB();
+  const db = await getInitializedDB();
   const row = await db.getFirstAsync<{ total: number | null }>(
     `SELECT COALESCE(SUM(quantity), 0) AS total
      FROM magic_item_usage_events
@@ -282,7 +294,7 @@ export async function getActiveMagicEffects(
 ): Promise<ActiveMagicEffect[]> {
   assertNonEmpty(accountTag, "account_tag");
 
-  const db = await getDB();
+  const db = await getInitializedDB();
   const rows = await db.getAllAsync<{
     id: string;
     item_id: string;
@@ -311,7 +323,7 @@ export async function addActiveMagicEffect(
   effect: ActiveMagicEffect,
 ): Promise<void> {
   assertAccountAndItem(accountTag, effect.itemId);
-  const db = await getDB();
+  const db = await getInitializedDB();
   await db.runAsync(
     `INSERT INTO active_magic_effects
        (id, account_player_tag, item_id, started_at, expires_at, village)
@@ -333,7 +345,7 @@ export async function removeActiveMagicEffect(
 ): Promise<void> {
   assertNonEmpty(accountTag, "account_tag");
   assertNonEmpty(effectId, "effect_id");
-  const db = await getDB();
+  const db = await getInitializedDB();
   await db.runAsync(
     `DELETE FROM active_magic_effects
      WHERE account_player_tag = ? AND id = ?`,
@@ -346,7 +358,7 @@ export async function removeExpiredMagicEffects(
   now = Date.now(),
 ): Promise<number> {
   assertNonEmpty(accountTag, "account_tag");
-  const db = await getDB();
+  const db = await getInitializedDB();
   const result = await db.runAsync(
     `DELETE FROM active_magic_effects
      WHERE account_player_tag = ?
@@ -361,7 +373,7 @@ export async function pruneExpiredMagicEffects(
   accountTag?: string,
   now = Date.now(),
 ): Promise<void> {
-  const db = await getDB();
+  const db = await getInitializedDB();
   if (accountTag) {
     await removeExpiredMagicEffects(accountTag, now);
     return;
@@ -385,7 +397,7 @@ export async function replaceMagicItemInventory(
     assertQuantity(item.quantity);
   }
 
-  const db = await getDB();
+  const db = await getInitializedDB();
   await db.execAsync("BEGIN TRANSACTION");
   try {
     await db.runAsync(
@@ -413,7 +425,7 @@ export async function replaceMagicItemInventory(
 /** Clear simulated potion effects after a JSON snapshot replaces progression. */
 export async function clearActiveMagicEffects(accountTag: string): Promise<void> {
   assertNonEmpty(accountTag, "account_tag");
-  const db = await getDB();
+  const db = await getInitializedDB();
   await db.runAsync("DELETE FROM active_magic_effects WHERE account_player_tag = ?", [accountTag]);
 }
 
@@ -440,7 +452,7 @@ export async function replaceActiveMagicEffects(
     }
   }
 
-  const db = await getDB();
+  const db = await getInitializedDB();
   await db.execAsync("BEGIN TRANSACTION");
   try {
     await db.runAsync(

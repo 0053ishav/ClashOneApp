@@ -11,10 +11,10 @@ type MockDatabase = {
   runAsync: jest.Mock;
 };
 
-function createDatabase(): MockDatabase {
+function createDatabase(version = 0): MockDatabase {
   return {
     execAsync: jest.fn().mockResolvedValue(undefined),
-    getFirstAsync: jest.fn().mockResolvedValue({ version: 0 }),
+    getFirstAsync: jest.fn().mockResolvedValue({ version }),
     getAllAsync: jest.fn().mockResolvedValue([]),
     runAsync: jest.fn().mockResolvedValue({ changes: 1 }),
   };
@@ -80,6 +80,25 @@ describe("initDatabase", () => {
     expect(database.getAllAsync).toHaveBeenCalledWith(
       "PRAGMA table_info(upgrades)",
     );
+  });
+
+  it("repairs a missing usage table when the recorded schema version is already current", async () => {
+    const database = createDatabase(13);
+    mockOpenDatabaseAsync.mockResolvedValue(database);
+
+    const initDatabase = loadInitDatabase();
+
+    await expect(initDatabase()).resolves.toBeUndefined();
+
+    const executedSql = database.execAsync.mock.calls
+      .map(([sql]) => String(sql))
+      .join("\\n");
+
+    expect(executedSql).toContain("CREATE TABLE IF NOT EXISTS magic_item_usage_events");
+    expect(executedSql).toContain("item_type TEXT NOT NULL DEFAULT 'unknown'");
+    expect(executedSql).toContain("idx_magic_item_usage_account_source_time");
+    expect(executedSql).toContain("idx_magic_item_usage_account_type_time");
+    expect(database.runAsync).not.toHaveBeenCalled();
   });
 
   it("allows schema initialization to retry after a migration failure", async () => {

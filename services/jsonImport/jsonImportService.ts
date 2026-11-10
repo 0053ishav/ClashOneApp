@@ -8,6 +8,7 @@ import { setLastJsonSync } from "@/storage/jsonSyncStorage";
 import { syncProfileFromApi } from "@/storage/playerProfile";
 import { useAccountStore } from "@/stores/accountStore";
 import { EntityType, Village } from "@/types/entity";
+import type { ActiveMagicEffect } from "@/types/magicItem";
 import { BuildingProgressRecord, Upgrade } from "@/types/upgrade";
 import { getSessionSource, track } from "@/utils/analytics/analytics";
 import { getEntity } from "@/utils/getEntity";
@@ -15,13 +16,53 @@ import { projectHelperTimer } from "@/utils/helpers/projectHelperTimer";
 import { resyncNotifications } from "@/utils/notificationSync";
 import * as Sentry from "@sentry/react-native";
 import { randomUUID } from "expo-crypto";
-import { clearActiveMagicEffects, replaceImportedBoostSnapshot } from "@/services/magicItemService";
+import { replaceActiveMagicEffects } from "@/services/magicItemService";
 
+
+function createImportedBoostEffects(
+  boosts: RawExport["boosts"],
+  exportedAt: number,
+  importedAt: number,
+): ActiveMagicEffect[] {
+  const elapsedMs = Math.max(0, importedAt - exportedAt);
+  const definitions = [
+    { itemId: "builder-potion", seconds: boosts?.builder_boost ?? 0, village: "home" as const },
+    { itemId: "research-potion", seconds: boosts?.lab_boost ?? 0, village: "home" as const },
+    { itemId: "clock-tower-potion", seconds: boosts?.clocktower_boost ?? 0, village: "builderBase" as const },
+    { itemId: "builder-bite", seconds: boosts?.builder_consumable ?? 0, village: "home" as const },
+    { itemId: "study-soup", seconds: boosts?.lab_consumable ?? 0, village: "home" as const },
+    { itemId: "pet-potion", seconds: boosts?.pet_boost ?? 0, village: "home" as const },
+  ] as const;
+
+  return definitions.flatMap(({ itemId, seconds, village }) => {
+    const remainingMs = seconds * 1_000 - elapsedMs;
+    if (remainingMs <= 0) return [];
+
+    return [{
+      id: `imported:${itemId}:${exportedAt}`,
+      itemId,
+      // Keep the export timestamp as the historical start; import time must
+      // never restart a boost that was already running in Clash of Clans.
+      startedAt: exportedAt,
+      // Preserve the original absolute expiry; elapsed time is already
+      // discounted by comparing it with importedAt above.
+      expiresAt: exportedAt + seconds * 1_000,
+      village,
+    }];
+  });
+}
 
 type RawExport = {
   tag: string;
   timestamp: number;
-  boosts?: { builder_boost?: number; lab_boost?: number; clocktower_boost?: number };
+  boosts?: {
+    builder_boost?: number;
+    lab_boost?: number;
+    clocktower_boost?: number;
+    builder_consumable?: number;
+    lab_consumable?: number;
+    pet_boost?: number;
+  };
 
   buildings?: {
     data: number;
@@ -242,7 +283,7 @@ function validateJson(data: any) {
   }
   if (data.boosts != null) {
     if (typeof data.boosts !== "object" || Array.isArray(data.boosts)) throw new Error("INVALID_BOOSTS");
-    for (const key of ["builder_boost", "lab_boost", "clocktower_boost"] as const) {
+    for (const key of ["builder_boost", "lab_boost", "clocktower_boost", "builder_consumable", "lab_consumable", "pet_boost"] as const) {
       const value = data.boosts[key];
       if (value != null && (!Number.isSafeInteger(value) || value < 0)) throw new Error("INVALID_BOOSTS");
     }
@@ -854,14 +895,10 @@ export async function importVillageJson(
     validLabTasks.length === 0
   ) {
     await importJsonData(parsed.tag, [], entities, buildingProgress);
-    await clearActiveMagicEffects(parsed.tag);
-    await replaceImportedBoostSnapshot({
-      accountTag: parsed.tag,
-      builderBoostSeconds: parsed.boosts?.builder_boost ?? 0,
-      labBoostSeconds: parsed.boosts?.lab_boost ?? 0,
-      clocktowerBoostSeconds: parsed.boosts?.clocktower_boost ?? 0,
-      exportedAt: exportTimestampMs,
-    });
+    await replaceActiveMagicEffects(
+      parsed.tag,
+      createImportedBoostEffects(parsed.boosts, exportTimestampMs, now),
+    );
 
     setLastSync(parsed.tag, now);
     setLastJsonSync(parsed.tag, now);
@@ -1240,14 +1277,10 @@ export async function importVillageJson(
   try {
     await importJsonData(parsed.tag, newUpgrades, entities, buildingProgress);
     // Imported timers are authoritative; app-side simulated potion effects must not re-project them.
-    await clearActiveMagicEffects(parsed.tag);
-    await replaceImportedBoostSnapshot({
-      accountTag: parsed.tag,
-      builderBoostSeconds: parsed.boosts?.builder_boost ?? 0,
-      labBoostSeconds: parsed.boosts?.lab_boost ?? 0,
-      clocktowerBoostSeconds: parsed.boosts?.clocktower_boost ?? 0,
-      exportedAt: exportTimestampMs,
-    });
+    await replaceActiveMagicEffects(
+      parsed.tag,
+      createImportedBoostEffects(parsed.boosts, exportTimestampMs, now),
+    );
     track("json_pipeline", {
       step: "import",
       status: "sucesss",

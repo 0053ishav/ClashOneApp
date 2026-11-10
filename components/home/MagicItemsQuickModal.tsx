@@ -8,6 +8,7 @@ import { activateTimedMagicItem } from "@/services/activateTimedMagicItem";
 import {
   getActiveMagicEffects,
   getMagicItemInventory,
+  getMagicItemUsageCount,
 } from "@/services/magicItemService";
 import { useAccountStore } from "@/stores/accountStore";
 import type { Village } from "@/types/entity";
@@ -16,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import * as Crypto from "expo-crypto";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -53,9 +55,14 @@ export function MagicItemsQuickModal({
   const colors = useHomeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const accounts = useAccountStore((state) => state.accounts);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
+  const [trackedItemIds, setTrackedItemIds] = useState<Set<string>>(new Set());
+  const [usageCount, setUsageCount] = useState(0);
   const [activeEffectIds, setActiveEffectIds] = useState<Set<string>>(new Set());
+  const [queuedEffectIds, setQueuedEffectIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [activatingItemId, setActivatingItemId] = useState<string | null>(null);
   const [dialog, setDialog] = useState<{
@@ -77,32 +84,43 @@ export function MagicItemsQuickModal({
   const loadItems = useCallback(async () => {
     if (!accountTag) {
       setQuantities({});
+      setSelectedQuantities({});
+      setTrackedItemIds(new Set());
+      setUsageCount(0);
       setActiveEffectIds(new Set());
+      setQueuedEffectIds(new Set());
       return;
     }
 
     setIsLoading(true);
     try {
-      const [inventory, effects] = await Promise.all([
-        getMagicItemInventory(accountTag),
+      const [inventory, effects, totalUsed] = await Promise.all([
+        getMagicItemInventory(accountTag).catch(() => []),
         getActiveMagicEffects(accountTag),
+        getMagicItemUsageCount(accountTag),
       ]);
       setQuantities(
         Object.fromEntries(inventory.map((entry) => [entry.itemId, entry.quantity])),
       );
+      setTrackedItemIds(new Set(inventory.map((entry) => entry.itemId)));
+      setUsageCount(totalUsed);
+      const now = Date.now();
       setActiveEffectIds(
         new Set(
           effects
-            .filter((effect) => effect.expiresAt == null || effect.expiresAt > Date.now())
+            .filter(
+              (effect) =>
+                effect.startedAt <= now &&
+                (effect.expiresAt == null || effect.expiresAt > now),
+            )
             .map((effect) => effect.itemId),
         ),
       );
+      setQueuedEffectIds(
+        new Set(effects.filter((effect) => effect.startedAt > now).map((effect) => effect.itemId)),
+      );
     } catch {
-      setDialog({
-        title: "Inventory unavailable",
-        message: "Could not load Magic Items. Please close and try again.",
-        tone: "error",
-      });
+      // Keep the last successfully loaded inventory state; do not interrupt the quick modal.
     } finally {
       setIsLoading(false);
     }
@@ -122,19 +140,20 @@ export function MagicItemsQuickModal({
     [village],
   );
 
-  const activateNow = async (item: MagicItem) => {
+  const activateNow = async (item: MagicItem, requestedQuantity: number) => {
     if (!accountTag || activatingItemId) return;
-    if ((quantities[item.id] ?? 0) <= 0) {
+    if (!Number.isSafeInteger(requestedQuantity) || requestedQuantity <= 0) {
       setDialog({
-        title: "No items available",
-        message: `Add ${item.name} to your tracked inventory first.`,
+        title: "Invalid quantity",
+        message: "Choose a valid quantity greater than zero.",
         item,
-        tone: "info",
+        tone: "error",
       });
       return;
     }
 
     setActivatingItemId(item.id);
+    let didActivate = false;
     try {
       const now = Date.now();
       const effectId = `${item.id}-${Crypto.randomUUID()}`;
@@ -146,6 +165,7 @@ export function MagicItemsQuickModal({
           village,
           now,
           effectId,
+          quantity: requestedQuantity,
         });
         if (!result.activated) {
           setDialog({
@@ -174,6 +194,7 @@ export function MagicItemsQuickModal({
           target,
           now,
           effectId,
+          quantity: requestedQuantity,
         });
         if (!result.activated) {
           setDialog({
@@ -186,19 +207,10 @@ export function MagicItemsQuickModal({
         }
       }
 
-      await loadItems();
-      await onActivated();
-      setDialog({
-        title: "Magic Item activated",
-        message: `${item.name} is now active.`,
-        item,
-        tone: "success",
-      });
+      didActivate = true;
     } catch (error) {
-      const message =
-        error instanceof Error && error.message === "MAGIC_ITEM_NOT_IN_INVENTORY"
-          ? "Your inventory quantity changed. Refresh and try again."
-          : "Please try again.";
+      console.error("[MAGIC_ITEMS] Activation failed:", error);
+      const message = "Please try again.";
       setDialog({
         title: "Could not activate item",
         message,
@@ -208,29 +220,45 @@ export function MagicItemsQuickModal({
     } finally {
       setActivatingItemId(null);
     }
+
+    if (!didActivate) return;
+
+    setDialog({
+      title: requestedQuantity > 1 ? "Magic Items activated" : "Magic Item activated",
+      message: requestedQuantity > 1
+        ? `${requestedQuantity} ${item.name}s activated. Their boost duration is queued after the current effect.`
+        : `${item.name} is now active.`,
+      item,
+      tone: "success",
+    });
+
+    // Refreshing progression/widgets/notifications is follow-up work. A failure
+    // here must not report a committed Magic Item activation as failed.
+    void (async () => {
+      try {
+        await loadItems();
+        await onActivated();
+      } catch (error) {
+        console.error("[MAGIC_ITEMS] Post-activation refresh failed:", error);
+      }
+    })();
   };
 
   const activate = (item: MagicItem) => {
     if (!accountTag || activatingItemId) return;
-    if ((quantities[item.id] ?? 0) <= 0) {
-      setDialog({
-        title: "No items available",
-        message: `Add ${item.name} to your tracked inventory first.`,
-        item,
-        tone: "info",
-      });
-      return;
-    }
+    const requestedQuantity = selectedQuantities[item.id] ?? 1;
+    const confirmationMessage = requestedQuantity > 1
+      ? `Activate ${requestedQuantity} uses? Their durations are queued consecutively; boost strength does not multiply.`
+      : "Activate this Magic Item and record its use for this village?";
     setDialog({
-      title: `Use ${item.name}?`,
-      message:
-        "This consumes one item from your tracked inventory and activates its effect for this village.",
+      title: requestedQuantity > 1 ? `Use ${requestedQuantity} × ${item.name}?` : `Use ${item.name}?`,
+      message: confirmationMessage,
       item,
       tone: "confirm",
-      confirmLabel: "Use item",
+      confirmLabel: requestedQuantity > 1 ? `Use ${requestedQuantity}` : "Use item",
       onConfirm: async () => {
         setDialog(null);
-        await activateNow(item);
+        await activateNow(item, requestedQuantity);
       },
     });
   };
@@ -249,7 +277,7 @@ export function MagicItemsQuickModal({
             onPress={onClose}
             accessibilityLabel="Close Magic Items"
           />
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
             <View style={styles.handle} />
             <View style={styles.header}>
               <View style={styles.headerIcon}>
@@ -298,31 +326,21 @@ export function MagicItemsQuickModal({
             ) : isLoading ? (
               <View style={styles.loading}>
                 <ActivityIndicator color={colors.gold} />
-                <Text style={styles.muted}>Loading inventory…</Text>
+                <Text style={styles.muted}>Loading Magic Items…</Text>
               </View>
             ) : (
               <ScrollView contentContainerStyle={styles.content}>
-                {!items.some((item) => (quantities[item.id] ?? 0) > 0) && (
-                  <View style={styles.emptyInventoryHint}>
-                    <Ionicons
-                      name="information-circle-outline"
-                      size={20}
-                      color={colors.blue}
-                    />
-                    <View style={styles.emptyInventoryText}>
-                      <Text style={styles.emptyInventoryTitle}>
-                        No Potions or Snacks available
-                      </Text>
-                      <Text style={styles.emptyInventoryBody}>
-                        Open Inventory to add the quantities you have. Items with nothing
-                        recorded will show 0 available.
-                      </Text>
-                    </View>
-                  </View>
-                )}
+                <View style={styles.usageSummary}>
+                  <Text style={styles.usageSummaryText}>Tracked uses</Text>
+                  <Text style={styles.usageSummaryValue}>{usageCount}</Text>
+                </View>
                 {items.map((item) => {
                   const quantity = quantities[item.id] ?? 0;
+                  const selectedQuantity = selectedQuantities[item.id] ?? 1;
+                  const isTracked = trackedItemIds.has(item.id);
+                  const maxSelectable = 10;
                   const active = activeEffectIds.has(item.id);
+                  const queued = queuedEffectIds.has(item.id);
                   const isActivating = activatingItemId === item.id;
                   return (
                     <View key={item.id} style={styles.itemCard}>
@@ -339,38 +357,67 @@ export function MagicItemsQuickModal({
                       </View>
                       <View style={styles.itemInfo}>
                         <Text style={styles.itemName}>{item.name}</Text>
-                        <Text style={styles.description} numberOfLines={2}>
-                          {item.description}
-                        </Text>
                         <Text style={styles.quantity}>
-                          {quantity} available{active ? " · Active" : ""}
+                          {isTracked ? `${quantity} available` : "Inventory not tracked"}{active ? " · Active" : queued ? " · Queued" : ""}
                         </Text>
                       </View>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Activate ${item.name}`}
-                        disabled={quantity <= 0 || isActivating || !!activatingItemId}
-                        onPress={() => void activate(item)}
-                        style={({ pressed }) => [
-                          styles.activateButton,
-                          (quantity <= 0 || isActivating || !!activatingItemId) &&
-                            styles.disabled,
-                          pressed && styles.pressed,
-                        ]}
-                      >
-                        {isActivating ? (
-                          <ActivityIndicator size="small" color={colors.textDark} />
-                        ) : (
-                          <Text style={styles.activateText}>Use</Text>
-                        )}
-                      </Pressable>
+                      <View style={styles.useControls}>
+                        <View style={styles.quantityStepper}>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Use fewer ${item.name}s`}
+                            disabled={selectedQuantity <= 1 || isActivating || !!activatingItemId}
+                            onPress={() => setSelectedQuantities((current) => ({
+                              ...current,
+                              [item.id]: Math.max(1, selectedQuantity - 1),
+                            }))}
+                            style={({ pressed }) => [
+                              styles.stepperButton,
+                              (selectedQuantity <= 1 || isActivating || !!activatingItemId) && styles.disabled,
+                              pressed && styles.pressed,
+                            ]}
+                          >
+                            <Text style={styles.stepperText}>−</Text>
+                          </Pressable>
+                          <Text style={styles.selectedQuantity}>{selectedQuantity}</Text>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Use more ${item.name}s`}
+                            disabled={selectedQuantity >= maxSelectable || isActivating || !!activatingItemId}
+                            onPress={() => setSelectedQuantities((current) => ({
+                              ...current,
+                              [item.id]: Math.min(maxSelectable, selectedQuantity + 1),
+                            }))}
+                            style={({ pressed }) => [
+                              styles.stepperButton,
+                              (selectedQuantity >= maxSelectable || isActivating || !!activatingItemId) && styles.disabled,
+                              pressed && styles.pressed,
+                            ]}
+                          >
+                            <Text style={styles.stepperText}>+</Text>
+                          </Pressable>
+                        </View>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Activate ${selectedQuantity} ${item.name}${selectedQuantity === 1 ? "" : "s"}`}
+                          disabled={isActivating || !!activatingItemId}
+                          onPress={() => void activate(item)}
+                          style={({ pressed }) => [
+                            styles.activateButton,
+                            (isActivating || !!activatingItemId) && styles.disabled,
+                            pressed && styles.pressed,
+                          ]}
+                        >
+                          {isActivating ? (
+                            <ActivityIndicator size="small" color={colors.textDark} />
+                          ) : (
+                            <Text style={styles.activateText}>Use ×{selectedQuantity}</Text>
+                          )}
+                        </Pressable>
+                      </View>
                     </View>
                   );
                 })}
-                <Text style={styles.footnote}>
-                  Inventory is manual. Activating an item consumes one tracked item and
-                  records its effect.
-                </Text>
               </ScrollView>
             )}
           </View>
@@ -405,7 +452,6 @@ const createStyles = (colors: HomeColors) =>
       borderTopRightRadius: 24,
       borderTopWidth: 1,
       borderColor: colors.border,
-      paddingBottom: 24,
     },
     handle: {
       alignSelf: "center",
@@ -460,28 +506,19 @@ const createStyles = (colors: HomeColors) =>
       justifyContent: "center",
     },
     content: { padding: 16, gap: 10 },
-    emptyInventoryHint: {
+    usageSummary: {
       flexDirection: "row",
-      alignItems: "flex-start",
-      gap: 9,
-      padding: 12,
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 13,
+      paddingVertical: 10,
       borderRadius: 12,
       backgroundColor: colors.surfaceRaised,
       borderWidth: 1,
       borderColor: colors.border,
     },
-    emptyInventoryText: { flex: 1 },
-    emptyInventoryTitle: {
-      color: colors.textPrimary,
-      fontSize: 12,
-      fontWeight: "800",
-    },
-    emptyInventoryBody: {
-      marginTop: 4,
-      color: colors.textSecondary,
-      fontSize: 11,
-      lineHeight: 15,
-    },
+    usageSummaryText: { color: colors.textSecondary, fontSize: 11, fontWeight: "700" },
+    usageSummaryValue: { color: colors.gold, fontSize: 16, fontWeight: "900" },
     itemCard: {
       flexDirection: "row",
       alignItems: "center",
@@ -505,28 +542,36 @@ const createStyles = (colors: HomeColors) =>
     itemIcon: { width: 38, height: 38 },
     itemInfo: { flex: 1, minWidth: 0 },
     itemName: { color: colors.textPrimary, fontSize: 12, fontWeight: "800" },
-    description: {
-      marginTop: 3,
-      color: colors.textSecondary,
-      fontSize: 10,
-      lineHeight: 14,
-    },
     quantity: {
       marginTop: 5,
       color: colors.gold,
       fontSize: 10,
       fontWeight: "700",
     },
+    useControls: { alignItems: "center", gap: 6 },
+    quantityStepper: { flexDirection: "row", alignItems: "center", gap: 5 },
+    stepperButton: {
+      width: 34,
+      height: 34,
+      borderRadius: 7,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    stepperText: { color: colors.textPrimary, fontSize: 19, fontWeight: "800" },
+    selectedQuantity: { minWidth: 16, textAlign: "center", color: colors.textPrimary, fontSize: 11, fontWeight: "800" },
     activateButton: {
-      minWidth: 46,
-      height: 32,
+      minWidth: 56,
+      height: 29,
       borderRadius: 9,
       backgroundColor: colors.gold,
       alignItems: "center",
       justifyContent: "center",
-      paddingHorizontal: 10,
+      paddingHorizontal: 8,
     },
-    activateText: { color: colors.textDark, fontSize: 11, fontWeight: "900" },
+    activateText: { color: colors.textDark, fontSize: 10, fontWeight: "900" },
     disabled: { opacity: 0.35 },
     pressed: { opacity: 0.65 },
     emptyState: {
@@ -548,10 +593,4 @@ const createStyles = (colors: HomeColors) =>
       gap: 10,
     },
     muted: { color: colors.textSecondary, fontSize: 12 },
-    footnote: {
-      color: colors.textMuted,
-      fontSize: 10,
-      lineHeight: 15,
-      marginTop: 4,
-    },
   });

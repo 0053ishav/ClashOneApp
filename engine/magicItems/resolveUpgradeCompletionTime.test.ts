@@ -80,6 +80,16 @@ describe("resolveUpgradeCompletionTime", () => {
     expect(resolve(30 * HOUR, effects)).toBe(START + 12 * HOUR);
   });
 
+  it("queues a same-potion use at the previous expiry to extend the boost continuously", () => {
+    const effects = [
+      effect("builder-potion", START),
+      effect("builder-potion", START + HOUR),
+    ];
+
+    // Two consecutive one-hour uses form one continuous two-hour boost window.
+    expect(resolve(30 * HOUR, effects)).toBe(START + 12 * HOUR);
+  });
+
   it("does not extend a potion window when the next use starts after expiry", () => {
     const effects = [
       effect("builder-potion", START),

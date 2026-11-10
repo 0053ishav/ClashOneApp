@@ -1,8 +1,55 @@
 import { getDB } from "@/db/database";
+import { initDatabase } from "@/db/initDatabase";
+import type * as SQLite from "expo-sqlite";
+import { getMagicItem } from "@/config/magicItems";
 import type {
   ActiveMagicEffect,
   MagicItemInventory,
 } from "@/types/magicItem";
+
+
+/**
+ * Magic Item persistence must never assume the root layout has already run
+ * migrations. Keep this boundary safe for every caller while sharing the same
+ * database connection.
+ */
+async function getInitializedDB(): Promise<SQLite.SQLiteDatabase> {
+  await initDatabase();
+  return getDB();
+}
+
+export type RecordMagicItemUsageInput = {
+  accountTag: string;
+  itemId: string;
+  quantity: number;
+  usedAt: number;
+  source?: "manual" | "import";
+};
+
+/**
+ * Insert a usage event inside the caller's existing SQLite transaction.
+ * The item category is resolved from the canonical Magic Item registry.
+ */
+export async function recordMagicItemUsageEvent(
+  db: SQLite.SQLiteDatabase,
+  { accountTag, itemId, quantity, usedAt, source = "manual" }: RecordMagicItemUsageInput,
+): Promise<void> {
+  assertAccountAndItem(accountTag, itemId);
+  assertPositiveQuantity(quantity);
+  if (!Number.isSafeInteger(usedAt) || usedAt < 0) {
+    throw new Error("INVALID_MAGIC_ITEM_USAGE_TIMESTAMP");
+  }
+
+  const item = getMagicItem(itemId);
+  if (!item) throw new Error("UNKNOWN_MAGIC_ITEM");
+
+  await db.runAsync(
+    `INSERT INTO magic_item_usage_events
+       (event_id, account_player_tag, item_id, item_type, quantity, used_at, source)
+     VALUES (lower(hex(randomblob(16))), ?, ?, ?, ?, ?, ?)`,
+    [accountTag, itemId, item.itemType, quantity, usedAt, source],
+  );
+}
 
 export type SetMagicItemQuantityInput = {
   accountTag: string;
@@ -39,7 +86,7 @@ export async function getMagicItemInventory(
 ): Promise<MagicItemInventory[]> {
   assertNonEmpty(accountTag, "account_tag");
 
-  const db = await getDB();
+  const db = await getInitializedDB();
   const rows = await db.getAllAsync<{
     item_id: string;
     quantity: number;
@@ -62,7 +109,7 @@ export async function getMagicItemQuantity(
   itemId: string,
 ): Promise<number> {
   assertAccountAndItem(accountTag, itemId);
-  const db = await getDB();
+  const db = await getInitializedDB();
   const row = await db.getFirstAsync<{ quantity: number }>(
     `SELECT quantity FROM magic_item_inventory
      WHERE account_player_tag = ? AND item_id = ?`,
@@ -82,7 +129,7 @@ export async function setMagicItemQuantity({
   assertAccountAndItem(accountTag, itemId);
   assertQuantity(quantity);
 
-  const db = await getDB();
+  const db = await getInitializedDB();
   await db.runAsync(
     `INSERT INTO magic_item_inventory
        (account_player_tag, item_id, quantity)
@@ -102,7 +149,7 @@ export async function addMagicItem(
   assertAccountAndItem(accountTag, itemId);
   assertPositiveQuantity(quantity);
 
-  const db = await getDB();
+  const db = await getInitializedDB();
   await db.runAsync(
     `INSERT INTO magic_item_inventory
        (account_player_tag, item_id, quantity)
@@ -115,53 +162,72 @@ export async function addMagicItem(
 }
 
 /**
- * Consume one item and optionally record its timed effect atomically.
- * Throws when the item is not in inventory; neither write is committed.
+ * Record a Magic Item activation and its effect atomically.
+ *
+ * Inventory is intentionally not read or mutated here. The inventory screen
+ * manages tracked stock independently from activation. Effect scheduling and
+ * usage history are committed together so failed activations leave no partial
+ * records.
  */
-export async function consumeMagicItem({
+export async function recordMagicItemActivation({
   accountTag,
   itemId,
   effect,
+  quantity = 1,
 }: {
   accountTag: string;
   itemId: string;
   effect?: ActiveMagicEffect;
+  /** Number of identical items activated in one action. */
+  quantity?: number;
 }): Promise<void> {
   assertAccountAndItem(accountTag, itemId);
+  assertPositiveQuantity(quantity);
 
   if (effect && effect.itemId !== itemId) {
     throw new Error("MAGIC_ITEM_EFFECT_ITEM_MISMATCH");
   }
 
-  const db = await getDB();
+  const db = await getInitializedDB();
   await db.execAsync("BEGIN TRANSACTION");
   try {
-    const result = await db.runAsync(
-      `UPDATE magic_item_inventory
-       SET quantity = quantity - 1
-       WHERE account_player_tag = ? AND item_id = ? AND quantity > 0`,
-      [accountTag, itemId],
-    );
-
-    if (result.changes !== 1) {
-      throw new Error("MAGIC_ITEM_NOT_IN_INVENTORY");
-    }
-
     if (effect) {
+      const durationMs =
+        effect.expiresAt == null ? undefined : effect.expiresAt - effect.startedAt;
+      const latestEffect = await db.getFirstAsync<{ expires_at: number | null }>(
+        "SELECT MAX(expires_at) AS expires_at FROM active_magic_effects WHERE account_player_tag = ? AND item_id = ? AND village IS ? AND expires_at > ?",
+        [accountTag, itemId, effect.village ?? null, effect.startedAt],
+      );
+      const queuedStartAt = Math.max(
+        effect.startedAt,
+        Number(latestEffect?.expires_at ?? effect.startedAt),
+      );
+      const queuedEffect = {
+        ...effect,
+        startedAt: queuedStartAt,
+        expiresAt: durationMs == null ? undefined : queuedStartAt + durationMs,
+      };
       await db.runAsync(
         `INSERT INTO active_magic_effects
            (id, account_player_tag, item_id, started_at, expires_at, village)
          VALUES (?, ?, ?, ?, ?, ?)`,
         [
-          effect.id,
+          queuedEffect.id,
           accountTag,
           itemId,
-          effect.startedAt,
-          effect.expiresAt ?? null,
-          effect.village ?? null,
+          queuedEffect.startedAt,
+          queuedEffect.expiresAt ?? null,
+          queuedEffect.village ?? null,
         ],
       );
     }
+
+    await recordMagicItemUsageEvent(db, {
+      accountTag,
+      itemId,
+      quantity,
+      usedAt: effect?.startedAt ?? Date.now(),
+    });
 
     await db.execAsync("COMMIT");
   } catch (error) {
@@ -179,7 +245,7 @@ export async function consumeMagicItemQuantity(
   assertAccountAndItem(accountTag, itemId);
   assertPositiveQuantity(quantity);
 
-  const db = await getDB();
+  const db = await getInitializedDB();
   await db.execAsync("BEGIN TRANSACTION");
   try {
     const result = await db.runAsync(
@@ -194,6 +260,13 @@ export async function consumeMagicItemQuantity(
       return false;
     }
 
+    await recordMagicItemUsageEvent(db, {
+      accountTag,
+      itemId,
+      quantity,
+      usedAt: Date.now(),
+    });
+
     await db.execAsync("COMMIT");
     return true;
   } catch (error) {
@@ -202,13 +275,26 @@ export async function consumeMagicItemQuantity(
   }
 }
 
+/** Total manually activated Magic Items for one account. Imported timers are not usage events. */
+export async function getMagicItemUsageCount(accountTag: string): Promise<number> {
+  assertNonEmpty(accountTag, "account_tag");
+  const db = await getInitializedDB();
+  const row = await db.getFirstAsync<{ total: number | null }>(
+    `SELECT COALESCE(SUM(quantity), 0) AS total
+     FROM magic_item_usage_events
+     WHERE account_player_tag = ? AND source = 'manual'`,
+    [accountTag],
+  );
+  return Number(row?.total ?? 0);
+}
+
 /** Read timed effects for one account, including expired records for reconciliation. */
 export async function getActiveMagicEffects(
   accountTag: string,
 ): Promise<ActiveMagicEffect[]> {
   assertNonEmpty(accountTag, "account_tag");
 
-  const db = await getDB();
+  const db = await getInitializedDB();
   const rows = await db.getAllAsync<{
     id: string;
     item_id: string;
@@ -237,7 +323,7 @@ export async function addActiveMagicEffect(
   effect: ActiveMagicEffect,
 ): Promise<void> {
   assertAccountAndItem(accountTag, effect.itemId);
-  const db = await getDB();
+  const db = await getInitializedDB();
   await db.runAsync(
     `INSERT INTO active_magic_effects
        (id, account_player_tag, item_id, started_at, expires_at, village)
@@ -259,7 +345,7 @@ export async function removeActiveMagicEffect(
 ): Promise<void> {
   assertNonEmpty(accountTag, "account_tag");
   assertNonEmpty(effectId, "effect_id");
-  const db = await getDB();
+  const db = await getInitializedDB();
   await db.runAsync(
     `DELETE FROM active_magic_effects
      WHERE account_player_tag = ? AND id = ?`,
@@ -272,7 +358,7 @@ export async function removeExpiredMagicEffects(
   now = Date.now(),
 ): Promise<number> {
   assertNonEmpty(accountTag, "account_tag");
-  const db = await getDB();
+  const db = await getInitializedDB();
   const result = await db.runAsync(
     `DELETE FROM active_magic_effects
      WHERE account_player_tag = ?
@@ -287,7 +373,7 @@ export async function pruneExpiredMagicEffects(
   accountTag?: string,
   now = Date.now(),
 ): Promise<void> {
-  const db = await getDB();
+  const db = await getInitializedDB();
   if (accountTag) {
     await removeExpiredMagicEffects(accountTag, now);
     return;
@@ -311,7 +397,7 @@ export async function replaceMagicItemInventory(
     assertQuantity(item.quantity);
   }
 
-  const db = await getDB();
+  const db = await getInitializedDB();
   await db.execAsync("BEGIN TRANSACTION");
   try {
     await db.runAsync(
@@ -339,45 +425,58 @@ export async function replaceMagicItemInventory(
 /** Clear simulated potion effects after a JSON snapshot replaces progression. */
 export async function clearActiveMagicEffects(accountTag: string): Promise<void> {
   assertNonEmpty(accountTag, "account_tag");
-  const db = await getDB();
+  const db = await getInitializedDB();
   await db.runAsync("DELETE FROM active_magic_effects WHERE account_player_tag = ?", [accountTag]);
 }
 
-export type ImportedBoostSnapshot = {
-  accountTag: string;
-  builderBoostSeconds: number;
-  labBoostSeconds: number;
-  clocktowerBoostSeconds: number;
-  exportedAt: number;
-};
-
-function assertRemainingSeconds(value: number, field: string): void {
-  if (!Number.isSafeInteger(value) || value < 0) throw new Error(`INVALID_${field.toUpperCase()}`);
-}
-
-/** Persist export boost timers separately from simulated Magic Item effects. */
-export async function replaceImportedBoostSnapshot(snapshot: ImportedBoostSnapshot): Promise<void> {
-  assertNonEmpty(snapshot.accountTag, "account_tag");
-  assertRemainingSeconds(snapshot.builderBoostSeconds, "builder_boost_seconds");
-  assertRemainingSeconds(snapshot.labBoostSeconds, "lab_boost_seconds");
-  assertRemainingSeconds(snapshot.clocktowerBoostSeconds, "clocktower_boost_seconds");
-  if (!Number.isSafeInteger(snapshot.exportedAt) || snapshot.exportedAt < 0) throw new Error("INVALID_EXPORTED_AT");
-  const db = await getDB();
-  await db.runAsync(`INSERT INTO imported_boosts
-    (account_player_tag, builder_boost_seconds, lab_boost_seconds, clocktower_boost_seconds, exported_at)
-    VALUES (?, ?, ?, ?, ?)
-    ON CONFLICT(account_player_tag) DO UPDATE SET
-      builder_boost_seconds = excluded.builder_boost_seconds,
-      lab_boost_seconds = excluded.lab_boost_seconds,
-      clocktower_boost_seconds = excluded.clocktower_boost_seconds,
-      exported_at = excluded.exported_at`, [snapshot.accountTag, snapshot.builderBoostSeconds, snapshot.labBoostSeconds, snapshot.clocktowerBoostSeconds, snapshot.exportedAt]);
-}
-
-export async function getImportedBoostSnapshot(accountTag: string): Promise<ImportedBoostSnapshot | null> {
+/**
+ * Replace imported potion timers using the same effect records used by
+ * manually consumed Magic Items. Imported records are identifiable by ID.
+ */
+export async function replaceActiveMagicEffects(
+  accountTag: string,
+  effects: ActiveMagicEffect[],
+): Promise<void> {
   assertNonEmpty(accountTag, "account_tag");
-  const db = await getDB();
-  const row = await db.getFirstAsync<{ account_player_tag: string; builder_boost_seconds: number; lab_boost_seconds: number; clocktower_boost_seconds: number; exported_at: number }>(
-    "SELECT account_player_tag, builder_boost_seconds, lab_boost_seconds, clocktower_boost_seconds, exported_at FROM imported_boosts WHERE account_player_tag = ?", [accountTag]);
-  if (!row) return null;
-  return { accountTag: row.account_player_tag, builderBoostSeconds: Number(row.builder_boost_seconds), labBoostSeconds: Number(row.lab_boost_seconds), clocktowerBoostSeconds: Number(row.clocktower_boost_seconds), exportedAt: Number(row.exported_at) };
+  for (const effect of effects) {
+    assertAccountAndItem(accountTag, effect.itemId);
+    assertNonEmpty(effect.id, "effect_id");
+    if (!Number.isSafeInteger(effect.startedAt) || effect.startedAt < 0) {
+      throw new Error("INVALID_MAGIC_ITEM_EFFECT_STARTED_AT");
+    }
+    if (
+      effect.expiresAt != null &&
+      (!Number.isSafeInteger(effect.expiresAt) || effect.expiresAt <= effect.startedAt)
+    ) {
+      throw new Error("INVALID_MAGIC_ITEM_EFFECT_EXPIRES_AT");
+    }
+  }
+
+  const db = await getInitializedDB();
+  await db.execAsync("BEGIN TRANSACTION");
+  try {
+    await db.runAsync(
+      "DELETE FROM active_magic_effects WHERE account_player_tag = ?",
+      [accountTag],
+    );
+    for (const effect of effects) {
+      await db.runAsync(
+        `INSERT INTO active_magic_effects
+          (id, account_player_tag, item_id, started_at, expires_at, village)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          effect.id,
+          accountTag,
+          effect.itemId,
+          effect.startedAt,
+          effect.expiresAt ?? null,
+          effect.village ?? null,
+        ],
+      );
+    }
+    await db.execAsync("COMMIT");
+  } catch (error) {
+    await db.execAsync("ROLLBACK");
+    throw error;
+  }
 }

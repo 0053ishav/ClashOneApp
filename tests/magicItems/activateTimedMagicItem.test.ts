@@ -1,9 +1,9 @@
 import { getMagicItem } from "@/config/magicItems";
 import { activateTimedMagicItem } from "@/services/activateTimedMagicItem";
-import { consumeMagicItem } from "@/services/magicItemService";
+import { recordMagicItemActivation } from "@/services/magicItemService";
 
 jest.mock("@/services/magicItemService", () => ({
-  consumeMagicItem: jest.fn(),
+  recordMagicItemActivation: jest.fn(),
 }));
 
 describe("activateTimedMagicItem", () => {
@@ -29,7 +29,7 @@ describe("activateTimedMagicItem", () => {
         village: "home",
       },
     });
-    expect(consumeMagicItem).toHaveBeenCalledWith({
+    expect(recordMagicItemActivation).toHaveBeenCalledWith({
       accountTag: "#ACCOUNT",
       itemId: "study-soup",
       effect: {
@@ -39,6 +39,46 @@ describe("activateTimedMagicItem", () => {
         expiresAt: 3_601_000,
         village: "home",
       },
+    });
+  });
+
+  it("extends the effect duration by the requested quantity", async () => {
+    const result = await activateTimedMagicItem({
+      accountTag: "#ACCOUNT",
+      itemId: "study-soup",
+      village: "home",
+      target: "research",
+      now: 1_000,
+      effectId: "effect-three",
+      quantity: 3,
+    });
+
+    expect(result).toEqual({
+      activated: true,
+      effect: {
+        id: "effect-three",
+        itemId: "study-soup",
+        startedAt: 1_000,
+        expiresAt: 10_801_000,
+        village: "home",
+      },
+    });
+    expect(recordMagicItemActivation).toHaveBeenCalledWith(
+      expect.objectContaining({ quantity: 3 }),
+    );
+  });
+
+  it("records activation without passing inventory state", async () => {
+    const effect = {
+      id: "effect-untracked", itemId: "study-soup", startedAt: 1_000,
+      expiresAt: 14_401_000, village: "home",
+    };
+    await activateTimedMagicItem({
+      accountTag: "#ACCOUNT", itemId: "study-soup", village: "home",
+      target: "research", now: 1_000, effectId: "effect-untracked", quantity: 4,
+    });
+    expect(recordMagicItemActivation).toHaveBeenCalledWith({
+      accountTag: "#ACCOUNT", itemId: "study-soup", effect, quantity: 4,
     });
   });
 
@@ -57,7 +97,7 @@ describe("activateTimedMagicItem", () => {
       reason: "unsupported-village",
     });
 
-    expect(consumeMagicItem).not.toHaveBeenCalled();
+    expect(recordMagicItemActivation).not.toHaveBeenCalled();
   });
 
   it("rejects a timed item used on an incompatible target", async () => {
@@ -75,7 +115,7 @@ describe("activateTimedMagicItem", () => {
       reason: "incompatible-target",
     });
 
-    expect(consumeMagicItem).not.toHaveBeenCalled();
+    expect(recordMagicItemActivation).not.toHaveBeenCalled();
   });
 
   it("rejects Books and Hammers from the timed-item path", async () => {
@@ -96,6 +136,6 @@ describe("activateTimedMagicItem", () => {
       reason: "not-a-timed-speed-item",
     });
 
-    expect(consumeMagicItem).not.toHaveBeenCalled();
+    expect(recordMagicItemActivation).not.toHaveBeenCalled();
   });
 });

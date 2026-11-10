@@ -82,8 +82,7 @@ jest.mock("expo-crypto", () => {
 });
 
 jest.mock("@/services/magicItemService", () => ({
-  clearActiveMagicEffects: jest.fn(),
-  replaceImportedBoostSnapshot: jest.fn(),
+  replaceActiveMagicEffects: jest.fn(),
 }));
 
 const accountTag = "#TEST123";
@@ -473,6 +472,111 @@ describe("importVillageJson Gold Pass regression coverage", () => {
         exportTimestampMs + (exportedRemainingSeconds + 60) * 1_000,
       ]);
     expect(new Set(matchingUpgrades.map((upgrade) => upgrade.id)).size).toBe(2);
+  });
+
+
+  it("imports all potion and consumable timers as active magic effects", async () => {
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      boosts: {
+        builder_boost: 3600,
+        lab_boost: 1800,
+        clocktower_boost: 900,
+        builder_consumable: 1200,
+        lab_consumable: 600,
+        pet_boost: 300,
+      },
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 123456, lvl: 1, timer: exportedRemainingSeconds },
+      ],
+    });
+
+    await importVillageJson(rawExport);
+
+    const { replaceActiveMagicEffects } = jest.requireMock("@/services/magicItemService");
+    expect(replaceActiveMagicEffects).toHaveBeenCalledWith(accountTag, [
+      { id: `imported:builder-potion:${exportTimestampMs}`, itemId: "builder-potion", startedAt: exportTimestampMs, expiresAt: exportTimestampMs + 3_600_000, village: "home" },
+      { id: `imported:research-potion:${exportTimestampMs}`, itemId: "research-potion", startedAt: exportTimestampMs, expiresAt: exportTimestampMs + 1_800_000, village: "home" },
+      { id: `imported:clock-tower-potion:${exportTimestampMs}`, itemId: "clock-tower-potion", startedAt: exportTimestampMs, expiresAt: exportTimestampMs + 900_000, village: "builderBase" },
+      { id: `imported:builder-bite:${exportTimestampMs}`, itemId: "builder-bite", startedAt: exportTimestampMs, expiresAt: exportTimestampMs + 1_200_000, village: "home" },
+      { id: `imported:study-soup:${exportTimestampMs}`, itemId: "study-soup", startedAt: exportTimestampMs, expiresAt: exportTimestampMs + 600_000, village: "home" },
+      { id: `imported:pet-potion:${exportTimestampMs}`, itemId: "pet-potion", startedAt: exportTimestampMs, expiresAt: exportTimestampMs + 300_000, village: "home" },
+    ]);
+  });
+
+  it("subtracts time elapsed since export when boosts are imported later", async () => {
+    const importedAt = exportTimestampMs + 35 * 60 * 1_000;
+    jest.mocked(Date.now).mockReturnValue(importedAt);
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      boosts: {
+        builder_boost: 3600,
+        lab_boost: 1800,
+        builder_consumable: 1200,
+        pet_boost: 3600,
+      },
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 123456, lvl: 1, timer: 3600 },
+      ],
+    });
+
+    await importVillageJson(rawExport);
+
+    const { replaceActiveMagicEffects } = jest.requireMock("@/services/magicItemService");
+    expect(replaceActiveMagicEffects).toHaveBeenCalledWith(accountTag, [
+      {
+        id: `imported:builder-potion:${exportTimestampMs}`,
+        itemId: "builder-potion",
+        startedAt: exportTimestampMs,
+        expiresAt: exportTimestampMs + 60 * 60 * 1_000,
+        village: "home",
+      },
+      {
+        id: `imported:pet-potion:${exportTimestampMs}`,
+        itemId: "pet-potion",
+        startedAt: exportTimestampMs,
+        expiresAt: exportTimestampMs + 60 * 60 * 1_000,
+        village: "home",
+      },
+    ]);
+  });
+
+  it("does not persist imported boosts that expired before the player imports", async () => {
+    const importedAt = exportTimestampMs + 61 * 60 * 1_000;
+    jest.mocked(Date.now).mockReturnValue(importedAt);
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      boosts: {
+        builder_boost: 3600,
+        lab_boost: 1800,
+      },
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 123456, lvl: 1, timer: 3600 },
+      ],
+    });
+
+    await importVillageJson(rawExport);
+
+    const { replaceActiveMagicEffects } = jest.requireMock("@/services/magicItemService");
+    expect(replaceActiveMagicEffects).toHaveBeenCalledWith(accountTag, []);
+  });
+
+  it("rejects negative imported consumable timers", async () => {
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      boosts: { pet_boost: -1 },
+      buildings: [],
+    });
+
+    await expect(importVillageJson(rawExport)).rejects.toThrow("INVALID_BOOSTS");
+    expect(mockImportJsonData).not.toHaveBeenCalled();
   });
 
 });

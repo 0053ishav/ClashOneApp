@@ -84,8 +84,10 @@ export async function getUpgrades(tag: string): Promise<Upgrade[]> {
     currentSuperchargeLevel: r.current_supercharge_level ?? undefined,
     nextSuperchargeLevel: r.next_supercharge_level ?? undefined,
   }));
-  const effects = await getActiveMagicEffects(tag);
-  return deriveCompletionState(applyMagicItemEffectsToUpgrades(normalized, effects));
+  const activeEffects = await getActiveMagicEffects(tag);
+  return deriveCompletionState(
+    applyMagicItemEffectsToUpgrades(normalized, activeEffects),
+  );
 }
 
 
@@ -149,8 +151,8 @@ export async function getActiveUpgrades(tag: string): Promise<Upgrade[]> {
     isCompleted: !!r.is_completed,
     source: r.source,
   }));
-  const effects = await getActiveMagicEffects(tag);
-  return applyMagicItemEffectsToUpgrades(normalized, effects)
+  const activeEffects = await getActiveMagicEffects(tag);
+  return applyMagicItemEffectsToUpgrades(normalized, activeEffects)
     .filter((upgrade) => !upgrade.isCompleted && upgrade.endTime > now);
 }
 

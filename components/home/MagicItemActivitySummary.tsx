@@ -6,7 +6,7 @@ import type { ActiveMagicEffect, MagicItem } from "@/types/magicItem";
 import type { Upgrade } from "@/types/upgrade";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { Village } from "@/types/entity";
 
@@ -18,6 +18,19 @@ type MagicItemActivitySummaryProps = {
 
 export function formatSavedDuration(milliseconds: number): string {
   const totalMinutes = Math.max(0, Math.floor(milliseconds / 60_000));
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+  if (days > 0) return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
+  if (hours > 0) return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+  return `${minutes}m`;
+}
+
+/** Format a live countdown without rounding remaining time down to zero early. */
+export function formatRemainingDuration(milliseconds: number): string {
+  if (milliseconds <= 0) return "Expired";
+  const totalMinutes = Math.ceil(milliseconds / 60_000);
+  if (totalMinutes === 1 && milliseconds < 60_000) return "<1m";
   const days = Math.floor(totalMinutes / 1440);
   const hours = Math.floor((totalMinutes % 1440) / 60);
   const minutes = totalMinutes % 60;
@@ -158,7 +171,7 @@ type MagicItemActivityPopupProps = {
   visible: boolean;
   village: Village;
   totalSavedMs: number;
-  items: MagicItem[];
+  effects: ActiveMagicEffect[];
   error?: string;
   onClose: () => void;
 };
@@ -167,13 +180,36 @@ export function MagicItemActivityPopup({
   visible,
   village,
   totalSavedMs,
-  items,
+  effects,
   error,
   onClose,
 }: MagicItemActivityPopupProps) {
   const colors = useHomeColors();
   const popupStyles = useMemo(() => createPopupStyles(colors), [colors]);
   const villageName = village === "home" ? "Home Village" : "Builder Base";
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    if (!visible) return;
+    setNow(Date.now());
+    const interval = setInterval(() => setNow(Date.now()), 1_000);
+    return () => clearInterval(interval);
+  }, [visible]);
+
+  const activeEffects = useMemo(
+    () => effects
+      .filter((effect) =>
+        effect.village === village &&
+        effect.startedAt <= now &&
+        (effect.expiresAt == null || effect.expiresAt > now),
+      )
+      .map((effect) => ({ effect, item: getMagicItem(effect.itemId) }))
+      .filter((entry): entry is { effect: ActiveMagicEffect; item: MagicItem } =>
+        entry.item !== undefined &&
+        (entry.item.itemType === "potion" || entry.item.itemType === "snack"),
+      ),
+    [effects, now, village],
+  );
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -217,7 +253,7 @@ export function MagicItemActivityPopup({
           <View style={popupStyles.sectionHeader}>
             <Text style={popupStyles.sectionTitle}>ACTIVE EFFECTS</Text>
             <View style={popupStyles.countBadge}>
-              <Text style={popupStyles.countText}>{items.length}</Text>
+              <Text style={popupStyles.countText}>{activeEffects.length}</Text>
             </View>
           </View>
 
@@ -226,10 +262,10 @@ export function MagicItemActivityPopup({
               <Ionicons name="alert-circle-outline" size={23} color={colors.danger} />
               <Text style={popupStyles.emptyText}>{error}</Text>
             </View>
-          ) : items.length > 0 ? (
+          ) : activeEffects.length > 0 ? (
             <ScrollView style={popupStyles.list} contentContainerStyle={popupStyles.listContent}>
-              {items.map((item) => (
-                <View key={item.id} style={popupStyles.itemRow}>
+              {activeEffects.map(({ effect, item }) => (
+                <View key={effect.id} style={popupStyles.itemRow}>
                   <View style={popupStyles.itemIcon}>
                     {item.image ? (
                       <Image source={{ uri: item.image }} style={popupStyles.itemImage} contentFit="contain" />
@@ -239,11 +275,18 @@ export function MagicItemActivityPopup({
                   </View>
                   <View style={popupStyles.itemInfo}>
                     <Text style={popupStyles.itemName}>{item.name}</Text>
-                    <Text style={popupStyles.itemDescription} numberOfLines={2}>{item.description}</Text>
+                    <Text style={popupStyles.itemDescription} numberOfLines={1}>{item.description}</Text>
                   </View>
-                  <View style={popupStyles.activeStatus}>
-                    <View style={popupStyles.activeDot} />
-                    <Text style={popupStyles.activeText}>ACTIVE</Text>
+                  <View style={popupStyles.remainingTime}>
+                    <View style={popupStyles.activeStatus}>
+                      <View style={popupStyles.activeDot} />
+                      <Text style={popupStyles.activeText}>ACTIVE</Text>
+                    </View>
+                    <Text style={popupStyles.remainingText}>
+                      {effect.expiresAt == null
+                        ? "No expiry"
+                        : `${formatRemainingDuration(effect.expiresAt - now)} left`}
+                    </Text>
                   </View>
                 </View>
               ))}
@@ -297,9 +340,11 @@ const createPopupStyles = (colors: HomeColors) => StyleSheet.create({
   itemInfo: { flex: 1, minWidth: 0 },
   itemName: { color: colors.textPrimary, fontSize: 12, fontWeight: "800" },
   itemDescription: { color: colors.textSecondary, fontSize: 9, lineHeight: 13, marginTop: 3 },
+  remainingTime: { alignItems: "flex-end", gap: 4 },
   activeStatus: { flexDirection: "row", alignItems: "center", gap: 4 },
   activeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#34d399" },
   activeText: { color: "#34d399", fontSize: 8, fontWeight: "900", letterSpacing: 0.3 },
+  remainingText: { color: colors.textPrimary, fontSize: 10, fontWeight: "800", fontVariant: ["tabular-nums"] },
   emptyState: { alignItems: "center", justifyContent: "center", paddingVertical: 22, paddingHorizontal: 18, borderRadius: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   emptyIcon: { width: 42, height: 42, borderRadius: 13, backgroundColor: colors.background, alignItems: "center", justifyContent: "center", marginBottom: 9 },
   emptyTitle: { color: colors.textPrimary, fontSize: 12, fontWeight: "800", marginTop: 8 },

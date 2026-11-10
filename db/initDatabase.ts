@@ -349,6 +349,89 @@ async function migrateDatabase() {
     version = 11;
   }
 
+
+  // V12 - Record manually consumed Magic Items for account-level usage totals.
+  if (version < 12) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS magic_item_usage_events (
+        event_id TEXT PRIMARY KEY,
+        account_player_tag TEXT NOT NULL,
+        item_id TEXT NOT NULL,
+        quantity INTEGER NOT NULL CHECK (quantity > 0),
+        used_at INTEGER NOT NULL,
+        source TEXT NOT NULL DEFAULT 'manual',
+        FOREIGN KEY(account_player_tag)
+        REFERENCES accounts(player_tag)
+        ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_magic_item_usage_account_source_time
+      ON magic_item_usage_events(account_player_tag, source, used_at);
+    `);
+    await setSchemaVersion(db, 12);
+    version = 12;
+  }
+
+
+  // V13 - Persist the normalized Magic Item category on each usage event.
+  if (version < 13) {
+    try {
+      await db.execAsync(`
+        ALTER TABLE magic_item_usage_events
+        ADD COLUMN item_type TEXT NOT NULL DEFAULT 'unknown';
+      `);
+    } catch (error) {
+      // A prior interrupted migration may already have added the column.
+      log("⏭️ magic_item_usage_events.item_type already exists", error);
+    }
+
+    await db.execAsync(`
+      UPDATE magic_item_usage_events
+      SET item_type = CASE
+        WHEN item_id IN (
+          'builder-potion',
+          'research-potion',
+          'pet-potion',
+          'clock-tower-potion'
+        ) THEN 'potion'
+        WHEN item_id IN ('study-soup', 'builder-bite') THEN 'snack'
+        WHEN item_id LIKE 'book-of-%' THEN 'book'
+        WHEN item_id LIKE 'hammer-of-%' THEN 'hammer'
+        ELSE 'unknown'
+      END;
+
+      CREATE INDEX IF NOT EXISTS idx_magic_item_usage_account_type_time
+      ON magic_item_usage_events(account_player_tag, item_type, used_at);
+    `);
+    await setSchemaVersion(db, 13);
+    version = 13;
+  }
+
+
+  // Reconcile critical tables even when schema_version is ahead of the
+  // physical schema (for example, after an interrupted/older migration).
+  // This is intentionally idempotent and preserves all existing rows.
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS magic_item_usage_events (
+      event_id TEXT PRIMARY KEY,
+      account_player_tag TEXT NOT NULL,
+      item_id TEXT NOT NULL,
+      item_type TEXT NOT NULL DEFAULT 'unknown',
+      quantity INTEGER NOT NULL CHECK (quantity > 0),
+      used_at INTEGER NOT NULL,
+      source TEXT NOT NULL DEFAULT 'manual',
+      FOREIGN KEY(account_player_tag)
+      REFERENCES accounts(player_tag)
+      ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_magic_item_usage_account_source_time
+    ON magic_item_usage_events(account_player_tag, source, used_at);
+
+    CREATE INDEX IF NOT EXISTS idx_magic_item_usage_account_type_time
+    ON magic_item_usage_events(account_player_tag, item_type, used_at);
+  `);
+
   // log("✅ Database ready. Version:", version);
 
   // Debug only

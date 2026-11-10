@@ -1,5 +1,5 @@
 import { getMagicItem } from "@/config/magicItems";
-import { consumeMagicItem } from "@/services/magicItemService";
+import { recordMagicItemActivation } from "@/services/magicItemService";
 import type { Village } from "@/types/entity";
 import type { MagicItemTarget } from "@/types/magicItem";
 
@@ -9,6 +9,7 @@ export type ActivateClockTowerPotionInput = {
   village: Village;
   now?: number;
   effectId: string;
+  quantity?: number;
 };
 
 export type ActivateClockTowerPotionResult =
@@ -43,7 +44,12 @@ export async function activateClockTowerPotion({
   village,
   now = Date.now(),
   effectId,
+  quantity = 1,
 }: ActivateClockTowerPotionInput): Promise<ActivateClockTowerPotionResult> {
+  if (!Number.isSafeInteger(quantity) || quantity <= 0) {
+    throw new Error("INVALID_MAGIC_ITEM_QUANTITY");
+  }
+
   const item = getMagicItem(itemId);
 
   if (!item) return { activated: false, reason: "unknown-item" };
@@ -65,11 +71,16 @@ export async function activateClockTowerPotion({
     id: effectId,
     itemId: item.id,
     startedAt: now,
-    expiresAt: now + durationMinutes * 60_000,
+    expiresAt: now + durationMinutes * 60_000 * quantity,
     village,
   } as const;
 
-  await consumeMagicItem({ accountTag, itemId, effect });
+  await recordMagicItemActivation({
+    accountTag,
+    itemId,
+    effect,
+    ...(quantity > 1 ? { quantity } : {}),
+  });
 
   return { activated: true, effect };
 }

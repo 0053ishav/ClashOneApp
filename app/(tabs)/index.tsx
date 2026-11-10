@@ -54,7 +54,7 @@ import { useAccountStore } from "@/stores/accountStore";
 import { useHammerJamStore } from "@/stores/hammerJamStore";
 import { usePremiumStore } from "@/stores/premiumStore";
 import { Village } from "@/types/entity";
-import type { MagicItem } from "@/types/magicItem";
+import type { ActiveMagicEffect, MagicItem } from "@/types/magicItem";
 import { Upgrade } from "@/types/upgrade";
 import { setSessionSource, track } from "@/utils/analytics/analytics";
 import { calculateProgress } from "@/utils/calculateProgress";
@@ -127,7 +127,7 @@ export default function HomeScreen() {
   const [magicItemActivity, setMagicItemActivity] = useState<{
     village: Village;
     totalSavedMs: number;
-    items: MagicItem[];
+    effects: ActiveMagicEffect[];
     error?: string;
   } | null>(null);
   const [magicItemInventoryCount, setMagicItemInventoryCount] = useState(0);
@@ -534,7 +534,7 @@ export default function HomeScreen() {
       setMagicItemActivity({
         village: selectedVillage,
         totalSavedMs,
-        items: [],
+        effects: [],
         error: "Connect a village to view tracked effects.",
       });
       return;
@@ -542,34 +542,28 @@ export default function HomeScreen() {
 
     try {
       const effects = await getActiveMagicEffects(activeTag);
-      const activeItems = Array.from(
-        new Set(
-          effects
-            .filter(
-              (effect) =>
-                effect.village === selectedVillage &&
-                (effect.expiresAt == null || effect.expiresAt > Date.now()),
-            )
-            .map((effect) => effect.itemId),
-        ),
-      )
-        .map((itemId) => MAGIC_ITEMS.find((item) => item.id === itemId))
-        .filter(
-          (item): item is (typeof MAGIC_ITEMS)[number] =>
-            item !== undefined &&
-            (item.itemType === "potion" || item.itemType === "snack"),
-        );
+      const activeEffects = effects.filter(
+        (effect) =>
+          effect.village === selectedVillage &&
+          effect.startedAt <= Date.now() &&
+          (effect.expiresAt == null || effect.expiresAt > Date.now()) &&
+          MAGIC_ITEMS.some(
+            (item) =>
+              item.id === effect.itemId &&
+              (item.itemType === "potion" || item.itemType === "snack"),
+          ),
+      );
 
       setMagicItemActivity({
         village: selectedVillage,
         totalSavedMs,
-        items: activeItems,
+        effects: activeEffects,
       });
     } catch {
       setMagicItemActivity({
         village: selectedVillage,
         totalSavedMs,
-        items: [],
+        effects: [],
         error: "Could not load active effects. Please try again.",
       });
     }
@@ -1650,7 +1644,7 @@ export default function HomeScreen() {
         visible={magicItemActivity !== null}
         village={magicItemActivity?.village ?? selectedVillage}
         totalSavedMs={magicItemActivity?.totalSavedMs ?? 0}
-        items={magicItemActivity?.items ?? []}
+        effects={magicItemActivity?.effects ?? []}
         error={magicItemActivity?.error}
         onClose={() => setMagicItemActivity(null)}
       />

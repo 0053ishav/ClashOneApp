@@ -506,6 +506,67 @@ describe("importVillageJson Gold Pass regression coverage", () => {
     ]);
   });
 
+  it("subtracts time elapsed since export when boosts are imported later", async () => {
+    const importedAt = exportTimestampMs + 35 * 60 * 1_000;
+    jest.spyOn(Date, "now").mockReturnValue(importedAt);
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      boosts: {
+        builder_boost: 3600,
+        lab_boost: 1800,
+        builder_consumable: 1200,
+        pet_boost: 3600,
+      },
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 123456, lvl: 1, timer: 3600 },
+      ],
+    });
+
+    await importVillageJson(rawExport);
+
+    const { replaceActiveMagicEffects } = jest.requireMock("@/services/magicItemService");
+    expect(replaceActiveMagicEffects).toHaveBeenCalledWith(accountTag, [
+      {
+        id: `imported:builder-potion:${exportTimestampMs}`,
+        itemId: "builder-potion",
+        startedAt: exportTimestampMs,
+        expiresAt: exportTimestampMs + 60 * 60 * 1_000,
+        village: "home",
+      },
+      {
+        id: `imported:pet-potion:${exportTimestampMs}`,
+        itemId: "pet-potion",
+        startedAt: exportTimestampMs,
+        expiresAt: exportTimestampMs + 60 * 60 * 1_000,
+        village: "home",
+      },
+    ]);
+  });
+
+  it("does not persist imported boosts that expired before the player imports", async () => {
+    const importedAt = exportTimestampMs + 61 * 60 * 1_000;
+    jest.spyOn(Date, "now").mockReturnValue(importedAt);
+    const rawExport = JSON.stringify({
+      tag: accountTag,
+      timestamp: exportTimestampMs / 1000,
+      boosts: {
+        builder_boost: 3600,
+        lab_boost: 1800,
+      },
+      buildings: [
+        { data: 1000015, lvl: 5, cnt: 5 },
+        { data: 123456, lvl: 1, timer: 3600 },
+      ],
+    });
+
+    await importVillageJson(rawExport);
+
+    const { replaceActiveMagicEffects } = jest.requireMock("@/services/magicItemService");
+    expect(replaceActiveMagicEffects).toHaveBeenCalledWith(accountTag, []);
+  });
+
   it("rejects negative imported consumable timers", async () => {
     const rawExport = JSON.stringify({
       tag: accountTag,

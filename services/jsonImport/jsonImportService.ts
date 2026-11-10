@@ -22,7 +22,9 @@ import { replaceActiveMagicEffects } from "@/services/magicItemService";
 function createImportedBoostEffects(
   boosts: RawExport["boosts"],
   exportedAt: number,
+  importedAt: number,
 ): ActiveMagicEffect[] {
+  const elapsedMs = Math.max(0, importedAt - exportedAt);
   const definitions = [
     { itemId: "builder-potion", seconds: boosts?.builder_boost ?? 0, village: "home" as const },
     { itemId: "research-potion", seconds: boosts?.lab_boost ?? 0, village: "home" as const },
@@ -32,15 +34,22 @@ function createImportedBoostEffects(
     { itemId: "pet-potion", seconds: boosts?.pet_boost ?? 0, village: "home" as const },
   ] as const;
 
-  return definitions
-    .filter(({ seconds }) => seconds > 0)
-    .map(({ itemId, seconds, village }) => ({
+  return definitions.flatMap(({ itemId, seconds, village }) => {
+    const remainingMs = seconds * 1_000 - elapsedMs;
+    if (remainingMs <= 0) return [];
+
+    return [{
       id: `imported:${itemId}:${exportedAt}`,
       itemId,
+      // Keep the export timestamp as the historical start; import time must
+      // never restart a boost that was already running in Clash of Clans.
       startedAt: exportedAt,
-      expiresAt: exportedAt + seconds * 1_000,
+      // Anchor expiry to the original export clock, discounting time spent
+      // between export and import. This remains stable across repeated imports.
+      expiresAt: importedAt + remainingMs,
       village,
-    }));
+    }];
+  });
 }
 
 type RawExport = {
@@ -888,7 +897,7 @@ export async function importVillageJson(
     await importJsonData(parsed.tag, [], entities, buildingProgress);
     await replaceActiveMagicEffects(
       parsed.tag,
-      createImportedBoostEffects(parsed.boosts, exportTimestampMs),
+      createImportedBoostEffects(parsed.boosts, exportTimestampMs, now),
     );
 
     setLastSync(parsed.tag, now);
@@ -1270,7 +1279,7 @@ export async function importVillageJson(
     // Imported timers are authoritative; app-side simulated potion effects must not re-project them.
     await replaceActiveMagicEffects(
       parsed.tag,
-      createImportedBoostEffects(parsed.boosts, exportTimestampMs),
+      createImportedBoostEffects(parsed.boosts, exportTimestampMs, now),
     );
     track("json_pipeline", {
       step: "import",

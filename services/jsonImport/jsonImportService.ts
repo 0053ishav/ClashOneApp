@@ -44,9 +44,9 @@ function createImportedBoostEffects(
       // Keep the export timestamp as the historical start; import time must
       // never restart a boost that was already running in Clash of Clans.
       startedAt: exportedAt,
-      // Anchor expiry to the original export clock, discounting time spent
-      // between export and import. This remains stable across repeated imports.
-      expiresAt: importedAt + remainingMs,
+      // Preserve the original absolute expiry; elapsed time is already
+      // discounted by comparing it with importedAt above.
+      expiresAt: exportedAt + seconds * 1_000,
       village,
     }];
   });

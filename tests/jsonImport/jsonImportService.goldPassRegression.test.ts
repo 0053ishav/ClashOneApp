@@ -508,7 +508,7 @@ describe("importVillageJson Gold Pass regression coverage", () => {
 
   it("subtracts time elapsed since export when boosts are imported later", async () => {
     const importedAt = exportTimestampMs + 35 * 60 * 1_000;
-    jest.spyOn(Date, "now").mockReturnValue(importedAt);
+    jest.mocked(Date.now).mockReturnValue(importedAt);
     const rawExport = JSON.stringify({
       tag: accountTag,
       timestamp: exportTimestampMs / 1000,
@@ -547,7 +547,7 @@ describe("importVillageJson Gold Pass regression coverage", () => {
 
   it("does not persist imported boosts that expired before the player imports", async () => {
     const importedAt = exportTimestampMs + 61 * 60 * 1_000;
-    jest.spyOn(Date, "now").mockReturnValue(importedAt);
+    jest.mocked(Date.now).mockReturnValue(importedAt);
     const rawExport = JSON.stringify({
       tag: accountTag,
       timestamp: exportTimestampMs / 1000,

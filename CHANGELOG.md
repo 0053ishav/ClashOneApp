@@ -13,6 +13,29 @@ All notable Clash One changes are documented here.
 - Added contribution and security guidance.
 - Added automated GitHub releases from version tags.
 
+## [1.4.0] - 2026-11-10
+
+### Added
+
+- JSON import support for active progression boosts.
+- Import-aware boost timer calculation using original timestamps.
+- Magic Item Activity visibility with active effect counts and remaining time.
+
+### Improved
+
+- Application performance and optimization.
+- General application cleanup and code organization.
+- Magic Item progression and activity tracking.
+
+### Fixed
+
+- Hammer Jam progression calculation and related issues.
+- Incorrect boost remaining-time calculations during delayed JSON imports.
+
+### Maintenance
+
+- Internal code cleanup and stability improvements.
+
 ## [1.3.0] - 2026-11-02
 
 ### Added
